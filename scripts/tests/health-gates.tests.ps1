@@ -29,6 +29,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
             node_red = @{ reachable = $true; status_code = 200 }
             uptime_kuma = @{ reachable = $true; status_code = 200; ready = $true }
             ollama = @{ reachable = $true; required_model_present = $true }
+            tailscale_private = @{ immich_status_code = 200; memos_status_code = 200; babybuddy_status_code = 200 }
         }
         mcp_runtime_ready = $true
         pdf_report = @{
@@ -54,7 +55,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("portal_public", "node_red", "uptime_kuma", "ollama", "mcp_runtime", "monthly_pdf")) {
+    foreach ($id in @("portal_public", "node_red", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -82,6 +83,7 @@ try {
     $dependency.endpoints.portal_public.status_code = 503
     $dependency.endpoints.uptime_kuma.ready = $false
     $dependency.endpoints.ollama.required_model_present = $false
+    $dependency.endpoints.tailscale_private.memos_status_code = 503
     $dependency.mcp_runtime_ready = $false
     $dependency.pdf_report.checksum_matches = $false
     $dependency | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $dependencyFixture -Encoding utf8
@@ -89,7 +91,7 @@ try {
     $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $dependencyFixture -OutputPath $dependencyReport
     if ($LASTEXITCODE -ne 2) { throw "Unavailable dependencies must block" }
     $dependencyHealth = Get-Content $dependencyReport -Raw | ConvertFrom-Json
-    foreach ($id in @("portal_public", "uptime_kuma", "ollama", "mcp_runtime", "monthly_pdf")) {
+    foreach ($id in @("portal_public", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
         if (@($dependencyHealth.checks | Where-Object id -eq $id)[0].status -ne "critical") { throw "Dependency gate did not block: $id" }
     }
 

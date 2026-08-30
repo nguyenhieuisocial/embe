@@ -81,6 +81,7 @@ if ($FixturePath) {
     $nodeRed = $fixture.endpoints.node_red
     $uptimeKuma = $fixture.endpoints.uptime_kuma
     $ollama = $fixture.endpoints.ollama
+    $tailscalePrivate = $fixture.endpoints.tailscale_private
     $mcpRuntimeReady = [bool]$fixture.mcp_runtime_ready
     $pdfReport = $fixture.pdf_report
 } else {
@@ -164,6 +165,31 @@ if ($FixturePath) {
         }
     } catch {
         # Only availability is reported; response bodies and endpoint errors are intentionally omitted.
+    }
+
+    $tailscalePrivate = [pscustomobject]@{
+        immich_status_code = 0
+        memos_status_code = 0
+        babybuddy_status_code = 0
+    }
+    $tailscalePath = "C:\Program Files\Tailscale\tailscale.exe"
+    if (Test-Path -LiteralPath $tailscalePath -PathType Leaf) {
+        try {
+            $tailscaleStatus = (& $tailscalePath status --json 2>$null) | ConvertFrom-Json
+            $dnsName = ([string]$tailscaleStatus.Self.DNSName).TrimEnd('.')
+            if ([string]$tailscaleStatus.BackendState -eq "Running" -and $dnsName) {
+                $immichPrivate = Test-HttpEndpoint "https://$dnsName/"
+                $memosPrivate = Test-HttpEndpoint "https://${dnsName}:8443/"
+                $babyBuddyPrivate = Test-HttpEndpoint "https://${dnsName}:10000/"
+                $tailscalePrivate = [pscustomobject]@{
+                    immich_status_code = [int]$immichPrivate.status_code
+                    memos_status_code = [int]$memosPrivate.status_code
+                    babybuddy_status_code = [int]$babyBuddyPrivate.status_code
+                }
+            }
+        } catch {
+            # The health report records only zero status codes, never private URLs or Tailscale output.
+        }
     }
 
     $mcpRuntimeReady = $false
@@ -250,6 +276,15 @@ Add-Check "uptime_kuma" $(if ($uptimeKumaPass) { "pass" } else { "critical" }) "
 
 $ollamaPass = [bool]$ollama.reachable -and [bool]$ollama.required_model_present
 Add-Check "ollama" $(if ($ollamaPass) { "pass" } else { "critical" }) "AI cục bộ và mô hình được duyệt đã sẵn sàng" @{ reachable = [bool]$ollama.reachable; required_model_present = [bool]$ollama.required_model_present }
+
+$tailscalePass = [int]$tailscalePrivate.immich_status_code -eq 200 -and
+    [int]$tailscalePrivate.memos_status_code -eq 200 -and
+    [int]$tailscalePrivate.babybuddy_status_code -eq 200
+Add-Check "tailscale_private" $(if ($tailscalePass) { "pass" } else { "critical" }) "Các ứng dụng gia đình riêng trên điện thoại đang phản hồi" @{
+    immich_status_code = [int]$tailscalePrivate.immich_status_code
+    memos_status_code = [int]$tailscalePrivate.memos_status_code
+    babybuddy_status_code = [int]$tailscalePrivate.babybuddy_status_code
+}
 
 Add-Check "mcp_runtime" $(if ($mcpRuntimeReady) { "pass" } else { "critical" }) "Lớp truy vấn AI chỉ đọc khởi tạo được" @{ runtime_ready = [bool]$mcpRuntimeReady }
 
