@@ -14,10 +14,12 @@ foreach ($path in @($python, $syncScript, $secretFile)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Portal sync dependency is missing: $path" }
 }
 
-$action = New-ScheduledTaskAction -Execute $python -Argument "`"$syncScript`" --env `"$secretFile`" --vault `"$ProjectRoot\vault`"" -WorkingDirectory $ProjectRoot
+$statusFile = Join-Path $ProjectRoot "data\status\portal-sync.json"
+$logFile = Join-Path $ProjectRoot "data\logs\portal-sync.jsonl"
+$action = New-ScheduledTaskAction -Execute $python -Argument "`"$syncScript`" --env `"$secretFile`" --vault `"$ProjectRoot\vault`" --status `"$statusFile`" --log `"$logFile`"" -WorkingDirectory $ProjectRoot
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 3) -MultipleInstances IgnoreNew
-$principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description "Publishes only #portal Memos into the private EmBe read-model." -Force | Out-Null
 
 if ($VerifyNow) {
@@ -40,4 +42,5 @@ $info = Get-ScheduledTaskInfo -TaskName $TaskName
     interval_minutes = 5
     last_result = $info.LastTaskResult
     verified_now = [bool]$VerifyNow
+    runs_without_login = $task.Principal.UserId -eq "SYSTEM"
 } | ConvertTo-Json -Compress
