@@ -24,8 +24,22 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="vi">
-      <body className={`${body.variable} ${display.variable}`}>{children}</body>
+      <body className={`${body.variable} ${display.variable}`}>
+        {children}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-PTX99GX5F9"
+        />
+        <script
+          id="google-analytics"
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-PTX99GX5F9');`
+          }}
+        />
+      </body>
     </html>
   );
 }
-
