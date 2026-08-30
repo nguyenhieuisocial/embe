@@ -24,7 +24,10 @@ foreach ($required in @(
     'LastTaskResult -ne 0',
     'backup-service-install.json',
     'install_step',
-    'error_type'
+    'error_type',
+    'LsaAddAccountRights',
+    'SeBatchLogonRight',
+    '$installStep = "batch_logon_right"'
 )) {
     if (-not $source.Contains($required)) { throw "Scheduled backup installer is missing: $required" }
 }

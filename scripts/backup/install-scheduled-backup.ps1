@@ -33,6 +33,93 @@ trap {
     exit 1
 }
 
+$accountRightsSource = @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
+
+public static class EmBeAccountRights
+{
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LsaObjectAttributes
+    {
+        public int Length;
+        public IntPtr RootDirectory;
+        public IntPtr ObjectName;
+        public uint Attributes;
+        public IntPtr SecurityDescriptor;
+        public IntPtr SecurityQualityOfService;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LsaUnicodeString
+    {
+        public ushort Length;
+        public ushort MaximumLength;
+        public IntPtr Buffer;
+    }
+
+    [DllImport("advapi32.dll")]
+    private static extern uint LsaOpenPolicy(
+        IntPtr systemName,
+        ref LsaObjectAttributes objectAttributes,
+        uint desiredAccess,
+        out IntPtr policyHandle);
+
+    [DllImport("advapi32.dll")]
+    private static extern uint LsaAddAccountRights(
+        IntPtr policyHandle,
+        IntPtr accountSid,
+        LsaUnicodeString[] userRights,
+        uint countOfRights);
+
+    [DllImport("advapi32.dll")]
+    private static extern uint LsaNtStatusToWinError(uint status);
+
+    [DllImport("advapi32.dll")]
+    private static extern uint LsaClose(IntPtr policyHandle);
+
+    public static void Add(string sidValue, string right)
+    {
+        SecurityIdentifier sid = new SecurityIdentifier(sidValue);
+        byte[] sidBytes = new byte[sid.BinaryLength];
+        sid.GetBinaryForm(sidBytes, 0);
+        GCHandle sidHandle = GCHandle.Alloc(sidBytes, GCHandleType.Pinned);
+        IntPtr policyHandle = IntPtr.Zero;
+        IntPtr rightBuffer = IntPtr.Zero;
+        try
+        {
+            LsaObjectAttributes attributes = new LsaObjectAttributes();
+            uint status = LsaOpenPolicy(IntPtr.Zero, ref attributes, 0x00000810, out policyHandle);
+            ThrowOnError(status);
+
+            rightBuffer = Marshal.StringToHGlobalUni(right);
+            LsaUnicodeString[] rights = new LsaUnicodeString[1];
+            rights[0].Buffer = rightBuffer;
+            rights[0].Length = checked((ushort)(right.Length * 2));
+            rights[0].MaximumLength = checked((ushort)((right.Length + 1) * 2));
+            status = LsaAddAccountRights(policyHandle, sidHandle.AddrOfPinnedObject(), rights, 1);
+            ThrowOnError(status);
+        }
+        finally
+        {
+            if (rightBuffer != IntPtr.Zero) Marshal.FreeHGlobal(rightBuffer);
+            if (policyHandle != IntPtr.Zero) LsaClose(policyHandle);
+            if (sidHandle.IsAllocated) sidHandle.Free();
+        }
+    }
+
+    private static void ThrowOnError(uint status)
+    {
+        if (status != 0) throw new Win32Exception((int)LsaNtStatusToWinError(status));
+    }
+}
+'@
+if (-not ("EmBeAccountRights" -as [type])) {
+    Add-Type -TypeDefinition $accountRightsSource
+}
+
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principalCheck = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principalCheck.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -87,6 +174,9 @@ if ($null -eq $existingAccount) {
     Set-LocalUser -Name $ServiceAccountName -Password $securePassword -PasswordNeverExpires $true -UserMayChangePassword $false
     Enable-LocalUser -Name $ServiceAccountName
 }
+$installStep = "batch_logon_right"
+$serviceAccountSid = (Get-LocalUser -Name $ServiceAccountName -ErrorAction Stop).SID.Value
+[EmBeAccountRights]::Add($serviceAccountSid, "SeBatchLogonRight")
 $installStep = "docker_group"
 if (-not (Get-LocalGroupMember -Group "docker-users" -Member $ServiceAccountName -ErrorAction SilentlyContinue)) {
     Add-LocalGroupMember -Group "docker-users" -Member $ServiceAccountName
