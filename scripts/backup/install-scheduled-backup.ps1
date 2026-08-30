@@ -64,21 +64,47 @@ New-Item -ItemType Directory -Path $statusPath -Force | Out-Null
 & icacls.exe $statusPath /grant:r "${serviceIdentity}:(OI)(CI)M" /T /C | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Unable to grant health status access" }
 
+function Assert-InstalledTask {
+    param(
+        [Parameter(Mandatory)] [string]$Name,
+        [Parameter(Mandatory)] [string]$ExpectedRunner
+    )
+
+    $installedTask = Get-ScheduledTask -TaskName $Name -ErrorAction Stop
+    if ([string]$installedTask.Principal.UserId -ne $serviceIdentity) {
+        throw "Scheduled task account is incorrect: $Name"
+    }
+    if ([string]$installedTask.Principal.LogonType -ne "Password") {
+        throw "Scheduled task is not using password logon: $Name"
+    }
+    if ([string]$installedTask.Principal.RunLevel -ne "Limited") {
+        throw "Scheduled task is unexpectedly elevated: $Name"
+    }
+    if ([string]$installedTask.Actions.Arguments -notmatch [regex]::Escape("-NonInteractive")) {
+        throw "Scheduled task is not non-interactive: $Name"
+    }
+    if ([string]$installedTask.Actions.Arguments -notmatch [regex]::Escape($ExpectedRunner)) {
+        throw "Scheduled task runner is incorrect: $Name"
+    }
+}
+
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$runner`""
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Hours 6) -RepetitionDuration (New-TimeSpan -Days 3650)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
-$taskPrincipal = New-ScheduledTaskPrincipal -UserId $serviceIdentity -LogonType Password -RunLevel Limited
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $taskPrincipal -Password $generatedPassword -Description "Encrypted EmBe vault/config/database snapshots to private Cloudflare R2." -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -User $serviceIdentity -Password $generatedPassword -RunLevel Limited -Description "Encrypted EmBe vault/config/database snapshots to private Cloudflare R2." -Force | Out-Null
 
 $integrityAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$integrityRunner`""
 $integrityTrigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 4am
 $integritySettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
-Register-ScheduledTask -TaskName $IntegrityTaskName -Action $integrityAction -Trigger $integrityTrigger -Settings $integritySettings -Principal $taskPrincipal -Password $generatedPassword -Description "Checks the encrypted EmBe Restic repository without exposing family data." -Force | Out-Null
+Register-ScheduledTask -TaskName $IntegrityTaskName -Action $integrityAction -Trigger $integrityTrigger -Settings $integritySettings -User $serviceIdentity -Password $generatedPassword -RunLevel Limited -Description "Checks the encrypted EmBe Restic repository without exposing family data." -Force | Out-Null
 
 $healthAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$healthRunner`""
 $healthTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
 $healthSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 3) -MultipleInstances IgnoreNew
-Register-ScheduledTask -TaskName $HealthTaskName -Action $healthAction -Trigger $healthTrigger -Settings $healthSettings -Principal $taskPrincipal -Password $generatedPassword -Description "Writes a PII-free health gate for EmBe infrastructure." -Force | Out-Null
+Register-ScheduledTask -TaskName $HealthTaskName -Action $healthAction -Trigger $healthTrigger -Settings $healthSettings -User $serviceIdentity -Password $generatedPassword -RunLevel Limited -Description "Writes a PII-free health gate for EmBe infrastructure." -Force | Out-Null
+Assert-InstalledTask -Name $TaskName -ExpectedRunner $runner
+Assert-InstalledTask -Name $IntegrityTaskName -ExpectedRunner $integrityRunner
+Assert-InstalledTask -Name $HealthTaskName -ExpectedRunner $healthRunner
 $generatedPassword = $null
 $securePassword.Dispose()
 
