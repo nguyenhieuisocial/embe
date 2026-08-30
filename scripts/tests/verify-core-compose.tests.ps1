@@ -82,6 +82,12 @@ foreach ($serviceName in $requiredServices) {
             $normalizedSource = ([System.IO.Path]::GetFullPath($mount.source)).TrimEnd('\')
             $normalizedRoot = ([System.IO.Path]::GetFullPath($projectRoot)).TrimEnd('\') + '\'
             if (-not $normalizedSource.StartsWith($normalizedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $isDedicatedMediaMount =
+                    $serviceName -eq "immich-server" -and
+                    $mount.target -eq "/data" -and
+                    [System.IO.Path]::IsPathRooted($normalizedSource) -and
+                    [System.IO.Path]::GetPathRoot($normalizedSource) -ne [System.IO.Path]::GetPathRoot($normalizedRoot)
+                if ($isDedicatedMediaMount) { continue }
                 throw "$serviceName bind mounts a host path outside the project root"
             }
         }

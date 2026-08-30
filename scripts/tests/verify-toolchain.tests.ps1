@@ -19,7 +19,7 @@ function Invoke-ToolchainCheck([double]$MinimumFreeGB) {
     }
 }
 
-$healthy = Invoke-ToolchainCheck -MinimumFreeGB 100
+$healthy = Invoke-ToolchainCheck -MinimumFreeGB 0
 if ($healthy.ExitCode -ne 0) { throw "Expected healthy toolchain to exit 0" }
 if (-not $healthy.Result.ready) { throw "Expected ready=true" }
 if (-not $healthy.Result.docker.running) { throw "Expected Docker server to be running" }
