@@ -17,6 +17,8 @@ foreach ($required in @(
     'New-TimeSpan -Minutes 5',
     'Principal.LogonType -ne "Password"',
     'Principal.RunLevel -ne "Limited"',
+    '$validServiceUsers = @($ServiceAccountName, $serviceIdentity)',
+    '$hasStarted = $scheduledInfo.LastRunTime -ge $startedAt.AddSeconds(-2)',
     'Actions.Arguments -notmatch [regex]::Escape("-NonInteractive")',
     'LastTaskResult -notin @(0, 1, 2)',
     'LastTaskResult -ne 0',

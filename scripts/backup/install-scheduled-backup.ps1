@@ -128,7 +128,8 @@ function Assert-InstalledTask {
     )
 
     $installedTask = Get-ScheduledTask -TaskName $Name -ErrorAction Stop
-    if ([string]$installedTask.Principal.UserId -ne $serviceIdentity) {
+    $validServiceUsers = @($ServiceAccountName, $serviceIdentity)
+    if ($validServiceUsers -notcontains [string]$installedTask.Principal.UserId) {
         throw "Scheduled task account is incorrect: $Name"
     }
     if ([string]$installedTask.Principal.LogonType -ne "Password") {
@@ -167,33 +168,30 @@ $securePassword.Dispose()
 
 if ($VerifyNow) {
     $installStep = "live_verification"
-    Start-ScheduledTask -TaskName $TaskName
-    $deadline = (Get-Date).AddMinutes(10)
-    do {
-        Start-Sleep -Seconds 2
-        $task = Get-ScheduledTask -TaskName $TaskName
-        $info = Get-ScheduledTaskInfo -TaskName $TaskName
-    } while ($task.State -eq "Running" -and (Get-Date) -lt $deadline)
-    if ($task.State -eq "Running") { throw "Backup verification timed out" }
+    function Invoke-ScheduledTaskAndWait([string]$Name, [int]$TimeoutMinutes) {
+        $startedAt = Get-Date
+        Start-ScheduledTask -TaskName $Name
+        $deadline = $startedAt.AddMinutes($TimeoutMinutes)
+        do {
+            Start-Sleep -Seconds 2
+            $scheduledTask = Get-ScheduledTask -TaskName $Name
+            $scheduledInfo = Get-ScheduledTaskInfo -TaskName $Name
+            $hasStarted = $scheduledInfo.LastRunTime -ge $startedAt.AddSeconds(-2)
+        } while ((-not $hasStarted -or $scheduledTask.State -eq "Running") -and (Get-Date) -lt $deadline)
+        if (-not $hasStarted -or $scheduledTask.State -eq "Running") {
+            throw "Scheduled task verification timed out: $Name"
+        }
+        return $scheduledInfo
+    }
+
+    $info = Invoke-ScheduledTaskAndWait -Name $TaskName -TimeoutMinutes 10
     if ($info.LastTaskResult -ne 0) { throw "Backup verification failed with task result $($info.LastTaskResult)" }
 
-    Start-ScheduledTask -TaskName $IntegrityTaskName
-    $deadline = (Get-Date).AddMinutes(10)
-    do {
-        Start-Sleep -Seconds 2
-        $integrityTask = Get-ScheduledTask -TaskName $IntegrityTaskName
-        $integrityInfo = Get-ScheduledTaskInfo -TaskName $IntegrityTaskName
-    } while ($integrityTask.State -eq "Running" -and (Get-Date) -lt $deadline)
-    if ($integrityTask.State -eq "Running" -or $integrityInfo.LastTaskResult -ne 0) { throw "Integrity verification failed" }
+    $integrityInfo = Invoke-ScheduledTaskAndWait -Name $IntegrityTaskName -TimeoutMinutes 10
+    if ($integrityInfo.LastTaskResult -ne 0) { throw "Integrity verification failed" }
 
-    Start-ScheduledTask -TaskName $HealthTaskName
-    $deadline = (Get-Date).AddMinutes(5)
-    do {
-        Start-Sleep -Seconds 1
-        $healthTask = Get-ScheduledTask -TaskName $HealthTaskName
-        $healthInfo = Get-ScheduledTaskInfo -TaskName $HealthTaskName
-    } while ($healthTask.State -eq "Running" -and (Get-Date) -lt $deadline)
-    if ($healthTask.State -eq "Running" -or $healthInfo.LastTaskResult -notin @(0, 1, 2)) { throw "Health audit execution failed" }
+    $healthInfo = Invoke-ScheduledTaskAndWait -Name $HealthTaskName -TimeoutMinutes 5
+    if ($healthInfo.LastTaskResult -notin @(0, 1, 2)) { throw "Health audit execution failed" }
 }
 
 $task = Get-ScheduledTask -TaskName $TaskName
