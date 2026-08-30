@@ -1,0 +1,101 @@
+export const dailyChecklist = [
+  {
+    id: "supplements",
+    title: "Thuốc và vi chất theo đúng đơn",
+    detail: "Chỉ dùng loại và liều đã được bác sĩ hoặc nữ hộ sinh xác nhận."
+  },
+  {
+    id: "varied-meals",
+    title: "Ăn đa dạng trong ngày",
+    detail: "Phối hợp rau, quả, ngũ cốc, đạm và sữa tiệt trùng nếu phù hợp."
+  },
+  {
+    id: "food-safety",
+    title: "Kiểm tra an toàn thực phẩm",
+    detail: "Rửa sạch, tách sống–chín, nấu chín kỹ và giữ lạnh đúng cách."
+  },
+  {
+    id: "no-alcohol",
+    title: "Không rượu bia, thuốc lá",
+    detail: "Tránh cả khói thuốc thụ động và các chất kích thích không được chỉ định."
+  },
+  {
+    id: "movement",
+    title: "Vận động nhẹ nếu cơ thể cho phép",
+    detail: "Đi bộ hoặc bài tập đã được nhân viên y tế đồng ý; dừng khi khó chịu."
+  },
+  {
+    id: "water-rest",
+    title: "Uống nước và nghỉ ngơi",
+    detail: "Chia đều trong ngày, lắng nghe cảm giác khát và mệt của cơ thể."
+  },
+  {
+    id: "notes",
+    title: "Ghi lại điều muốn hỏi khi khám",
+    detail: "Triệu chứng, thuốc đang dùng, giấc ngủ, tâm trạng hoặc thay đổi đáng chú ý."
+  }
+] as const;
+
+export const weeklyMenu = [
+  {
+    day: "Ngày 1",
+    breakfast: "Yến mạch, sữa tiệt trùng, chuối",
+    lunch: "Cơm gạo lứt, cá hồi chín, cải xanh",
+    dinner: "Canh gà nấm, đậu phụ, cam"
+  },
+  {
+    day: "Ngày 2",
+    breakfast: "Bánh mì nguyên cám, trứng chín, bơ",
+    lunch: "Cơm, bò xào rau củ chín kỹ, thanh long",
+    dinner: "Bún tôm chín, rau luộc, sữa chua tiệt trùng"
+  },
+  {
+    day: "Ngày 3",
+    breakfast: "Phở gà chín kỹ, rau đã rửa sạch",
+    lunch: "Cơm, đậu phụ sốt cà, canh bí đỏ",
+    dinner: "Cá basa kho chín, rau dền, lê"
+  },
+  {
+    day: "Ngày 4",
+    breakfast: "Khoai lang, trứng chín, sữa đậu nành tiệt trùng",
+    lunch: "Cơm, thịt nạc chín kỹ, bông cải",
+    dinner: "Miến gà, nấm chín, đu đủ"
+  },
+  {
+    day: "Ngày 5",
+    breakfast: "Cháo yến mạch thịt bằm chín, táo",
+    lunch: "Cơm, tôm hấp chín, canh rau mồng tơi",
+    dinner: "Đậu lăng hầm rau củ, bánh mì nguyên cám"
+  },
+  {
+    day: "Ngày 6",
+    breakfast: "Bún bò chín kỹ, giá được nấu chín",
+    lunch: "Cơm, gà áp chảo chín, salad rau đã rửa kỹ",
+    dinner: "Cháo cá hồi chín, bí xanh, quýt"
+  },
+  {
+    day: "Ngày 7",
+    breakfast: "Sữa chua tiệt trùng, yến mạch, xoài",
+    lunch: "Cơm, cá mòi chín, rau củ hấp",
+    dinner: "Mì trứng chín với đậu phụ và rau cải"
+  }
+] as const;
+
+export const pregnancySources = [
+  {
+    label: "WHO — chăm sóc trước sinh, dinh dưỡng và vận động",
+    href: "https://www.who.int/publications/i/item/9789241549912"
+  },
+  {
+    label: "CDC — lựa chọn thực phẩm an toàn khi mang thai",
+    href: "https://www.cdc.gov/food-safety/foods/pregnant-women.html"
+  },
+  {
+    label: "NHS — vận động trong thai kỳ",
+    href: "https://www.nhs.uk/best-start-in-life/pregnancy/exercising-in-pregnancy/"
+  },
+  {
+    label: "Viện Dinh dưỡng Quốc gia — VNeNUTRITION",
+    href: "https://viendinhduong.vn/landing-page"
+  }
+] as const;

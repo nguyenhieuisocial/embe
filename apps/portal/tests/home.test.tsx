@@ -15,6 +15,10 @@ describe("family portal home", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nhật ký" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Khoảnh khắc" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mẹ bầu hôm nay" })).toHaveAttribute(
+      "href",
+      "/me-bau"
+    );
   });
 
   it("explains that the portal is private and contains only family-approved content", () => {
@@ -25,4 +29,3 @@ describe("family portal home", () => {
     ).toBeInTheDocument();
   });
 });
-

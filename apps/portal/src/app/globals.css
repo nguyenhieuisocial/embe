@@ -152,6 +152,45 @@ h1 {
   padding: 4px 0 4px 16px;
 }
 
+.pregnancy-entry {
+  align-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 18px;
+  min-height: 116px;
+  padding: 24px 30px;
+  text-decoration: none;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.pregnancy-entry:hover {
+  background: var(--leaf);
+  transform: translateY(-2px);
+}
+
+.pregnancy-entry small,
+.pregnancy-entry strong {
+  display: block;
+}
+
+.pregnancy-entry small {
+  font-size: 0.68rem;
+  letter-spacing: 0.17em;
+  margin-bottom: 8px;
+}
+
+.pregnancy-entry strong {
+  font-family: var(--font-display), serif;
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.pregnancy-entry > span:last-child {
+  font-size: 2rem;
+}
+
 .portal-grid {
   display: grid;
   gap: 18px;
@@ -259,6 +298,291 @@ footer {
 
 footer p {
   margin: 0;
+}
+
+.pregnancy-main {
+  max-width: 1240px;
+}
+
+.pregnancy-hero {
+  align-items: end;
+  display: grid;
+  gap: 70px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(270px, 0.6fr);
+  padding: 76px 0 58px;
+}
+
+.pregnancy-hero h1 {
+  max-width: 720px;
+}
+
+.week-card {
+  background: #e1ece5;
+  border-bottom: 5px solid var(--leaf);
+  padding: 28px;
+}
+
+.week-card label,
+.week-card input,
+.week-card p {
+  display: block;
+  width: 100%;
+}
+
+.week-card label {
+  color: var(--leaf);
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.week-card input {
+  background: var(--paper);
+  border: 1px solid rgba(23, 53, 74, 0.28);
+  color: var(--ink);
+  font: inherit;
+  min-height: 48px;
+  padding: 9px 12px;
+}
+
+.week-card .week-number {
+  font-family: var(--font-display), serif;
+  font-size: 2.7rem;
+  margin: 24px 0 5px;
+}
+
+.week-card p:last-child {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.care-board {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: clamp(24px, 5vw, 48px);
+}
+
+.care-summary {
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 28px;
+}
+
+.progress-stamp {
+  align-items: baseline;
+  border: 1px solid var(--apricot);
+  border-radius: 50%;
+  display: flex;
+  height: 90px;
+  justify-content: center;
+  transform: rotate(4deg);
+  width: 90px;
+}
+
+.progress-stamp strong {
+  font-family: var(--font-display), serif;
+  font-size: 2.3rem;
+  font-weight: 500;
+}
+
+.progress-stamp span {
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+}
+
+.checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.check-item {
+  align-items: start;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 26px 1fr;
+  min-height: 112px;
+  padding: 24px 18px 22px 0;
+}
+
+.check-item:nth-child(odd) {
+  border-right: 1px solid var(--line);
+  padding-right: 28px;
+}
+
+.check-item:nth-child(even) {
+  padding-left: 28px;
+}
+
+.check-item input {
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.custom-check {
+  border: 1px solid var(--leaf);
+  color: transparent;
+  display: grid;
+  font-size: 0.82rem;
+  height: 24px;
+  place-items: center;
+  transition: background 140ms ease, color 140ms ease;
+  width: 24px;
+}
+
+.check-item input:focus-visible + .custom-check {
+  outline: 3px solid rgba(239, 154, 115, 0.45);
+  outline-offset: 3px;
+}
+
+.check-item.is-done .custom-check {
+  background: var(--leaf);
+  color: var(--paper);
+}
+
+.check-item strong,
+.check-item small {
+  display: block;
+}
+
+.check-item strong {
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+
+.check-item small {
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  margin-top: 6px;
+}
+
+.check-item.is-done strong {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: var(--apricot);
+}
+
+.menu-section {
+  padding: 90px 0 78px;
+}
+
+.section-heading-row {
+  align-items: end;
+  display: grid;
+  gap: 50px;
+  grid-template-columns: 1fr minmax(260px, 0.6fr);
+  margin-bottom: 30px;
+}
+
+.section-heading-row > p {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.menu-scroll {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(7, minmax(238px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 14px;
+  scroll-snap-type: x mandatory;
+}
+
+.menu-day {
+  background: #f0e4dc;
+  min-height: 330px;
+  padding: 26px;
+  scroll-snap-align: start;
+}
+
+.menu-day:nth-child(even) {
+  background: #e1ece5;
+}
+
+.menu-day h3 {
+  border-bottom: 1px solid rgba(23, 53, 74, 0.2);
+  font-family: var(--font-display), serif;
+  font-size: 1.7rem;
+  font-weight: 500;
+  margin: 0 0 22px;
+  padding-bottom: 15px;
+}
+
+.menu-day dl,
+.menu-day dd {
+  margin: 0;
+}
+
+.menu-day dl > div {
+  margin-bottom: 18px;
+}
+
+.menu-day dt {
+  color: var(--leaf);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.menu-day dd {
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.medical-boundary {
+  background: var(--ink);
+  color: var(--paper);
+  display: grid;
+  gap: 30px;
+  grid-template-columns: 190px 1fr;
+  padding: 30px 34px;
+}
+
+.medical-boundary strong {
+  color: #fac5ac;
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.medical-boundary p {
+  line-height: 1.75;
+  margin: 0;
+}
+
+.source-section {
+  padding: 68px 0;
+}
+
+.source-section h2 {
+  font-size: 2rem;
+}
+
+.source-section ul {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+}
+
+.source-section a {
+  color: var(--leaf);
+  font-size: 0.82rem;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 
 .login-shell {
@@ -386,6 +710,65 @@ footer p {
   .panel {
     min-height: auto;
     padding: 28px 24px;
+  }
+
+  .pregnancy-entry {
+    min-height: 104px;
+    padding: 20px 22px;
+  }
+
+  .pregnancy-entry strong {
+    font-size: 1.65rem;
+  }
+
+  .pregnancy-hero {
+    gap: 34px;
+    grid-template-columns: 1fr;
+    padding: 58px 0 42px;
+  }
+
+  .pregnancy-hero h1 {
+    font-size: clamp(3.4rem, 18vw, 5.3rem);
+  }
+
+  .care-summary {
+    align-items: center;
+  }
+
+  .progress-stamp {
+    flex: 0 0 72px;
+    height: 72px;
+    width: 72px;
+  }
+
+  .progress-stamp strong {
+    font-size: 1.8rem;
+  }
+
+  .checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .check-item,
+  .check-item:nth-child(odd),
+  .check-item:nth-child(even) {
+    border-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .section-heading-row,
+  .medical-boundary {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-section {
+    padding: 70px 0 60px;
+  }
+
+  .medical-boundary {
+    gap: 12px;
+    padding: 26px;
   }
 }
 

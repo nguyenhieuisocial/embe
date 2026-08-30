@@ -36,6 +36,14 @@ export default function Home() {
         Chỉ những điều bố mẹ đã chọn mới xuất hiện tại đây.
       </p>
 
+      <a className="pregnancy-entry" href="/me-bau" aria-label="Mẹ bầu hôm nay">
+        <span>
+          <small>DÀNH CHO MẸ</small>
+          <strong>Mẹ bầu hôm nay</strong>
+        </span>
+        <span aria-hidden="true">→</span>
+      </a>
+
       <section className="portal-grid" aria-label="Nội dung gia đình">
         <article className="panel timeline-panel">
           <div className="panel-heading">
@@ -73,4 +81,3 @@ export default function Home() {
     </main>
   );
 }
-
