@@ -30,14 +30,18 @@ function Invoke-RestoreDrill {
         [string]$ManifestPath,
         [string]$PasswordFile,
         [string]$RestoreRoot,
-        [string]$FakeRestic
+        [string]$FakeRestic,
+        [switch]$AllowR2
     )
 
-    $output = & powershell -NoProfile -ExecutionPolicy Bypass -File $restoreScript `
-        -ManifestPath $ManifestPath `
-        -PasswordFile $PasswordFile `
-        -RestoreRoot $RestoreRoot `
-        -ResticPath $FakeRestic
+    $arguments = @(
+        "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $restoreScript,
+        "-ManifestPath", $ManifestPath, "-PasswordFile", $PasswordFile,
+        "-RestoreRoot", $RestoreRoot
+    )
+    if (-not [string]::IsNullOrWhiteSpace($FakeRestic)) { $arguments += @("-ResticPath", $FakeRestic) }
+    if ($AllowR2) { $arguments += "-AllowR2Repository" }
+    $output = & powershell @arguments
 
     [pscustomobject]@{
         ExitCode = $LASTEXITCODE
@@ -144,6 +148,11 @@ exit 0
     $remoteManifest | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $remoteManifestPath -Encoding UTF8
     $remote = Invoke-RestoreDrill -ManifestPath $remoteManifestPath -PasswordFile $passwordFile -RestoreRoot (Join-Path $testRoot "restore-remote") -FakeRestic $fakeResticPath
     Assert-Equal "bounded restore drill rejects remote repository" 1 $remote.ExitCode
+
+    $remoteManifest.repository = "s3:https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com/embe-backup/restic-critical"
+    $remoteManifest | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $remoteManifestPath -Encoding UTF8
+    $remoteAllowed = Invoke-RestoreDrill -ManifestPath $remoteManifestPath -PasswordFile $passwordFile -RestoreRoot (Join-Path $testRoot "restore-r2") -FakeRestic $fakeResticPath -AllowR2
+    Assert-Equal "approved R2 restore requires and accepts explicit switch" 0 $remoteAllowed.ExitCode
 
     $realRepo = Join-Path $testRoot "real-repo"
     $realManifest = Join-Path $testRoot "real-manifest.json"

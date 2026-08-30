@@ -29,7 +29,11 @@ if (-not (Test-Path $scriptPath)) {
 
 function Invoke-VerifyMediaStorage {
     param([string]$MediaPath)
-    $json = & powershell -NoProfile -ExecutionPolicy Bypass -File $scriptPath -MediaPath $MediaPath 2>$null
+    if ([string]::IsNullOrWhiteSpace($MediaPath)) {
+        $json = & powershell -NoProfile -ExecutionPolicy Bypass -File $scriptPath 2>$null
+    } else {
+        $json = & powershell -NoProfile -ExecutionPolicy Bypass -File $scriptPath -MediaPath $MediaPath 2>$null
+    }
     $code = $LASTEXITCODE
     [pscustomobject]@{
         ExitCode = $code

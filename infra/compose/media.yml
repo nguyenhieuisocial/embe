@@ -15,7 +15,7 @@ services:
         source: ${MEDIA_LOCATION:-C:/EmBe/data/media}
         target: /data
     ports:
-      - 127.0.0.1:${IMMICH_PORT:-2283}:2283
+      - ${IMMICH_BIND_ADDRESS:-127.0.0.1}:${IMMICH_PORT:-2283}:2283
     networks:
       - embe-media
     depends_on:

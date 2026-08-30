@@ -18,7 +18,9 @@ param(
 
     [string]$ResticPath,
 
-    [string]$ManifestPath
+    [string]$ManifestPath,
+
+    [switch]$AllowR2Repository
 )
 
 $ErrorActionPreference = "Stop"
@@ -65,7 +67,7 @@ function Assert-PasswordFile {
     }
 }
 
-function Assert-LocalRepository {
+function Assert-Repository {
     param(
         [string]$Path
     )
@@ -73,7 +75,13 @@ function Assert-LocalRepository {
     if ($Path -match "^[A-Za-z]:[\\/]" -or $Path -match "^\\\\") {
         # Allow Windows local paths and UNC share paths for bounded restore-drill work.
     } elseif ($Path -match "^[a-zA-Z][a-zA-Z0-9+.-]*:") {
-        throw "Cloud/remote repositories are blocked in bounded offline restore-drill task: $Path"
+        if (-not $AllowR2Repository) {
+            throw "Cloud/remote repositories are blocked unless AllowR2Repository is explicit: $Path"
+        }
+        if ($Path -notmatch '^s3:https://[0-9a-f]{32}\.r2\.cloudflarestorage\.com/embe-backup/restic-critical/?$') {
+            throw "Remote repository is outside the approved EmBe R2 prefix: $Path"
+        }
+        return
     }
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -201,7 +209,7 @@ Assert-Directory -Name "CodeConfigPath" -Path $CodeConfigPath
 Assert-Directory -Name "VaultPath" -Path $VaultPath
 Assert-Directory -Name "AppDataPath" -Path $AppDataPath
 Assert-PasswordFile -Path $PasswordFile
-Assert-LocalRepository -Path $Repository
+Assert-Repository -Path $Repository
 
 $manifestDirectory = Split-Path -Parent $ManifestPath
 if (-not (Test-Path -LiteralPath $manifestDirectory)) {
@@ -222,7 +230,7 @@ $initArguments = @("-r", $Repository, "-p", $PasswordFile, "init")
 try {
     $null = Invoke-Restic -Arguments $initArguments
 } catch {
-    if ($_ -notmatch "already exists" -and $_ -notmatch "config file already exists") {
+    if ($_ -notmatch "already exists" -and $_ -notmatch "config file already exists" -and $_ -notmatch "already initialized") {
         throw
     }
 }

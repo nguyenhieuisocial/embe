@@ -8,7 +8,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$RestoreRoot,
 
-    [string]$ResticPath
+    [string]$ResticPath,
+
+    [switch]$AllowR2Repository
 )
 
 $ErrorActionPreference = "Stop"
@@ -84,9 +86,14 @@ $repositoryPath = [string]$manifest.repository
 if ($repositoryPath -match "^[A-Za-z]:[\\/]" -or $repositoryPath -match "^\\\\") {
     # Local Windows drive or UNC path.
 } elseif ($repositoryPath -match "^[a-zA-Z][a-zA-Z0-9+.-]*:") {
-    throw "Cloud/remote repositories are blocked in bounded offline restore drill: $($manifest.repository)"
+    if (-not $AllowR2Repository) {
+        throw "Cloud/remote repositories are blocked unless AllowR2Repository is explicit: $($manifest.repository)"
+    }
+    if ($repositoryPath -notmatch '^s3:https://[0-9a-f]{32}\.r2\.cloudflarestorage\.com/embe-backup/restic-critical/?$') {
+        throw "Remote repository is outside the approved EmBe R2 prefix: $($manifest.repository)"
+    }
 }
-if (-not (Test-Path -LiteralPath $repositoryPath -PathType Container)) {
+if ($repositoryPath -notmatch '^[a-zA-Z][a-zA-Z0-9+.-]*:' -and -not (Test-Path -LiteralPath $repositoryPath -PathType Container)) {
     throw "Repository is missing: $($manifest.repository)"
 }
 
