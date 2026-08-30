@@ -7,4 +7,6 @@
 - Custom domain: `https://embe.hieu.asia`
 
 The portal is currently a data-free shell. The custom domain is proxied through
-Cloudflare and protected by the `EmBe Family Portal` Access application.
+Cloudflare and protected by application-level shared-password authentication.
+Password hash and session-signing secret are server-only Vercel Production
+secrets; preview deployments do not receive them.

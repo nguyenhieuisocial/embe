@@ -4,7 +4,9 @@
 
 **Goal:** Xây dựng nền tảng self-hosted, khôi phục được và bảo vệ dữ liệu để lưu hành trình thai kỳ, chăm sóc em bé, media, môi trường phòng ngủ, vật tư và xuất sách tại `embe.hieu.asia`.
 
-**Architecture:** Các ứng dụng nguồn giữ database riêng; mọi tích hợp gọi API và đổ dữ liệu đã chuẩn hóa vào một kho phân tích chỉ-đọc đối với AI. Chỉ Family Portal được công khai qua Cloudflare Access/Tunnel; Portal BFF giữ token Memos/Immich ở server và chỉ trả preview/timeline đã được phép xem.
+**Architecture:** Các ứng dụng nguồn giữ database riêng; mọi tích hợp gọi API và đổ dữ liệu đã chuẩn hóa vào một kho phân tích chỉ-đọc đối với AI. Chỉ Family Portal được công khai qua Cloudflare proxy và app-level auth; Tunnel tương lai chỉ expose Local BFF đã có service authentication. Portal BFF giữ token Memos/Immich ở server và chỉ trả preview/timeline đã được phép xem.
+
+> **Security decision update (2026-08-30):** Cloudflare Access/OTP trong sơ đồ gốc đã được thay bằng shared-password auth ở ứng dụng theo yêu cầu vận hành. Admin apps và MCP vẫn tuyệt đối không public.
 
 **Tech Stack:** Linux, Docker Engine + Compose, Caddy, Cloudflare Tunnel/Access, BabyBuddy, Memos, Immich, Grocy, Home Assistant, Python/FastAPI/httpx/SQLAlchemy/Alembic, PostgreSQL cho analytics, Next.js TypeScript cho Portal/BFF, FastMCP, Typst, Restic.
 
@@ -29,10 +31,10 @@
 
 ```mermaid
 flowchart LR
-    Phone[Điện thoại gia đình] --> Access[Cloudflare Access OTP]
-    Access --> Tunnel[Cloudflare Tunnel]
-    Tunnel --> Caddy[Caddy edge]
-    Caddy --> Portal[Next.js Portal + BFF]
+    Phone[Điện thoại gia đình] --> Edge[Cloudflare DNS / Proxy / WAF]
+    Edge --> Portal[Next.js Portal + app-level auth trên Vercel]
+    Portal --> Tunnel[Cloudflare Tunnel + service auth]
+    Tunnel --> BFF[Local BFF curated read-only]
 
     Admin[Thiết bị quản trị LAN/VPN] --> BB[BabyBuddy]
     Admin --> Memos[Memos]
@@ -40,8 +42,8 @@ flowchart LR
     Admin --> Grocy[Grocy]
     Admin --> HA[Home Assistant]
 
-    Portal -->|server-side REST| Memos
-    Portal -->|preview/HLS only| Immich
+    BFF -->|server-side REST| Memos
+    BFF -->|preview/HLS only| Immich
 
     BB --> Sync[Sync daemon]
     Sync --> Memos

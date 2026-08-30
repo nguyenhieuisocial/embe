@@ -4,7 +4,9 @@
 
 **Goal:** Biến `C:\EmBe` thành project root duy nhất cho mã nguồn, cấu hình, Obsidian vault và bằng chứng vận hành; dùng Cloudflare, Vercel và Supabase có chọn lọc mà vẫn giữ dữ liệu gốc ở local.
 
-**Architecture:** Git, IaC, migration, script, tài liệu và Obsidian vault nằm dưới `C:\EmBe`. Portal chạy trên Vercel; Cloudflare bảo vệ hostname và kết nối đến local BFF qua Tunnel; Supabase chỉ giữ read-model đã duyệt và không bao giờ là system of record. Ảnh RAW/video, hồ sơ y tế, database nguồn và secrets không được đưa vào Git hoặc Vercel/Supabase.
+**Architecture:** Git, IaC, migration, script, tài liệu và Obsidian vault nằm dưới `C:\EmBe`. Portal chạy trên Vercel, dùng đăng nhập bằng mật khẩu ở lớp ứng dụng; Cloudflare giữ DNS/proxy/WAF và Tunnel tương lai chỉ kết nối đến local BFF có service authentication. Supabase chỉ giữ read-model đã duyệt và không bao giờ là system of record. Ảnh RAW/video, hồ sơ y tế, database nguồn và secrets không được đưa vào Git hoặc Vercel/Supabase.
+
+> **Security decision update (2026-08-30):** Cloudflare Access cho `embe.hieu.asia` đã được gỡ theo yêu cầu vận hành sau khi app-level auth được kiểm thử production. Các bước Access/OTP bên dưới là lịch sử thiết kế, không phải trạng thái hiện hành; không được tái tạo nếu chưa có quyết định mới.
 
 **Tech Stack:** Windows 11, WSL2 Ubuntu, Docker Desktop cho development, GitHub private repository, Obsidian, Cloudflare DNS/Access/Tunnel/R2, Vercel Next.js, Supabase Postgres/Auth tùy chọn, SOPS + age, Restic.
 
