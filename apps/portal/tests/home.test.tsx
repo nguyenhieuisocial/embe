@@ -1,11 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import Home from "../src/app/page";
+import Home, { dynamic } from "../src/app/page";
 
 describe("family portal home", () => {
-  it("shows the family timeline and gallery as the two primary destinations", () => {
-    render(<Home />);
+  it("always renders the latest approved timeline on the server", () => {
+    expect(dynamic).toBe("force-dynamic");
+  });
+
+  it("shows the family timeline and gallery as the two primary destinations", async () => {
+    render(await Home());
 
     expect(
       screen.getByRole("heading", {
@@ -25,8 +29,8 @@ describe("family portal home", () => {
     );
   });
 
-  it("explains that the portal is private and contains only family-approved content", () => {
-    render(<Home />);
+  it("explains that the portal is private and contains only family-approved content", async () => {
+    render(await Home());
 
     expect(
       screen.getByText("Chỉ những điều bố mẹ đã chọn mới xuất hiện tại đây.")
