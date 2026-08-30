@@ -59,9 +59,15 @@ $syncIdentity = "$env:COMPUTERNAME\$SyncAccountName"
 $credentialIdentity = "$env:COMPUTERNAME\$CredentialAccountName"
 $ownerIdentity = $identity.Name
 
+$rootAcl = Get-Acl -LiteralPath $ProjectRoot
+$hasAuthenticatedUsersAce = @($rootAcl.Access | Where-Object {
+    $_.IdentityReference.Value -in @("NT AUTHORITY\Authenticated Users", "S-1-5-11")
+}).Count -gt 0
 & icacls.exe $ProjectRoot /inheritance:r /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "BUILTIN\Users:(OI)(CI)(RX)" | Out-Null
-& icacls.exe $ProjectRoot /remove:g "*S-1-5-11" /T /C | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Unable to protect the EmBe project root" }
+if ($hasAuthenticatedUsersAce) {
+    & icacls.exe $ProjectRoot /remove:g "*S-1-5-11" /T /C | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Unable to protect the EmBe project root" }
+}
 
 foreach ($path in @(
     (Join-Path $ProjectRoot ".venv"),
