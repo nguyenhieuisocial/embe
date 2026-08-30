@@ -24,14 +24,14 @@ class AnalyticsServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         repository = InMemoryRepository(
             sleeps=[
-                SleepRecord(utc(1, 20), utc(1, 22)),
-                SleepRecord(utc(2, 20), utc(2, 23)),
-                SleepRecord(utc(3, 20), utc(4, 0)),
+                SleepRecord(utc(1, 20), utc(1, 22), "baby"),
+                SleepRecord(utc(2, 20), utc(2, 23), "baby"),
+                SleepRecord(utc(3, 20), utc(4, 0), "baby"),
             ],
             feedings=[
-                FeedingRecord(utc(1, 8), 90),
-                FeedingRecord(utc(1, 12), 110),
-                FeedingRecord(utc(5, 8), 120),
+                FeedingRecord(utc(1, 8), 90, "baby"),
+                FeedingRecord(utc(1, 12), 110, "baby"),
+                FeedingRecord(utc(5, 8), 120, "baby"),
             ],
             environment=[
                 EnvironmentRecord(utc(1, 20), 28.0, 70.0),
@@ -39,20 +39,24 @@ class AnalyticsServiceTests(unittest.TestCase):
                 EnvironmentRecord(utc(3, 20), 26.0, 60.0),
             ],
         )
-        self.service = AnalyticsService(repository)
+        self.service = AnalyticsService(repository, allowed_child_ids={"baby"})
 
     def test_sleep_and_feeding_summaries_are_bounded(self) -> None:
-        sleep = self.service.sleep_summary(date(2026, 8, 1), date(2026, 8, 3))
-        feeding = self.service.feeding_summary(date(2026, 8, 1), date(2026, 8, 3))
+        sleep = self.service.sleep_summary(date(2026, 8, 1), date(2026, 8, 3), child_id="baby")
+        feeding = self.service.feeding_summary(date(2026, 8, 1), date(2026, 8, 3), child_id="baby")
 
         self.assertEqual(sleep.session_count, 3)
         self.assertEqual(sleep.total_minutes, 540)
         self.assertEqual(sleep.average_minutes, 180)
         self.assertEqual(feeding.feeding_count, 2)
         self.assertEqual(feeding.total_milliliters, 200)
+        self.assertEqual(sleep.provenance.source, "curated_analytics")
+        self.assertEqual(sleep.provenance.sample_count, 3)
 
     def test_environment_correlation_uses_only_matched_samples(self) -> None:
-        result = self.service.environment_sleep_correlation(date(2026, 8, 1), date(2026, 8, 3))
+        result = self.service.environment_sleep_correlation(
+            date(2026, 8, 1), date(2026, 8, 3), child_id="baby"
+        )
 
         self.assertEqual(result.sample_count, 3)
         self.assertAlmostEqual(result.temperature_sleep_correlation or 0, -1.0, places=3)
@@ -61,9 +65,14 @@ class AnalyticsServiceTests(unittest.TestCase):
 
     def test_rejects_invalid_or_unbounded_date_range(self) -> None:
         with self.assertRaisesRegex(ValueError, "start_date"):
-            self.service.sleep_summary(date(2026, 8, 3), date(2026, 8, 1))
+            self.service.sleep_summary(date(2026, 8, 3), date(2026, 8, 1), child_id="baby")
         with self.assertRaisesRegex(ValueError, "31 days"):
-            self.service.sleep_summary(date(2026, 1, 1), date(2026, 3, 1))
+            self.service.sleep_summary(date(2026, 1, 1), date(2026, 3, 1), child_id="baby")
+
+    def test_child_scope_and_injection_like_identifier_are_rejected(self) -> None:
+        for child_id in ("other", "baby; DROP TABLE fact_sleep"):
+            with self.subTest(child_id=child_id), self.assertRaises(PermissionError):
+                self.service.sleep_summary(date(2026, 8, 1), date(2026, 8, 2), child_id=child_id)
 
 
 if __name__ == "__main__":
