@@ -12,7 +12,7 @@
 ## Thành phần
 
 - `apps/`: Family Portal.
-- `services/`: sync daemon, local BFF, analytics, MCP và document builder.
+- `services/`: sync daemon, local BFF, analytics, MCP, document builder và đề xuất mua vật tư cần người dùng duyệt.
 - `infra/`: Docker, Cloudflare, Vercel và vận hành.
 - `infra/ai/`: runtime AI local-only và ranh giới mạng.
 - `supabase/`: schema/migrations cho optional curated read-model.
