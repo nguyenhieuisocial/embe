@@ -4,7 +4,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import PregnancyPage from "../src/app/me-bau/page";
-import { calculatePregnancyWeek } from "../src/lib/pregnancy";
+import { calculatePregnancyWeek, localDateKey } from "../src/lib/pregnancy";
 
 describe("pregnancy week calculation", () => {
   it("uses the clinician-provided due date within a plausible pregnancy window", () => {
@@ -76,7 +76,7 @@ describe("pregnancy daily page", () => {
     });
 
     expect(consoleError).not.toHaveBeenCalled();
-    expect(container).toHaveTextContent("CHECKLIST 2026-08-31");
+    expect(container).toHaveTextContent(`CHECKLIST ${localDateKey(new Date())}`);
     await act(async () => root?.unmount());
     consoleError.mockRestore();
     container.remove();
