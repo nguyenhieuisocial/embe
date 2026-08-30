@@ -6,16 +6,19 @@ import argparse
 import json
 import re
 import sys
+import time
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 SENSITIVE_TAGS = {"gps", "health", "location", "medical", "private", "restricted"}
 APPROVAL_TAG = "portal"
+SYNC_BATCH_SIZE = 500
 TAG_ONLY = re.compile(r"^(?:\s*#[\w-]+\s*)+$", re.UNICODE)
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$")
 
@@ -54,7 +57,7 @@ def _content_fields(content: str) -> tuple[str, str]:
 
 def sanitize_memo(memo: dict[str, Any], child_id: str) -> dict[str, Any] | None:
     tags = _normalized_tags(memo)
-    if str(memo.get("visibility", "")).upper() != "PUBLIC":
+    if str(memo.get("visibility", "")).upper() != "PRIVATE":
         return None
     if str(memo.get("state", "NORMAL")).upper() != "NORMAL":
         return None
@@ -93,14 +96,22 @@ def read_env(path: Path) -> dict[str, str]:
 
 def _json_request(url: str, method: str, headers: dict[str, str], body: Any = None) -> Any:
     payload = None if body is None else json.dumps(body, ensure_ascii=False).encode("utf-8")
-    request = Request(url, data=payload, headers=headers, method=method)
-    try:
-        with urlopen(request, timeout=30) as response:
-            raw = response.read()
-            return json.loads(raw) if raw else None
-    except HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")[:300]
-        raise RuntimeError(f"HTTP {error.code} from approved integration endpoint: {detail}") from error
+    safe_headers = {"User-Agent": "EmBe-Local-Sync/1.0", **headers}
+    for attempt, delay in enumerate((0, 1, 2, 4)):
+        if delay:
+            time.sleep(delay)
+        request = Request(url, data=payload, headers=safe_headers, method=method)
+        try:
+            with urlopen(request, timeout=30) as response:
+                raw = response.read()
+                return json.loads(raw) if raw else None
+        except HTTPError as error:
+            if error.code not in {408, 425, 429, 500, 502, 503, 504} or attempt == 3:
+                raise RuntimeError(f"Integration endpoint returned HTTP {error.code}") from error
+        except (URLError, TimeoutError, OSError) as error:
+            if attempt == 3:
+                raise RuntimeError("Integration endpoint is temporarily unavailable") from error
+    raise RuntimeError("Integration request exhausted its retry policy")
 
 
 @dataclass(frozen=True)
@@ -140,11 +151,22 @@ class SupabaseReadModel:
         }
 
     def sync(self, events: list[dict[str, Any]]) -> dict[str, int]:
+        sync_run_id = str(uuid.uuid4())
+        for offset in range(0, len(events), SYNC_BATCH_SIZE):
+            _json_request(
+                f"{self.base_url.rstrip('/')}/rest/v1/rpc/embe_stage_timeline_batch",
+                "POST",
+                self.headers,
+                {
+                    "p_sync_run_id": sync_run_id,
+                    "p_events": events[offset : offset + SYNC_BATCH_SIZE],
+                },
+            )
         result = _json_request(
-            f"{self.base_url.rstrip('/')}/rest/v1/rpc/embe_sync_timeline",
+            f"{self.base_url.rstrip('/')}/rest/v1/rpc/embe_finalize_timeline_sync",
             "POST",
             self.headers,
-            {"p_events": events},
+            {"p_sync_run_id": sync_run_id, "p_expected_count": len(events)},
         )
         return {"upserted": int(result["upserted"]), "unapproved": int(result["unapproved"])}
 
@@ -190,13 +212,61 @@ def run_sync(env_path: Path, vault_root: Path, child_id: str = "embe-family") ->
     }
 
 
+def _read_status(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def _write_status(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    temporary.replace(path)
+
+
+def _append_log(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() and path.stat().st_size > 1_000_000:
+        recent = path.read_text(encoding="utf-8", errors="replace").splitlines()[-200:]
+        path.write_text("\n".join(recent) + "\n", encoding="utf-8")
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync approved Memos to the EmBe family portal.")
     parser.add_argument("--env", type=Path, default=Path(r"C:\EmBe\secrets\portal-data.env"))
     parser.add_argument("--vault", type=Path, default=Path(r"C:\EmBe\vault"))
+    parser.add_argument("--status", type=Path, default=Path(r"C:\EmBe\data\status\portal-sync.json"))
+    parser.add_argument("--log", type=Path, default=Path(r"C:\EmBe\data\logs\portal-sync.jsonl"))
     args = parser.parse_args()
-    print(json.dumps(run_sync(args.env, args.vault), ensure_ascii=False))
-    return 0
+    attempted_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    previous = _read_status(args.status)
+    try:
+        result = run_sync(args.env, args.vault)
+        status = {
+            **result,
+            "last_attempt_at": attempted_at,
+            "last_success_at": attempted_at,
+        }
+        _write_status(args.status, status)
+        _append_log(args.log, status)
+        print(json.dumps(result, ensure_ascii=False))
+        return 0
+    except Exception as error:  # the scheduled task must persist a safe failure signal
+        status = {
+            "status": "error",
+            "last_attempt_at": attempted_at,
+            "last_success_at": previous.get("last_success_at"),
+            "error_type": type(error).__name__,
+        }
+        _write_status(args.status, status)
+        _append_log(args.log, status)
+        print("Portal timeline sync failed; see the local status file.", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

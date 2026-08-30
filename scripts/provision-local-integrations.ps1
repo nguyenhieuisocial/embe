@@ -10,6 +10,9 @@ Set-StrictMode -Version Latest
 $secretPath = Join-Path $ProjectRoot "secrets\portal-data.env"
 $secretDirectory = Split-Path -Parent $secretPath
 New-Item -ItemType Directory -Path $secretDirectory -Force | Out-Null
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+& icacls.exe $secretDirectory /inheritance:r /grant:r "${identity}:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "Unable to restrict the integration secret directory" }
 
 function New-RandomSecret([int]$Length = 40) {
     $alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#%+-_"
@@ -38,6 +41,7 @@ function Save-EnvFile([hashtable]$Values, [string]$Path) {
         "MEMOS_SYNC_PAT",
         "MEMOS_PORTAL_PAT",
         "MEMOS_VAULT_EXPORT_PAT",
+        "MEMOS_PAT_ROTATE_AFTER",
         "SUPABASE_PROJECT_REF",
         "SUPABASE_URL",
         "SUPABASE_SECRET_KEY"
@@ -46,11 +50,16 @@ function Save-EnvFile([hashtable]$Values, [string]$Path) {
         if ($Values.ContainsKey($key)) { "$key=$($Values[$key])" }
     }
     $temporary = "$Path.tmp"
-    [IO.File]::WriteAllLines($temporary, $lines, [Text.UTF8Encoding]::new($false))
-    Move-Item -LiteralPath $temporary -Destination $Path -Force
-    $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    & icacls.exe $Path /inheritance:r /grant:r "${identity}:(F)" "SYSTEM:(F)" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Unable to restrict integration secret ACL" }
+    try {
+        [IO.File]::WriteAllLines($temporary, $lines, [Text.UTF8Encoding]::new($false))
+        Move-Item -LiteralPath $temporary -Destination $Path -Force
+        & icacls.exe $Path /inheritance:r /grant:r "${identity}:(F)" "SYSTEM:(F)" | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "Unable to restrict integration secret ACL" }
+    } finally {
+        if (Test-Path -LiteralPath $temporary -PathType Leaf) {
+            Remove-Item -LiteralPath $temporary -Force
+        }
+    }
 }
 
 function Invoke-MemosJson([string]$Method, [string]$Path, [object]$Body, [string]$Token = "") {
@@ -110,8 +119,17 @@ try {
         MEMOS_PORTAL_PAT = "Portal read model"
         MEMOS_VAULT_EXPORT_PAT = "Obsidian vault export"
     }
+    $rotationDateMissing = -not $values.ContainsKey("MEMOS_PAT_ROTATE_AFTER")
+    $rotateTokens = $false
+    if (-not $rotationDateMissing) {
+        try {
+            $rotateTokens = [DateTimeOffset]::Parse($values.MEMOS_PAT_ROTATE_AFTER) -le [DateTimeOffset]::UtcNow
+        } catch {
+            $rotateTokens = $true
+        }
+    }
     foreach ($entry in $tokenDefinitions.GetEnumerator()) {
-        if (-not $values.ContainsKey($entry.Key) -or [string]::IsNullOrWhiteSpace($values[$entry.Key])) {
+        if ($rotateTokens -or -not $values.ContainsKey($entry.Key) -or [string]::IsNullOrWhiteSpace($values[$entry.Key])) {
             $response = Invoke-MemosJson "POST" "/api/v1/$userName/personalAccessTokens" @{
                 parent = $userName
                 description = $entry.Value
@@ -122,6 +140,9 @@ try {
             }
             $values[$entry.Key] = [string]$response.token
         }
+    }
+    if ($rotateTokens -or $rotationDateMissing) {
+        $values.MEMOS_PAT_ROTATE_AFTER = [DateTimeOffset]::UtcNow.AddDays(330).ToString("o")
     }
 
     if (
@@ -149,6 +170,7 @@ try {
         tokens = $tokenDefinitions.Keys.Count
         supabase_project = $SupabaseProjectRef
         secret_file_acl_restricted = $true
+        pat_rotation_due = $values.MEMOS_PAT_ROTATE_AFTER
     } | ConvertTo-Json -Compress
 } catch {
     Save-EnvFile $values $secretPath
