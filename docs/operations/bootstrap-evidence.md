@@ -10,9 +10,9 @@
 | Storage PoC | Upload, download, Range, checksum, delete đạt; production tắt |
 | Client-side encryption | AES-256-GCM theo chunk trước khi ghi R2 |
 | DB snapshot | BabyBuddy, Memos, Grocy, Immich đạt |
-| Restic R2 backup | 2 snapshot đã tạo, mỗi snapshot 18 file, tag `embe-critical-r2` |
+| Restic R2 backup | Vòng backup mới nhất đạt, gồm 4 snapshot ứng dụng và 41 file, tag `embe-critical-r2` |
 | Repository integrity | `restic check --read-data` không lỗi |
-| Restore drill | 18/18 file đúng checksum; bản phục hồi tạm đã chuyển Recycle Bin |
+| Restore drill | 41/41 file đúng checksum; bản phục hồi tạm đã chuyển Recycle Bin |
 | Immich | Các container đang healthy; media không nằm trong R2 backup nhỏ |
 | Lịch sao lưu | Script và kiểm thử đã sẵn sàng; tác vụ nền chưa đạt gate vì Windows chưa cấp quyền cài service account |
 | Grocy | Khóa tích hợp riêng đã kiểm tra; 10 danh mục nền tảng đã có, không tạo tồn kho giả |
