@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { verifySessionCookie } from "./lib/portal-auth";
 
-const PUBLIC_PATHS = new Set(["/login", "/api/auth/login"]);
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/api/auth/login",
+  "/manifest.webmanifest",
+  "/icon.svg",
+  "/robots.txt"
+]);
 const PRIVATE_NO_STORE = "private, no-store";
 
 function privateResponse(response: NextResponse): NextResponse {

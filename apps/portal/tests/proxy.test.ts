@@ -46,6 +46,16 @@ describe("portal access gate", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it.each(["/manifest.webmanifest", "/icon.svg", "/robots.txt"])(
+    "keeps install and privacy metadata public: %s",
+    (path) => {
+      const response = proxy(new NextRequest(`https://embe.hieu.asia${path}`));
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("x-middleware-next")).toBe("1");
+    }
+  );
+
   it("fails closed when the session secret is unavailable", () => {
     delete process.env.EMBE_PORTAL_SESSION_SECRET;
 
