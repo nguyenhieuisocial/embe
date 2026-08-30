@@ -1,0 +1,21 @@
+name: Public availability
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: embe-public-availability
+  cancel-in-progress: true
+
+jobs:
+  portal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: node scripts/health/portal-public-smoke.mjs
