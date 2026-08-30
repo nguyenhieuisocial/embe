@@ -235,3 +235,33 @@ class BabyBuddyApiClient:
         if next_url is not None:
             next_url = validate_same_origin_url(self._base_url, str(next_url), endpoint)
         return {"items": payload["results"], "next": next_url}
+
+    def discover_ids(self) -> list[int]:
+        endpoint = "/api/children/"
+        url = f"{self._base_url}{endpoint}?{urlencode({'limit': 500})}"
+        identifiers = set()
+        visited = set()
+        for _ in range(100):
+            payload = self._request_json(url, self._headers)
+            if isinstance(payload, list):
+                items, next_url = payload, None
+            elif isinstance(payload, dict) and isinstance(payload.get("results"), list):
+                items, next_url = payload["results"], payload.get("next")
+            else:
+                raise ValueError("BabyBuddy children response is malformed")
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    identifier = int(item.get("id"))
+                except (TypeError, ValueError):
+                    continue
+                if identifier > 0:
+                    identifiers.add(identifier)
+            if next_url is None:
+                return sorted(identifiers)
+            url = validate_same_origin_url(self._base_url, str(next_url), endpoint)
+            if url in visited:
+                raise ValueError("BabyBuddy children pagination cursor repeated")
+            visited.add(url)
+        raise ValueError("BabyBuddy children pagination exceeded the limit")

@@ -231,6 +231,26 @@ class AnalyticsSourceIngestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "private"):
             BabyBuddyApiClient("https://baby.example.com", "token")
 
+    def test_api_discovery_returns_ids_without_names(self):
+        baby = BabyBuddyApiClient(
+            "http://127.0.0.1:8000",
+            "token",
+            request_json=lambda _url, _headers: {
+                "results": [{"id": 7, "name": "Private Child Name"}, {"id": 8, "name": "Another Name"}],
+                "next": None,
+            },
+        )
+        grocy = GrocyApiClient(
+            "http://127.0.0.1:9283",
+            "key",
+            request_json=lambda _url, _headers: [
+                {"id": 12, "name": "Private Product Name"},
+                {"id": 14, "name": "Another Product"},
+            ],
+        )
+        self.assertEqual(baby.discover_ids(), [7, 8])
+        self.assertEqual(grocy.discover_ids(), [12, 14])
+
     def test_grocy_client_pages_a_list_without_exposing_key(self):
         calls = []
 

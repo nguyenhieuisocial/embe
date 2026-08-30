@@ -28,8 +28,38 @@ mock hoàn toàn, không gọi API và không dùng dữ liệu gia đình. Trư
 cần tạo token chỉ đọc riêng, cấu hình allowlist/alias local và chạy thử vào một
 SQLite tạm; tuyệt đối không đưa token vào Git.
 
+## Bật runtime cục bộ an toàn
+
+1. Chạy provision để tái sử dụng khóa tích hợp BabyBuddy hiện có nhưng chỉ thực
+   hiện lời gọi đọc. Provision gọi endpoint children trực tiếp trong bộ nhớ, terminal chỉ in số lượng và không
+   tạo log chứa tên, ID, token hoặc payload. Nó chỉ bật BabyBuddy và đặt alias
+   `child-primary` khi tìm thấy đúng một child; với 0 hoặc nhiều child, nguồn vẫn
+   tắt để chờ lựa chọn thủ công. Grocy vẫn tắt khi chưa có API key/allowlist.
+
+```powershell
+python services/analytics-ingest/provision.py `
+  --source-env secrets/runtime/babybuddy-memos-sync.env `
+  --config services/analytics-ingest/config.local.json `
+  --secrets services/analytics-ingest/secrets.local.env
+```
+
+2. Nếu provision báo `needs_child_selection`, đối chiếu ID trực tiếp trong ứng
+   dụng nguồn và điền alias không định danh vào file local; không dán ID/tên vào
+   issue hoặc log. Nếu báo `ready`, có thể chạy ingest một lần rồi cài lịch.
+3. Cài lịch chạy 15 phút/lần bằng tài khoản Windows hiện tại, quyền `Limited`:
+
+```powershell
+pwsh -NoProfile -File services/analytics-ingest/install-scheduled.ps1
+```
+
+Nếu thiếu `config.local.json`, runner ghi trạng thái `skipped` và không tạo API
+client. Installer cũng không chạy lần đầu khi thiếu config hoặc file credential.
+Scheduled Task chỉ giữ đường dẫn file, không chứa token/API key; quyền đọc file
+credential được giới hạn lại khi cài lịch.
+
 Kiểm thử:
 
 ```powershell
 python -m unittest discover -s tests -v
+pwsh -NoProfile -File tests/runtime-scheduler.tests.ps1
 ```

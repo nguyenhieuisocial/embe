@@ -112,3 +112,19 @@ class GrocyApiClient:
         if next_cursor is None:
             self._snapshot = None
         return {"items": items, "next": next_cursor}
+
+    def discover_ids(self) -> list[int]:
+        payload = self._request_json(f"{self._base_url}/api/objects/products", self._headers)
+        if not isinstance(payload, list):
+            raise ValueError("Grocy products response is malformed")
+        identifiers = set()
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            try:
+                identifier = int(item.get("id"))
+            except (TypeError, ValueError):
+                continue
+            if identifier > 0:
+                identifiers.add(identifier)
+        return sorted(identifiers)

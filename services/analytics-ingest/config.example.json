@@ -1,0 +1,27 @@
+{
+  "database_path": "../../data/analytics/family.sqlite3",
+  "babybuddy": {
+    "enabled": false,
+    "base_url": "http://127.0.0.1:8000",
+    "token_env": "BABYBUDDY_ANALYTICS_TOKEN",
+    "children": {
+      "REPLACE_WITH_DISCOVERED_ID": "child-primary"
+    },
+    "source_units": {
+      "feeding": "mL",
+      "weight": "kg",
+      "height": "cm"
+    }
+  },
+  "grocy": {
+    "enabled": false,
+    "base_url": "http://127.0.0.1:9283",
+    "api_key_env": "GROCY_ANALYTICS_KEY",
+    "products": {
+      "REPLACE_WITH_DISCOVERED_ID": {
+        "alias": "diaper-newborn",
+        "unit": "piece"
+      }
+    }
+  }
+}

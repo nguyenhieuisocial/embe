@@ -5,6 +5,8 @@
 !.env.example
 !*.example
 !*.example.env
+services/analytics-ingest/config.local.json
+services/analytics-ingest/discovery.local.json
 secrets/*
 !secrets/README.md
 !secrets/*.enc.*
