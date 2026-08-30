@@ -1,7 +1,9 @@
 param(
     [string]$ProjectRoot = "C:\EmBe",
     [string]$MemosBaseUrl = "http://127.0.0.1:5230",
-    [string]$SupabaseProjectRef = "tpqqzowhndbkmkckpbgv"
+    [string]$SupabaseProjectRef = "tpqqzowhndbkmkckpbgv",
+    [switch]$RotateOnly,
+    [switch]$ForceRotate
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,10 +11,19 @@ Set-StrictMode -Version Latest
 
 $secretPath = Join-Path $ProjectRoot "secrets\portal-data.env"
 $secretDirectory = Split-Path -Parent $secretPath
-New-Item -ItemType Directory -Path $secretDirectory -Force | Out-Null
+$runtimeSecretDirectory = Join-Path $secretDirectory "runtime"
+$syncSecretPath = Join-Path $runtimeSecretDirectory "portal-sync.env"
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-& icacls.exe $secretDirectory /inheritance:r /grant:r "${identity}:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Unable to restrict the integration secret directory" }
+if ($RotateOnly) {
+    foreach ($requiredPath in @($secretPath, $runtimeSecretDirectory, $syncSecretPath)) {
+        if (-not (Test-Path -LiteralPath $requiredPath)) { throw "Rotation dependency is missing: $requiredPath" }
+    }
+} else {
+    New-Item -ItemType Directory -Path $secretDirectory -Force | Out-Null
+    & icacls.exe $secretDirectory /inheritance:r /grant:r "${identity}:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Unable to restrict the integration secret directory" }
+    New-Item -ItemType Directory -Path $runtimeSecretDirectory -Force | Out-Null
+}
 
 function New-RandomSecret([int]$Length = 40) {
     $alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#%+-_"
@@ -53,8 +64,26 @@ function Save-EnvFile([hashtable]$Values, [string]$Path) {
     try {
         [IO.File]::WriteAllLines($temporary, $lines, [Text.UTF8Encoding]::new($false))
         Move-Item -LiteralPath $temporary -Destination $Path -Force
-        & icacls.exe $Path /inheritance:r /grant:r "${identity}:(F)" "SYSTEM:(F)" | Out-Null
+        & icacls.exe $Path /inheritance:r /grant:r "${identity}:(F)" "SYSTEM:(F)" "BUILTIN\Administrators:(F)" | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "Unable to restrict integration secret ACL" }
+    } finally {
+        if (Test-Path -LiteralPath $temporary -PathType Leaf) {
+            Remove-Item -LiteralPath $temporary -Force
+        }
+    }
+}
+
+function Save-SyncEnvFile([hashtable]$Values, [string]$Path) {
+    $lines = foreach ($key in @("MEMOS_BASE_URL", "MEMOS_PORTAL_PAT", "SUPABASE_URL", "SUPABASE_SECRET_KEY")) {
+        if (-not $Values.ContainsKey($key) -or [string]::IsNullOrWhiteSpace([string]$Values[$key])) {
+            throw "Sync runtime setting is missing: $key"
+        }
+        "$key=$($Values[$key])"
+    }
+    $temporary = "$Path.tmp"
+    try {
+        [IO.File]::WriteAllLines($temporary, $lines, [Text.UTF8Encoding]::new($false))
+        Move-Item -LiteralPath $temporary -Destination $Path -Force
     } finally {
         if (Test-Path -LiteralPath $temporary -PathType Leaf) {
             Remove-Item -LiteralPath $temporary -Force
@@ -120,13 +149,21 @@ try {
         MEMOS_VAULT_EXPORT_PAT = "Obsidian vault export"
     }
     $rotationDateMissing = -not $values.ContainsKey("MEMOS_PAT_ROTATE_AFTER")
-    $rotateTokens = $false
-    if (-not $rotationDateMissing) {
+    $rotateTokens = [bool]$ForceRotate
+    if (-not $rotationDateMissing -and -not $ForceRotate) {
         try {
             $rotateTokens = [DateTimeOffset]::Parse($values.MEMOS_PAT_ROTATE_AFTER) -le [DateTimeOffset]::UtcNow
         } catch {
             $rotateTokens = $true
         }
+    }
+    $oldTokenNames = @()
+    if ($rotateTokens) {
+        $listedTokens = Invoke-MemosJson "GET" "/api/v1/$userName/personalAccessTokens" $null $accessToken
+        $descriptions = @($tokenDefinitions.Values)
+        $oldTokenNames = @($listedTokens.personalAccessTokens | Where-Object {
+            $descriptions -contains [string]$_.description
+        } | ForEach-Object { [string]$_.name })
     }
     foreach ($entry in $tokenDefinitions.GetEnumerator()) {
         if ($rotateTokens -or -not $values.ContainsKey($entry.Key) -or [string]::IsNullOrWhiteSpace($values[$entry.Key])) {
@@ -140,6 +177,9 @@ try {
             }
             $values[$entry.Key] = [string]$response.token
         }
+    }
+    foreach ($entry in $tokenDefinitions.GetEnumerator()) {
+        Invoke-MemosJson "GET" "/api/v1/memos?pageSize=1" $null ([string]$values[$entry.Key]) | Out-Null
     }
     if ($rotateTokens -or $rotationDateMissing) {
         $values.MEMOS_PAT_ROTATE_AFTER = [DateTimeOffset]::UtcNow.AddDays(330).ToString("o")
@@ -164,6 +204,10 @@ try {
 
     $values.PROVISIONING_STATUS = "ready"
     Save-EnvFile $values $secretPath
+    Save-SyncEnvFile $values $syncSecretPath
+    foreach ($tokenName in $oldTokenNames) {
+        Invoke-MemosJson "DELETE" "/api/v1/$tokenName" $null $accessToken | Out-Null
+    }
     [ordered]@{
         status = "ready"
         memos_user = $userName

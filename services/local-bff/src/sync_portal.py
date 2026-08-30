@@ -238,7 +238,7 @@ def _append_log(path: Path, payload: dict[str, Any]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync approved Memos to the EmBe family portal.")
-    parser.add_argument("--env", type=Path, default=Path(r"C:\EmBe\secrets\portal-data.env"))
+    parser.add_argument("--env", type=Path, default=Path(r"C:\EmBe\secrets\runtime\portal-sync.env"))
     parser.add_argument("--vault", type=Path, default=Path(r"C:\EmBe\vault"))
     parser.add_argument("--status", type=Path, default=Path(r"C:\EmBe\data\status\portal-sync.json"))
     parser.add_argument("--log", type=Path, default=Path(r"C:\EmBe\data\logs\portal-sync.jsonl"))
