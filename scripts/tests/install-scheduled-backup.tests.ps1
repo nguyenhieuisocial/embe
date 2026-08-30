@@ -19,12 +19,17 @@ foreach ($required in @(
     'Principal.RunLevel -ne "Limited"',
     'Actions.Arguments -notmatch [regex]::Escape("-NonInteractive")',
     'LastTaskResult -notin @(0, 1, 2)',
-    'LastTaskResult -ne 0'
+    'LastTaskResult -ne 0',
+    'backup-service-install.json',
+    'install_step',
+    'error_type'
 )) {
     if (-not $source.Contains($required)) { throw "Scheduled backup installer is missing: $required" }
 }
 if ($source.Contains('-LogonType Interactive')) { throw "Interactive-only scheduled backup is not allowed" }
 if ($source.Contains('New-ScheduledTaskPrincipal')) { throw "Installer must not mix Principal and Password parameter sets" }
+if ($source.Contains('RandomNumberGenerator]::Fill')) { throw "Installer must support Windows PowerShell 5.1 cryptography APIs" }
+if (-not $source.Contains('RandomNumberGenerator]::Create')) { throw "Installer must use a cryptographic random generator" }
 if ($source.Contains('Write-Output $generatedPassword') -or $source.Contains('Write-Host $generatedPassword')) {
     throw "Generated service-account password must never be printed"
 }

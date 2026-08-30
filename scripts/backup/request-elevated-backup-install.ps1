@@ -13,8 +13,7 @@ $arguments = @(
 Write-Host "Windows sap hien hop thoai xac nhan. Hay bam Yes mot lan." -ForegroundColor Yellow
 $process = Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments -Wait -PassThru
 if ($process.ExitCode -ne 0) {
-    Write-Host "Chua hoan tat. Hay giu cua so nay va bao cho Codex." -ForegroundColor Red
-    Read-Host "Nhan Enter de dong"
+    Write-Host "Chua hoan tat. Ma loi: $($process.ExitCode). Codex se tu kiem tra bao cao." -ForegroundColor Red
     exit $process.ExitCode
 }
 

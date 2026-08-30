@@ -8,6 +8,31 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$installStatusPath = Join-Path $ProjectRoot "data\status\backup-service-install.json"
+$installStep = "administrator_check"
+
+function Write-InstallStatus([string]$Status, [string]$ErrorType = "", [string]$ErrorMessage = "") {
+    $directory = Split-Path $installStatusPath -Parent
+    New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    $payload = [ordered]@{
+        schema_version = 1
+        generated_at = [DateTimeOffset]::UtcNow.ToString("o")
+        status = $Status
+        install_step = $installStep
+        error_type = $ErrorType
+        error_message = $ErrorMessage
+    }
+    $temporary = "$installStatusPath.tmp"
+    [IO.File]::WriteAllText($temporary, ($payload | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $temporary -Destination $installStatusPath -Force
+}
+
+trap {
+    Write-InstallStatus -Status "failed" -ErrorType $_.Exception.GetType().Name -ErrorMessage $_.Exception.Message
+    Write-Error $_
+    exit 1
+}
+
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principalCheck = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principalCheck.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -21,11 +46,40 @@ if (-not (Test-Path -LiteralPath $runner -PathType Leaf)) { throw "Backup runner
 if (-not (Test-Path -LiteralPath $integrityRunner -PathType Leaf)) { throw "Integrity runner is missing: $integrityRunner" }
 if (-not (Test-Path -LiteralPath $healthRunner -PathType Leaf)) { throw "Health runner is missing: $healthRunner" }
 
-$alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#%+-_"
-$randomBytes = New-Object byte[] 40
-[Security.Cryptography.RandomNumberGenerator]::Fill($randomBytes)
-$generatedPassword = -join ($randomBytes | ForEach-Object { $alphabet[$_ % $alphabet.Length] })
+$lowercase = "abcdefghijkmnopqrstuvwxyz"
+$uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+$digits = "23456789"
+$symbols = "!@#%+-_"
+$alphabet = "$lowercase$uppercase$digits$symbols"
+$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+function Get-CryptoIndex([int]$Maximum) {
+    if ($Maximum -lt 1 -or $Maximum -gt 256) { throw "Invalid cryptographic index range" }
+    $limit = 256 - (256 % $Maximum)
+    $buffer = New-Object byte[] 1
+    do { $rng.GetBytes($buffer) } while ([int]$buffer[0] -ge $limit)
+    return [int]$buffer[0] % $Maximum
+}
+
+$passwordCharacters = New-Object 'System.Collections.Generic.List[char]'
+try {
+    foreach ($characterSet in @($lowercase, $uppercase, $digits, $symbols)) {
+        $passwordCharacters.Add($characterSet[(Get-CryptoIndex $characterSet.Length)])
+    }
+    while ($passwordCharacters.Count -lt 40) {
+        $passwordCharacters.Add($alphabet[(Get-CryptoIndex $alphabet.Length)])
+    }
+    for ($index = $passwordCharacters.Count - 1; $index -gt 0; $index--) {
+        $swapIndex = Get-CryptoIndex ($index + 1)
+        $temporaryCharacter = $passwordCharacters[$index]
+        $passwordCharacters[$index] = $passwordCharacters[$swapIndex]
+        $passwordCharacters[$swapIndex] = $temporaryCharacter
+    }
+    $generatedPassword = -join $passwordCharacters
+} finally {
+    $rng.Dispose()
+}
 $securePassword = ConvertTo-SecureString $generatedPassword -AsPlainText -Force
+$installStep = "service_account"
 $existingAccount = Get-LocalUser -Name $ServiceAccountName -ErrorAction SilentlyContinue
 if ($null -eq $existingAccount) {
     New-LocalUser -Name $ServiceAccountName -Password $securePassword -PasswordNeverExpires -UserMayNotChangePassword -Description "Runs encrypted EmBe backups only" | Out-Null
@@ -33,6 +87,7 @@ if ($null -eq $existingAccount) {
     Set-LocalUser -Name $ServiceAccountName -Password $securePassword -PasswordNeverExpires $true -UserMayChangePassword $false
     Enable-LocalUser -Name $ServiceAccountName
 }
+$installStep = "docker_group"
 if (-not (Get-LocalGroupMember -Group "docker-users" -Member $ServiceAccountName -ErrorAction SilentlyContinue)) {
     Add-LocalGroupMember -Group "docker-users" -Member $ServiceAccountName
 }
@@ -47,6 +102,7 @@ $readPaths = @(
     (Join-Path $ProjectRoot ".venv"),
     (Join-Path $ProjectRoot "secrets\restic-r2-password.txt")
 )
+$installStep = "filesystem_permissions"
 foreach ($path in $readPaths) {
     if (-not (Test-Path -LiteralPath $path)) { throw "Required backup path is missing: $path" }
     $aclGrant = if (Test-Path -LiteralPath $path -PathType Container) { "${serviceIdentity}:(OI)(CI)RX" } else { "${serviceIdentity}:R" }
@@ -64,6 +120,7 @@ New-Item -ItemType Directory -Path $statusPath -Force | Out-Null
 & icacls.exe $statusPath /grant:r "${serviceIdentity}:(OI)(CI)M" /T /C | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Unable to grant health status access" }
 
+$installStep = "scheduled_tasks"
 function Assert-InstalledTask {
     param(
         [Parameter(Mandatory)] [string]$Name,
@@ -109,6 +166,7 @@ $generatedPassword = $null
 $securePassword.Dispose()
 
 if ($VerifyNow) {
+    $installStep = "live_verification"
     Start-ScheduledTask -TaskName $TaskName
     $deadline = (Get-Date).AddMinutes(10)
     do {
@@ -144,6 +202,8 @@ $integrityTask = Get-ScheduledTask -TaskName $IntegrityTaskName
 $integrityInfo = Get-ScheduledTaskInfo -TaskName $IntegrityTaskName
 $healthTask = Get-ScheduledTask -TaskName $HealthTaskName
 $healthInfo = Get-ScheduledTaskInfo -TaskName $HealthTaskName
+$installStep = "complete"
+Write-InstallStatus -Status "ready"
 [ordered]@{
     task = $task.TaskName
     state = [string]$task.State
