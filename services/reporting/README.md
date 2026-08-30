@@ -15,6 +15,15 @@ JSON đầu vào và PDF đầu ra phải nằm trong `C:\EmBe`. Bản mẫu ch�
 minh họa bố cục, không chứa dữ liệu sức khỏe giả. Pipeline production nhận dữ
 liệu curated từ exporter, không đọc trực tiếp database nguồn hoặc ảnh RAW.
 
+Job production chạy ngày 1 hằng tháng lúc 06:15, lấy tháng trước theo múi giờ
+Việt Nam. Chỉ Memos `PRIVATE` đã gắn `#portal` và không có tag nhạy cảm mới
+được đưa vào snapshot; mỗi nguồn có ID và SHA-256 để tái tạo. PDF, manifest và
+QA được lưu local, luôn ở trạng thái `DRAFT` cho đến khi bố mẹ duyệt.
+
+```powershell
+pwsh -NoProfile -File scripts\install-monthly-report-current-user.ps1
+```
+
 Chạy preflight và tạo báo cáo QA không chứa nội dung gia đình:
 
 ```powershell

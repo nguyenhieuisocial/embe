@@ -39,6 +39,13 @@ $resolvedTemplate = Resolve-ProjectFile -Path $templatePath -Label "Template" -M
 if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
     $ManifestPath = Join-Path (Split-Path -Parent $resolvedOutput) (([IO.Path]::GetFileNameWithoutExtension($resolvedOutput)) + ".manifest.json")
 }
+
+function Get-ProjectRelativePath([string]$BasePath, [string]$TargetPath) {
+    $base = [IO.Path]::GetFullPath($BasePath).TrimEnd('\') + '\'
+    $baseUri = [Uri]$base
+    $targetUri = [Uri][IO.Path]::GetFullPath($TargetPath)
+    return [Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString())
+}
 $resolvedManifest = Resolve-ProjectFile -Path $ManifestPath -Label "ManifestPath"
 
 if (-not (Test-Path -LiteralPath $TypstPath -PathType Leaf)) {
@@ -60,7 +67,7 @@ if (-not (Test-Path -LiteralPath $outputDirectory)) {
     New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 }
 
-$relativeData = [IO.Path]::GetRelativePath((Split-Path -Parent $resolvedTemplate), $resolvedData).Replace('\', '/')
+$relativeData = Get-ProjectRelativePath (Split-Path -Parent $resolvedTemplate) $resolvedData
 $arguments = @(
     "compile",
     "--root", $projectRoot,
@@ -87,9 +94,9 @@ $manifest = [ordered]@{
     month = [string]$data.month
     family = [string]$data.family
     section_count = @($data.sections).Count
-    source = [IO.Path]::GetRelativePath($projectRoot, $resolvedData).Replace('\', '/')
+    source = Get-ProjectRelativePath $projectRoot $resolvedData
     source_sha256 = $sourceHash
-    output = [IO.Path]::GetRelativePath($projectRoot, $resolvedOutput).Replace('\', '/')
+    output = Get-ProjectRelativePath $projectRoot $resolvedOutput
     output_sha256 = $outputHash
     renderer = "typst"
 }
@@ -99,7 +106,7 @@ if (-not (Test-Path -LiteralPath $manifestDirectory)) {
 }
 $manifestTemporary = "$resolvedManifest.tmp"
 try {
-    $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifestTemporary -Encoding utf8NoBOM
+    [IO.File]::WriteAllText($manifestTemporary, ($manifest | ConvertTo-Json -Depth 5), [Text.UTF8Encoding]::new($false))
     Move-Item -LiteralPath $manifestTemporary -Destination $resolvedManifest -Force
 } finally {
     if (Test-Path -LiteralPath $manifestTemporary -PathType Leaf) {
