@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { resolve } from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 
 import { isMainModule, validatePortalResponse } from "../portal-public-smoke.mjs";
 
@@ -37,7 +39,12 @@ test("fails closed for non-successful HTTP status", () => {
   );
 });
 
-test("recognizes a Windows entrypoint path", () => {
+test("recognizes the current platform entrypoint path", () => {
+  const entrypoint = resolve("scripts/health/portal-public-smoke.mjs");
+  assert.equal(isMainModule(pathToFileURL(entrypoint).href, entrypoint), true);
+});
+
+test("recognizes a Windows entrypoint path", { skip: process.platform !== "win32" }, () => {
   assert.equal(
     isMainModule("file:///C:/EmBe/scripts/health/portal-public-smoke.mjs", "C:\\EmBe\\scripts\\health\\portal-public-smoke.mjs"),
     true,
