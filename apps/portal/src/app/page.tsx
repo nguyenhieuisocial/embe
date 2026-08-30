@@ -1,4 +1,4 @@
-import { getTimeline } from "../lib/timeline";
+import { getTimeline, getTimelineFreshness } from "../lib/timeline";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ function vietnameseDate(value: string): string {
 }
 
 export default async function Home() {
-  const liveTimeline = await getTimeline();
+  const [liveTimeline, timelineFreshness] = await Promise.all([getTimeline(), getTimelineFreshness()]);
   const timeline = liveTimeline.length > 0 ? liveTimeline : emptyTimeline;
   return (
     <main>
@@ -89,6 +89,9 @@ export default async function Home() {
               </div>
             ))}
           </div>
+          {timelineFreshness !== "fresh" ? (
+            <p className="privacy-note" role="status">Nhật ký đang tạm cập nhật. Những nội dung cũ vẫn an toàn.</p>
+          ) : null}
         </article>
 
         <article className="panel gallery-panel">

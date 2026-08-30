@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getTimeline } from "../src/lib/timeline";
+import { getTimeline, getTimelineFreshness } from "../src/lib/timeline";
 
 const originalEnvironment = { ...process.env };
 
@@ -52,5 +52,20 @@ describe("curated family timeline", () => {
     process.env.SUPABASE_SECRET_KEY = "server-only-secret";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("bad", { status: 502 })));
     expect(await getTimeline()).toEqual([]);
+  });
+
+  it("reports whether the local publication is fresh without exposing credentials", async () => {
+    process.env.SUPABASE_URL = "https://project.supabase.co";
+    process.env.SUPABASE_SECRET_KEY = "server-only-secret";
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify([{ last_success_at: "2026-08-30T10:00:00Z" }]), { status: 200 })
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await getTimelineFreshness(new Date("2026-08-30T10:10:00Z"))).toBe("fresh");
+    expect(await getTimelineFreshness(new Date("2026-08-30T10:20:00Z"))).toBe("stale");
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBeUndefined();
   });
 });
