@@ -4,7 +4,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(11);
+SELECT plan(13);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -89,6 +89,14 @@ SELECT ok(
 SELECT ok(
   has_function_privilege('service_role', 'public.embe_submit_journal(uuid,text,text)', 'EXECUTE'),
   'Only the server role can call the journal submit function'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_journal_queue_status()', 'EXECUTE'),
+  'Anonymous clients cannot read journal queue health'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_journal_queue_status()', 'EXECUTE'),
+  'The server role can read PII-free journal queue health'
 );
 
 SELECT finish();

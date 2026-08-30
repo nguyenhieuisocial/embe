@@ -229,6 +229,15 @@ class SupabaseJournalInbox:
     def fail(self, entry_id: str, error_code: str) -> None:
         self._rpc("embe_fail_journal_entry", {"p_id": entry_id, "p_error_code": error_code})
 
+    def status(self) -> dict[str, int]:
+        result = self._rpc("embe_journal_queue_status", {})
+        value = result if isinstance(result, dict) else {}
+        return {
+            "pending": int(value.get("pending", 0)),
+            "processing": int(value.get("processing", 0)),
+            "dead_letters": int(value.get("dead_letters", 0)),
+        }
+
 
 def import_journal_inbox(
     inbox: SupabaseJournalInbox,
@@ -300,11 +309,13 @@ def run_sync(env_path: Path, vault_root: Path, child_id: str = "embe-family") ->
         raise RuntimeError(f"Missing integration settings: {', '.join(missing)}")
     memos_client = MemosClient(env["MEMOS_BASE_URL"], env["MEMOS_PORTAL_PAT"])
     existing_human_memos = memos_client.list_memos()
+    inbox = SupabaseJournalInbox(env["SUPABASE_URL"], env["SUPABASE_SECRET_KEY"])
     inbox_result = import_journal_inbox(
-        SupabaseJournalInbox(env["SUPABASE_URL"], env["SUPABASE_SECRET_KEY"]),
+        inbox,
         memos_client,
         existing_human_memos,
     )
+    inbox_result.update(inbox.status())
     memos = list_portal_memos(env)
     events = [event for memo in memos if (event := sanitize_memo(memo, child_id)) is not None]
     read_model = SupabaseReadModel(env["SUPABASE_URL"], env["SUPABASE_SECRET_KEY"])

@@ -137,6 +137,15 @@ class TestPortalSyncPolicy(unittest.TestCase):
         self.assertIn("embe_complete_journal_entry", request.call_args_list[1].args[0])
         self.assertIn("embe_fail_journal_entry", request.call_args_list[2].args[0])
 
+    @patch("sync_portal._json_request")
+    def test_journal_inbox_exposes_only_safe_operational_counts(self, request) -> None:
+        request.return_value = {"pending": 2, "processing": 1, "dead_letters": 0}
+
+        result = SupabaseJournalInbox("https://project.supabase.co", "secret").status()
+
+        self.assertEqual(result, {"pending": 2, "processing": 1, "dead_letters": 0})
+        self.assertIn("embe_journal_queue_status", request.call_args.args[0])
+
     @patch.object(MemosClient, "create_private_memo")
     def test_inbox_entry_becomes_one_private_portal_memo(self, create_memo) -> None:
         entry = {

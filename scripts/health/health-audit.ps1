@@ -249,7 +249,12 @@ $integrityAge = if ($integrityChecked) { Get-AgeHours $integrityChecked } else {
 $integrityPass = $integrityStatus -eq "pass" -and $integrityAge -le (8 * 24)
 Add-Check "restic_integrity" $(if ($integrityPass) { "pass" } else { "critical" }) "Kiểm tra toàn vẹn repository gần nhất" @{ age_days = if ([double]::IsInfinity($integrityAge)) { $null } else { [math]::Round($integrityAge / 24, 2) }; maximum_days = 8 }
 
-Add-Check "sync_deadletters" $(if ($deadletters -eq 0) { "pass" } else { "critical" }) "Sự kiện đồng bộ cần xử lý" @{ count = $deadletters }
+$journalDeadletters = 0
+if ($portalStatus -and $portalStatus.PSObject.Properties["journal_inbox"] -and $portalStatus.journal_inbox.PSObject.Properties["dead_letters"]) {
+    $journalDeadletters = [int]$portalStatus.journal_inbox.dead_letters
+}
+$allDeadletters = $deadletters + $journalDeadletters
+Add-Check "sync_deadletters" $(if ($allDeadletters -eq 0) { "pass" } else { "critical" }) "Sự kiện đồng bộ cần xử lý" @{ count = $allDeadletters }
 Add-Check "service_accounts" $(if ($serviceInstallReady) { "pass" } else { "critical" }) "Các tác vụ nền đã được cài và kiểm chứng" @{}
 
 $portalPublicPass = [bool]$portalPublic.reachable -and [int]$portalPublic.status_code -ge 200 -and [int]$portalPublic.status_code -lt 400

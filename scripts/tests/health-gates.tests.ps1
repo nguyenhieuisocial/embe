@@ -27,7 +27,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         now_utc = $now.ToString("o")
         disk_free_percent = $DiskPercent
         containers = $containers
-        portal_sync = @{ status = "ok"; last_success_at = $now.AddMinutes(-5).ToString("o") }
+        portal_sync = @{ status = "ok"; last_success_at = $now.AddMinutes(-5).ToString("o"); journal_inbox = @{ dead_letters = 0 } }
         babybuddy_sync = @{ healthy = $true; time = $now.AddMinutes(-2).ToString("o") }
         backup_created_utc = $now.AddHours(-$BackupAgeHours).ToString("o")
         restore = @{ status = "pass"; verified_at = $now.AddDays(-1).ToString("o") }
@@ -86,6 +86,15 @@ try {
     if ($critical.status -ne "critical") { throw "Critical report is invalid" }
     if (@($critical.checks | Where-Object id -eq "disk_headroom")[0].status -ne "critical") { throw "Disk gate did not block" }
     if (@($critical.checks | Where-Object id -eq "backup_freshness")[0].status -ne "critical") { throw "Backup gate did not block" }
+
+    $journalFixture = Join-Path $testRoot "journal-deadletter.json"
+    Write-Fixture $journalFixture 40 2
+    $journalBlocked = Get-Content $journalFixture -Raw | ConvertFrom-Json
+    $journalBlocked.portal_sync.journal_inbox.dead_letters = 1
+    $journalBlocked | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $journalFixture -Encoding utf8
+    $journalReport = Join-Path $testRoot "journal-deadletter-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $journalFixture -OutputPath $journalReport
+    if ($LASTEXITCODE -ne 2) { throw "A stuck portal journal must block health" }
 
     $dependencyFixture = Join-Path $testRoot "dependency-critical.json"
     Write-Fixture $dependencyFixture 40 2
