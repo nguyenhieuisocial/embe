@@ -10,6 +10,12 @@ foreach ($required in @(
     'New-LocalUser',
     '-LogonType Password',
     'Add-LocalGroupMember -Group "docker-users"',
+    'New-TimeSpan -Hours 6',
+    'EmBe Restic Integrity Check',
+    'check-restic.ps1',
+    'EmBe Infrastructure Health Audit',
+    'New-TimeSpan -Minutes 5',
+    'LastTaskResult -notin @(0, 1, 2)',
     'LastTaskResult -ne 0'
 )) {
     if (-not $source.Contains($required)) { throw "Scheduled backup installer is missing: $required" }

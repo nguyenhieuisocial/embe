@@ -53,7 +53,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\tests\\restore-d
 - Restore drill từ R2: đạt, 18/18 file đúng checksum.
 - RAW/video/model AI: không được đưa lên R2.
 - Windows Task Scheduler chạy `EmBe Critical R2 Backup` hằng ngày lúc 03:00 và
-  dùng `StartWhenAvailable` nếu máy ngủ đúng giờ.
+  dùng `StartWhenAvailable` nếu máy ngủ đúng giờ. Installer mới chạy backup mỗi
+  6 giờ và `EmBe Restic Integrity Check` hằng tuần; cần chạy lại installer nâng
+  quyền để áp lịch mới cho task đã tồn tại.
 
 ## Giới hạn 3-2-1 còn lại
 
