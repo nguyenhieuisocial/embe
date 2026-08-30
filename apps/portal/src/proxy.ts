@@ -17,6 +17,13 @@ function privateResponse(response: NextResponse): NextResponse {
 }
 
 export function proxy(request: NextRequest): NextResponse {
+  if (process.env.VERCEL === "1" && request.nextUrl.hostname !== "embe.hieu.asia") {
+    return new NextResponse("Not found", {
+      status: 404,
+      headers: { "cache-control": PRIVATE_NO_STORE }
+    });
+  }
+
   if (PUBLIC_PATHS.has(request.nextUrl.pathname)) {
     return privateResponse(NextResponse.next());
   }

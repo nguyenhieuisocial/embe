@@ -9,6 +9,7 @@ const originalEnvironment = { ...process.env };
 describe("portal access gate", () => {
   beforeEach(() => {
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
+    process.env.VERCEL = "1";
   });
 
   afterEach(() => {
@@ -44,6 +45,13 @@ describe("portal access gate", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("blocks the direct Vercel hostname from bypassing Cloudflare protection", () => {
+    const response = proxy(new NextRequest("https://embe-portal.vercel.app/api/auth/login"));
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it.each(["/manifest.webmanifest", "/icon.svg", "/robots.txt"])(
