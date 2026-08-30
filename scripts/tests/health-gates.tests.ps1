@@ -111,6 +111,31 @@ try {
     $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -OutputPath (Join-Path $testRoot "go-live-blocked.json")
     if ($LASTEXITCODE -ne 2) { throw "Missing physical and soak evidence must block" }
 
+    $drills = Join-Path $testRoot "failure-drills.json"
+    @{
+        host_restart = @{ status = "pass" }
+        network_interruption = @{ status = "pass" }
+        token_rotation = @{ status = "pass" }
+        backup_restore = @{ status = "pass" }
+        cloudflare_lan_fallback = @{ status = "pass" }
+    } | ConvertTo-Json -Depth 4 | Set-Content $drills
+    $soakState = Join-Path $testRoot "soak-state.json"
+    $recorder = Join-Path $projectRoot "scripts\health\record-soak.ps1"
+    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-08-30T12:00:00Z"
+    if ($LASTEXITCODE -ne 0) { throw "The first healthy soak sample must be recorded" }
+    $collecting = Get-Content $soakState -Raw | ConvertFrom-Json
+    if ($collecting.status -ne "collecting" -or $collecting.duration_days -ne 0) { throw "Soak must start in collecting state" }
+
+    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:00:00Z"
+    if ($LASTEXITCODE -ne 0) { throw "Seven healthy days must produce soak evidence" }
+    $completedSoak = Get-Content $soakState -Raw | ConvertFrom-Json
+    if ($completedSoak.status -ne "pass" -or $completedSoak.duration_days -lt 7) { throw "Seven-day soak did not pass" }
+
+    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $criticalReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:05:00Z"
+    if ($LASTEXITCODE -ne 0) { throw "A failed sample must be recorded without hiding the failure" }
+    $resetSoak = Get-Content $soakState -Raw | ConvertFrom-Json
+    if ($resetSoak.status -ne "collecting" -or $resetSoak.started_at) { throw "A failed health sample must reset consecutive soak time" }
+
     Write-Output "PASS: health, update, and go-live gates fail closed"
 } finally {
     if (Test-Path $testRoot) { Remove-Item $testRoot -Recurse -Force }

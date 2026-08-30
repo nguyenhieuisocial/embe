@@ -10,6 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 if (-not $HealthReport) { $HealthReport = Join-Path $ProjectRoot "data\status\system-health.json" }
+if (-not $SoakEvidence) { $SoakEvidence = Join-Path $ProjectRoot "data\evidence\soak.json" }
 
 $gates = [Collections.Generic.List[object]]::new()
 function Add-Gate([string]$Id, [bool]$Passed, [string]$Reason) {

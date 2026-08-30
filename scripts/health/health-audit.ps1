@@ -306,6 +306,18 @@ New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 $temporary = "$OutputPath.tmp"
 [IO.File]::WriteAllText($temporary, ($report | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 Move-Item $temporary $OutputPath -Force
+
+if (-not $FixturePath) {
+    $soakRecorder = Join-Path $PSScriptRoot "record-soak.ps1"
+    if (-not (Test-Path -LiteralPath $soakRecorder -PathType Leaf)) {
+        throw "Soak recorder is missing"
+    }
+    $null = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $soakRecorder `
+        -ProjectRoot $ProjectRoot `
+        -HealthReport $OutputPath
+    if ($LASTEXITCODE -ne 0) { throw "Unable to record soak evidence" }
+}
+
 $report | ConvertTo-Json -Depth 8 -Compress
 if ($overall -eq "critical") { exit 2 }
 if ($overall -eq "warning") { exit 1 }

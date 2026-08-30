@@ -6,6 +6,10 @@ read-only MCP runtime, and the latest monthly PDF. Its JSON contains only status
 ages, counts, booleans, and HTTP status codes—never response bodies, credentials,
 family notes, names, photos, or URL query strings.
 
+Mỗi lần health audit chạy thật, `record-soak.ps1` tự cập nhật bằng chứng ổn định
+liên tục. Một lần health không đạt sẽ đặt lại thời gian tính bảy ngày; soak chỉ
+đạt khi đủ thời gian và cả năm failure drill đã có bằng chứng `pass`.
+
 Uptime Kuma remains the existing internal dashboard; the health audit does not
 duplicate its history or alerting. The one-time bootstrap uses the official
 Socket.IO handlers and the `socket.io-client` already bundled in the pinned Kuma
