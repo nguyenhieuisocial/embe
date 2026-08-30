@@ -79,6 +79,9 @@ if ($FixturePath) {
     $deadletters = [int]$fixture.deadletters
     $smartHealthy = [bool]$fixture.smart_healthy
     $serviceInstallReady = [bool]$fixture.service_install_ready
+    $serviceTasksReady = [bool]$fixture.service_tasks_ready
+    $serviceTaskExpected = 6
+    $serviceTaskReadyCount = if ($serviceTasksReady) { $serviceTaskExpected } else { 0 }
     $portalPublic = $fixture.endpoints.portal_public
     $nodeRed = $fixture.endpoints.node_red
     $uptimeKuma = $fixture.endpoints.uptime_kuma
@@ -137,6 +140,31 @@ if ($FixturePath) {
         $installAge = Get-AgeHours $install.generated_at
         $serviceInstallReady = $install.status -eq "ready" -and $install.install_step -eq "complete" -and $installAge -le 168
     }
+
+    $requiredServiceTasks = [ordered]@{
+        "EmBe Critical R2 Backup" = "EmBeBackupSvc"
+        "EmBe Restic Integrity Check" = "EmBeBackupSvc"
+        "EmBe Infrastructure Health Audit" = "EmBeBackupSvc"
+        "EmBe Portal Timeline Sync" = "EmBePortalSyncSvc"
+        "EmBe Integration Credential Rotation" = "EmBeCredentialSvc"
+        "EmBe BabyBuddy Memos Sync" = "EmBeBridgeSvc"
+    }
+    $serviceTaskExpected = $requiredServiceTasks.Count
+    $serviceTaskReadyCount = 0
+    foreach ($taskName in $requiredServiceTasks.Keys) {
+        $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        if ($null -eq $task) { continue }
+        $taskInfo = Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction SilentlyContinue
+        $expectedAccount = [string]$requiredServiceTasks[$taskName]
+        $actualAccount = ([string]$task.Principal.UserId).Split('\')[-1]
+        $taskReady = $actualAccount -eq $expectedAccount -and
+            [string]$task.Principal.LogonType -eq "Password" -and
+            [string]$task.State -ne "Disabled" -and
+            $null -ne $taskInfo -and
+            $taskInfo.LastTaskResult -eq 0
+        if ($taskReady) { $serviceTaskReadyCount++ }
+    }
+    $serviceTasksReady = $serviceTaskReadyCount -eq $serviceTaskExpected
 
     $portalPublic = Test-HttpEndpoint $PortalUrl
     $nodeRed = Test-HttpEndpoint "http://127.0.0.1:1880/"
@@ -255,7 +283,8 @@ if ($portalStatus -and $portalStatus.PSObject.Properties["journal_inbox"] -and $
 }
 $allDeadletters = $deadletters + $journalDeadletters
 Add-Check "sync_deadletters" $(if ($allDeadletters -eq 0) { "pass" } else { "critical" }) "Sự kiện đồng bộ cần xử lý" @{ count = $allDeadletters }
-Add-Check "service_accounts" $(if ($serviceInstallReady) { "pass" } else { "critical" }) "Các tác vụ nền đã được cài và kiểm chứng" @{}
+$serviceAccountPass = $serviceInstallReady -and $serviceTasksReady
+Add-Check "service_accounts" $(if ($serviceAccountPass) { "pass" } else { "critical" }) "Các tác vụ nền đã được cài và kiểm chứng" @{ expected = $serviceTaskExpected; ready = $serviceTaskReadyCount }
 
 $portalPublicPass = [bool]$portalPublic.reachable -and [int]$portalPublic.status_code -ge 200 -and [int]$portalPublic.status_code -lt 400
 Add-Check "portal_public" $(if ($portalPublicPass) { "pass" } else { "critical" }) "Cổng gia đình truy cập được từ Internet" @{ reachable = [bool]$portalPublic.reachable; status_code = [int]$portalPublic.status_code }

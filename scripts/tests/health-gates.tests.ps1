@@ -35,6 +35,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         deadletters = 0
         smart_healthy = $true
         service_install_ready = $true
+        service_tasks_ready = $true
         endpoints = @{
             portal_public = @{ reachable = $true; status_code = 200 }
             node_red = @{ reachable = $true; status_code = 200 }
@@ -86,6 +87,17 @@ try {
     if ($critical.status -ne "critical") { throw "Critical report is invalid" }
     if (@($critical.checks | Where-Object id -eq "disk_headroom")[0].status -ne "critical") { throw "Disk gate did not block" }
     if (@($critical.checks | Where-Object id -eq "backup_freshness")[0].status -ne "critical") { throw "Backup gate did not block" }
+
+    $missingServiceTaskFixture = Join-Path $testRoot "missing-service-task.json"
+    Write-Fixture $missingServiceTaskFixture 40 2
+    $missingServiceTask = Get-Content $missingServiceTaskFixture -Raw | ConvertFrom-Json
+    $missingServiceTask.service_tasks_ready = $false
+    $missingServiceTask | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $missingServiceTaskFixture -Encoding utf8
+    $missingServiceTaskReport = Join-Path $testRoot "missing-service-task-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $missingServiceTaskFixture -OutputPath $missingServiceTaskReport
+    if ($LASTEXITCODE -ne 2) { throw "A missing service task must block health" }
+    $missingServiceTaskHealth = Get-Content $missingServiceTaskReport -Raw | ConvertFrom-Json
+    if (@($missingServiceTaskHealth.checks | Where-Object id -eq "service_accounts")[0].status -ne "critical") { throw "Missing service task gate did not block" }
 
     $journalFixture = Join-Path $testRoot "journal-deadletter.json"
     Write-Fixture $journalFixture 40 2
