@@ -1,12 +1,19 @@
 # Nhật ký gia đình EmBe
 
-## Cách đăng một ghi chú lên trang gia đình
+## Cách ghi nhanh trên iPhone
 
-1. Trên iPhone/iPad đã cài Tailscale, mở liên kết Memos riêng của gia đình ở cổng `8443`.
-2. Viết nội dung bằng tiếng Việt. Dòng tiêu đề có thể bắt đầu bằng `# `.
-3. Giữ ghi chú ở chế độ `PRIVATE` và thêm thẻ `#portal`.
-4. Nếu đây là một cột mốc, thêm thẻ `#milestone`.
-5. Chờ tối đa 5 phút rồi mở `https://embe.hieu.asia`.
+1. Mở `https://embe.hieu.asia` và chọn **Ghi lại** ở thanh dưới cùng.
+2. Chọn **Ba Hiếu** hoặc **Mẹ Ngân**, viết một kỷ niệm ngắn rồi bấm **Lưu vào nhật ký**.
+3. Chờ tối đa 5 phút; ghi chú sẽ tự vào Memos, dòng thời gian và Obsidian.
+
+Nội dung chỉ ở Supabase trong lúc chờ máy nhà nhận. Khi Memos xác nhận đã lưu,
+nội dung tạm bị xóa, chỉ còn trạng thái vận hành không chứa câu chuyện gia đình.
+Nếu thử lại nhiều lần vẫn thất bại, health gate tự báo thay vì bỏ quên ghi chú.
+
+## Cách nâng cao trong Memos
+
+Khi cần tiêu đề riêng hoặc đánh dấu cột mốc, mở Memos qua Tailscale, giữ ghi chú
+ở chế độ `PRIVATE`, thêm `#portal`; thêm `#milestone` nếu là cột mốc.
 
 Ghi chú đã duyệt được sao chép một chiều sang Obsidian tại `20-Timeline/Memos`. Bản sao này giúp gia đình vẫn đọc được nhật ký khi dịch vụ trực tuyến tạm thời không hoạt động.
 
@@ -19,8 +26,8 @@ Ghi chú đã duyệt được sao chép một chiều sang Obsidian tại `20-T
 
 ## Khi chưa thấy ghi chú
 
-1. Kiểm tra ghi chú đang là `PRIVATE` và có đúng thẻ `#portal`.
-2. Chờ đủ 5 phút và tải lại trang.
+1. Chờ đủ 5 phút và tải lại trang.
+2. Nếu ghi trực tiếp trong Memos, kiểm tra ghi chú đang là `PRIVATE` và có đúng thẻ `#portal`.
 3. Trên máy EmBe, chạy `scripts\install-portal-sync.ps1 -VerifyNow` để kiểm tra tác vụ đồng bộ.
 4. Không gửi file trong thư mục `secrets` hoặc chụp màn hình có token cho người khác.
 
