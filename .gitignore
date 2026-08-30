@@ -41,6 +41,7 @@ node_modules/
 dist/
 build/
 coverage/
+tmp/
 *.tsbuildinfo
 .venv/
 __pycache__/

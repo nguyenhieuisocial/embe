@@ -1,0 +1,50 @@
+{
+  "title": "Hành trình của Em Bé",
+  "month": "Tháng 08 / 2026",
+  "family": "Gia đình Hiếu - Ngân",
+  "intro": "Một tháng bình yên với những thay đổi nhỏ được ghi lại mỗi ngày.",
+  "sections": [
+    {
+      "title": "Nhật ký trong tháng",
+      "paragraphs": [
+        "Gia đình bắt đầu ghi lại nhịp sinh hoạt đều đặn hơn và chọn những khoảnh khắc đáng nhớ để lưu lâu dài.",
+        "Nội dung trong bản mẫu hoàn toàn giả lập, không chứa dữ liệu sức khỏe hoặc hình ảnh gia đình thật."
+      ],
+      "subsections": [
+        {
+          "title": "Khoảnh khắc đáng nhớ",
+          "paragraphs": [
+            "Một nụ cười rất lâu vào buổi sáng và một giấc ngủ trưa thật yên là hai dấu mốc của tháng."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Nhịp sinh hoạt",
+      "paragraphs": [
+        "Các con số dưới đây chỉ minh họa cho bố cục báo cáo, không dùng để đưa ra quyết định y khoa."
+      ],
+      "metrics": [
+        {"label": "Giấc ngủ", "value": "15 giờ/ngày", "note": "Trung bình mẫu"},
+        {"label": "Lượng sữa", "value": "720 ml/ngày", "note": "Dữ liệu giả lập"},
+        {"label": "Độ ẩm phòng", "value": "62%", "note": "Trung vị mẫu"}
+      ],
+      "table": {
+        "headers": ["Tuần", "Giấc ngủ", "Lượng sữa", "Ghi chú"],
+        "rows": [
+          ["Tuần 1", "14 giờ 40 phút", "690 ml", "Làm quen lịch mới"],
+          ["Tuần 2", "15 giờ 10 phút", "710 ml", "Ngủ trưa ổn định"],
+          ["Tuần 3", "15 giờ 20 phút", "735 ml", "Phòng mát hơn"],
+          ["Tuần 4", "14 giờ 55 phút", "745 ml", "Nhiều tiếng cười"]
+        ]
+      }
+    },
+    {
+      "title": "Lời nhắn của gia đình",
+      "paragraphs": [
+        "Mỗi ngày đều có một điều mới để học. Mong rằng khi mở lại cuốn sách này, cả nhà vẫn nhớ cảm giác ấm áp của những ngày đầu tiên.",
+        "Tháng sau, gia đình sẽ tiếp tục chọn lọc nhật ký và ảnh đã duyệt để tạo một chương mới."
+      ]
+    }
+  ]
+}
