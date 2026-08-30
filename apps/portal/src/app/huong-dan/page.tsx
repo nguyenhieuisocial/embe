@@ -10,7 +10,8 @@ const dailyRhythm = [
     moment: "Trong ngày",
     title: "Ba Hiếu ghi lại điều đáng nhớ",
     detail: "Một câu ngắn cũng đủ. Nhật ký và ảnh sẽ được gom vào dòng thời gian gia đình.",
-    status: "Sẽ xuất hiện ngay tại Portal khi kết nối dữ liệu hoàn tất"
+    href: "/ghi-lai",
+    action: "Ghi một điều đáng nhớ"
   },
   {
     moment: "Cuối ngày",

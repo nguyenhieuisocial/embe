@@ -7,11 +7,12 @@ import { describe, expect, it } from "vitest";
 import FamilyNav from "../src/components/family-nav";
 
 describe("mobile family shell", () => {
-  it("offers the three everyday destinations as a compact navigation", () => {
+  it("offers the four everyday destinations as a compact navigation", () => {
     render(<FamilyNav />);
 
     expect(screen.getByRole("navigation", { name: "Điều hướng gia đình" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("href", "/ghi-lai");
     expect(screen.getByRole("link", { name: "Mẹ Ngân" })).toHaveAttribute("href", "/me-bau");
     expect(screen.getByRole("link", { name: "Cách dùng" })).toHaveAttribute("href", "/huong-dan");
   });

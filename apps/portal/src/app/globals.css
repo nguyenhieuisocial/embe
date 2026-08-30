@@ -163,10 +163,11 @@ h2 { font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -0.04em; }
 .day-ribbon li + li { border-top: 1px solid var(--line); }
 .day-ribbon li span { color: var(--jade); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
 .day-ribbon li strong { font-size: 0.87rem; line-height: 1.5; }
+.day-ribbon li a { align-items: center; display: inline-flex; min-height: 44px; text-underline-offset: 4px; }
 .day-ribbon-note { background: var(--jade-soft); color: var(--ink-soft); font-size: 0.72rem; line-height: 1.55; margin: 0; padding: 15px 28px; }
 
 .approval-message { border-left: 4px solid var(--sun); color: var(--ink-soft); font-size: 0.8rem; margin: 0 0 22px; padding: 4px 0 4px 14px; }
-.guide-entry, .pregnancy-entry {
+.guide-entry, .pregnancy-entry, .journal-entry {
   align-items: center;
   border-radius: 12px;
   display: grid;
@@ -179,13 +180,15 @@ h2 { font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -0.04em; }
 }
 .guide-entry { background: var(--jade-soft); border: 1px solid rgba(47,118,109,0.22); grid-template-columns: 58px 1fr auto; }
 .guide-entry-mark { align-items: center; background: var(--paper); border-radius: 50%; color: var(--jade); display: flex; font-family: var(--font-display), serif; font-size: 1.8rem; height: 58px; justify-content: center; width: 58px; }
-.guide-entry small, .guide-entry strong, .pregnancy-entry small, .pregnancy-entry strong { display: block; }
-.guide-entry small, .pregnancy-entry small { font-size: 0.66rem; letter-spacing: 0.15em; margin-bottom: 7px; }
-.guide-entry strong, .pregnancy-entry strong { font-family: var(--font-display), serif; font-size: 1.75rem; }
+.guide-entry small, .guide-entry strong, .pregnancy-entry small, .pregnancy-entry strong, .journal-entry small, .journal-entry strong { display: block; }
+.guide-entry small, .pregnancy-entry small, .journal-entry small { font-size: 0.66rem; letter-spacing: 0.15em; margin-bottom: 7px; }
+.guide-entry strong, .pregnancy-entry strong, .journal-entry strong { font-family: var(--font-display), serif; font-size: 1.75rem; }
 .guide-entry p { color: var(--ink-soft); font-size: 0.77rem; margin: 5px 0 0; }
-.guide-entry > span:last-child, .pregnancy-entry > span:last-child { font-size: 1.7rem; }
+.guide-entry > span:last-child, .pregnancy-entry > span:last-child, .journal-entry > span:last-child { font-size: 1.7rem; }
 .pregnancy-entry { background: var(--ink-deep); color: white; grid-template-columns: 1fr auto; }
 .pregnancy-entry small { color: var(--sun); }
+.journal-entry { background: #f8e9d5; border: 1px solid rgba(217,104,82,0.22); grid-template-columns: 1fr auto; }
+.journal-entry small { color: #9d4435; }
 
 .portal-grid { display: grid; gap: 14px; grid-template-columns: 1.1fr 0.9fr; padding: 12px 0 86px; }
 .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; min-height: 380px; padding: 34px; }
@@ -300,6 +303,29 @@ footer p { margin: 0; }
 
 .family-nav { display: none; }
 
+.journal-main { max-width: 760px; }
+.journal-shell { padding: 58px 0 72px; }
+.journal-shell h1 { font-size: clamp(3rem, 10vw, 5.3rem); }
+.journal-form { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); display: grid; gap: 12px; margin-top: 34px; padding: clamp(22px, 5vw, 36px); }
+.journal-form fieldset { border: 0; margin: 0 0 8px; padding: 0; }
+.journal-form legend, .journal-form > label { color: var(--jade); font-size: 0.78rem; font-weight: 600; margin-bottom: 8px; }
+.author-choice { display: grid; gap: 9px; grid-template-columns: 1fr 1fr; }
+.author-choice label { align-items: center; background: var(--rice); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; display: flex; font-weight: 600; justify-content: center; min-height: 52px; }
+.author-choice label.is-selected { background: var(--jade-soft); border-color: var(--jade); }
+.author-choice input { height: 1px; opacity: 0; position: absolute; width: 1px; }
+.author-choice label:has(input:focus-visible) { outline: 3px solid rgba(47,118,109,0.2); outline-offset: 2px; }
+.journal-form textarea { background: var(--rice); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font: inherit; font-size: 16px; line-height: 1.6; min-height: 168px; padding: 15px; resize: vertical; width: 100%; }
+.journal-form textarea:focus { border-color: var(--jade); outline: 3px solid rgba(47,118,109,0.14); }
+.journal-meta { color: var(--ink-soft); display: flex; font-size: 0.7rem; justify-content: flex-end; }
+.journal-form button { background: var(--ink-deep); border: 0; border-radius: 999px; color: white; cursor: pointer; font: inherit; font-weight: 600; min-height: 54px; padding: 12px 20px; }
+.journal-form button:disabled { cursor: default; opacity: 0.45; }
+.journal-success, .journal-error { font-size: 0.8rem; line-height: 1.6; margin: 2px 0 0; text-align: center; }
+.journal-success { color: var(--jade); }
+.journal-error { color: #a03b2d; }
+.journal-safety { border-left: 5px solid var(--sun); margin-top: 24px; padding: 8px 0 8px 16px; }
+.journal-safety strong { font-size: 0.78rem; }
+.journal-safety p { color: var(--ink-soft); font-size: 0.74rem; line-height: 1.65; margin: 5px 0 0; }
+
 @media (max-width: 900px) {
   body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
   main {
@@ -316,9 +342,10 @@ footer p { margin: 0; }
   .day-ribbon { margin-top: 8px; }
   .guide-entry { gap: 13px; grid-template-columns: 46px 1fr auto; padding: 19px; }
   .guide-entry-mark { font-size: 1.45rem; height: 46px; width: 46px; }
-  .guide-entry strong, .pregnancy-entry strong { font-size: 1.38rem; }
+  .guide-entry strong, .pregnancy-entry strong, .journal-entry strong { font-size: 1.38rem; }
   .guide-entry p { display: none; }
   .pregnancy-entry { min-height: 104px; padding: 20px 21px; }
+  .journal-entry { min-height: 104px; padding: 20px 21px; }
   .portal-grid { grid-template-columns: 1fr; }
   .panel { min-height: auto; padding: 27px 23px; }
   .pregnancy-hero, .guide-hero { padding: 52px 0 40px; }
@@ -341,7 +368,7 @@ footer p { margin: 0; }
     border-top: 1px solid var(--line);
     bottom: 0;
     display: grid;
-    grid-template-columns: repeat(3,minmax(0,1fr));
+    grid-template-columns: repeat(4,minmax(0,1fr));
     left: 0;
     padding: 8px max(10px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
     position: fixed;
@@ -374,7 +401,7 @@ footer p { margin: 0; }
 
 @media (hover: hover) and (pointer: fine) {
   .primary-link:hover { background: var(--jade); transform: translateY(-2px); }
-  .guide-entry:hover, .pregnancy-entry:hover { box-shadow: var(--shadow); transform: translateY(-3px); }
+  .guide-entry:hover, .pregnancy-entry:hover, .journal-entry:hover { box-shadow: var(--shadow); transform: translateY(-3px); }
   .login-form button:hover { background: var(--jade); }
 }
 

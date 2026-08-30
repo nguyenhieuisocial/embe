@@ -42,7 +42,7 @@ export default async function Home() {
           <p className="day-ribbon-title">Nhịp của một ngày</p>
           <ol>
             <li><span>Sáng</span><strong>Mẹ Ngân xem việc hôm nay</strong></li>
-            <li><span>Trong ngày</span><strong>Ba Hiếu ghi một điều đáng nhớ</strong></li>
+            <li><span>Trong ngày</span><strong><a href="/ghi-lai">Ba Hiếu ghi một điều đáng nhớ</a></strong></li>
             <li><span>Tối</span><strong>Thảnh thơi nghỉ ngơi</strong></li>
           </ol>
           <p className="day-ribbon-note">Những phần kỹ thuật đã có hệ thống lo.</p>
@@ -68,6 +68,11 @@ export default async function Home() {
           <small>VIỆC QUAN TRỌNG NHẤT</small>
           <strong>Checklist và thực đơn của mẹ</strong>
         </span>
+        <span aria-hidden="true">→</span>
+      </a>
+
+      <a className="journal-entry" href="/ghi-lai" aria-label="Ghi một điều đáng nhớ">
+        <span><small>NHẬT KÝ GIA ĐÌNH</small><strong>Ghi lại khoảnh khắc hôm nay</strong></span>
         <span aria-hidden="true">→</span>
       </a>
 

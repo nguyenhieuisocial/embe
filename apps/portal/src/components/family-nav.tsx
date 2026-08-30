@@ -1,5 +1,6 @@
 const destinations = [
   { href: "/", mark: "⌂", label: "Hôm nay" },
+  { href: "/ghi-lai", mark: "+", label: "Ghi lại" },
   { href: "/me-bau", mark: "✓", label: "Mẹ Ngân" },
   { href: "/huong-dan", mark: "?", label: "Cách dùng" }
 ];
