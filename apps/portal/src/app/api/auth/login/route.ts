@@ -11,9 +11,21 @@ function privateResponse(response: NextResponse): NextResponse {
 }
 
 function safeDestination(value: FormDataEntryValue | null): string {
-  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/";
+  if (typeof value !== "string") return "/";
+
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    return "/";
+  }
+
+  const isLocalPath = (candidate: string) =>
+    candidate.startsWith("/") &&
+    !candidate.startsWith("//") &&
+    !/[\\\u0000-\u001f\u007f]/.test(candidate);
+
+  return isLocalPath(value) && isLocalPath(decoded) ? value : "/";
 }
 
 export async function POST(request: Request): Promise<NextResponse> {

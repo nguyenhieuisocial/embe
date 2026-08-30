@@ -56,6 +56,18 @@ describe("password login endpoint", () => {
     expect(response.headers.get("location")).toBe("https://embe.hieu.asia/");
   });
 
+  it.each([
+    "/\\\\evil.example",
+    "/%5C%5Cevil.example",
+    "/journal\r\nLocation: https://evil.example",
+    "/journal%0D%0ALocation:https://evil.example",
+    "/journal\u0000hidden"
+  ])("rejects an unsafe local-looking redirect: %j", async (destination) => {
+    const response = await POST(requestWith("family-secret", destination));
+
+    expect(response.headers.get("location")).toBe("https://embe.hieu.asia/");
+  });
+
   it("fails closed when server secrets are unavailable", async () => {
     delete process.env.EMBE_PORTAL_SESSION_SECRET;
 

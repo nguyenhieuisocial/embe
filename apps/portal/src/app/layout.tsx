@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
 
+import FamilyNav from "../components/family-nav";
 import "./globals.css";
 
 const body = Be_Vietnam_Pro({
@@ -18,7 +19,21 @@ const display = Noto_Serif({
 export const metadata: Metadata = {
   title: "Em Bé — Nhật ký gia đình",
   description: "Không gian riêng để gia đình dõi theo hành trình của em bé.",
-  robots: { index: false, follow: false }
+  applicationName: "Em Bé",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Em Bé"
+  },
+  formatDetection: { telephone: false },
+  robots: { index: false, follow: false, nocache: true }
+};
+
+export const viewport: Viewport = {
+  themeColor: "#173f49",
+  viewportFit: "cover",
+  width: "device-width",
+  initialScale: 1
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -26,6 +41,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="vi">
       <body className={`${body.variable} ${display.variable}`}>
         {children}
+        <FamilyNav />
         <script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-PTX99GX5F9"
