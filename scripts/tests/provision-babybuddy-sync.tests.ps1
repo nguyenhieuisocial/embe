@@ -14,6 +14,8 @@ foreach ($required in @(
     'role = "USER"',
     'expiresInDays = 90',
     '/api/v1/auth/me',
+    'MEMOS_BABYBUDDY_PORTAL_PAT',
+    'BabyBuddy portal read',
     'secrets\runtime\babybuddy-memos-sync',
     'data\appdata\sync-daemon',
     '/inheritance:r',
@@ -24,7 +26,9 @@ foreach ($required in @(
 
 foreach ($forbidden in @(
     'BABYBUDDY_TOKEN=$($values.',
-    'MEMOS_SYNC_PAT=$($values.MEMOS_SYNC_PAT)'
+    'MEMOS_SYNC_PAT=$($values.MEMOS_SYNC_PAT)',
+    '[switch]$ForceRotate',
+    'old.delete()'
 )) {
     if ($provisioner.Contains($forbidden)) { throw "BabyBuddy runtime must not reuse an administrator credential: $forbidden" }
 }

@@ -12,9 +12,14 @@ foreach ($required in @(
     "approved private Memos",
     "EmBePortalSyncSvc",
     "EmBeCredentialSvc",
-    "LogonType Password",
+    "EmBeBridgeSvc",
+    "-User `$syncIdentity -Password `$syncPassword",
+    "-User `$credentialIdentity -Password `$credentialPassword",
     "RunLevel Limited",
-    "RotateOnly",
+    "SeBatchLogonRight",
+    "LsaAddAccountRights",
+    "rotate-integration-credentials.ps1",
+    "babybuddy-memos-sync",
     "secrets\admin",
     "/remove:g",
     "data\status\portal-sync.json",
@@ -24,7 +29,8 @@ foreach ($required in @(
 }
 foreach ($forbidden in @(
     '-UserId "SYSTEM"',
-    '-RunLevel Highest'
+    '-RunLevel Highest',
+    'New-ScheduledTaskPrincipal'
 )) {
     if ($installer.Contains($forbidden)) { throw "Portal sync must not run with elevated machine privileges: $forbidden" }
 }

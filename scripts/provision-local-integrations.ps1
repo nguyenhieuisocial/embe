@@ -77,11 +77,16 @@ function Save-EnvFile([hashtable]$Values, [string]$Path) {
 }
 
 function Save-SyncEnvFile([hashtable]$Values, [string]$Path) {
-    $lines = foreach ($key in @("MEMOS_BASE_URL", "MEMOS_PORTAL_PAT", "SUPABASE_URL", "SUPABASE_SECRET_KEY")) {
+    $lines = @(
+    foreach ($key in @("MEMOS_BASE_URL", "MEMOS_PORTAL_PAT", "SUPABASE_URL", "SUPABASE_SECRET_KEY")) {
         if (-not $Values.ContainsKey($key) -or [string]::IsNullOrWhiteSpace([string]$Values[$key])) {
             throw "Sync runtime setting is missing: $key"
         }
         "$key=$($Values[$key])"
+    })
+    $current = Read-EnvFile $Path
+    if ($current.ContainsKey("MEMOS_BABYBUDDY_PORTAL_PAT") -and -not [string]::IsNullOrWhiteSpace($current.MEMOS_BABYBUDDY_PORTAL_PAT)) {
+        $lines += "MEMOS_BABYBUDDY_PORTAL_PAT=$($current.MEMOS_BABYBUDDY_PORTAL_PAT)"
     }
     $temporary = "$Path.tmp"
     try {
