@@ -9,12 +9,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+$scriptEngine = (Get-Process -Id $PID).Path
 
 $healthScript = Join-Path $ProjectRoot "scripts\health\health-audit.ps1"
 $healthOutput = if ($HealthOutputPath) { $HealthOutputPath } else { Join-Path $ProjectRoot "data\status\system-health.json" }
 $arguments = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $healthScript, "-ProjectRoot", $ProjectRoot, "-OutputPath", $healthOutput)
 if ($HealthFixture) { $arguments += @("-FixturePath", $HealthFixture) }
-$null = & powershell @arguments
+$null = & $scriptEngine @arguments
 $healthExit = $LASTEXITCODE
 
 $contracts = [Collections.Generic.List[object]]::new()
@@ -27,7 +28,7 @@ if (-not $SkipContractTests) {
     foreach ($command in $commands) {
         $previousPreference = $ErrorActionPreference
         $ErrorActionPreference = "SilentlyContinue"
-        $contractOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectRoot $command.file) 2>&1
+        $contractOutput = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectRoot $command.file) 2>&1
         $contractExit = $LASTEXITCODE
         $ErrorActionPreference = $previousPreference
         $contracts.Add([ordered]@{ id = $command.name; status = $(if ($contractExit -eq 0) { "pass" } else { "critical" }) })

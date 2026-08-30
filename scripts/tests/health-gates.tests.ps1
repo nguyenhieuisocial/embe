@@ -2,6 +2,7 @@ param()
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$scriptEngine = (Get-Process -Id $PID).Path
 $testRoot = Join-Path $env:TEMP ("embe-health-gates-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory $testRoot | Out-Null
 
@@ -49,7 +50,7 @@ try {
     Write-Fixture $criticalFixture 10 12
 
     $healthyReport = Join-Path $testRoot "healthy-report.json"
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $healthyReport
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $healthyReport
     if ($LASTEXITCODE -ne 0) { throw "Healthy fixture must pass" }
     $healthy = Get-Content $healthyReport -Raw | ConvertFrom-Json
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
@@ -65,11 +66,11 @@ try {
     }
 
     $pwshReport = Join-Path $testRoot "healthy-report-pwsh.json"
-    $null = & pwsh -NoProfile -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $pwshReport
+    $null = & $scriptEngine -NoProfile -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $pwshReport
     if ($LASTEXITCODE -ne 0) { throw "Healthy fixture must pass under PowerShell 7" }
 
     $criticalReport = Join-Path $testRoot "critical-report.json"
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $criticalFixture -OutputPath $criticalReport
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $criticalFixture -OutputPath $criticalReport
     if ($LASTEXITCODE -ne 2) { throw "Critical fixture must block" }
     $critical = Get-Content $criticalReport -Raw | ConvertFrom-Json
     if ($critical.status -ne "critical") { throw "Critical report is invalid" }
@@ -88,27 +89,27 @@ try {
     $dependency.pdf_report.checksum_matches = $false
     $dependency | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $dependencyFixture -Encoding utf8
     $dependencyReport = Join-Path $testRoot "dependency-report.json"
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $dependencyFixture -OutputPath $dependencyReport
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $dependencyFixture -OutputPath $dependencyReport
     if ($LASTEXITCODE -ne 2) { throw "Unavailable dependencies must block" }
     $dependencyHealth = Get-Content $dependencyReport -Raw | ConvertFrom-Json
     foreach ($id in @("portal_public", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
         if (@($dependencyHealth.checks | Where-Object id -eq $id)[0].status -ne "critical") { throw "Dependency gate did not block: $id" }
     }
 
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\update\preflight-update.ps1") -ProjectRoot $projectRoot -HealthFixture $healthyFixture -HealthOutputPath (Join-Path $testRoot "preflight-health-pass.json") -OutputPath (Join-Path $testRoot "preflight-pass.json") -SkipContractTests
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\update\preflight-update.ps1") -ProjectRoot $projectRoot -HealthFixture $healthyFixture -HealthOutputPath (Join-Path $testRoot "preflight-health-pass.json") -OutputPath (Join-Path $testRoot "preflight-pass.json") -SkipContractTests
     if ($LASTEXITCODE -ne 0) { throw "Healthy update preflight must pass" }
 
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\update\preflight-update.ps1") -ProjectRoot $projectRoot -HealthFixture $criticalFixture -HealthOutputPath (Join-Path $testRoot "preflight-health-blocked.json") -OutputPath (Join-Path $testRoot "preflight-blocked.json") -SkipContractTests
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\update\preflight-update.ps1") -ProjectRoot $projectRoot -HealthFixture $criticalFixture -HealthOutputPath (Join-Path $testRoot "preflight-health-blocked.json") -OutputPath (Join-Path $testRoot "preflight-blocked.json") -SkipContractTests
     if ($LASTEXITCODE -ne 2) { throw "Critical update preflight must block" }
 
     $external = Join-Path $testRoot "external.json"
     $soak = Join-Path $testRoot "soak.json"
     @{ status = "pass"; device_is_separate = $true; restore_verified = $true } | ConvertTo-Json | Set-Content $external
     @{ status = "pass"; duration_days = 7 } | ConvertTo-Json | Set-Content $soak
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -ExternalBackupEvidence $external -SoakEvidence $soak -OutputPath (Join-Path $testRoot "go-live-pass.json")
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -ExternalBackupEvidence $external -SoakEvidence $soak -OutputPath (Join-Path $testRoot "go-live-pass.json")
     if ($LASTEXITCODE -ne 0) { throw "Complete go-live evidence must pass" }
 
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -OutputPath (Join-Path $testRoot "go-live-blocked.json")
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -OutputPath (Join-Path $testRoot "go-live-blocked.json")
     if ($LASTEXITCODE -ne 2) { throw "Missing physical and soak evidence must block" }
 
     $drills = Join-Path $testRoot "failure-drills.json"
@@ -121,17 +122,17 @@ try {
     } | ConvertTo-Json -Depth 4 | Set-Content $drills
     $soakState = Join-Path $testRoot "soak-state.json"
     $recorder = Join-Path $projectRoot "scripts\health\record-soak.ps1"
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-08-30T12:00:00Z"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-08-30T12:00:00Z"
     if ($LASTEXITCODE -ne 0) { throw "The first healthy soak sample must be recorded" }
     $collecting = Get-Content $soakState -Raw | ConvertFrom-Json
     if ($collecting.status -ne "collecting" -or $collecting.duration_days -ne 0) { throw "Soak must start in collecting state" }
 
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:00:00Z"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:00:00Z"
     if ($LASTEXITCODE -ne 0) { throw "Seven healthy days must produce soak evidence" }
     $completedSoak = Get-Content $soakState -Raw | ConvertFrom-Json
     if ($completedSoak.status -ne "pass" -or $completedSoak.duration_days -lt 7) { throw "Seven-day soak did not pass" }
 
-    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $criticalReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:05:00Z"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $criticalReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:05:00Z"
     if ($LASTEXITCODE -ne 0) { throw "A failed sample must be recorded without hiding the failure" }
     $resetSoak = Get-Content $soakState -Raw | ConvertFrom-Json
     if ($resetSoak.status -ne "collecting" -or $resetSoak.started_at) { throw "A failed health sample must reset consecutive soak time" }

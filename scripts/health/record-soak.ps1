@@ -11,11 +11,21 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Convert-ToDateTimeOffset([object]$Value) {
+    if ($Value -is [DateTimeOffset]) { return $Value }
+    if ($Value -is [DateTime]) { return [DateTimeOffset]::new($Value) }
+    return [DateTimeOffset]::Parse(
+        [string]$Value,
+        [Globalization.CultureInfo]::InvariantCulture,
+        [Globalization.DateTimeStyles]::RoundtripKind
+    )
+}
+
 if (-not $HealthReport) { $HealthReport = Join-Path $ProjectRoot "data\status\system-health.json" }
 if (-not $DrillEvidence) { $DrillEvidence = Join-Path $ProjectRoot "data\evidence\failure-drills.json" }
 if (-not $OutputPath) { $OutputPath = Join-Path $ProjectRoot "data\evidence\soak.json" }
 
-$now = if ($NowUtc) { [DateTimeOffset]::Parse($NowUtc) } else { [DateTimeOffset]::UtcNow }
+$now = if ($NowUtc) { Convert-ToDateTimeOffset $NowUtc } else { [DateTimeOffset]::UtcNow }
 if (-not (Test-Path -LiteralPath $HealthReport -PathType Leaf)) {
     throw "Health report is missing"
 }
@@ -28,7 +38,7 @@ $previous = if (Test-Path -LiteralPath $OutputPath -PathType Leaf) {
 
 $failedSamples = if ($previous -and $previous.failed_samples) { [int]$previous.failed_samples } else { 0 }
 $healthySamples = if ($previous -and $previous.healthy_samples) { [int]$previous.healthy_samples } else { 0 }
-$startedAt = if ($previous -and $previous.started_at) { [DateTimeOffset]::Parse([string]$previous.started_at) } else { $null }
+$startedAt = if ($previous -and $previous.started_at) { Convert-ToDateTimeOffset $previous.started_at } else { $null }
 $lastFailureAt = if ($previous -and $previous.last_failure_at) { [string]$previous.last_failure_at } else { $null }
 
 if ($healthy) {
