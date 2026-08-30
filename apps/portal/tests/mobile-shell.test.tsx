@@ -33,4 +33,12 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)[\s\S]*\.primary-link:hover/);
     expect(css).toMatch(/\.family-nav a\s*\{[^}]*min-height:\s*(?:52|5[3-9]|[6-9]\d)px/s);
   });
+
+  it("gives compact text links a full iPhone touch target", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+
+    expect(css).toMatch(/\.wordmark\s*\{[^}]*min-height:\s*44px/s);
+    expect(css).toMatch(/\.rhythm-item a[^\{]*\{[^}]*min-height:\s*44px/s);
+    expect(css).toMatch(/\.source-section a\s*\{[^}]*min-height:\s*44px/s);
+  });
 });

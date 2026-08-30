@@ -1,4 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import PregnancyPage from "../src/app/me-bau/page";
@@ -57,5 +59,26 @@ describe("pregnancy daily page", () => {
 
     expect(screen.getByText("Tuần 34")).toBeInTheDocument();
     expect(localStorage.getItem("embe:pregnancy:due-date")).toBe("2026-10-08");
+  });
+
+  it("hydrates without a date mismatch when midnight passes between server and iPhone", async () => {
+    vi.setSystemTime(new Date("2026-08-30T23:59:59+07:00"));
+    const serverHtml = renderToString(<PregnancyPage />);
+    const container = document.createElement("div");
+    container.innerHTML = serverHtml;
+    document.body.appendChild(container);
+    vi.setSystemTime(new Date("2026-08-31T00:00:01+07:00"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, <PregnancyPage />);
+    });
+
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(container).toHaveTextContent("CHECKLIST 2026-08-31");
+    await act(async () => root?.unmount());
+    consoleError.mockRestore();
+    container.remove();
   });
 });

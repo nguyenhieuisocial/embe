@@ -14,14 +14,17 @@ const DUE_DATE_KEY = "embe:pregnancy:due-date";
 export default function PregnancyPage() {
   const [dueDate, setDueDate] = useState("");
   const [completed, setCompleted] = useState<string[]>([]);
+  const [todayKey, setTodayKey] = useState("");
   const [ready, setReady] = useState(false);
-  const todayKey = localDateKey();
-  const checklistKey = `embe:pregnancy:checklist:${todayKey}`;
+  const checklistKey = todayKey ? `embe:pregnancy:checklist:${todayKey}` : "";
 
   useEffect(() => {
+    const currentDay = localDateKey();
+    const currentChecklistKey = `embe:pregnancy:checklist:${currentDay}`;
+    setTodayKey(currentDay);
     try {
       setDueDate(localStorage.getItem(DUE_DATE_KEY) ?? "");
-      const stored = JSON.parse(localStorage.getItem(checklistKey) ?? "[]");
+      const stored = JSON.parse(localStorage.getItem(currentChecklistKey) ?? "[]");
       const validIds = new Set<string>(dailyChecklist.map((task) => task.id));
       setCompleted(
         Array.isArray(stored)
@@ -32,7 +35,7 @@ export default function PregnancyPage() {
       setCompleted([]);
     }
     setReady(true);
-  }, [checklistKey]);
+  }, []);
 
   const week = useMemo(() => calculatePregnancyWeek(dueDate), [dueDate]);
   const progress = Math.round((completed.length / dailyChecklist.length) * 100);
@@ -99,7 +102,7 @@ export default function PregnancyPage() {
       <section className="care-board" aria-labelledby="daily-title">
         <div className="care-summary">
           <div>
-            <p className="panel-kicker">CHECKLIST {todayKey}</p>
+            <p className="panel-kicker">CHECKLIST {todayKey || "HÔM NAY"}</p>
             <h2 id="daily-title">Việc của hôm nay</h2>
           </div>
           <div className="progress-stamp" aria-label={`${progress}% hoàn thành`}>
@@ -116,6 +119,7 @@ export default function PregnancyPage() {
                 <input
                   type="checkbox"
                   checked={isDone}
+                  disabled={!ready}
                   onChange={() => toggleTask(task.id)}
                 />
                 <span className="custom-check" aria-hidden="true">✓</span>
