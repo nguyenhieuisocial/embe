@@ -16,18 +16,13 @@ Local-only endpoints:
 
 ## IoT profile
 
-Home Assistant and Mosquitto are optional and remain off until the `iot` profile
-is selected. Before the first start, create the ignored runtime directory and an
-MQTT password file interactively; never use `mosquitto_passwd -b` because that
-puts the password in the process command line.
+Home Assistant and Mosquitto use the `iot` profile. Provision or rotate the MQTT
+credential with the project script; it sends the random password over standard
+input, stores the recovery credential with Windows DPAPI, and never puts the
+password in the process command line.
 
 ```powershell
-New-Item -ItemType Directory -Force C:\EmBe\secrets\runtime
-docker run --rm -it `
-  -v C:/EmBe/secrets/runtime:/mosquitto/config `
-  eclipse-mosquitto:2.1.2-alpine@sha256:6f8d8a947c506f8a2290ec65cd4bd2bc7cb4d43fb5f6271f861cb013e2ef9797 `
-  mosquitto_passwd -c /mosquitto/config/mosquitto-passwordfile homeassistant
-docker compose --env-file infra/compose/core.example.env -f infra/compose/core.yml --profile iot up -d
+pwsh -NoProfile -File scripts/iot/provision-mqtt.ps1
 ```
 
 Endpoints remain loopback-only:

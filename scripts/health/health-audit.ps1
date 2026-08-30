@@ -206,6 +206,7 @@ Add-Check "disk_headroom" $diskStatus "Dung lượng trống của ổ hệ th�
 
 $expectedContainers = @(
     "embe-babybuddy-1", "embe-memos-1", "embe-grocy-1", "embe-node-red-1", "embe-uptime-kuma-1",
+    "embe-mqtt-1", "embe-home-assistant-1",
     "compose-immich-server-1", "compose-immich-postgres-1", "compose-immich-redis-1", "compose-immich-machine-learning-1"
 )
 $containerFailures = @()

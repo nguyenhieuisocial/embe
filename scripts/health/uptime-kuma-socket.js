@@ -16,6 +16,7 @@ function desiredMonitors() {
     { name: "Memos", url: "http://memos:5230/", interval: 60 },
     { name: "Grocy", url: "http://grocy/", interval: 60 },
     { name: "Node-RED", url: "http://node-red:1880/", interval: 60 },
+    { name: "Home Assistant", url: "http://home-assistant:8123/", interval: 60 },
     { name: "Ollama local AI", url: "http://host.docker.internal:11434/api/tags", interval: 120 },
   ];
 }

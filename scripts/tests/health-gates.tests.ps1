@@ -9,6 +9,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
     $now = [DateTimeOffset]::Parse("2026-08-30T12:00:00Z")
     $containers = @(
         "embe-babybuddy-1", "embe-memos-1", "embe-grocy-1", "embe-node-red-1", "embe-uptime-kuma-1",
+        "embe-mqtt-1", "embe-home-assistant-1",
         "compose-immich-server-1", "compose-immich-postgres-1", "compose-immich-redis-1", "compose-immich-machine-learning-1"
     ) | ForEach-Object { @{ name = $_; status = "Up 1 hour (healthy)" } }
     $fixture = [ordered]@{
@@ -51,6 +52,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Healthy fixture must pass" }
     $healthy = Get-Content $healthyReport -Raw | ConvertFrom-Json
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
+    $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
+    if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
     foreach ($id in @("portal_public", "node_red", "uptime_kuma", "ollama", "mcp_runtime", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }

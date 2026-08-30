@@ -77,6 +77,15 @@ test("monitor payload matches the 2.5.3 server handler contract", () => {
   assert.equal(payload.active, true);
 });
 
+test("includes Home Assistant in the internal service monitors", () => {
+  const homeAssistant = desiredMonitors().find((monitor) => monitor.name === "Home Assistant");
+  assert.deepEqual(homeAssistant, {
+    name: "Home Assistant",
+    url: "http://home-assistant:8123/",
+    interval: 60,
+  });
+});
+
 test("refuses initial account creation without explicit permission", async () => {
   const socket = new MockSocket({ needsSetup: true });
   await assert.rejects(
