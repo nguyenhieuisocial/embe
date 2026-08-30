@@ -4,7 +4,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(7);
+SELECT plan(11);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -71,6 +71,24 @@ SELECT throws_ok(
   '42501',
   'permission denied for table timeline_event',
   'Authenticated role cannot DELETE timeline_event'
+);
+
+SET ROLE postgres;
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.journal_inbox', 'SELECT'),
+  'Anonymous clients cannot read the journal inbox'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.journal_inbox', 'INSERT'),
+  'Authenticated clients cannot write the journal inbox'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_submit_journal(uuid,text,text)', 'EXECUTE'),
+  'Anonymous clients cannot call the journal submit function'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_submit_journal(uuid,text,text)', 'EXECUTE'),
+  'Only the server role can call the journal submit function'
 );
 
 SELECT finish();
