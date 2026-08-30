@@ -1,0 +1,40 @@
+services:
+  storage-poc:
+    profiles: ["storage-poc-lab"]
+    build:
+      context: ../../services/storage-poc
+    restart: "no"
+    env_file:
+      - path: storage-poc.env
+        required: false
+    ports:
+      - "127.0.0.1:8099:8099"
+    volumes:
+      - C:/EmBe/data/storage-poc:/data/storage-poc
+    environment:
+      EMBE_STORAGE_POC_DATA_DIR: /data/storage-poc
+      EMBE_STORAGE_POC_MIGRATION: /app/migrations/0001_storage_poc.sql
+    read_only: true
+    tmpfs:
+      - /tmp:size=1g
+    security_opt:
+      - no-new-privileges:true
+  storage-poc-worker:
+    profiles: ["storage-poc-lab"]
+    build:
+      context: ../../services/storage-poc
+    command: ["python", "-m", "embe_storage.worker"]
+    restart: "no"
+    env_file:
+      - path: storage-poc.env
+        required: false
+    volumes:
+      - C:/EmBe/data/storage-poc:/data/storage-poc
+    environment:
+      EMBE_STORAGE_POC_DATA_DIR: /data/storage-poc
+      EMBE_STORAGE_POC_MIGRATION: /app/migrations/0001_storage_poc.sql
+    read_only: true
+    tmpfs:
+      - /tmp:size=1g
+    security_opt:
+      - no-new-privileges:true
