@@ -14,10 +14,10 @@
 | Repository integrity | `restic check --read-data` không lỗi |
 | Restore drill | 41/41 file đúng checksum; bản phục hồi tạm đã chuyển Recycle Bin |
 | Immich | Các container đang healthy; media không nằm trong R2 backup nhỏ |
-| Lịch sao lưu | Script và kiểm thử đã sẵn sàng; tác vụ nền chưa đạt gate vì Windows chưa cấp quyền cài service account |
+| Lịch sao lưu | Ba tác vụ backup, kiểm tra toàn vẹn và health audit đã cài bằng `EmBeBackupSvc`; lần chạy xác minh đạt |
 | Grocy | Khóa tích hợp riêng đã kiểm tra; 10 danh mục nền tảng đã có, không tạo tồn kho giả |
 | Home Assistant + MQTT | Tích hợp MQTT chính thức đã tạo và ở trạng thái `loaded`; chưa tạo cảm biến hoặc dữ liệu giả |
-| Tailscale | Immich Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và chạy lại cấu hình vẫn đạt |
+| Tailscale | Immich, Memos và BabyBuddy Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và Funnel tắt |
 
 ## Go/no-go
 
@@ -28,5 +28,5 @@ nhập synthetic đạt trước khi dùng 10 ảnh thử.
 **Chưa go-live đầy đủ** cho media thật cho đến khi có USB HDD/NAS làm bản sao
 thứ ba và chạy restore drill trên chính thiết bị đó.
 
-**Chưa đạt gate vận hành nền** cho đến khi ba tác vụ sao lưu, kiểm tra toàn vẹn
-và health audit chạy bằng service account riêng thay vì tài khoản đăng nhập.
+**Đã đạt gate vận hành nền:** backup, kiểm tra toàn vẹn và health audit chạy bằng
+service account riêng; health gate vẫn fail closed vì dung lượng ổ hệ thống.
