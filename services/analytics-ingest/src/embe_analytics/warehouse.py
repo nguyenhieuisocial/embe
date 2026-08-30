@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .home_assistant import RoomSample
+from .babybuddy import DiaperFact, FeedingFact, GrowthFact, SleepFact
+from .grocy import StockMovementFact
 
 
 class ReconciliationMismatch(RuntimeError):
@@ -52,6 +54,127 @@ class Warehouse:
         self._connection.commit()
         return cursor.rowcount == 1
 
+    def upsert_sleep(self, fact: SleepFact) -> bool:
+        return self._insert_fact(
+            """
+            INSERT OR IGNORE INTO fact_sleep
+              (source, source_id, child_id, observed_at, ended_at, duration_seconds,
+               raw_value, raw_unit, quality_flag)
+            VALUES ('babybuddy', ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                fact.source_id,
+                fact.child_id,
+                self._utc_text(fact.observed_at),
+                self._utc_text(fact.ended_at),
+                fact.duration_seconds,
+                fact.raw_value,
+                fact.raw_unit,
+                fact.quality_flag,
+            ),
+            "babybuddy:sleep",
+            fact.observed_at,
+        )
+
+    def upsert_feeding(self, fact: FeedingFact) -> bool:
+        return self._insert_fact(
+            """
+            INSERT OR IGNORE INTO fact_feeding
+              (source, source_id, child_id, observed_at, value_milliliters,
+               raw_value, raw_unit, quality_flag)
+            VALUES ('babybuddy', ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                fact.source_id,
+                fact.child_id,
+                self._utc_text(fact.observed_at),
+                fact.value_milliliters,
+                fact.raw_value,
+                fact.raw_unit,
+                fact.quality_flag,
+            ),
+            "babybuddy:feeding",
+            fact.observed_at,
+        )
+
+    def upsert_diaper(self, fact: DiaperFact) -> bool:
+        return self._insert_fact(
+            """
+            INSERT OR IGNORE INTO fact_diaper
+              (source, source_id, child_id, observed_at, diaper_type,
+               raw_value, raw_unit, quality_flag)
+            VALUES ('babybuddy', ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                fact.source_id,
+                fact.child_id,
+                self._utc_text(fact.observed_at),
+                fact.diaper_type,
+                fact.raw_value,
+                fact.raw_unit,
+                fact.quality_flag,
+            ),
+            "babybuddy:diaper",
+            fact.observed_at,
+        )
+
+    def upsert_growth(self, fact: GrowthFact) -> bool:
+        return self._insert_fact(
+            """
+            INSERT OR IGNORE INTO fact_growth
+              (source, source_id, child_id, observed_at, measure, value, unit,
+               raw_value, raw_unit, quality_flag)
+            VALUES ('babybuddy', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                fact.source_id,
+                fact.child_id,
+                self._utc_text(fact.observed_at),
+                fact.measure,
+                fact.value,
+                fact.unit,
+                fact.raw_value,
+                fact.raw_unit,
+                fact.quality_flag,
+            ),
+            f"babybuddy:{fact.measure}",
+            fact.observed_at,
+        )
+
+    def upsert_stock_movement(self, fact: StockMovementFact) -> bool:
+        return self._insert_fact(
+            """
+            INSERT OR IGNORE INTO fact_stock_movement
+              (source, source_id, item_id, observed_at, quantity, unit,
+               raw_value, raw_unit, quality_flag)
+            VALUES ('grocy', ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                fact.source_id,
+                fact.item_id,
+                self._utc_text(fact.observed_at),
+                fact.quantity,
+                fact.unit,
+                fact.raw_value,
+                fact.raw_unit,
+                fact.quality_flag,
+            ),
+            "grocy:stock_movement",
+            fact.observed_at,
+        )
+
+    def _insert_fact(self, statement: str, values: tuple, checkpoint_source: str, observed_at: datetime) -> bool:
+        cursor = self._connection.execute(statement, values)
+        self._connection.execute(
+            """
+            INSERT INTO ingest_checkpoint (source, observed_at) VALUES (?, ?)
+            ON CONFLICT(source) DO UPDATE SET observed_at = MAX(observed_at, excluded.observed_at)
+            """,
+            (checkpoint_source, self._utc_text(observed_at)),
+        )
+        self._connection.commit()
+        return cursor.rowcount == 1
+
     def checkpoint(self, source: str) -> datetime | None:
         row = self._connection.execute(
             "SELECT observed_at FROM ingest_checkpoint WHERE source = ?", (source,)
@@ -68,6 +191,11 @@ class Warehouse:
                 "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'fact_%' ORDER BY name"
             )
         ]
+
+    def fact_count(self, table: str) -> int:
+        if table not in self.fact_tables():
+            raise ValueError("unknown fact table")
+        return self._connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
 
     def reconcile_day(self, day: str, *, expected_count: int, expected_hash: str):
         rows = self._connection.execute(
