@@ -1,0 +1,49 @@
+{
+  "tools": [
+    {
+      "name": "sops",
+      "version": "3.13.3",
+      "url": "https://github.com/getsops/sops/releases/download/v3.13.3/sops-v3.13.3.amd64.exe",
+      "sha256": "a4a9a398858fe8b2ef72d9686d930bf7c5cece9be74ad83ac3b53cfdd70e6b1c",
+      "archive": "exe",
+      "binaryPattern": "sops-v3.13.3.amd64.exe",
+      "output": "sops.exe"
+    },
+    {
+      "name": "age",
+      "version": "1.3.2",
+      "url": "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-windows-amd64.zip",
+      "sha256": "f48d8f8f9ebe903ab5027ed067652f2cc1db94bc206976430133b905dcd8e8c7",
+      "archive": "zip",
+      "binaryPattern": "age.exe",
+      "output": "age.exe"
+    },
+    {
+      "name": "restic",
+      "version": "0.19.1",
+      "url": "https://github.com/restic/restic/releases/download/v0.19.1/restic_0.19.1_windows_amd64.zip",
+      "sha256": "da948ad707ed690426473aaba2046cd61f8f90f6f0e7dab6be0d5796531de67d",
+      "archive": "zip",
+      "binaryPattern": "restic*.exe",
+      "output": "restic.exe"
+    },
+    {
+      "name": "cloudflared",
+      "version": "2026.8.2",
+      "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.8.2/cloudflared-windows-amd64.exe",
+      "sha256": "c29eee2b121f5436a642eed69fd9767da7e7b8c510fa50aaa130337f931357b5",
+      "archive": "exe",
+      "binaryPattern": "cloudflared-windows-amd64.exe",
+      "output": "cloudflared.exe"
+    },
+    {
+      "name": "typst",
+      "version": "0.15.1",
+      "url": "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-pc-windows-msvc.zip",
+      "sha256": "19ce3551153c2fe7ee9fa2f95208310c8f4d3209fedb699e0333faf8913f6736",
+      "archive": "zip",
+      "binaryPattern": "typst.exe",
+      "output": "typst.exe"
+    }
+  ]
+}
