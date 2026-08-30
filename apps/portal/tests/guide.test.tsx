@@ -32,8 +32,15 @@ describe("simple family guide", () => {
     render(<GuidePage />);
 
     expect(screen.getByRole("heading", { name: "Đưa ảnh từ iPhone vào Em Bé" })).toBeInTheDocument();
-    expect(screen.getByText("Cài Immich từ App Store")).toBeInTheDocument();
-    expect(screen.getByText(/chỉ bật Sao lưu khi đang ở Wi-Fi nhà/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Cài Tailscale/ })).toHaveAttribute(
+      "href",
+      "https://apps.apple.com/us/app/tailscale/id1470499037"
+    );
+    expect(screen.getByRole("link", { name: /Cài Immich/ })).toHaveAttribute(
+      "href",
+      "https://apps.apple.com/us/app/immich/id1613945652"
+    );
+    expect(screen.getByText(/Chưa tải ảnh thật lên/)).toBeInTheDocument();
     expect(screen.queryByText(/192\.168\./)).not.toBeInTheDocument();
   });
 });

@@ -90,18 +90,24 @@ export default function GuidePage() {
         <ol className="iphone-steps">
           <li>
             <span>1</span>
-            <div><strong>Cài Immich từ App Store</strong><p>Cho phép ứng dụng xem những ảnh bạn muốn sao lưu.</p></div>
+            <div>
+              <strong><a href="https://apps.apple.com/us/app/tailscale/id1470499037">Cài Tailscale từ App Store</a></strong>
+              <p>Đăng nhập cùng tài khoản gia đình và bật kết nối riêng.</p>
+            </div>
           </li>
           <li>
             <span>2</span>
-            <div><strong>Đăng nhập khi ở nhà</strong><p>Dùng địa chỉ và tài khoản riêng mà Ba Hiếu đã nhận.</p></div>
+            <div>
+              <strong><a href="https://apps.apple.com/us/app/immich/id1613945652">Cài Immich từ App Store</a></strong>
+              <p>Dùng địa chỉ riêng của gia đình; có thể kết nối an toàn cả khi không ở nhà.</p>
+            </div>
           </li>
           <li>
             <span>3</span>
-            <div><strong>Bật sao lưu an toàn</strong><p>Lần đầu chỉ bật Sao lưu khi đang ở Wi-Fi nhà và cắm sạc.</p></div>
+            <div><strong>Chờ ổ lưu trữ riêng</strong><p>Chưa tải ảnh thật lên cho đến khi hệ thống báo đã sẵn sàng.</p></div>
           </li>
         </ol>
-        <small>Hãy thử trước với 10 ảnh thường. Chưa bật xóa ảnh trên iPhone sau khi tải lên.</small>
+        <small>Khi được bật, hãy thử trước với 10 ảnh thường và không xóa ảnh gốc trên iPhone.</small>
       </section>
 
       <section className="no-touch" aria-labelledby="no-touch-title">
