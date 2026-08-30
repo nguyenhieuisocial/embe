@@ -138,6 +138,20 @@ class MemosClient:
         raise RuntimeError("Memos pagination exceeded the safety ceiling")
 
 
+def list_portal_memos(env: dict[str, str]) -> list[dict[str, Any]]:
+    token_names = ("MEMOS_PORTAL_PAT", "MEMOS_BABYBUDDY_PORTAL_PAT")
+    by_name: dict[str, dict[str, Any]] = {}
+    for token_name in token_names:
+        token = env.get(token_name)
+        if not token:
+            continue
+        for memo in MemosClient(env["MEMOS_BASE_URL"], token).list_memos():
+            name = str(memo.get("name", ""))
+            if name:
+                by_name[name] = memo
+    return list(by_name.values())
+
+
 @dataclass(frozen=True)
 class SupabaseReadModel:
     base_url: str
@@ -199,7 +213,7 @@ def run_sync(env_path: Path, vault_root: Path, child_id: str = "embe-family") ->
     missing = [name for name in required if not env.get(name)]
     if missing:
         raise RuntimeError(f"Missing integration settings: {', '.join(missing)}")
-    memos = MemosClient(env["MEMOS_BASE_URL"], env["MEMOS_PORTAL_PAT"]).list_memos()
+    memos = list_portal_memos(env)
     events = [event for memo in memos if (event := sanitize_memo(memo, child_id)) is not None]
     read_model = SupabaseReadModel(env["SUPABASE_URL"], env["SUPABASE_SECRET_KEY"])
     sync_result = read_model.sync(events)
