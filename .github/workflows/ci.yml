@@ -39,7 +39,7 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: services/storage-poc/pyproject.toml
-      - run: pip install -e "services/storage-poc[test]" -e services/mcp-readonly
+      - run: pip install -e "services/storage-poc[test]" -e services/mcp-readonly -e services/procurement
       - run: pytest services/storage-poc/tests -q
       - run: python -m unittest discover -s services/local-bff/tests -v
       - run: PYTHONPATH=services/babybuddy-memos-sync/src python -m unittest discover -s services/babybuddy-memos-sync/tests -v
