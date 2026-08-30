@@ -27,3 +27,8 @@
 - Mỗi nhu cầu chỉ có một công cụ chính; không chạy nhiều nền tảng trùng vai trò.
 - Code riêng chỉ dùng cho policy gia đình, mapping dữ liệu và adapter chưa có sẵn.
 - Trước khi nhận dependency phải kiểm tra license, maintenance, export/backup và privacy boundary.
+
+## Tiêu chuẩn sản phẩm
+
+- Portal là web-app mobile-first, ưu tiên iPhone/iOS Safari và thao tác một tay.
+- Tiêu chuẩn bắt buộc nằm tại `docs/design/mobile-first-standard.md`; mọi thay đổi frontend phải vượt qua mobile-shell tests trước khi phát hành.

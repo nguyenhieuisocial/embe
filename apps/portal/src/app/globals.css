@@ -15,6 +15,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+a, button, input, select, textarea { touch-action: manipulation; }
 body {
   margin: 0;
   background:
@@ -25,6 +26,7 @@ body {
   color: var(--ink);
   font-family: var(--font-body), sans-serif;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 a { color: inherit; }
 main { margin: 0 auto; max-width: 1180px; padding: 0 42px; }
@@ -127,7 +129,6 @@ h2 { font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -0.04em; }
   text-decoration: none;
   transition: background 160ms ease, transform 160ms ease;
 }
-.primary-link:hover { background: var(--jade); transform: translateY(-2px); }
 
 .day-ribbon {
   background: var(--paper);
@@ -173,7 +174,6 @@ h2 { font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -0.04em; }
   text-decoration: none;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
-.guide-entry:hover, .pregnancy-entry:hover { box-shadow: var(--shadow); transform: translateY(-3px); }
 .guide-entry { background: var(--jade-soft); border: 1px solid rgba(47,118,109,0.22); grid-template-columns: 58px 1fr auto; }
 .guide-entry-mark { align-items: center; background: var(--paper); border-radius: 50%; color: var(--jade); display: flex; font-family: var(--font-display), serif; font-size: 1.8rem; height: 58px; justify-content: center; width: 58px; }
 .guide-entry small, .guide-entry strong, .pregnancy-entry small, .pregnancy-entry strong { display: block; }
@@ -281,7 +281,7 @@ footer p { margin: 0; }
 .help-rule strong { color: #9d4435; }
 .help-rule p { line-height: 1.7; margin: 0; }
 
-.login-shell { align-items: center; display: flex; justify-content: center; min-height: 100vh; padding-bottom: 42px; padding-top: 42px; }
+.login-shell { align-items: center; display: flex; justify-content: center; min-height: 100vh; min-height: 100dvh; padding-bottom: 42px; padding-top: 42px; }
 .login-card { background: var(--paper); border-radius: 0 0 12px 12px; border-top: 7px solid var(--jade); box-shadow: var(--shadow); max-width: 570px; padding: clamp(32px,7vw,62px); width: 100%; }
 .login-mark { align-items: center; background: var(--coral); border-radius: 50%; color: white; display: flex; font-family: var(--font-display),serif; font-size: 1.8rem; height: 54px; justify-content: center; margin-bottom: 30px; transform: rotate(-6deg); width: 54px; }
 .login-card h1 { font-size: clamp(2.6rem,8vw,4.3rem); line-height: 1.04; }
@@ -292,7 +292,6 @@ footer p { margin: 0; }
 .login-form input[type="password"] { background: var(--rice); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-family: inherit; font-size: 1rem; min-height: 52px; padding: 12px 14px; }
 .login-form input[type="password"]:focus { border-color: var(--jade); outline: 3px solid rgba(47,118,109,0.14); }
 .login-form button { background: var(--ink-deep); border: 0; border-radius: 999px; color: white; cursor: pointer; font: inherit; font-weight: 600; margin-top: 4px; min-height: 52px; padding: 12px 18px; }
-.login-form button:hover { background: var(--jade); }
 .login-error { color: #a03b2d; font-size: 0.84rem; margin: 0; }
 .login-privacy { border-top: 1px solid var(--line); font-size: 0.73rem; margin: 26px 0 0; padding-top: 17px; }
 
@@ -368,6 +367,12 @@ footer p { margin: 0; }
   main { padding-left: 32px; padding-right: 32px; }
   .home-hero, .pregnancy-hero, .guide-hero { margin-left: auto; margin-right: auto; max-width: 720px; }
   .portal-grid, .daily-rhythm, .care-board, .menu-section, .medical-boundary { margin-left: auto; margin-right: auto; max-width: 720px; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primary-link:hover { background: var(--jade); transform: translateY(-2px); }
+  .guide-entry:hover, .pregnancy-entry:hover { box-shadow: var(--shadow); transform: translateY(-3px); }
+  .login-form button:hover { background: var(--jade); }
 }
 
 @media (prefers-reduced-motion: reduce) {

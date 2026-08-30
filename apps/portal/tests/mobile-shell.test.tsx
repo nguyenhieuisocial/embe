@@ -20,8 +20,17 @@ describe("mobile family shell", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
     expect(css).toMatch(/\.login-form input\[type="password"\][^{]*\{[^}]*font-size:\s*(?:1rem|16px)/s);
+    expect(css).toContain("min-height: 100dvh");
     expect(css).toContain("env(safe-area-inset-bottom)");
     expect(css).toContain("env(safe-area-inset-left)");
     expect(css).toContain("env(safe-area-inset-right)");
+  });
+
+  it("keeps touch interactions native-like without relying on hover", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+
+    expect(css).toMatch(/a, button, input, select, textarea\s*\{[^}]*touch-action:\s*manipulation/s);
+    expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)[\s\S]*\.primary-link:hover/);
+    expect(css).toMatch(/\.family-nav a\s*\{[^}]*min-height:\s*(?:52|5[3-9]|[6-9]\d)px/s);
   });
 });
