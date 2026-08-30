@@ -32,6 +32,7 @@ function Invoke-RunRestic {
         [string]$VaultPath,
         [string]$AppDataPath,
         [string]$Manifest,
+        [string]$MediaPath = "",
         [switch]$AllowR2
     )
 
@@ -43,6 +44,7 @@ function Invoke-RunRestic {
         "-ResticPath", (Join-Path $testRoot "restic.ps1"), "-Tag", "test"
     )
     if ($AllowR2) { $arguments += "-AllowR2Repository" }
+    if ($MediaPath) { $arguments += @("-MediaPath", $MediaPath) }
     $output = & powershell @arguments
 
     [pscustomobject]@{
@@ -101,14 +103,16 @@ exit 0
     $vault = Join-Path $testRoot "vault"
     $app = Join-Path $testRoot "appdata"
     $exports = Join-Path $testRoot "exports"
+    $media = Join-Path $testRoot "media"
     $repo = Join-Path $testRoot "repo"
     $manifest = Join-Path $exports "manifest.json"
     $passwordFile = Join-Path $testRoot "restic-password.txt"
 
-    New-Item -ItemType Directory -Path $code, $vault, $app, $exports, $repo | Out-Null
+    New-Item -ItemType Directory -Path $code, $vault, $app, $exports, $media, $repo | Out-Null
     Set-Content -Path (Join-Path $code "app.txt") -Value "hello-code"
     Set-Content -Path (Join-Path $vault "note.md") -Value "# vault"
     Set-Content -Path (Join-Path $app "media.bin") -Value "abc123"
+    Set-Content -Path (Join-Path $media "photo.jpg") -Value "synthetic-photo"
     Set-Content -LiteralPath $passwordFile -Value "secret" -NoNewline
 
     $missingPassword = Invoke-RunRestic -Repo $repo -PasswordFile (Join-Path $testRoot "missing-password.txt") -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest $manifest
@@ -130,6 +134,13 @@ exit 0
     Assert-Equal "vault source file count" 1 $data.sources[1].file_count
     Assert-Equal "appdata source file count" 1 $data.sources[2].file_count
 
+    $mediaManifest = Join-Path $exports "media.json"
+    $withMedia = Invoke-RunRestic -Repo $repo -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest $mediaManifest -MediaPath $media
+    Assert-Equal "local repository accepts media source" 0 $withMedia.ExitCode
+    $mediaData = Get-Content -LiteralPath $mediaManifest -Raw | ConvertFrom-Json
+    Assert-Equal "manifest has media source" "media" $mediaData.sources[3].label
+    Assert-Equal "media source file count" 1 $mediaData.sources[3].file_count
+
     $env:FAKE_RESTIC_ALREADY_INITIALIZED = "1"
     $existing = Invoke-RunRestic -Repo $repo -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest (Join-Path $exports "existing.json")
     Assert-Equal "already initialized repository remains usable" 0 $existing.ExitCode
@@ -140,6 +151,8 @@ exit 0
     Assert-Equal "R2 requires explicit switch" 1 $remoteBlocked.ExitCode
     $remoteAllowed = Invoke-RunRestic -Repo $approvedR2 -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest (Join-Path $exports "r2.json") -AllowR2
     Assert-Equal "approved scoped R2 repository is accepted" 0 $remoteAllowed.ExitCode
+    $remoteMedia = Invoke-RunRestic -Repo $approvedR2 -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest (Join-Path $exports "r2-media.json") -AllowR2 -MediaPath $media
+    Assert-Equal "R2 rejects media originals" 1 $remoteMedia.ExitCode
     $wrongRemote = Invoke-RunRestic -Repo "s3:https://example.invalid/embe-backup/restic-critical" -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest (Join-Path $exports "wrong.json") -AllowR2
     Assert-Equal "unapproved remote host is rejected" 1 $wrongRemote.ExitCode
 

@@ -8,6 +8,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$AppDataPath,
 
+    [string]$MediaPath = "",
+
     [Parameter(Mandatory = $true)]
     [string]$Repository,
 
@@ -208,6 +210,13 @@ foreach ($item in $requiredParams) {
 Assert-Directory -Name "CodeConfigPath" -Path $CodeConfigPath
 Assert-Directory -Name "VaultPath" -Path $VaultPath
 Assert-Directory -Name "AppDataPath" -Path $AppDataPath
+if (-not [string]::IsNullOrWhiteSpace($MediaPath)) {
+    Assert-Directory -Name "MediaPath" -Path $MediaPath
+    $isLocalRepository = $Repository -match "^[A-Za-z]:[\\/]" -or $Repository -match "^\\\\"
+    if (-not $isLocalRepository -and $Repository -match "^[a-zA-Z][a-zA-Z0-9+.-]*:") {
+        throw "Media originals are restricted to a separate local or LAN backup repository."
+    }
+}
 Assert-PasswordFile -Path $PasswordFile
 Assert-Repository -Path $Repository
 
@@ -221,6 +230,9 @@ $sourceGroups = @(
     @{ label = "vault"; path = (Resolve-Path -LiteralPath $VaultPath).Path },
     @{ label = "appdata"; path = (Resolve-Path -LiteralPath $AppDataPath).Path }
 )
+if (-not [string]::IsNullOrWhiteSpace($MediaPath)) {
+    $sourceGroups += @{ label = "media"; path = (Resolve-Path -LiteralPath $MediaPath).Path }
+}
 
 $snapshots = foreach ($source in $sourceGroups) {
     Get-DirectoryManifest -Label $source.label -Path $source.path
@@ -249,6 +261,9 @@ $backupArguments += @(
     $VaultPath,
     $AppDataPath
 )
+if (-not [string]::IsNullOrWhiteSpace($MediaPath)) {
+    $backupArguments += $MediaPath
+}
 
 $backupOutput = Invoke-Restic -Arguments $backupArguments
 $snapshotId = Get-SnapshotIdFromOutput -Lines $backupOutput
