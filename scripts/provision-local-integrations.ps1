@@ -9,8 +9,9 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$secretPath = Join-Path $ProjectRoot "secrets\portal-data.env"
-$secretDirectory = Split-Path -Parent $secretPath
+$secretDirectory = Join-Path $ProjectRoot "secrets"
+$adminSecretDirectory = Join-Path $secretDirectory "admin"
+$secretPath = Join-Path $adminSecretDirectory "portal-data.env"
 $runtimeSecretDirectory = Join-Path $secretDirectory "runtime"
 $syncSecretPath = Join-Path $runtimeSecretDirectory "portal-sync.env"
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
@@ -22,6 +23,7 @@ if ($RotateOnly) {
     New-Item -ItemType Directory -Path $secretDirectory -Force | Out-Null
     & icacls.exe $secretDirectory /inheritance:r /grant:r "${identity}:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Unable to restrict the integration secret directory" }
+    New-Item -ItemType Directory -Path $adminSecretDirectory -Force | Out-Null
     New-Item -ItemType Directory -Path $runtimeSecretDirectory -Force | Out-Null
 }
 
@@ -53,6 +55,7 @@ function Save-EnvFile([hashtable]$Values, [string]$Path) {
         "MEMOS_PORTAL_PAT",
         "MEMOS_VAULT_EXPORT_PAT",
         "MEMOS_PAT_ROTATE_AFTER",
+        "MEMOS_PAT_PENDING_REVOKE",
         "SUPABASE_PROJECT_REF",
         "SUPABASE_URL",
         "SUPABASE_SECRET_KEY"
@@ -157,13 +160,21 @@ try {
             $rotateTokens = $true
         }
     }
-    $oldTokenNames = @()
-    if ($rotateTokens) {
+    $pendingTokenNames = @()
+    if ($values.ContainsKey("MEMOS_PAT_PENDING_REVOKE") -and -not [string]::IsNullOrWhiteSpace($values.MEMOS_PAT_PENDING_REVOKE)) {
+        $pendingTokenNames = @($values.MEMOS_PAT_PENDING_REVOKE.Split(';') | Where-Object { $_ })
+    }
+    if ($rotateTokens -or $pendingTokenNames.Count -gt 0) {
         $listedTokens = Invoke-MemosJson "GET" "/api/v1/$userName/personalAccessTokens" $null $accessToken
+        $existingTokenNames = @($listedTokens.personalAccessTokens | ForEach-Object { [string]$_.name })
+        $pendingTokenNames = @($pendingTokenNames | Where-Object { $existingTokenNames -contains $_ })
+    }
+    if ($rotateTokens) {
         $descriptions = @($tokenDefinitions.Values)
         $oldTokenNames = @($listedTokens.personalAccessTokens | Where-Object {
             $descriptions -contains [string]$_.description
         } | ForEach-Object { [string]$_.name })
+        $pendingTokenNames = @($pendingTokenNames + $oldTokenNames | Select-Object -Unique)
     }
     foreach ($entry in $tokenDefinitions.GetEnumerator()) {
         if ($rotateTokens -or -not $values.ContainsKey($entry.Key) -or [string]::IsNullOrWhiteSpace($values[$entry.Key])) {
@@ -203,10 +214,14 @@ try {
     }
 
     $values.PROVISIONING_STATUS = "ready"
+    $values.MEMOS_PAT_PENDING_REVOKE = $pendingTokenNames -join ';'
     Save-EnvFile $values $secretPath
     Save-SyncEnvFile $values $syncSecretPath
-    foreach ($tokenName in $oldTokenNames) {
+    foreach ($tokenName in @($pendingTokenNames)) {
         Invoke-MemosJson "DELETE" "/api/v1/$tokenName" $null $accessToken | Out-Null
+        $pendingTokenNames = @($pendingTokenNames | Where-Object { $_ -ne $tokenName })
+        $values.MEMOS_PAT_PENDING_REVOKE = $pendingTokenNames -join ';'
+        Save-EnvFile $values $secretPath
     }
     [ordered]@{
         status = "ready"

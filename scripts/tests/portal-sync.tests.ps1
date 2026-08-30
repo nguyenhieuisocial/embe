@@ -15,6 +15,8 @@ foreach ($required in @(
     "LogonType Password",
     "RunLevel Limited",
     "RotateOnly",
+    "secrets\admin",
+    "/remove:g",
     "data\status\portal-sync.json",
     "data\logs\portal-sync.jsonl"
 )) {
@@ -35,7 +37,8 @@ foreach ($required in @(
     "Save-SyncEnvFile",
     "personalAccessTokens",
     "DELETE",
-    "ForceRotate"
+    "ForceRotate",
+    "MEMOS_PAT_PENDING_REVOKE"
 )) {
     if (-not $provisioner.Contains($required)) { throw "Integration provisioner is missing: $required" }
 }

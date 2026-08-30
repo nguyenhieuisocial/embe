@@ -19,7 +19,8 @@ if (-not $principalCheck.IsInRole([Security.Principal.WindowsBuiltInRole]::Admin
 $python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 $syncScript = Join-Path $ProjectRoot "services\local-bff\src\sync_portal.py"
 $provisioner = Join-Path $ProjectRoot "scripts\provision-local-integrations.ps1"
-$adminSecretFile = Join-Path $ProjectRoot "secrets\portal-data.env"
+$adminSecretDirectory = Join-Path $ProjectRoot "secrets\admin"
+$adminSecretFile = Join-Path $adminSecretDirectory "portal-data.env"
 $runtimeSecretDirectory = Join-Path $ProjectRoot "secrets\runtime"
 $syncSecretFile = Join-Path $runtimeSecretDirectory "portal-sync.env"
 $statusFile = Join-Path $ProjectRoot "data\status\portal-sync.json"
@@ -58,6 +59,10 @@ $syncIdentity = "$env:COMPUTERNAME\$SyncAccountName"
 $credentialIdentity = "$env:COMPUTERNAME\$CredentialAccountName"
 $ownerIdentity = $identity.Name
 
+& icacls.exe $ProjectRoot /inheritance:r /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "BUILTIN\Users:(OI)(CI)(RX)" | Out-Null
+& icacls.exe $ProjectRoot /remove:g "*S-1-5-11" /T /C | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "Unable to protect the EmBe project root" }
+
 foreach ($path in @(
     (Join-Path $ProjectRoot ".venv"),
     (Join-Path $ProjectRoot "services\local-bff"),
@@ -70,9 +75,7 @@ foreach ($path in @(
     if ($LASTEXITCODE -ne 0) { throw "Unable to protect executable integration path: $path" }
 }
 
-$secretRoot = Split-Path -Parent $adminSecretFile
-& icacls.exe $secretRoot /grant:r "${credentialIdentity}:(RX)" | Out-Null
-& icacls.exe $adminSecretFile /grant:r "${credentialIdentity}:(M)" | Out-Null
+& icacls.exe $adminSecretDirectory /inheritance:r /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "${credentialIdentity}:(OI)(CI)(M)" /T /C | Out-Null
 & icacls.exe $runtimeSecretDirectory /inheritance:r /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "${credentialIdentity}:(OI)(CI)(M)" "${syncIdentity}:(OI)(CI)(RX)" /T /C | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Unable to isolate portal runtime credentials" }
 
