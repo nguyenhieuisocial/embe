@@ -71,12 +71,26 @@ class TestVaultExporterIdempotency(unittest.TestCase):
         manifest_payload = json.loads(manifest[0])
         self.assertEqual(manifest_payload["action"], "archived")
         self.assertEqual(manifest_payload["source_id"], source_id)
-        self.assertTrue(note_path.exists())
+        self.assertFalse(note_path.exists())
 
         # Delete repeated should not duplicate archive rows.
         self.exporter.export([{"**": "noop", "source_id": source_id, "status": "deleted"}])  # noqa: B018
         manifest_after = self.exporter.archive_manifest_path.read_text(encoding="utf-8").strip().splitlines()
         self.assertEqual(len(manifest_after), 1)
+
+    def test_reconcile_removes_note_no_longer_in_approved_set(self) -> None:
+        self.exporter.export(
+            [{"source": "memos", "source_id": "memos-104", "title": "Private", "content": "old"}]
+        )
+        note_path = self.exporter._note_path("memos-104")
+        self.assertTrue(note_path.exists())
+
+        self.exporter.export([], reconcile=True)
+
+        self.assertFalse(note_path.exists())
+        events = [json.loads(line) for line in self.exporter.archive_manifest_path.read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(events[-1]["source_id"], "memos-104")
+        self.assertEqual(events[-1]["reason"], "not-approved")
 
     def test_duplicate_delete_events_in_one_batch_are_archived_once(self) -> None:
         deleted = {"source_id": "memos-103", "status": "deleted"}

@@ -42,7 +42,7 @@ try {
 
     $backup = & powershell -NoProfile -ExecutionPolicy Bypass -File $backupScript `
         -CodeConfigPath (Join-Path $ProjectRoot "infra") `
-        -VaultPath (Join-Path $ProjectRoot "vault") `
+        -VaultPath (Join-Path $ProjectRoot "embe") `
         -AppDataPath $snapshot.session `
         -Repository $repository `
         -PasswordFile $passwordFile `

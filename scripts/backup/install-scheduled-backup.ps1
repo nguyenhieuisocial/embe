@@ -40,7 +40,7 @@ if (-not (Get-LocalGroupMember -Group "docker-users" -Member $ServiceAccountName
 $serviceIdentity = "$env:COMPUTERNAME\$ServiceAccountName"
 $readPaths = @(
     (Join-Path $ProjectRoot "infra"),
-    (Join-Path $ProjectRoot "vault"),
+    (Join-Path $ProjectRoot "embe"),
     (Join-Path $ProjectRoot "data\appdata"),
     (Join-Path $ProjectRoot "scripts"),
     (Join-Path $ProjectRoot "tools"),

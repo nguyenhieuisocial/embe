@@ -183,7 +183,7 @@ foreach ($path in @((Split-Path $statusFile -Parent), (Split-Path $logFile -Pare
     if ($LASTEXITCODE -ne 0) { throw "Unable to grant portal sync output access: $path" }
 }
 
-$syncAction = New-ScheduledTaskAction -Execute $python -Argument "`"$syncScript`" --env `"$syncSecretFile`" --vault `"$ProjectRoot\vault`" --status `"$statusFile`" --log `"$logFile`"" -WorkingDirectory $ProjectRoot
+$syncAction = New-ScheduledTaskAction -Execute $python -Argument "`"$syncScript`" --env `"$syncSecretFile`" --vault `"$ProjectRoot\embe`" --status `"$statusFile`" --log `"$logFile`"" -WorkingDirectory $ProjectRoot
 $syncTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
 $syncSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 3) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName $TaskName -Action $syncAction -Trigger $syncTrigger -Settings $syncSettings -User $syncIdentity -Password $syncPassword -RunLevel Limited -Description "Publishes only approved private Memos into the EmBe family read-model." -Force | Out-Null

@@ -18,7 +18,9 @@
 
 ## Go/no-go
 
-**Go** cho việc nhập ảnh thử từ iPhone vào Immich và tiếp tục Portal/BFF.
+**Chưa Go** cho nhập ảnh iPhone: máy hiện chỉ có ổ hệ thống và dung lượng trống
+dưới ngưỡng an toàn. Cần ổ media riêng, đường LAN/VPN đã kiểm tra và một lần
+nhập synthetic đạt trước khi dùng 10 ảnh thử.
 
-**Chưa go-live đầy đủ** cho media thật số lượng lớn cho đến khi có USB HDD/NAS
-làm bản sao thứ ba và chạy restore drill trên thiết bị đó.
+**Chưa go-live đầy đủ** cho media thật cho đến khi có USB HDD/NAS làm bản sao
+thứ ba và chạy restore drill trên chính thiết bị đó.

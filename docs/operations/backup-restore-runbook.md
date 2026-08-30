@@ -2,7 +2,7 @@
 
 ## Phạm vi hiện hành
 
-- Vault thực tế: `C:\\EmBe\\vault`.
+- Vault thực tế: `C:\\EmBe\\embe` (`C:\\EmBe\\vault` chỉ là junction tương thích cho lịch cũ).
 - Snapshot nhất quán: BabyBuddy, Memos, Grocy bằng SQLite Backup API; Immich bằng `pg_dump`.
 - R2 chỉ nhận vault, cấu hình và snapshot DB đã được Restic mã hóa.
 - Không backup model Ollama, cache ML, RAW hoặc video vào R2 Free.
@@ -28,7 +28,7 @@ Credential lấy từ file local bị Git bỏ qua, còn mật khẩu Restic n�
 Các nguồn đưa vào backup R2:
 
 1. `C:\\EmBe\\infra`
-2. `C:\\EmBe\\vault`
+2. `C:\\EmBe\\embe`
 3. thư mục snapshot mới nhất dưới `C:\\EmBe\\exports\\backup-staging`
 
 ## Restore drill

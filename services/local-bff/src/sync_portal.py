@@ -204,7 +204,7 @@ def export_to_vault(events: list[dict[str, Any]], vault_root: Path) -> None:
         vault_root=vault_root,
         notes_dirname="20-Timeline/Memos",
         archive_dirname="90-System/Memos-Archive",
-    ).export(records)
+    ).export(records, reconcile=True)
 
 
 def run_sync(env_path: Path, vault_root: Path, child_id: str = "embe-family") -> dict[str, Any]:
@@ -253,7 +253,7 @@ def _append_log(path: Path, payload: dict[str, Any]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync approved Memos to the EmBe family portal.")
     parser.add_argument("--env", type=Path, default=Path(r"C:\EmBe\secrets\runtime\portal-sync.env"))
-    parser.add_argument("--vault", type=Path, default=Path(r"C:\EmBe\vault"))
+    parser.add_argument("--vault", type=Path, default=Path(r"C:\EmBe\embe"))
     parser.add_argument("--status", type=Path, default=Path(r"C:\EmBe\data\status\portal-sync.json"))
     parser.add_argument("--log", type=Path, default=Path(r"C:\EmBe\data\logs\portal-sync.jsonl"))
     args = parser.parse_args()

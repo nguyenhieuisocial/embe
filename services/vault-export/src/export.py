@@ -31,6 +31,14 @@ def _extract_exported_at(existing_payload: str) -> str | None:
     return None
 
 
+def _frontmatter_value(payload: str, key: str) -> str | None:
+    prefix = f"{key}:"
+    for raw_line in payload.splitlines():
+        if raw_line.startswith(prefix):
+            return raw_line.replace(prefix, "", 1).strip()
+    return None
+
+
 @dataclass
 class VaultExporter:
     vault_root: Path
@@ -86,19 +94,35 @@ class VaultExporter:
                 return True
         return False
 
-    def _append_archive(self, source_id: str, title: str, path: Path) -> None:
+    def _append_archive(self, source_id: str, title: str, path: Path, reason: str) -> None:
         event = {
             "action": "archived",
             "source_id": source_id,
             "title": title,
             "path": str(path.as_posix()),
+            "reason": reason,
             "archived_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
         with self.archive_manifest_path.open("a", encoding="utf-8") as handle:
             _dump_jsonl_line(handle, event)
 
-    def export(self, records: List[Dict[str, Any]]) -> None:
+    def _archive_and_remove(
+        self,
+        source_id: str,
+        title: str,
+        path: Path,
+        events: List[Dict[str, Any]],
+        reason: str,
+    ) -> None:
+        if not self._already_archived(source_id, events):
+            self._append_archive(source_id, title, path, reason)
+            events.append({"action": "archived", "source_id": source_id})
+        if path.exists():
+            path.unlink()
+
+    def export(self, records: List[Dict[str, Any]], reconcile: bool = False) -> None:
         events = self._read_existing_archive_events()
+        active_source_ids: set[str] = set()
         for record in records:
             source = str(record.get("source", "memos"))
             source_id = str(record["source_id"])
@@ -106,11 +130,10 @@ class VaultExporter:
             path = self._note_path(source_id)
 
             if _is_deleted(record):
-                if not self._already_archived(source_id, events):
-                    self._append_archive(source_id, title, path)
-                    events.append({"action": "archived", "source_id": source_id})
+                self._archive_and_remove(source_id, title, path, events, "deleted")
                 continue
 
+            active_source_ids.add(source_id)
             content = str(record.get("content", "")).strip()
             existing = path.read_text(encoding="utf-8") if path.exists() else ""
             exported_at = str(
@@ -121,3 +144,14 @@ class VaultExporter:
             markdown = self._to_markdown(source, source_id, title, content, exported_at)
             if existing != markdown:
                 path.write_text(markdown, encoding="utf-8")
+
+        if reconcile:
+            for path in self.notes_dir.glob("*.md"):
+                payload = path.read_text(encoding="utf-8")
+                if _frontmatter_value(payload, "source") != "memos":
+                    continue
+                source_id = _frontmatter_value(payload, "source_id")
+                if not source_id or source_id in active_source_ids:
+                    continue
+                title = path.stem
+                self._archive_and_remove(source_id, title, path, events, "not-approved")
