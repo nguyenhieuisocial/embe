@@ -52,6 +52,8 @@ $requiredServices = @(
     "babybuddy",
     "memos",
     "grocy",
+    "node-red",
+    "uptime-kuma",
     "immich-server",
     "immich-machine-learning",
     "immich-postgres",
@@ -86,7 +88,7 @@ foreach ($serviceName in $requiredServices) {
     }
 }
 
-foreach ($serviceName in @("babybuddy", "memos", "grocy", "immich-server", "immich-machine-learning")) {
+foreach ($serviceName in @("babybuddy", "memos", "grocy", "node-red", "uptime-kuma", "immich-server", "immich-machine-learning")) {
     if ($null -eq $config.services.$serviceName.healthcheck) {
         throw "$serviceName must define a healthcheck"
     }

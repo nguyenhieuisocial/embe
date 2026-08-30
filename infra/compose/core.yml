@@ -67,6 +67,36 @@ services:
       retries: 5
       start_period: 60s
 
+  node-red:
+    image: nodered/node-red:5.0.4
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    volumes:
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/node-red
+        target: /data
+    ports:
+      - 127.0.0.1:${NODE_RED_PORT:-1880}:1880
+    networks:
+      - embe-core
+    healthcheck:
+      disable: false
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.5.3
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/uptime-kuma
+        target: /app/data
+    ports:
+      - 127.0.0.1:${UPTIME_KUMA_PORT:-3001}:3001
+    networks:
+      - embe-core
+    healthcheck:
+      disable: false
+
 networks:
   embe-core:
     name: embe-core

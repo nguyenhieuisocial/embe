@@ -11,6 +11,8 @@ Local-only endpoints:
 - BabyBuddy: `http://127.0.0.1:8000`
 - Memos: `http://127.0.0.1:5230`
 - Grocy: `http://127.0.0.1:9283`
+- Node-RED: `http://127.0.0.1:1880`
+- Uptime Kuma: `http://127.0.0.1:3001`
 
 All published ports bind to loopback. Do not change them to `0.0.0.0` or add
 router port forwarding. Application state is stored below
@@ -44,3 +46,5 @@ Official deployment references:
 - <https://usememos.com/docs/deploy/docker>
 - <https://docs.linuxserver.io/images/docker-grocy>
 - <https://docs.immich.app/install/docker-compose>
+- <https://nodered.org/docs/getting-started/docker>
+- <https://github.com/louislam/uptime-kuma/wiki/%F0%9F%94%A7-How-to-Install>

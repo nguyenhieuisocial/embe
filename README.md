@@ -19,3 +19,10 @@
 - `data/`: stable mount paths đến appdata và media storage.
 - `exports/`: PDF và output được tạo lại.
 - `docs/`: roadmap, architecture decisions và runbooks.
+
+## Chính sách tái sử dụng
+
+- Ưu tiên dự án mã nguồn mở hoặc free tier trưởng thành trước khi viết dịch vụ mới.
+- Mỗi nhu cầu chỉ có một công cụ chính; không chạy nhiều nền tảng trùng vai trò.
+- Code riêng chỉ dùng cho policy gia đình, mapping dữ liệu và adapter chưa có sẵn.
+- Trước khi nhận dependency phải kiểm tra license, maintenance, export/backup và privacy boundary.
