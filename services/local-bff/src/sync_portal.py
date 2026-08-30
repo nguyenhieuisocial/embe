@@ -21,6 +21,7 @@ APPROVAL_TAG = "portal"
 SYNC_BATCH_SIZE = 500
 TAG_ONLY = re.compile(r"^(?:\s*#[\w-]+\s*)+$", re.UNICODE)
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$")
+JOURNAL_MARKER = re.compile(r"<!--\s*embe-journal:([0-9a-f-]{36})\s*-->", re.IGNORECASE)
 
 
 def _normalized_tags(memo: dict[str, Any]) -> set[str]:
@@ -137,6 +138,18 @@ class MemosClient:
                 return results
         raise RuntimeError("Memos pagination exceeded the safety ceiling")
 
+    def create_private_memo(self, content: str) -> dict[str, Any]:
+        return _json_request(
+            f"{self.base_url.rstrip('/')}/api/v1/memos",
+            "POST",
+            {
+                "Authorization": f"Bearer {self.token}",
+                "Accept": "application/json",
+                "Content-Type": "application/json; charset=utf-8",
+            },
+            {"content": content, "visibility": "PRIVATE"},
+        )
+
 
 def list_portal_memos(env: dict[str, str]) -> list[dict[str, Any]]:
     token_names = ("MEMOS_PORTAL_PAT", "MEMOS_BABYBUDDY_PORTAL_PAT")
@@ -185,6 +198,78 @@ class SupabaseReadModel:
         return {"upserted": int(result["upserted"]), "unapproved": int(result["unapproved"])}
 
 
+@dataclass(frozen=True)
+class SupabaseJournalInbox:
+    base_url: str
+    secret_key: str
+
+    @property
+    def headers(self) -> dict[str, str]:
+        return {
+            "apikey": self.secret_key,
+            "Authorization": f"Bearer {self.secret_key}",
+            "Content-Type": "application/json; charset=utf-8",
+        }
+
+    def _rpc(self, name: str, body: dict[str, Any]) -> Any:
+        return _json_request(
+            f"{self.base_url.rstrip('/')}/rest/v1/rpc/{name}",
+            "POST",
+            self.headers,
+            body,
+        )
+
+    def claim(self, limit: int = 10) -> list[dict[str, Any]]:
+        result = self._rpc("embe_claim_journal_entries", {"p_limit": max(1, min(limit, 20))})
+        return result if isinstance(result, list) else []
+
+    def complete(self, entry_id: str) -> None:
+        self._rpc("embe_complete_journal_entry", {"p_id": entry_id})
+
+    def fail(self, entry_id: str, error_code: str) -> None:
+        self._rpc("embe_fail_journal_entry", {"p_id": entry_id, "p_error_code": error_code})
+
+
+def import_journal_inbox(
+    inbox: SupabaseJournalInbox,
+    memos_client: MemosClient,
+    existing_memos: list[dict[str, Any]],
+) -> dict[str, int]:
+    existing_ids = {
+        match.group(1).lower()
+        for memo in existing_memos
+        for match in JOURNAL_MARKER.finditer(str(memo.get("content", "")))
+    }
+    claimed = inbox.claim(limit=10)
+    imported = 0
+    failed = 0
+    author_names = {"father": "Ba Hiếu", "mother": "Mẹ Ngân"}
+
+    for entry in claimed:
+        entry_id = str(entry.get("id", "")).lower()
+        content = str(entry.get("content", "")).strip()
+        author = author_names.get(str(entry.get("author_role", "")))
+        try:
+            uuid.UUID(entry_id)
+            if not author or not 1 <= len(content) <= 1000:
+                raise ValueError("invalid inbox payload")
+            if entry_id not in existing_ids:
+                memos_client.create_private_memo(
+                    f"# Nhật ký của {author}\n\n{content}\n\n#portal\n\n"
+                    f"<!-- embe-journal:{entry_id} -->"
+                )
+                existing_ids.add(entry_id)
+            inbox.complete(entry_id)
+            imported += 1
+        except ValueError:
+            inbox.fail(entry_id, "invalid_payload")
+            failed += 1
+        except Exception:  # one unavailable dependency must not lose or block other entries
+            inbox.fail(entry_id, "memos_unavailable")
+            failed += 1
+    return {"claimed": len(claimed), "imported": imported, "failed": failed}
+
+
 def export_to_vault(events: list[dict[str, Any]], vault_root: Path) -> None:
     exporter_path = Path(__file__).parents[2] / "vault-export" / "src"
     sys.path.insert(0, str(exporter_path))
@@ -213,6 +298,13 @@ def run_sync(env_path: Path, vault_root: Path, child_id: str = "embe-family") ->
     missing = [name for name in required if not env.get(name)]
     if missing:
         raise RuntimeError(f"Missing integration settings: {', '.join(missing)}")
+    memos_client = MemosClient(env["MEMOS_BASE_URL"], env["MEMOS_PORTAL_PAT"])
+    existing_human_memos = memos_client.list_memos()
+    inbox_result = import_journal_inbox(
+        SupabaseJournalInbox(env["SUPABASE_URL"], env["SUPABASE_SECRET_KEY"]),
+        memos_client,
+        existing_human_memos,
+    )
     memos = list_portal_memos(env)
     events = [event for memo in memos if (event := sanitize_memo(memo, child_id)) is not None]
     read_model = SupabaseReadModel(env["SUPABASE_URL"], env["SUPABASE_SECRET_KEY"])
@@ -223,6 +315,7 @@ def run_sync(env_path: Path, vault_root: Path, child_id: str = "embe-family") ->
         "scanned": len(memos),
         "published": len(events),
         "unapproved": sync_result["unapproved"],
+        "journal_inbox": inbox_result,
     }
 
 

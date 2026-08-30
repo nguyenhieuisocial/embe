@@ -3,11 +3,18 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
-from sync_portal import MemosClient, SupabaseReadModel, list_portal_memos, sanitize_memo
+from sync_portal import (
+    MemosClient,
+    SupabaseJournalInbox,
+    SupabaseReadModel,
+    import_journal_inbox,
+    list_portal_memos,
+    sanitize_memo,
+)
 
 
 class TestPortalSyncPolicy(unittest.TestCase):
@@ -111,6 +118,76 @@ class TestPortalSyncPolicy(unittest.TestCase):
 
         self.assertEqual(request.call_count, 1)
         self.assertIn("embe_stage_timeline_batch", request.call_args.args[0])
+
+    @patch("sync_portal._json_request")
+    def test_journal_inbox_uses_server_only_claim_complete_and_fail_rpcs(self, request) -> None:
+        request.side_effect = [
+            [{"id": "11111111-1111-4111-8111-111111111111", "content": "Một ngày vui", "author_role": "father"}],
+            None,
+            None,
+        ]
+        inbox = SupabaseJournalInbox("https://project.supabase.co", "secret")
+
+        claimed = inbox.claim(limit=5)
+        inbox.complete(claimed[0]["id"])
+        inbox.fail(claimed[0]["id"], "memos_unavailable")
+
+        self.assertEqual(len(claimed), 1)
+        self.assertIn("embe_claim_journal_entries", request.call_args_list[0].args[0])
+        self.assertIn("embe_complete_journal_entry", request.call_args_list[1].args[0])
+        self.assertIn("embe_fail_journal_entry", request.call_args_list[2].args[0])
+
+    @patch.object(MemosClient, "create_private_memo")
+    def test_inbox_entry_becomes_one_private_portal_memo(self, create_memo) -> None:
+        entry = {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "content": "Hôm nay cả nhà cùng đi dạo.",
+            "author_role": "father",
+        }
+        inbox = Mock()
+        inbox.claim.return_value = [entry]
+
+        result = import_journal_inbox(
+            inbox,
+            MemosClient("http://memos", "token"),
+            existing_memos=[],
+        )
+
+        self.assertEqual(result, {"claimed": 1, "imported": 1, "failed": 0})
+        payload = create_memo.call_args.args[0]
+        self.assertIn("# Nhật ký của Ba Hiếu", payload)
+        self.assertIn("#portal", payload)
+        self.assertIn("<!-- embe-journal:11111111-1111-4111-8111-111111111111 -->", payload)
+        inbox.complete.assert_called_once_with(entry["id"])
+
+    @patch.object(MemosClient, "create_private_memo")
+    def test_retry_completes_existing_marker_without_duplicate_memo(self, create_memo) -> None:
+        identifier = "11111111-1111-4111-8111-111111111111"
+        entry = {"id": identifier, "content": "Một ngày vui", "author_role": "mother"}
+        inbox = Mock()
+        inbox.claim.return_value = [entry]
+        existing = [{"content": f"Đã lưu\n<!-- embe-journal:{identifier} -->"}]
+
+        result = import_journal_inbox(inbox, MemosClient("http://memos", "token"), existing)
+
+        self.assertEqual(result["imported"], 1)
+        create_memo.assert_not_called()
+        inbox.complete.assert_called_once_with(identifier)
+
+    @patch.object(MemosClient, "create_private_memo", side_effect=RuntimeError("offline"))
+    def test_failed_memos_write_returns_entry_to_bounded_retry(self, _create_memo) -> None:
+        entry = {
+            "id": "11111111-1111-4111-8111-111111111111",
+            "content": "Một ngày vui",
+            "author_role": "father",
+        }
+        inbox = Mock()
+        inbox.claim.return_value = [entry]
+
+        result = import_journal_inbox(inbox, MemosClient("http://memos", "token"), [])
+
+        self.assertEqual(result, {"claimed": 1, "imported": 0, "failed": 1})
+        inbox.fail.assert_called_once_with(entry["id"], "memos_unavailable")
 
 
 if __name__ == "__main__":
