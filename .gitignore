@@ -45,6 +45,9 @@ __pycache__/
 *.pyc
 
 # Local tools
+tools/bin/
+tools/downloads/
+tools/staging/
 .vercel/
 .supabase/
 .idea/

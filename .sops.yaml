@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: (^|.*[\\/])secrets[\\/].*\.enc\.(yaml|json|env)$
+    age: age176y0ay0kasjna6evhrrts7epse0zywm3e0anhclqfphl6dc58gpsy360kj
