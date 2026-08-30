@@ -42,7 +42,7 @@ Ví dụ hỏi về giấc ngủ trong bảy ngày:
 ```powershell
 .\.venv\Scripts\embe-hoi.exe `
   --database C:\EmBe\data\analytics\family-analytics.sqlite3 `
-  --be-id embe `
+  --be-id child-primary `
   --chu-de ngu `
   --tu-ngay 2026-08-24 `
   --den-ngay 2026-08-30 `
@@ -62,10 +62,14 @@ prompt. Mỗi lần chạy phải truyền chính xác child ID được phép:
 ```powershell
 .\.venv\Scripts\python.exe -m embe_mcp.main `
   --database C:\EmBe\data\analytics\family-analytics.sqlite3 `
-  --child-id embe
+  --child-id child-primary
 ```
 
 Kết quả có provenance, số mẫu và phiên bản thuật toán. Dữ liệu tổng hợp chỉ được
 đưa cho Ollama tại loopback; module bảo vệ từ chối endpoint Internet, raw records
 và field có dạng token/secret. Không cấu hình LLM đám mây cho dữ liệu sức khỏe.
+
+Trên máy EmBe, server được đăng ký với Codex dưới tên `embe-readonly` bằng
+entrypoint trên. Cấu hình không chứa token và chỉ trỏ tới SQLite local; sau khi
+khởi động lại Codex, ba tool tổng hợp sẽ xuất hiện trong danh sách MCP.
 
