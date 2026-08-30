@@ -14,6 +14,7 @@
 - `apps/`: Family Portal.
 - `services/`: sync daemon, local BFF, analytics, MCP và document builder.
 - `infra/`: Docker, Cloudflare, Vercel và vận hành.
+- `infra/ai/`: runtime AI local-only và ranh giới mạng.
 - `supabase/`: schema/migrations cho optional curated read-model.
 - `embe/`: Obsidian vault local-first tại `C:\EmBe\embe`.
 - `data/`: stable mount paths đến appdata và media storage.

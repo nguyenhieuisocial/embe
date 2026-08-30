@@ -26,3 +26,7 @@ python -m venv .venv
 bằng `python -m embe_mcp.server`; khi chưa cấu hình adapter production, server
 dùng repository rỗng và không đọc dữ liệu gia đình.
 
+Local inference dùng Ollama theo cấu hình tại `infra/ai/README.md`. Ollama không
+được gọi thẳng database; mọi truy vấn dữ liệu phải đi qua ba MCP tool giới hạn ở
+trên.
+
