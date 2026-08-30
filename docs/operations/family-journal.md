@@ -2,7 +2,7 @@
 
 ## Cách đăng một ghi chú lên trang gia đình
 
-1. Mở Memos trên máy EmBe.
+1. Trên iPhone/iPad đã cài Tailscale, mở liên kết Memos riêng của gia đình ở cổng `8443`.
 2. Viết nội dung bằng tiếng Việt. Dòng tiêu đề có thể bắt đầu bằng `# `.
 3. Giữ ghi chú ở chế độ `PRIVATE` và thêm thẻ `#portal`.
 4. Nếu đây là một cột mốc, thêm thẻ `#milestone`.
@@ -29,3 +29,9 @@ Ghi chú đã duyệt được sao chép một chiều sang Obsidian tại `20-T
 - Supabase chỉ là bản đọc tối giản cho Portal; Memos vẫn là nguồn nhật ký chính.
 - Có thể dựng lại toàn bộ timeline Portal bằng cách chạy lại `services\local-bff\src\sync_portal.py`.
 - Obsidian là bản sao đọc một chiều, không được dùng để ghi ngược vào Memos.
+
+## Mở ứng dụng chăm sóc trên điện thoại
+
+- Memos dùng HTTPS cổng `8443`; BabyBuddy dùng HTTPS cổng `10000` trên cùng tên máy Tailscale.
+- Hai địa chỉ chỉ hoạt động khi điện thoại đã kết nối Tailscale; không có Funnel hoặc cổng router công khai.
+- Có thể dựng lại hai ánh xạ an toàn bằng `scripts\network\configure-care-apps-tailscale.ps1 -Apply`.
