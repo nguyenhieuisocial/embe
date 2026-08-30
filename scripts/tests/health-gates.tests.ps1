@@ -38,6 +38,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Healthy fixture must pass" }
     if ((Get-Content $healthyReport -Raw | ConvertFrom-Json).status -ne "pass") { throw "Healthy report is invalid" }
 
+    $pwshReport = Join-Path $testRoot "healthy-report-pwsh.json"
+    $null = & pwsh -NoProfile -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $pwshReport
+    if ($LASTEXITCODE -ne 0) { throw "Healthy fixture must pass under PowerShell 7" }
+
     $criticalReport = Join-Path $testRoot "critical-report.json"
     $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $criticalFixture -OutputPath $criticalReport
     if ($LASTEXITCODE -ne 2) { throw "Critical fixture must block" }
