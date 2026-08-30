@@ -16,6 +16,7 @@
 | Immich | Các container đang healthy; media không nằm trong R2 backup nhỏ |
 | Lịch sao lưu | Script và kiểm thử đã sẵn sàng; tác vụ nền chưa đạt gate vì Windows chưa cấp quyền cài service account |
 | Grocy | Khóa tích hợp riêng đã kiểm tra; 10 danh mục nền tảng đã có, không tạo tồn kho giả |
+| Home Assistant + MQTT | Tích hợp MQTT chính thức đã tạo và ở trạng thái `loaded`; chưa tạo cảm biến hoặc dữ liệu giả |
 | Tailscale | Máy chủ đã kết nối tailnet; Immich Serve còn chờ chủ tài khoản bật một lần trong Tailscale |
 
 ## Go/no-go
