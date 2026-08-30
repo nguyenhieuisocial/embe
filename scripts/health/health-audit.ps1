@@ -130,27 +130,12 @@ if ($FixturePath) {
     $physicalDisks = @(Get-PhysicalDisk -ErrorAction SilentlyContinue)
     $smartHealthy = $physicalDisks.Count -gt 0 -and @($physicalDisks | Where-Object HealthStatus -ne "Healthy").Count -eq 0
 
-    $installPath = Join-Path $ProjectRoot "data\status\portal-service-install.json"
+    $installPath = Join-Path $ProjectRoot "data\status\backup-service-install.json"
     $serviceInstallReady = $false
     if (Test-Path $installPath) {
         $install = Get-Content $installPath -Raw | ConvertFrom-Json
-        $serviceInstallReady = $install.status -eq "ready"
-    }
-    if ($serviceInstallReady) {
-        $expectedTasks = @(
-            "EmBe Critical R2 Backup",
-            "EmBe Restic Integrity Check",
-            "EmBe Infrastructure Health Audit"
-        )
-        $installedTasks = @($expectedTasks | ForEach-Object {
-            Get-ScheduledTask -TaskName $_ -ErrorAction SilentlyContinue
-        })
-        $serviceInstallReady = $installedTasks.Count -eq $expectedTasks.Count -and
-            @($installedTasks | Where-Object {
-                $_.Principal.UserId -notmatch 'EmBeBackupSvc$' -or
-                [string]$_.Principal.LogonType -ne "Password" -or
-                [string]$_.Principal.RunLevel -ne "Limited"
-            }).Count -eq 0
+        $installAge = Get-AgeHours $install.generated_at
+        $serviceInstallReady = $install.status -eq "ready" -and $install.install_step -eq "complete" -and $installAge -le 168
     }
 
     $portalPublic = Test-HttpEndpoint $PortalUrl
