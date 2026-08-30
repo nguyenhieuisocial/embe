@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
-from sync_portal import MemosClient, SupabaseReadModel, sanitize_memo
+from sync_portal import MemosClient, SupabaseReadModel, list_portal_memos, sanitize_memo
 
 
 class TestPortalSyncPolicy(unittest.TestCase):
@@ -67,6 +67,24 @@ class TestPortalSyncPolicy(unittest.TestCase):
         self.assertEqual([memo["name"] for memo in result], ["memos/1", "memos/2"])
         self.assertEqual(request.call_count, 2)
         self.assertIn("pageToken=next", request.call_args_list[1].args[0])
+
+    @patch.object(MemosClient, "list_memos")
+    def test_portal_merges_human_and_babybuddy_private_timelines(self, list_memos) -> None:
+        list_memos.side_effect = [
+            [{"name": "memos/family"}],
+            [{"name": "memos/babybuddy"}],
+        ]
+
+        result = list_portal_memos(
+            {
+                "MEMOS_BASE_URL": "http://memos",
+                "MEMOS_PORTAL_PAT": "human-token",
+                "MEMOS_BABYBUDDY_PORTAL_PAT": "bridge-read-token",
+            }
+        )
+
+        self.assertEqual([memo["name"] for memo in result], ["memos/family", "memos/babybuddy"])
+        self.assertEqual(list_memos.call_count, 2)
 
     @patch("sync_portal._json_request")
     def test_large_timeline_is_staged_then_finalized_once(self, request) -> None:

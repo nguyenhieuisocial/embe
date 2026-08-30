@@ -42,4 +42,5 @@ jobs:
       - run: pip install -e "services/storage-poc[test]"
       - run: pytest services/storage-poc/tests -q
       - run: python -m unittest discover -s services/local-bff/tests -v
+      - run: PYTHONPATH=services/babybuddy-memos-sync/src python -m unittest discover -s services/babybuddy-memos-sync/tests -v
       - run: python -m unittest discover -s services/vault-export/tests -v
