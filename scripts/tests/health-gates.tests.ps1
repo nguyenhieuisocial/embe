@@ -23,6 +23,19 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         deadletters = 0
         smart_healthy = $true
         service_install_ready = $true
+        endpoints = @{
+            portal_public = @{ reachable = $true; status_code = 200 }
+            node_red = @{ reachable = $true; status_code = 200 }
+            uptime_kuma = @{ reachable = $true; status_code = 200; ready = $true }
+            ollama = @{ reachable = $true; required_model_present = $true }
+        }
+        mcp_runtime_ready = $true
+        pdf_report = @{
+            status = "ok"
+            generated_at_utc = $now.AddDays(-1).ToString("o")
+            output_exists = $true
+            checksum_matches = $true
+        }
     }
     $fixture | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $Path -Encoding utf8
 }
@@ -36,7 +49,16 @@ try {
     $healthyReport = Join-Path $testRoot "healthy-report.json"
     $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $healthyReport
     if ($LASTEXITCODE -ne 0) { throw "Healthy fixture must pass" }
-    if ((Get-Content $healthyReport -Raw | ConvertFrom-Json).status -ne "pass") { throw "Healthy report is invalid" }
+    $healthy = Get-Content $healthyReport -Raw | ConvertFrom-Json
+    if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
+    foreach ($id in @("portal_public", "node_red", "uptime_kuma", "ollama", "mcp_runtime", "monthly_pdf")) {
+        $check = @($healthy.checks | Where-Object id -eq $id)
+        if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
+    }
+    $serialized = Get-Content $healthyReport -Raw
+    foreach ($sensitiveKey in @("token", "password", "family_content", "response_body")) {
+        if ($serialized -match ('"' + [regex]::Escape($sensitiveKey) + '"\s*:')) { throw "Health report exposes forbidden field: $sensitiveKey" }
+    }
 
     $pwshReport = Join-Path $testRoot "healthy-report-pwsh.json"
     $null = & pwsh -NoProfile -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $pwshReport
@@ -49,6 +71,24 @@ try {
     if ($critical.status -ne "critical") { throw "Critical report is invalid" }
     if (@($critical.checks | Where-Object id -eq "disk_headroom")[0].status -ne "critical") { throw "Disk gate did not block" }
     if (@($critical.checks | Where-Object id -eq "backup_freshness")[0].status -ne "critical") { throw "Backup gate did not block" }
+
+    $dependencyFixture = Join-Path $testRoot "dependency-critical.json"
+    Write-Fixture $dependencyFixture 40 2
+    $dependency = Get-Content $dependencyFixture -Raw | ConvertFrom-Json
+    $dependency.endpoints.portal_public.reachable = $false
+    $dependency.endpoints.portal_public.status_code = 503
+    $dependency.endpoints.uptime_kuma.ready = $false
+    $dependency.endpoints.ollama.required_model_present = $false
+    $dependency.mcp_runtime_ready = $false
+    $dependency.pdf_report.checksum_matches = $false
+    $dependency | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $dependencyFixture -Encoding utf8
+    $dependencyReport = Join-Path $testRoot "dependency-report.json"
+    $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $dependencyFixture -OutputPath $dependencyReport
+    if ($LASTEXITCODE -ne 2) { throw "Unavailable dependencies must block" }
+    $dependencyHealth = Get-Content $dependencyReport -Raw | ConvertFrom-Json
+    foreach ($id in @("portal_public", "uptime_kuma", "ollama", "mcp_runtime", "monthly_pdf")) {
+        if (@($dependencyHealth.checks | Where-Object id -eq $id)[0].status -ne "critical") { throw "Dependency gate did not block: $id" }
+    }
 
     $null = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\update\preflight-update.ps1") -ProjectRoot $projectRoot -HealthFixture $healthyFixture -HealthOutputPath (Join-Path $testRoot "preflight-health-pass.json") -OutputPath (Join-Path $testRoot "preflight-pass.json") -SkipContractTests
     if ($LASTEXITCODE -ne 0) { throw "Healthy update preflight must pass" }

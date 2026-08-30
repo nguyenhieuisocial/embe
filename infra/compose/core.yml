@@ -86,6 +86,8 @@ services:
   uptime-kuma:
     image: louislam/uptime-kuma:2.5.3
     restart: unless-stopped
+    environment:
+      UPTIME_KUMA_DB_TYPE: sqlite
     volumes:
       - type: bind
         source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/uptime-kuma
