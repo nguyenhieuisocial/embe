@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+
 import pytest
 
 from embe_storage.manifest import decode_manifest, encode_manifest
@@ -10,8 +12,12 @@ from embe_storage.retry import with_backoff
 def test_manifest_is_signed_and_tamper_evident():
     value = encode_manifest({"asset_id": "a", "size": 3}, b"k" * 32)
     assert decode_manifest(value, b"k" * 32)["asset_id"] == "a"
+    prefix, encoded = value.split(".", 1)
+    raw = bytearray(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
+    raw[-1] ^= 1
+    tampered = base64.urlsafe_b64encode(raw).decode().rstrip("=")
     with pytest.raises(ValueError, match="signature"):
-        decode_manifest(value[:-1] + ("0" if value[-1] != "0" else "1"), b"k" * 32)
+        decode_manifest(f"{prefix}.{tampered}", b"k" * 32)
 
 
 @pytest.mark.asyncio
