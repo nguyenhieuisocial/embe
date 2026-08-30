@@ -49,6 +49,7 @@ tmp/
 .venv/
 __pycache__/
 *.pyc
+*.egg-info/
 
 # Local tools
 tools/bin/
