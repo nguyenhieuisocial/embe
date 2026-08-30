@@ -7,14 +7,19 @@ ages, counts, booleans, and HTTP status codes—never response bodies, credentia
 family notes, names, photos, or URL query strings.
 
 Uptime Kuma remains the existing internal dashboard; the health audit does not
-duplicate its history or alerting. The one-time bootstrap reuses the maintained
-MIT-licensed `uptime-kuma-api2` Socket.IO client compatible with Kuma 2.x:
+duplicate its history or alerting. The one-time bootstrap uses the official
+Socket.IO handlers and the `socket.io-client` already bundled in the pinned Kuma
+container, so no duplicate API service or extra runtime dependency is installed:
 
-1. Install `requirements.txt` into the project virtual environment.
-2. Run `bootstrap-uptime-kuma.ps1 -AllowInitialSetup` once and choose a dedicated
+1. Run `bootstrap-uptime-kuma.ps1 -AllowInitialSetup` once and choose a dedicated
    username and strong password in the Windows credential dialog.
-3. Re-run without `-AllowInitialSetup` whenever monitors need reconciliation.
+2. Re-run without `-AllowInitialSetup` whenever monitors need reconciliation.
 
-The password exists only in the child process environment for the duration of the
-command. It is neither written to disk nor included in status output. Reconciliation
-is additive and idempotent: it never deletes or overwrites user-created monitors.
+For unattended local reconciliation, `-CredentialPath` may point to a PowerShell
+credential exported with DPAPI for the same Windows account. Such a file belongs
+under ignored `secrets/runtime`, never in Git or a shared drive.
+
+The credential is sent to the container over standard input and exists only in
+process memory for the duration of the command. It is neither passed in command-line
+arguments nor written to disk or status output. Reconciliation is additive and
+idempotent: it never deletes or overwrites user-created monitors.
