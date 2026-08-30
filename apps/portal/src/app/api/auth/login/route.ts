@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { createSessionCookie, verifyPassword } from "../../../../lib/portal-auth";
 
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
+const PRIVATE_NO_STORE = "private, no-store";
+
+function privateResponse(response: NextResponse): NextResponse {
+  response.headers.set("cache-control", PRIVATE_NO_STORE);
+  return response;
+}
 
 function safeDestination(value: FormDataEntryValue | null): string {
   return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
@@ -17,7 +23,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!passwordHash || !sessionSecret) {
     return NextResponse.json(
       { error: "Authentication is unavailable" },
-      { status: 503, headers: { "cache-control": "no-store" } }
+      { status: 503, headers: { "cache-control": PRIVATE_NO_STORE } }
     );
   }
 
@@ -30,7 +36,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const loginUrl = new URL("/login", origin);
     loginUrl.searchParams.set("error", "1");
     loginUrl.searchParams.set("next", destination);
-    return NextResponse.redirect(loginUrl, { status: 303 });
+    return privateResponse(NextResponse.redirect(loginUrl, { status: 303 }));
   }
 
   const response = NextResponse.redirect(new URL(destination, origin), { status: 303 });
@@ -42,5 +48,5 @@ export async function POST(request: Request): Promise<NextResponse> {
     secure: true
   });
 
-  return response;
+  return privateResponse(response);
 }

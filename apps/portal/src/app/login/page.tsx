@@ -8,8 +8,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="login-shell">
       <section className="login-card" aria-labelledby="login-title">
-        <p className="eyebrow">EMBE.HIEU.ASIA</p>
-        <h1 id="login-title">Không gian riêng của gia đình</h1>
+        <div className="login-mark" aria-hidden="true">E</div>
+        <p className="eyebrow">EM BÉ · GIA ĐÌNH MÌNH</p>
+        <h1 aria-label="Mời cả nhà vào bên trong" id="login-title">Mời cả nhà<br /><em>vào bên trong</em></h1>
         <p className="login-intro">
           Nhập mật khẩu gia đình để mở nhật ký và những khoảnh khắc đã được bố mẹ chọn.
         </p>

@@ -129,6 +129,10 @@ function Get-MediaStoragePathInfo {
     }
 }
 
+if ($MyInvocation.InvocationName -eq ".") {
+    return
+}
+
 $pathInfo = Get-MediaStoragePathInfo -Path $MediaPath
 
 $result = Get-MediaStorageReadiness -MediaPath $MediaPath `

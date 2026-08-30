@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/font/google", () => ({
   Be_Vietnam_Pro: () => ({ className: "font-body", style: {}, variable: "font-body" }),
-  Newsreader: () => ({ className: "font-display", style: {}, variable: "font-display" })
+  Noto_Serif: () => ({ className: "font-display", style: {}, variable: "font-display" })
 }));
 
 import RootLayout from "../src/app/layout";

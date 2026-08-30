@@ -31,18 +31,19 @@ function Invoke-RunRestic {
         [string]$CodePath,
         [string]$VaultPath,
         [string]$AppDataPath,
-        [string]$Manifest
+        [string]$Manifest,
+        [switch]$AllowR2
     )
 
-    $output = & powershell -NoProfile -ExecutionPolicy Bypass -File $runScript `
-        -Repository $Repo `
-        -PasswordFile $PasswordFile `
-        -CodeConfigPath $CodePath `
-        -VaultPath $VaultPath `
-        -AppDataPath $AppDataPath `
-        -ManifestPath $Manifest `
-        -ResticPath (Join-Path $testRoot "restic.ps1") `
-        -Tag "test"
+    $arguments = @(
+        "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $runScript,
+        "-Repository", $Repo, "-PasswordFile", $PasswordFile,
+        "-CodeConfigPath", $CodePath, "-VaultPath", $VaultPath,
+        "-AppDataPath", $AppDataPath, "-ManifestPath", $Manifest,
+        "-ResticPath", (Join-Path $testRoot "restic.ps1"), "-Tag", "test"
+    )
+    if ($AllowR2) { $arguments += "-AllowR2Repository" }
+    $output = & powershell @arguments
 
     [pscustomobject]@{
         ExitCode = $LASTEXITCODE
@@ -80,7 +81,13 @@ param([Parameter(ValueFromRemainingArguments = $true)] [string[]]$Args)
 $snapshotId = "snap-$(New-Guid | Select-Object -ExpandProperty Guid)"
 
 if ($Args.Count -eq 0) { exit 1 }
-if ($Args -contains "init") { exit 0 }
+if ($Args -contains "init") {
+    if ($env:FAKE_RESTIC_ALREADY_INITIALIZED -eq "1") {
+        Write-Error "repository master key and config already initialized"
+        exit 1
+    }
+    exit 0
+}
 if ($Args -contains "backup") {
     $payload = @{ summary = @{ snapshot_id = $snapshotId; files = 3; total_size = 3 } }
     $payload | ConvertTo-Json -Compress
@@ -122,6 +129,19 @@ exit 0
     Assert-Equal "code source file count" 1 $data.sources[0].file_count
     Assert-Equal "vault source file count" 1 $data.sources[1].file_count
     Assert-Equal "appdata source file count" 1 $data.sources[2].file_count
+
+    $env:FAKE_RESTIC_ALREADY_INITIALIZED = "1"
+    $existing = Invoke-RunRestic -Repo $repo -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest (Join-Path $exports "existing.json")
+    Assert-Equal "already initialized repository remains usable" 0 $existing.ExitCode
+    Remove-Item Env:\FAKE_RESTIC_ALREADY_INITIALIZED
+
+    $approvedR2 = "s3:https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com/embe-backup/restic-critical"
+    $remoteBlocked = Invoke-RunRestic -Repo $approvedR2 -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest (Join-Path $exports "blocked.json")
+    Assert-Equal "R2 requires explicit switch" 1 $remoteBlocked.ExitCode
+    $remoteAllowed = Invoke-RunRestic -Repo $approvedR2 -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest (Join-Path $exports "r2.json") -AllowR2
+    Assert-Equal "approved scoped R2 repository is accepted" 0 $remoteAllowed.ExitCode
+    $wrongRemote = Invoke-RunRestic -Repo "s3:https://example.invalid/embe-backup/restic-critical" -PasswordFile $passwordFile -CodePath $code -VaultPath $vault -AppDataPath $app -Manifest (Join-Path $exports "wrong.json") -AllowR2
+    Assert-Equal "unapproved remote host is rejected" 1 $wrongRemote.ExitCode
 
     $defaultBinary = Invoke-RunResticWithDefaultBinary `
         -Repo (Join-Path $testRoot "real-restic-repo") `

@@ -15,20 +15,27 @@ export default function Home() {
         </p>
       </header>
 
-      <section className="hero" id="top">
+      <section className="hero home-hero" id="top">
         <div className="hero-copy">
-          <p className="eyebrow">NHẬT KÝ ĐẦU ĐỜI</p>
-          <h1>Một nơi để cả nhà cùng dõi theo hành trình của em bé</h1>
+          <p className="eyebrow">EM BÉ · MỖI NGÀY BÊN NHAU</p>
+          <h1 aria-label="Hôm nay, mình cần làm gì?">Hôm nay,<br /><em>mình cần làm gì?</em></h1>
           <p className="intro">
-            Từng ngày nhỏ, từng thay đổi dịu dàng và những khoảnh khắc muốn giữ
-            thật lâu — được gom lại trong một nơi dễ xem trên điện thoại.
+            Một nơi duy nhất để mẹ xem việc cần làm, cả nhà lưu điều đáng nhớ
+            và cùng dõi theo em bé lớn lên.
           </p>
+          <a className="primary-link" href="/me-bau">
+            Mở việc của mẹ hôm nay <span aria-hidden="true">→</span>
+          </a>
         </div>
 
-        <div className="orbit" aria-hidden="true">
-          <span className="orbit-ring" />
-          <span className="orbit-seed">✦</span>
-          <span className="orbit-label">mỗi ngày một chút lớn hơn</span>
+        <div className="day-ribbon" aria-label="Ba nhịp đơn giản trong ngày">
+          <p className="day-ribbon-title">Nhịp của một ngày</p>
+          <ol>
+            <li><span>Sáng</span><strong>Mẹ Ngân xem việc hôm nay</strong></li>
+            <li><span>Trong ngày</span><strong>Ba Hiếu ghi một điều đáng nhớ</strong></li>
+            <li><span>Tối</span><strong>Thảnh thơi nghỉ ngơi</strong></li>
+          </ol>
+          <p className="day-ribbon-note">Những phần kỹ thuật đã có hệ thống lo.</p>
         </div>
       </section>
 
@@ -36,10 +43,20 @@ export default function Home() {
         Chỉ những điều bố mẹ đã chọn mới xuất hiện tại đây.
       </p>
 
-      <a className="pregnancy-entry" href="/me-bau" aria-label="Mẹ bầu hôm nay">
+      <a className="guide-entry" href="/huong-dan" aria-label="Xem cách sử dụng đơn giản">
+        <span className="guide-entry-mark" aria-hidden="true">?</span>
         <span>
-          <small>DÀNH CHO MẸ</small>
-          <strong>Mẹ bầu hôm nay</strong>
+          <small>DÀNH CHO CẢ NHÀ</small>
+          <strong>Dùng Em Bé thật đơn giản</strong>
+          <p>Chỉ một trang, mỗi ngày ba việc.</p>
+        </span>
+        <span aria-hidden="true">→</span>
+      </a>
+
+      <a className="pregnancy-entry" href="/me-bau" aria-label="Mở trang Mẹ bầu hôm nay">
+        <span>
+          <small>VIỆC QUAN TRỌNG NHẤT</small>
+          <strong>Checklist và thực đơn của mẹ</strong>
         </span>
         <span aria-hidden="true">→</span>
       </a>

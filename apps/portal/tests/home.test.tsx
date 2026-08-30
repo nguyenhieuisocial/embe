@@ -10,14 +10,18 @@ describe("family portal home", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Một nơi để cả nhà cùng dõi theo hành trình của em bé"
+        name: "Hôm nay, mình cần làm gì?"
       })
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nhật ký" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Khoảnh khắc" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Mẹ bầu hôm nay" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Mở trang Mẹ bầu hôm nay" })).toHaveAttribute(
       "href",
       "/me-bau"
+    );
+    expect(screen.getByRole("link", { name: "Xem cách sử dụng đơn giản" })).toHaveAttribute(
+      "href",
+      "/huong-dan"
     );
   });
 
