@@ -44,7 +44,8 @@ foreach ($required in @(
     "personalAccessTokens",
     "DELETE",
     "ForceRotate",
-    "MEMOS_PAT_PENDING_REVOKE"
+    "MEMOS_PAT_PENDING_REVOKE",
+    "projectOwnerIdentity"
 )) {
     if (-not $provisioner.Contains($required)) { throw "Integration provisioner is missing: $required" }
 }

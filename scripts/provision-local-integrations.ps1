@@ -15,6 +15,7 @@ $secretPath = Join-Path $adminSecretDirectory "portal-data.env"
 $runtimeSecretDirectory = Join-Path $secretDirectory "runtime"
 $syncSecretPath = Join-Path $runtimeSecretDirectory "portal-sync.env"
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+$projectOwnerIdentity = (Get-Acl -LiteralPath $ProjectRoot).Owner
 if ($RotateOnly) {
     foreach ($requiredPath in @($secretPath, $runtimeSecretDirectory, $syncSecretPath)) {
         if (-not (Test-Path -LiteralPath $requiredPath)) { throw "Rotation dependency is missing: $requiredPath" }
@@ -67,7 +68,8 @@ function Save-EnvFile([hashtable]$Values, [string]$Path) {
     try {
         [IO.File]::WriteAllLines($temporary, $lines, [Text.UTF8Encoding]::new($false))
         Move-Item -LiteralPath $temporary -Destination $Path -Force
-        & icacls.exe $Path /inheritance:r /grant:r "${identity}:(F)" "SYSTEM:(F)" "BUILTIN\Administrators:(F)" | Out-Null
+        $grants = @("${identity}:(F)", "${projectOwnerIdentity}:(F)", "SYSTEM:(F)", "BUILTIN\Administrators:(F)") | Select-Object -Unique
+        & icacls.exe $Path /inheritance:r /grant:r $grants | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "Unable to restrict integration secret ACL" }
     } finally {
         if (Test-Path -LiteralPath $temporary -PathType Leaf) {

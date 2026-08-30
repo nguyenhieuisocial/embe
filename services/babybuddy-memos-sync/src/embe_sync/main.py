@@ -18,6 +18,17 @@ from embe_sync.sync import BabyBuddyClient, Ledger, MemosClient, SyncEngine
 REQUIRED_ENV = ("BABYBUDDY_BASE_URL", "BABYBUDDY_TOKEN", "MEMOS_BASE_URL", "MEMOS_SYNC_PAT", "SYNC_LEDGER")
 
 
+def credential_review_due(config: dict[str, str], now: datetime) -> bool:
+    value = config.get("BABYBUDDY_TOKEN_REVIEW_AFTER")
+    if not value:
+        return False
+    try:
+        review_after = datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+    except ValueError as error:
+        raise PermanentFailure("BabyBuddy credential review date is invalid") from error
+    return now.astimezone(timezone.utc) >= review_after
+
+
 def read_env(path: Path) -> dict[str, str]:
     values = {}
     for raw in path.read_text(encoding="utf-8-sig").splitlines():
@@ -50,7 +61,8 @@ def append_log(path: Path, value: dict, *, max_bytes: int = 1_000_000):
 
 
 def execute(env_path: Path, status_path: Path, log_path: Path, *, rebuild_ledger: bool = False) -> int:
-    now = datetime.now(timezone.utc).isoformat()
+    current_time = datetime.now(timezone.utc)
+    now = current_time.isoformat()
     ledger = None
     try:
         config = read_env(env_path)
@@ -58,11 +70,11 @@ def execute(env_path: Path, status_path: Path, log_path: Path, *, rebuild_ledger
         sink = MemosClient(config["MEMOS_BASE_URL"], config["MEMOS_SYNC_PAT"])
         if rebuild_ledger:
             recovered = ledger.rebuild(sink.list_for_rebuild())
-            event = {"time": now, "healthy": True, "result": {"recovered": recovered}}
+            event = {"time": now, "healthy": True, "credential_review_due": credential_review_due(config, current_time), "result": {"recovered": recovered}}
         else:
             source = BabyBuddyClient(config["BABYBUDDY_BASE_URL"], config["BABYBUDDY_TOKEN"])
             counts = SyncEngine(source, sink, ledger).run()
-            event = {"time": now, "healthy": True, "result": counts}
+            event = {"time": now, "healthy": True, "credential_review_due": credential_review_due(config, current_time), "result": counts}
         exit_code = 0
     except AuthFailure:
         event = {"time": now, "healthy": False, "error": "authentication_failed"}

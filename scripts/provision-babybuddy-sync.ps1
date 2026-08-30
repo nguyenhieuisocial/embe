@@ -108,13 +108,13 @@ if (Get-LocalUser -Name "EmBeBridgeSvc" -ErrorAction SilentlyContinue) {
 if ($LASTEXITCODE -ne 0) { throw "Unable to restrict the BabyBuddy sync ledger" }
 
 $ledgerPath = Join-Path $ledgerDirectory "ledger.sqlite3"
-$rotationDueAt = ([DateTimeOffset]::Parse($tokenCreatedAt)).AddDays(90).ToString("o")
+$reviewAfter = ([DateTimeOffset]::Parse($tokenCreatedAt)).AddYears(1).ToString("o")
 $memosRotationDueAt = (Get-Date).ToUniversalTime().AddDays(90).ToString("o")
 $lines = @(
     "BABYBUDDY_BASE_URL=http://127.0.0.1:8000",
     "BABYBUDDY_TOKEN=$babyBuddyToken",
     "BABYBUDDY_TOKEN_CREATED_AT=$tokenCreatedAt",
-    "BABYBUDDY_TOKEN_ROTATION_DUE_AT=$rotationDueAt",
+    "BABYBUDDY_TOKEN_REVIEW_AFTER=$reviewAfter",
     "MEMOS_BASE_URL=$memosBaseUrl",
     "MEMOS_USER_NAME=users/$memosServiceUser",
     "MEMOS_SYNC_PAT=$memosServicePat",
@@ -164,7 +164,15 @@ $portalLines = foreach ($key in @("MEMOS_BASE_URL", "MEMOS_PORTAL_PAT", "SUPABAS
 $portalTemporary = "$portalSyncSecret.tmp"
 try {
     [IO.File]::Create($portalTemporary).Dispose()
-    Set-Acl -LiteralPath $portalTemporary -AclObject (Get-Acl -LiteralPath $portalSyncSecret)
+    $portalFileGrants = @("${identity}:(F)", "SYSTEM:(F)", "BUILTIN\Administrators:(F)")
+    if (Get-LocalUser -Name "EmBeCredentialSvc" -ErrorAction SilentlyContinue) {
+        $portalFileGrants += "${credentialIdentity}:(M)"
+    }
+    if (Get-LocalUser -Name "EmBePortalSyncSvc" -ErrorAction SilentlyContinue) {
+        $portalFileGrants += "${env:COMPUTERNAME}\EmBePortalSyncSvc:(R)"
+    }
+    & icacls.exe $portalTemporary /inheritance:r /grant:r $portalFileGrants | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Unable to restrict the Portal sync credential" }
     [IO.File]::WriteAllLines($portalTemporary, $portalLines, [Text.UTF8Encoding]::new($false))
     Move-Item -LiteralPath $portalTemporary -Destination $portalSyncSecret -Force
 } finally {

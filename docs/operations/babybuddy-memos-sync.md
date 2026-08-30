@@ -11,3 +11,5 @@ Tác vụ **EmBe BabyBuddy Memos Sync** kiểm tra mỗi phút bằng tài kho�
 Trạng thái an toàn nằm ở `data\status\babybuddy-memos-sync.json`. Nhật ký kỹ thuật đã lược bỏ nội dung gia đình và khóa truy cập nằm ở `data\logs\babybuddy-memos-sync.jsonl`. Hai thư mục này không được đưa lên GitHub.
 
 Hai khóa Memos riêng biệt được dùng cho ghi và đọc Portal, tự xoay trước hạn. Khóa cũ chỉ bị thu hồi sau khi khóa mới đã được ghi và xác minh.
+
+Khóa đọc BabyBuddy được giữ lâu dài có chủ đích vì BabyBuddy không hỗ trợ xoay token an toàn qua API. Khóa này chỉ có ba quyền đọc, API chỉ nghe trên máy cục bộ và file khóa có quyền Windows riêng. Hệ thống ghi `credential_review_due` vào trạng thái sức khỏe sau một năm; chỉ thay khóa khi nghi bị lộ, phục hồi dữ liệu, đổi quyền hoặc bảo trì có quản trị viên. Không cấp quyền Docker cho tài khoản xoay khóa tự động chỉ để thay token này.

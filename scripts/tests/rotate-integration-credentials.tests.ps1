@@ -12,7 +12,8 @@ foreach ($required in @(
     "BabyBuddy portal read",
     "/api/v1/auth/me",
     "MEMOS_BABYBUDDY_PORTAL_PAT",
-    "Set-Acl",
+    "/inheritance:r",
+    "projectOwnerIdentity",
     "old_credentials_pending"
 )) {
     if (-not $rotation.Contains($required)) { throw "BabyBuddy Memos rotation is missing: $required" }

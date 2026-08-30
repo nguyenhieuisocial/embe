@@ -10,6 +10,8 @@ Set-StrictMode -Version Latest
 $adminSecret = Join-Path $ProjectRoot "secrets\admin\portal-data.env"
 $bridgeSecret = Join-Path $ProjectRoot "secrets\runtime\babybuddy-memos-sync\sync.env"
 $portalSecret = Join-Path $ProjectRoot "secrets\runtime\portal-sync.env"
+$projectOwnerIdentity = (Get-Acl -LiteralPath $ProjectRoot).Owner
+$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 foreach ($path in @($adminSecret, $bridgeSecret, $portalSecret)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Credential rotation dependency is unavailable" }
 }
@@ -32,7 +34,15 @@ function Save-Env([hashtable]$Values, [string[]]$Keys, [string]$Path) {
     $temporary = "$Path.tmp"
     try {
         [IO.File]::Create($temporary).Dispose()
-        Set-Acl -LiteralPath $temporary -AclObject (Get-Acl -LiteralPath $Path)
+        $grants = @("${projectOwnerIdentity}:(F)", "${currentIdentity}:(M)", "SYSTEM:(F)", "BUILTIN\Administrators:(F)")
+        if ($Path -eq $bridgeSecret -and (Get-LocalUser -Name "EmBeBridgeSvc" -ErrorAction SilentlyContinue)) {
+            $grants += "${env:COMPUTERNAME}\EmBeBridgeSvc:(R)"
+        }
+        if ($Path -eq $portalSecret -and (Get-LocalUser -Name "EmBePortalSyncSvc" -ErrorAction SilentlyContinue)) {
+            $grants += "${env:COMPUTERNAME}\EmBePortalSyncSvc:(R)"
+        }
+        & icacls.exe $temporary /inheritance:r /grant:r ($grants | Select-Object -Unique) | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "Unable to restrict replacement credential file" }
         [IO.File]::WriteAllLines($temporary, $lines, [Text.UTF8Encoding]::new($false))
         Move-Item -LiteralPath $temporary -Destination $Path -Force
     } finally {
@@ -93,7 +103,7 @@ $bridge.MEMOS_PAT_ROTATION_DUE_AT = $dueAt
 $portal.MEMOS_BABYBUDDY_PORTAL_PAT = $portalPat
 Save-Env $bridge @(
     "BABYBUDDY_BASE_URL", "BABYBUDDY_TOKEN", "BABYBUDDY_TOKEN_CREATED_AT",
-    "BABYBUDDY_TOKEN_ROTATION_DUE_AT", "MEMOS_BASE_URL", "MEMOS_USER_NAME",
+    "BABYBUDDY_TOKEN_REVIEW_AFTER", "MEMOS_BASE_URL", "MEMOS_USER_NAME",
     "MEMOS_SYNC_PAT", "MEMOS_PAT_ROTATION_DUE_AT", "SYNC_LEDGER"
 ) $bridgeSecret
 Save-Env $portal @(
