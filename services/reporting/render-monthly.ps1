@@ -5,7 +5,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$OutputPath,
 
-    [string]$TypstPath
+    [string]$TypstPath,
+
+    [string]$ManifestPath
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,6 +36,10 @@ function Resolve-ProjectFile {
 $resolvedData = Resolve-ProjectFile -Path $DataPath -Label "DataPath" -MustExist
 $resolvedOutput = Resolve-ProjectFile -Path $OutputPath -Label "OutputPath"
 $resolvedTemplate = Resolve-ProjectFile -Path $templatePath -Label "Template" -MustExist
+if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
+    $ManifestPath = Join-Path (Split-Path -Parent $resolvedOutput) (([IO.Path]::GetFileNameWithoutExtension($resolvedOutput)) + ".manifest.json")
+}
+$resolvedManifest = Resolve-ProjectFile -Path $ManifestPath -Label "ManifestPath"
 
 if (-not (Test-Path -LiteralPath $TypstPath -PathType Leaf)) {
     throw "Typst binary is missing: $TypstPath"
@@ -71,8 +77,40 @@ if (-not (Test-Path -LiteralPath $resolvedOutput -PathType Leaf)) {
     throw "Typst reported success but PDF is missing: $resolvedOutput"
 }
 
+$sourceHash = (Get-FileHash -LiteralPath $resolvedData -Algorithm SHA256).Hash.ToLowerInvariant()
+$outputHash = (Get-FileHash -LiteralPath $resolvedOutput -Algorithm SHA256).Hash.ToLowerInvariant()
+$manifest = [ordered]@{
+    schema_version = 1
+    status = "DRAFT"
+    generated_at_utc = (Get-Date).ToUniversalTime().ToString("o")
+    title = [string]$data.title
+    month = [string]$data.month
+    family = [string]$data.family
+    section_count = @($data.sections).Count
+    source = [IO.Path]::GetRelativePath($projectRoot, $resolvedData).Replace('\', '/')
+    source_sha256 = $sourceHash
+    output = [IO.Path]::GetRelativePath($projectRoot, $resolvedOutput).Replace('\', '/')
+    output_sha256 = $outputHash
+    renderer = "typst"
+}
+$manifestDirectory = Split-Path -Parent $resolvedManifest
+if (-not (Test-Path -LiteralPath $manifestDirectory)) {
+    New-Item -ItemType Directory -Path $manifestDirectory -Force | Out-Null
+}
+$manifestTemporary = "$resolvedManifest.tmp"
+try {
+    $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifestTemporary -Encoding utf8NoBOM
+    Move-Item -LiteralPath $manifestTemporary -Destination $resolvedManifest -Force
+} finally {
+    if (Test-Path -LiteralPath $manifestTemporary -PathType Leaf) {
+        Remove-Item -LiteralPath $manifestTemporary -Force
+    }
+}
+
 [ordered]@{
     status = "ok"
     output = $resolvedOutput
     source = $resolvedData
+    manifest = $resolvedManifest
+    output_sha256 = $outputHash
 } | ConvertTo-Json

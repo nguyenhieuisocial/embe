@@ -8,13 +8,17 @@ $template = Join-Path $projectRoot "services\reporting\templates\monthly-book.ty
 $pdfTempRoot = Join-Path $projectRoot "tmp\pdfs"
 $testRoot = Join-Path $pdfTempRoot ("embe-reporting-" + [guid]::NewGuid().ToString("N"))
 $output = Join-Path $testRoot "monthly-sample.pdf"
+$manifest = Join-Path $testRoot "monthly-sample.manifest.json"
+$qa = Join-Path $testRoot "monthly-sample.qa.json"
 $python = "C:\Users\Admin\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
+$preflight = Join-Path $projectRoot "services\reporting\preflight_monthly.py"
 
 try {
     New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
-    & pwsh -NoProfile -File $renderScript -DataPath $fixture -OutputPath $output
+    & pwsh -NoProfile -File $renderScript -DataPath $fixture -OutputPath $output -ManifestPath $manifest
     if ($LASTEXITCODE -ne 0) { throw "Report renderer failed" }
     if (-not (Test-Path -LiteralPath $output -PathType Leaf)) { throw "PDF was not created" }
+    if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) { throw "PDF manifest was not created" }
     $templateSource = Get-Content -LiteralPath $template -Raw
     if ($templateSource -notmatch 'inset: \(x: 7pt, y: 5pt\)') {
         throw "Table cell padding contract changed"
@@ -45,6 +49,21 @@ print(json.dumps(result))
     if (-not $verification.has_section) { throw "Generated PDF is missing a level-one section" }
     if (-not $verification.has_subsection) { throw "Generated PDF is missing a level-two section" }
     if (-not $verification.has_disclaimer) { throw "Generated PDF is missing the safety disclaimer" }
+
+    $manifestData = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
+    if ($manifestData.status -ne "DRAFT") { throw "Monthly book must remain a draft until family review" }
+    if ($manifestData.output_sha256 -ne (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash.ToLowerInvariant()) {
+        throw "PDF checksum does not match its manifest"
+    }
+    if ($manifestData.source_sha256 -ne (Get-FileHash -LiteralPath $fixture -Algorithm SHA256).Hash.ToLowerInvariant()) {
+        throw "Source checksum does not match its manifest"
+    }
+
+    & $python $preflight --pdf $output --output $qa
+    if ($LASTEXITCODE -ne 0) { throw "Monthly PDF preflight failed" }
+    $qaData = Get-Content -LiteralPath $qa -Raw | ConvertFrom-Json
+    if (-not $qaData.passed) { throw "Monthly PDF QA report did not pass" }
+    if ($qaData.sha256 -ne $manifestData.output_sha256) { throw "QA and manifest checksums differ" }
 
     Write-Output "monthly PDF tests passed"
 } finally {
