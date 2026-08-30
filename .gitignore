@@ -14,6 +14,7 @@ embe/
 vault/
 data/
 exports/
+output/pdf/
 
 # Databases and generated media
 *.db

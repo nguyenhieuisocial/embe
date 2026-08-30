@@ -19,10 +19,10 @@ if (-not (Test-Path -LiteralPath $mqttConfigPath)) {
     throw "MQTT config fixture is missing"
 }
 $mqttConfig = Get-Content -LiteralPath $mqttConfigPath -Raw
-if ($mqttConfig -notmatch '(?m)^allow_anonymous false$') {
+if ($mqttConfig -notmatch '(?m)^allow_anonymous false\r?$') {
     throw "MQTT must reject anonymous clients"
 }
-if ($mqttConfig -notmatch '(?m)^password_file /mosquitto/config/password_file$') {
+if ($mqttConfig -notmatch '(?m)^password_file /mosquitto/config/password_file\r?$') {
     throw "MQTT must use the runtime password file"
 }
 
