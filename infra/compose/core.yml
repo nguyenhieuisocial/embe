@@ -97,6 +97,63 @@ services:
     healthcheck:
       disable: false
 
+  mqtt:
+    image: eclipse-mosquitto:2.1.2-alpine@sha256:6f8d8a947c506f8a2290ec65cd4bd2bc7cb4d43fb5f6271f861cb013e2ef9797
+    restart: unless-stopped
+    profiles:
+      - iot
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    volumes:
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/infra/compose/mosquitto/mosquitto.conf
+        target: /mosquitto/config/mosquitto.conf
+        read_only: true
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/secrets/runtime/mosquitto-passwordfile
+        target: /mosquitto/config/password_file
+        read_only: true
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/mqtt/data
+        target: /mosquitto/data
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/mqtt/log
+        target: /mosquitto/log
+    command: ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
+    ports:
+      - 127.0.0.1:${MQTT_PORT:-1883}:1883
+    networks:
+      - embe-core
+    healthcheck:
+      test: ["CMD-SHELL", "ps -ef | grep -q [m]osquitto"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  home-assistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.8.1@sha256:6340a3de3917a9b19368e767310a96dd090f6a19aca8aeadf87fd1145cec9682
+    restart: unless-stopped
+    profiles:
+      - iot
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    volumes:
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/home-assistant
+        target: /config
+    ports:
+      - 127.0.0.1:${HOME_ASSISTANT_PORT:-8123}:8123
+    networks:
+      - embe-core
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8123/', timeout=3)\" >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    stop_grace_period: 60s
+
 networks:
   embe-core:
     name: embe-core

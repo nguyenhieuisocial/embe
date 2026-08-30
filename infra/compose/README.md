@@ -14,6 +14,32 @@ Local-only endpoints:
 - Node-RED: `http://127.0.0.1:1880`
 - Uptime Kuma: `http://127.0.0.1:3001`
 
+## IoT profile
+
+Home Assistant and Mosquitto are optional and remain off until the `iot` profile
+is selected. Before the first start, create the ignored runtime directory and an
+MQTT password file interactively; never use `mosquitto_passwd -b` because that
+puts the password in the process command line.
+
+```powershell
+New-Item -ItemType Directory -Force C:\EmBe\secrets\runtime
+docker run --rm -it `
+  -v C:/EmBe/secrets/runtime:/mosquitto/config `
+  eclipse-mosquitto:2.1.2-alpine@sha256:6f8d8a947c506f8a2290ec65cd4bd2bc7cb4d43fb5f6271f861cb013e2ef9797 `
+  mosquitto_passwd -c /mosquitto/config/mosquitto-passwordfile homeassistant
+docker compose --env-file infra/compose/core.example.env -f infra/compose/core.yml --profile iot up -d
+```
+
+Endpoints remain loopback-only:
+
+- MQTT: `127.0.0.1:1883`
+- Home Assistant: `http://127.0.0.1:8123`
+
+Bridge networking works for explicit IP/MQTT integrations. Automatic discovery
+that depends on host multicast may require a later Linux host deployment; do not
+enable privileged or host networking on this Windows workstation merely to make
+discovery easier.
+
 All published ports bind to loopback. Do not change them to `0.0.0.0` or add
 router port forwarding. Application state is stored below
 `C:\EmBe\data\appdata` and is excluded from Git.
