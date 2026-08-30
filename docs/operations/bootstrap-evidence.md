@@ -14,7 +14,9 @@
 | Repository integrity | `restic check --read-data` không lỗi |
 | Restore drill | 18/18 file đúng checksum; bản phục hồi tạm đã chuyển Recycle Bin |
 | Immich | Các container đang healthy; media không nằm trong R2 backup nhỏ |
-| Lịch tự động | 03:00 hằng ngày, chạy bù khi máy bật lại |
+| Lịch sao lưu | Script và kiểm thử đã sẵn sàng; tác vụ nền chưa đạt gate vì Windows chưa cấp quyền cài service account |
+| Grocy | Khóa tích hợp riêng đã kiểm tra; 10 danh mục nền tảng đã có, không tạo tồn kho giả |
+| Tailscale | Máy chủ đã kết nối tailnet; Immich Serve còn chờ chủ tài khoản bật một lần trong Tailscale |
 
 ## Go/no-go
 
@@ -24,3 +26,6 @@ nhập synthetic đạt trước khi dùng 10 ảnh thử.
 
 **Chưa go-live đầy đủ** cho media thật cho đến khi có USB HDD/NAS làm bản sao
 thứ ba và chạy restore drill trên chính thiết bị đó.
+
+**Chưa đạt gate vận hành nền** cho đến khi ba tác vụ sao lưu, kiểm tra toàn vẹn
+và health audit chạy bằng service account riêng thay vì tài khoản đăng nhập.

@@ -12,6 +12,7 @@ Ngày rà soát: 2026-08-30. Nguyên tắc: một công cụ cho một trách nh
 | Sách gia đình | Playwright/Chromium + pypdf | Giữ pipeline hiện tại; không thêm renderer thứ hai. |
 | Backup | [restic](https://github.com/restic/restic) + R2 + ổ cứng rời | R2 chỉ chứa dữ liệu quan trọng đã mã hóa; media gốc cần ổ vật lý thứ hai. |
 | Theo dõi | [Uptime Kuma](https://github.com/louislam/uptime-kuma) + [Healthchecks.io](https://healthchecks.io/pricing/) | Kuma theo dõi nội bộ; heartbeat bên ngoài chỉ gửi trạng thái, không gửi dữ liệu gia đình. |
+| Sức khỏe ổ đĩa | [smartmontools](https://github.com/smartmontools/smartmontools) | Chạy native trên Windows và chỉ gửi trạng thái tối giản vào Node-RED/Kuma; bật sau khi có ổ media/backup thật và xác nhận USB bridge đọc được SMART. |
 | Sơ đồ | [Archify](https://github.com/tt-a1i/archify) | Giữ một công cụ sơ đồ duy nhất. |
 
 ## PoC cô lập trước khi dùng thật
@@ -21,6 +22,7 @@ Ngày rà soát: 2026-08-30. Nguyên tắc: một công cụ cho một trách nh
 - [USDA FoodData Central](https://fdc.nal.usda.gov/api-guide/) và [Open Food Facts](https://github.com/openfoodfacts/openfoodfacts-server/blob/main/docs/api/index.md): chỉ hỗ trợ tra cứu dinh dưỡng/mã vạch; không dùng làm tư vấn y tế.
 - [Serwist](https://github.com/serwist/serwist): chỉ cache phần giao diện không nhạy cảm nếu thực sự cần offline.
 - [Backrest](https://github.com/garethgeorge/backrest): chỉ dùng nếu thay hoàn toàn lịch backup hiện tại, không chạy song song.
+- [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) và [Swift Paperless](https://github.com/paulgessinger/swift-paperless): PoC cô lập bằng tài liệu giả cho giấy khám/hóa đơn; local/Tailscale, tắt OCR/AI từ xa và chỉ dùng thật sau khi OCR tiếng Việt cùng export/restore đạt.
 
 ## Nguồn nội dung thai kỳ
 
@@ -34,6 +36,9 @@ Nội dung hiển thị phải lưu URL nguồn và ngày rà soát. Không sao 
 ## Không đưa vào stack
 
 - n8n, Mealie, Vikunja, Yuvomi: trùng Node-RED hoặc Grocy.
+- Scrutiny: thêm InfluxDB và quyền thiết bị rộng chỉ để lặp lại dashboard/alerting đã có; dùng smartmontools trực tiếp.
+- icloudpd: trùng Immich mobile backup/immich-go và tạo thêm nơi giữ Apple credential/session dễ hỏng khi luồng 2FA thay đổi.
+- Super Productivity: tạo nguồn checklist thứ hai thay vì dùng Portal hiện có.
 - OpenMRS/OpenSRP, Prometheus/Grafana: quá nặng so với nhu cầu gia đình hiện tại.
 - MinIO, Headscale, renderer PDF và công cụ diagram thứ hai: trùng trách nhiệm đã có.
 - Telegram hoặc Supabase làm kho duy nhất cho ảnh/video gốc.
