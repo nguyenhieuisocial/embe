@@ -27,3 +27,16 @@ C:\EmBe\.venv\Scripts\python.exe services\media-ingest\ingest_media.py `
 Immich không được publish trực tiếp lên Internet. Kết nối iPhone chỉ được bật
 qua LAN riêng hoặc VPN sau khi firewall, địa chỉ server và ổ media đã qua
 verifier. Thử trước bằng 10 ảnh, một HEIC/Live Photo và một video ngắn.
+
+## Kết nối iPhone qua Tailscale
+
+1. Cài Tailscale trên máy chủ và iPhone, đăng nhập cùng một tài khoản gia đình.
+2. Trên máy chủ, chạy dry-run trước; kết quả phải là `planned` và
+   `privacy: tailnet-only`.
+3. Chạy lại với `-Apply`, rồi nhập `server_url` được trả về vào ứng dụng Immich
+   trên iPhone. Không bật Tailscale Funnel.
+
+```powershell
+powershell -File C:\EmBe\scripts\network\configure-immich-tailscale.ps1
+powershell -File C:\EmBe\scripts\network\configure-immich-tailscale.ps1 -Apply
+```
