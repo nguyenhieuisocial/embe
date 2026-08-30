@@ -137,6 +137,9 @@ export default function GuidePage() {
           Nếu trang Em Bé không mở hoặc một thao tác không lưu được, chỉ cần báo
           tôi. Bạn không phải tự vào máy chủ hay sửa công cụ nào.
         </p>
+        <form className="logout-form" action="/api/auth/logout" method="post">
+          <button type="submit">Đăng xuất khỏi Em Bé</button>
+        </form>
       </aside>
 
       <footer>

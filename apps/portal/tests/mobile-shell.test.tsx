@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({ usePathname: () => "/ghi-lai" }));
 
 import FamilyNav from "../src/components/family-nav";
+import GuidePage from "../src/app/huong-dan/page";
 
 describe("mobile family shell", () => {
   it("offers the four everyday destinations as a compact navigation", () => {
@@ -13,6 +16,7 @@ describe("mobile family shell", () => {
     expect(screen.getByRole("navigation", { name: "Điều hướng gia đình" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("href", "/ghi-lai");
+    expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Mẹ Ngân" })).toHaveAttribute("href", "/me-bau");
     expect(screen.getByRole("link", { name: "Cách dùng" })).toHaveAttribute("href", "/huong-dan");
   });
@@ -41,5 +45,13 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/\.wordmark\s*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.rhythm-item a[^\{]*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.source-section a\s*\{[^}]*min-height:\s*44px/s);
+  });
+
+  it("offers an explicit logout action for a shared or lost phone", () => {
+    render(<GuidePage />);
+
+    const button = screen.getByRole("button", { name: "Đăng xuất khỏi Em Bé" });
+    expect(button.closest("form")).toHaveAttribute("action", "/api/auth/logout");
+    expect(button.closest("form")).toHaveAttribute("method", "post");
   });
 });
