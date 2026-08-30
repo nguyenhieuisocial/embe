@@ -69,18 +69,20 @@ foreach ($path in @(
     (Join-Path $ProjectRoot "services\vault-export"),
     (Join-Path $ProjectRoot "scripts")
 )) {
-    & icacls.exe $path /inheritance:d /T /C | Out-Null
-    & icacls.exe $path /remove:g "*S-1-5-11" /T /C | Out-Null
-    & icacls.exe $path /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "${syncIdentity}:(OI)(CI)(RX)" "${credentialIdentity}:(OI)(CI)(RX)" /T /C | Out-Null
+    & icacls.exe $path /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "${syncIdentity}:(OI)(CI)(RX)" "${credentialIdentity}:(OI)(CI)(RX)" | Out-Null
+    & icacls.exe $path /grant:r "${syncIdentity}:(RX)" "${credentialIdentity}:(RX)" /T /C | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Unable to protect executable integration path: $path" }
 }
 
-& icacls.exe $adminSecretDirectory /inheritance:r /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "${credentialIdentity}:(OI)(CI)(M)" /T /C | Out-Null
-& icacls.exe $runtimeSecretDirectory /inheritance:r /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "${credentialIdentity}:(OI)(CI)(M)" "${syncIdentity}:(OI)(CI)(RX)" /T /C | Out-Null
+& icacls.exe $adminSecretDirectory /inheritance:r /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "${credentialIdentity}:(OI)(CI)(M)" | Out-Null
+& icacls.exe $adminSecretFile /inheritance:r /grant:r "${ownerIdentity}:(F)" "BUILTIN\Administrators:(F)" "SYSTEM:(F)" "${credentialIdentity}:(M)" | Out-Null
+& icacls.exe $runtimeSecretDirectory /inheritance:r /grant:r "${ownerIdentity}:(OI)(CI)(F)" "BUILTIN\Administrators:(OI)(CI)(F)" "SYSTEM:(OI)(CI)(F)" "${credentialIdentity}:(OI)(CI)(M)" "${syncIdentity}:(OI)(CI)(RX)" | Out-Null
+& icacls.exe $syncSecretFile /inheritance:r /grant:r "${ownerIdentity}:(F)" "BUILTIN\Administrators:(F)" "SYSTEM:(F)" "${credentialIdentity}:(M)" "${syncIdentity}:(R)" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Unable to isolate portal runtime credentials" }
 
 foreach ($path in @((Split-Path $statusFile -Parent), (Split-Path $logFile -Parent), $vaultTimeline, $vaultArchive)) {
-    & icacls.exe $path /grant:r "${syncIdentity}:(OI)(CI)(M)" /T /C | Out-Null
+    & icacls.exe $path /grant:r "${syncIdentity}:(OI)(CI)(M)" | Out-Null
+    & icacls.exe $path /grant:r "${syncIdentity}:(M)" /T /C | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Unable to grant portal sync output access: $path" }
 }
 
