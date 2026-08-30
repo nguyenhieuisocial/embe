@@ -10,6 +10,9 @@ dependencies = [
   "mcp==2.1.1",
 ]
 
+[project.scripts]
+embe-hoi = "embe_mcp.ask:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/embe_mcp"]
 

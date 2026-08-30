@@ -30,6 +30,29 @@ Local inference dùng Ollama theo cấu hình tại `infra/ai/README.md`. Ollama
 được gọi thẳng database; mọi truy vấn dữ liệu phải đi qua ba MCP tool giới hạn ở
 trên.
 
+## Hỏi AI cục bộ bằng tiếng Việt
+
+CLI chỉ lấy một trong ba kết quả tổng hợp cố định rồi mới gửi kết quả đó đến
+`qwen3:8b` qua `http://127.0.0.1:11434/api/generate`. Adapter từ chối endpoint
+Internet, field bí mật, bản ghi/mốc thời gian thô và danh sách record. Request có
+timeout 30 giây, thử lại một lần khi lỗi mạng tạm thời và không khai báo tools.
+
+Ví dụ hỏi về giấc ngủ trong bảy ngày:
+
+```powershell
+.\.venv\Scripts\embe-hoi.exe `
+  --database C:\EmBe\data\analytics\family-analytics.sqlite3 `
+  --be-id embe `
+  --chu-de ngu `
+  --tu-ngay 2026-08-24 `
+  --den-ngay 2026-08-30 `
+  --cau-hoi "Tuần này bé ngủ thế nào?"
+```
+
+Ba chủ đề được phép là `ngu`, `bu` và `moi-truong`. Câu trả lời chỉ là diễn giải
+thống kê, không thay thế tư vấn bác sĩ. Kiểm thử dùng dữ liệu giả và transport
+giả; không gửi dữ liệu gia đình thật.
+
 ## Chạy local an toàn
 
 Production entrypoint chỉ dùng stdio và mở SQLite bằng `mode=ro` cộng
