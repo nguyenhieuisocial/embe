@@ -50,6 +50,8 @@ __pycache__/
 tools/bin/
 tools/downloads/
 tools/staging/
+.agents/skills/archify/
+docs/architecture/diagrams/*.visual-check.*
 .vercel/
 .supabase/
 .idea/

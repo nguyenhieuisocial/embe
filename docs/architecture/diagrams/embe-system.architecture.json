@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Kiến trúc nền tảng dữ liệu gia đình Em Bé",
+    "output": "embe-system.architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "family-access",
+        "label": "Gia đình truy cập",
+        "focus": ["family", "cloudflare", "portal"],
+        "note": "Người thân chỉ xem nội dung đã duyệt qua portal có mật khẩu."
+      },
+      {
+        "id": "curated-data",
+        "label": "Dữ liệu đã duyệt",
+        "focus": ["portal", "supabase", "tunnel", "bff"],
+        "note": "Cloud chỉ nhận read-model tối thiểu; dữ liệu gốc vẫn ở nhà."
+      },
+      {
+        "id": "local-sources",
+        "label": "Nguồn dữ liệu local",
+        "focus": ["bff", "babybuddy", "memos", "grocy", "immich", "vault"],
+        "note": "BFF đọc qua API; Obsidian nhận export một chiều từ Memos."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "family",
+      "type": "external",
+      "label": "Gia đình",
+      "sublabel": "Điện thoại / trình duyệt",
+      "pos": [20, 370],
+      "size": [150, 68]
+    },
+    {
+      "id": "cloudflare",
+      "type": "cloud",
+      "label": "Cloudflare",
+      "sublabel": "DNS, WAF, Tunnel",
+      "tag": "không mở port router",
+      "brand": "cloudflare",
+      "pos": [238, 370],
+      "size": [160, 72]
+    },
+    {
+      "id": "portal",
+      "type": "frontend",
+      "label": "Family Portal",
+      "sublabel": "Next.js trên Vercel",
+      "tag": "mật khẩu + cookie ký",
+      "brand": "vercel",
+      "pos": [420, 225],
+      "size": [180, 76]
+    },
+    {
+      "id": "supabase",
+      "type": "database",
+      "label": "Supabase",
+      "sublabel": "Curated read-model",
+      "tag": "RLS, có thể dựng lại",
+      "brand": "supabase",
+      "pos": [650, 105],
+      "size": [180, 76]
+    },
+    {
+      "id": "tunnel",
+      "type": "security",
+      "label": "Cloudflare Tunnel",
+      "sublabel": "Kết nối outbound-only",
+      "tag": "data.embe.hieu.asia",
+      "brand": "cloudflare",
+      "pos": [420, 530],
+      "size": [180, 76]
+    },
+    {
+      "id": "bff",
+      "type": "backend",
+      "label": "Local BFF",
+      "sublabel": "API dữ liệu đã duyệt",
+      "tag": "không trả RAW/GPS",
+      "pos": [650, 530],
+      "size": [180, 76]
+    },
+    {
+      "id": "babybuddy",
+      "type": "backend",
+      "label": "BabyBuddy",
+      "sublabel": "Theo dõi chăm sóc",
+      "pos": [900, 225],
+      "size": [170, 70]
+    },
+    {
+      "id": "memos",
+      "type": "backend",
+      "label": "Memos",
+      "sublabel": "Nhật ký và cột mốc",
+      "pos": [900, 380],
+      "size": [170, 70]
+    },
+    {
+      "id": "grocy",
+      "type": "backend",
+      "label": "Grocy",
+      "sublabel": "Tồn kho vật tư",
+      "pos": [900, 535],
+      "size": [170, 70]
+    },
+    {
+      "id": "immich",
+      "type": "backend",
+      "label": "Immich",
+      "sublabel": "Ảnh RAW và video",
+      "tag": "chờ ổ media riêng",
+      "pos": [1140, 300],
+      "size": [180, 76]
+    },
+    {
+      "id": "vault",
+      "type": "database",
+      "label": "Obsidian Vault",
+      "sublabel": "Kho lưu trữ chọn lọc",
+      "tag": "export một chiều",
+      "pos": [1140, 515],
+      "size": [180, 76]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Cloud — chỉ dữ liệu đã duyệt",
+      "wraps": ["cloudflare", "portal", "supabase"],
+      "pad": 34
+    },
+    {
+      "kind": "region",
+      "label": "Máy chủ tại nhà — system of record",
+      "wraps": ["tunnel", "bff", "babybuddy", "memos", "grocy", "immich", "vault"],
+      "pad": 34
+    },
+    {
+      "kind": "security-group",
+      "label": "Admin chỉ localhost/LAN",
+      "wraps": ["babybuddy", "memos", "grocy", "immich"],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "id": "family-to-edge",
+      "from": "family",
+      "to": "cloudflare",
+      "label": "HTTPS",
+      "labelAt": [190, 356],
+      "variant": "emphasis"
+    },
+    {
+      "id": "edge-to-portal",
+      "from": "cloudflare",
+      "to": "portal",
+      "label": "proxy web-app",
+      "variant": "security"
+    },
+    {
+      "id": "portal-to-read-model",
+      "from": "portal",
+      "to": "supabase",
+      "label": "metadata đã duyệt",
+      "variant": "dashed"
+    },
+    {
+      "id": "portal-to-tunnel",
+      "from": "portal",
+      "to": "tunnel",
+      "label": "API curated",
+      "labelAt": [510, 325],
+      "variant": "security"
+    },
+    {
+      "id": "tunnel-to-bff",
+      "from": "tunnel",
+      "to": "bff",
+      "label": "HTTP private",
+      "labelAt": [625, 620]
+    },
+    {
+      "id": "bff-to-babybuddy",
+      "from": "bff",
+      "to": "babybuddy",
+      "label": "REST read-only",
+      "labelAt": [850, 320]
+    },
+    {
+      "id": "bff-to-memos",
+      "from": "bff",
+      "to": "memos",
+      "label": "REST + MCP",
+      "labelAt": [810, 455]
+    },
+    {
+      "id": "bff-to-grocy",
+      "from": "bff",
+      "to": "grocy",
+      "label": "OpenAPI",
+      "labelAt": [850, 610]
+    },
+    {
+      "id": "bff-to-immich",
+      "from": "bff",
+      "to": "immich",
+      "label": "thumbnail/HLS",
+      "labelAt": [1080, 325]
+    },
+    {
+      "id": "memos-to-vault",
+      "from": "memos",
+      "to": "vault",
+      "label": "Markdown một chiều",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Dùng lại sản phẩm có sẵn",
+      "items": [
+        "BabyBuddy, Memos, Grocy và Immich giữ đúng vai trò chuyên biệt",
+        "Node-RED điều phối webhook; Uptime Kuma giám sát dịch vụ"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Ranh giới riêng tư",
+      "items": [
+        "Cloud không giữ hồ sơ y tế gốc, GPS, RAW hoặc video gốc",
+        "Admin apps không công khai; BFF lọc allowlist trường dữ liệu"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Khả năng phục hồi",
+      "items": [
+        "Restic mã hóa vault, DB snapshot và cấu hình theo nguyên tắc 3-2-1",
+        "Supabase chỉ là bản đọc có thể dựng lại từ nguồn local"
+      ]
+    }
+  ]
+}
