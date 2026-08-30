@@ -41,8 +41,10 @@ function Test-HttpEndpoint([string]$Uri) {
         return [pscustomobject]@{ reachable = $true; status_code = [int]$response.StatusCode }
     } catch {
         $statusCode = 0
-        if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
-            $statusCode = [int]$_.Exception.Response.StatusCode
+        $responseProperty = $_.Exception.PSObject.Properties["Response"]
+        $response = if ($responseProperty) { $responseProperty.Value } else { $null }
+        if ($response -and $response.StatusCode) {
+            $statusCode = [int]$response.StatusCode
         }
         return [pscustomobject]@{ reachable = $false; status_code = $statusCode }
     }

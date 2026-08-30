@@ -3,6 +3,10 @@ param()
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $scriptEngine = (Get-Process -Id $PID).Path
+$healthSource = Get-Content -LiteralPath (Join-Path $projectRoot "scripts\health\health-audit.ps1") -Raw
+if (-not $healthSource.Contains('PSObject.Properties["Response"]')) {
+    throw "HTTP health errors must tolerate exceptions without a Response property"
+}
 $testRoot = Join-Path $env:TEMP ("embe-health-gates-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory $testRoot | Out-Null
 
