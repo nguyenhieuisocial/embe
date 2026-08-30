@@ -4,7 +4,7 @@
 - Production alias: `https://embe-portal.vercel.app`
 - Git source: `nguyenhieuisocial/embe`
 - Application root: `apps/portal`
-- Intended custom domain: `embe.hieu.asia`
+- Custom domain: `https://embe.hieu.asia`
 
-The portal is currently a data-free shell. Cloudflare Access must protect the
-custom domain before family data is exposed.
+The portal is currently a data-free shell. The custom domain is proxied through
+Cloudflare and protected by the `EmBe Family Portal` Access application.
