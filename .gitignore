@@ -54,6 +54,8 @@ tools/staging/
 docs/architecture/diagrams/*.visual-check.*
 .vercel/
 .supabase/
+supabase/.branches/
+supabase/.temp/
 .idea/
 .vscode/
 Thumbs.db

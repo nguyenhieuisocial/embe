@@ -1,0 +1,12 @@
+[project]
+id = "embe-read-model"
+
+[api]
+# Only expose the minimal read-model schema to Supabase Data API.
+schemas = ["portal_read_model"]
+
+[db]
+major_version = 17
+
+[db.migrations]
+schema_paths = ["./schemas/portal_read_model.sql"]
