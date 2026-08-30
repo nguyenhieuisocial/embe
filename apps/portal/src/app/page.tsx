@@ -1,9 +1,19 @@
-const timelinePreview = [
-  { date: "Hôm nay", text: "Những câu chuyện mới sẽ xuất hiện ở đây." },
-  { date: "Tháng này", text: "Các cột mốc được bố mẹ chọn để cả nhà cùng nhớ." }
+import { getTimeline } from "../lib/timeline";
+
+export const dynamic = "force-dynamic";
+
+const emptyTimeline = [
+  { id: "empty", eventAt: "", title: "Những câu chuyện mới sẽ xuất hiện ở đây.", caption: "Bố mẹ chỉ cần thêm #portal vào ghi chú muốn chia sẻ." }
 ];
 
-export default function Home() {
+function vietnameseDate(value: string): string {
+  if (!value) return "Sẵn sàng";
+  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "long", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(value));
+}
+
+export default async function Home() {
+  const liveTimeline = await getTimeline();
+  const timeline = liveTimeline.length > 0 ? liveTimeline : emptyTimeline;
   return (
     <main>
       <header className="masthead">
@@ -68,12 +78,13 @@ export default function Home() {
             <h2>Nhật ký</h2>
           </div>
           <div className="timeline-list">
-            {timelinePreview.map((item) => (
-              <div className="timeline-item" key={item.date}>
+            {timeline.map((item) => (
+              <div className="timeline-item" key={item.id}>
                 <span className="timeline-dot" aria-hidden="true" />
                 <div>
-                  <p className="timeline-date">{item.date}</p>
-                  <p>{item.text}</p>
+                  <p className="timeline-date">{vietnameseDate(item.eventAt)}</p>
+                  <strong>{item.title}</strong>
+                  <p>{item.caption}</p>
                 </div>
               </div>
             ))}
