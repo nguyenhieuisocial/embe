@@ -7,7 +7,7 @@ describe("family password page", () => {
   it("asks only for the shared family password", async () => {
     render(await LoginPage({ searchParams: Promise.resolve({ next: "/family" }) }));
 
-    expect(screen.getByRole("heading", { name: "Không gian riêng của gia đình" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Mời cả nhà vào bên trong" })).toBeInTheDocument();
     expect(screen.getByLabelText("Mật khẩu")).toHaveAttribute("type", "password");
     expect(screen.getByRole("button", { name: "Mở nhật ký" })).toBeInTheDocument();
     expect(document.querySelector('form[action="/api/auth/login"]')).not.toBeNull();

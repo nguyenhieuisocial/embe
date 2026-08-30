@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro, Newsreader } from "next/font/google";
+import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
 
 import "./globals.css";
 
@@ -9,7 +9,7 @@ const body = Be_Vietnam_Pro({
   variable: "--font-body"
 });
 
-const display = Newsreader({
+const display = Noto_Serif({
   subsets: ["vietnamese"],
   weight: ["500", "600"],
   variable: "--font-display"

@@ -30,6 +30,7 @@ describe("password login endpoint", () => {
     const response = await POST(requestWith("wrong-secret"));
 
     expect(response.status).toBe(303);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(new URL(response.headers.get("location")!).pathname).toBe("/login");
     expect(new URL(response.headers.get("location")!).searchParams.get("error")).toBe("1");
     expect(response.headers.get("set-cookie")).toBeNull();
@@ -40,6 +41,7 @@ describe("password login endpoint", () => {
     const cookie = response.headers.get("set-cookie") ?? "";
 
     expect(response.status).toBe(303);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("location")).toBe("https://embe.hieu.asia/?view=timeline");
     expect(cookie).toContain("embe_session=");
     expect(cookie).toContain("HttpOnly");

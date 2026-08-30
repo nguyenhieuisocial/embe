@@ -20,6 +20,7 @@ describe("portal access gate", () => {
     const location = new URL(response.headers.get("location")!);
 
     expect(response.status).toBe(307);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(location.pathname).toBe("/login");
     expect(location.searchParams.get("next")).toBe("/family?view=timeline");
   });
@@ -33,6 +34,7 @@ describe("portal access gate", () => {
     const response = proxy(request);
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
@@ -40,6 +42,7 @@ describe("portal access gate", () => {
     const response = proxy(new NextRequest("https://embe.hieu.asia/login"));
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 

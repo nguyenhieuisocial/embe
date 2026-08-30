@@ -1,0 +1,8 @@
+*
+!apps
+!apps/portal
+!apps/portal/**
+apps/portal/.env*
+apps/portal/.next
+apps/portal/.vercel
+apps/portal/node_modules
