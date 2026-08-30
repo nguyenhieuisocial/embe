@@ -1,0 +1,72 @@
+name: embe
+
+services:
+  babybuddy:
+    image: lscr.io/linuxserver/babybuddy:version-v2.10.0
+    restart: unless-stopped
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      CSRF_TRUSTED_ORIGINS: http://localhost:${BABYBUDDY_PORT:-8000}
+    volumes:
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/babybuddy
+        target: /config
+    ports:
+      - 127.0.0.1:${BABYBUDDY_PORT:-8000}:8000
+    networks:
+      - embe-core
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/ > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  memos:
+    image: neosmemo/memos:0.30.0
+    restart: unless-stopped
+    environment:
+      MEMOS_MODE: prod
+      MEMOS_PORT: 5230
+    volumes:
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/memos
+        target: /var/opt/memos
+    ports:
+      - 127.0.0.1:${MEMOS_PORT:-5230}:5230
+    networks:
+      - embe-core
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5230/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  grocy:
+    image: lscr.io/linuxserver/grocy:version-v4.7.0
+    restart: unless-stopped
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    volumes:
+      - type: bind
+        source: ${EMBE_ROOT:-C:/EmBe}/data/appdata/grocy
+        target: /config
+    ports:
+      - 127.0.0.1:${GROCY_PORT:-9283}:80
+    networks:
+      - embe-core
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/ > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+networks:
+  embe-core:
+    name: embe-core

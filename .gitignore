@@ -1,8 +1,10 @@
 # Secrets and local environment
 .env
 .env.*
+*.env
 !.env.example
 !*.example
+!*.example.env
 secrets/*
 !secrets/README.md
 !secrets/*.enc.*
