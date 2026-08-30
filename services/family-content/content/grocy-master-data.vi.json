@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "locations": [
+    {"name": "Vật tư em bé", "description": "Bỉm, khăn, đồ vệ sinh và vật tư chăm sóc."},
+    {"name": "Bếp gia đình", "description": "Thực phẩm và đồ dùng bếp."}
+  ],
+  "quantity_units": [
+    {"name": "cái", "name_plural": "cái", "description": "Đơn vị từng món."},
+    {"name": "gói", "name_plural": "gói", "description": "Bao bì bán lẻ; số cái mỗi gói khai riêng ở sản phẩm."},
+    {"name": "hộp", "name_plural": "hộp", "description": "Bao bì dạng hộp; không dùng thay cho ml hoặc g."},
+    {"name": "ml", "name_plural": "ml", "description": "Thể tích mililit."},
+    {"name": "g", "name_plural": "g", "description": "Khối lượng gram."}
+  ],
+  "product_groups": [
+    {"name": "Bỉm và vệ sinh", "description": "Bỉm, khăn ướt, khăn khô và đồ vệ sinh."},
+    {"name": "Sữa và dinh dưỡng", "description": "Chỉ nhập đúng nhãn, quy cách và hạn dùng thực tế."},
+    {"name": "Đồ dùng của mẹ", "description": "Vật tư tiêu hao dành cho mẹ."}
+  ]
+}
