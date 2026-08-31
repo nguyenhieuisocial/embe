@@ -39,6 +39,8 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         analytics_ingest = @{ status = "skipped"; reason = "all_sources_disabled"; updated_at = $now.AddMinutes(-5).ToString("o") }
         inventory_worker = @{ status = "ok"; last_success_at = $now.AddMinutes(-2).ToString("o"); queue = @{ pending = 0; processing = 0; dead_letters = 0 } }
         inventory_task_ready = $true
+        procurement_worker = @{ status = "ok"; last_success_at = $now.AddMinutes(-2).ToString("o"); queue = @{ pending = 0; processing = 0; dead_letters = 0 } }
+        procurement_task_ready = $true
         assistant_worker = @{ status = "ok"; last_success_at = $now.AddMinutes(-2).ToString("o"); queue = @{ pending = 0; processing = 0; dead_letters = 0 } }
         assistant_task_ready = $true
         backup_created_utc = $now.AddHours(-$BackupAgeHours).ToString("o")
@@ -100,7 +102,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "inventory_worker", "local_assistant", "immich_family_account", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "telegram_live_smoke", "monthly_pdf")) {
+    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "inventory_worker", "procurement_worker", "local_assistant", "immich_family_account", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "telegram_live_smoke", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }

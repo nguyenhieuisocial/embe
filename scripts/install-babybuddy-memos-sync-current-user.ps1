@@ -14,7 +14,7 @@ $statusDirectory = Join-Path $ProjectRoot "data\status"
 $logDirectory = Join-Path $ProjectRoot "data\logs"
 $statusFile = Join-Path $statusDirectory "babybuddy-memos-sync.json"
 $logFile = Join-Path $logDirectory "babybuddy-memos-sync.jsonl"
-$venvPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+$venvPython = Join-Path $ProjectRoot ".venv\Scripts\pythonw.exe"
 
 if (-not (Test-Path -LiteralPath $runtimeSecret -PathType Leaf)) {
     throw "BabyBuddy sync runtime configuration is missing. Run scripts\provision-babybuddy-sync.ps1 first."
@@ -23,11 +23,10 @@ if (-not (Test-Path -LiteralPath $syncScript -PathType Leaf)) {
     throw "BabyBuddy sync program is missing."
 }
 
-$python = if (Test-Path -LiteralPath $venvPython -PathType Leaf) {
-    $venvPython
-} else {
-    (Get-Command python.exe -ErrorAction Stop).Source
+if (-not (Test-Path -LiteralPath $venvPython -PathType Leaf)) {
+    throw "The windowless project Python runtime is missing."
 }
+$python = $venvPython
 
 New-Item -ItemType Directory -Path $statusDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null

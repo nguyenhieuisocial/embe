@@ -18,9 +18,9 @@ if (-not $ConfigPath) { $ConfigPath = Join-Path $serviceRoot 'config.local.json'
 if (-not $SecretsPath) { $SecretsPath = Join-Path $serviceRoot 'secrets.local.env' }
 if (-not $StatusPath) { $StatusPath = Join-Path $ProjectRoot 'data\health\analytics-ingest.json' }
 
-$python = Join-Path $ProjectRoot '.venv\Scripts\python.exe'
+$python = Join-Path $ProjectRoot '.venv\Scripts\pythonw.exe'
 if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
-    $python = (Get-Command python -ErrorAction Stop).Source
+    throw 'The windowless project Python runtime is missing'
 }
 
 $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name

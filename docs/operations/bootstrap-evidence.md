@@ -32,7 +32,8 @@
 | Immich media publisher | Onboarding đã hoàn tất; album chọn lọc `Em Bé` đang trống; API key riêng chỉ có `asset.read` + `asset.view` + `asset.download`; vòng đồng bộ trống đạt 0 upload/0 lỗi và health gate fail-closed |
 | Immich iPhone account | Tài khoản `family@hieu.asia` không-quản-trị đã tạo; đăng nhập thật đạt; mật khẩu lưu bằng DPAPI ngoài GitHub |
 | Telegram secondary | Album Immich chọn lọc tự đồng bộ ảnh/video gốc qua mã hóa chunk; canary 1 MB đã upload thật, tải toàn bộ, đọc Range, khớp checksum và xóa; phiên standard cùng cả hai shard đều được xác minh |
-| Sức khỏe phần mềm | 25/25 kiểm tra đạt; gồm tài khoản Immich gia đình, kho phân tích, upload/Range Telegram thật, 7 monitor, CI `main`, Vercel production và smoke test công khai |
+| Mua sắm an toàn | Runtime SQLite và bridge server-only đã có; đề xuất idempotent, tính landed cost, khóa duyệt bằng SHA-256 và không có khả năng tự đặt hàng |
+| Sức khỏe phần mềm | 28 cổng kiểm tra; toàn bộ dịch vụ đạt, cổng dung lượng hiện cảnh báo khi ổ hệ thống dưới 25% để ngăn Docker mất ổn định |
 
 ## Go/no-go
 

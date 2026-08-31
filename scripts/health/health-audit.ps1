@@ -97,6 +97,8 @@ if ($FixturePath) {
     $analyticsIngestStatus = $fixture.analytics_ingest
     $inventoryWorkerStatus = $fixture.inventory_worker
     $inventoryWorkerTaskReady = [bool]$fixture.inventory_task_ready
+    $procurementWorkerStatus = $fixture.procurement_worker
+    $procurementWorkerTaskReady = [bool]$fixture.procurement_task_ready
     $assistantWorkerStatus = $fixture.assistant_worker
     $assistantWorkerTaskReady = [bool]$fixture.assistant_task_ready
     $backupCreated = $fixture.backup_created_utc
@@ -173,6 +175,20 @@ if ($FixturePath) {
         Start-Sleep -Milliseconds 200
     }
     $inventoryWorkerTaskReady = $null -ne $inventoryWorkerTask -and [string]$inventoryWorkerTask.State -ne "Disabled"
+
+    $procurementWorkerPath = Join-Path $ProjectRoot "data\status\procurement-worker.json"
+    $procurementWorkerStatus = if (Test-Path $procurementWorkerPath) { Get-Content $procurementWorkerPath -Raw | ConvertFrom-Json } else { $null }
+    $procurementWorkerTask = $null
+    foreach ($attempt in 1..3) {
+        try {
+            $procurementWorkerTask = Get-ScheduledTask -TaskName "EmBe Procurement Worker" -ErrorAction Stop
+        } catch {
+            $procurementWorkerTask = $null
+        }
+        if ($null -ne $procurementWorkerTask) { break }
+        Start-Sleep -Milliseconds 200
+    }
+    $procurementWorkerTaskReady = $null -ne $procurementWorkerTask -and [string]$procurementWorkerTask.State -ne "Disabled"
 
     $assistantWorkerPath = Join-Path $ProjectRoot "data\status\assistant-worker.json"
     $assistantWorkerStatus = if (Test-Path $assistantWorkerPath) { Get-Content $assistantWorkerPath -Raw | ConvertFrom-Json } else { $null }
@@ -489,6 +505,19 @@ Add-Check "inventory_worker" $(if ($inventoryWorkerPass) { "pass" } else { "crit
     age_minutes = if ([double]::IsInfinity($inventoryWorkerAge)) { $null } else { [math]::Round($inventoryWorkerAge * 60, 1) }
     maximum_minutes = 10
     dead_letters = $inventoryDeadletters
+}
+
+$procurementWorkerHealthy = $null -ne $procurementWorkerStatus -and [string]$procurementWorkerStatus.status -eq "ok" -and $procurementWorkerStatus.last_success_at
+$procurementWorkerAge = if ($procurementWorkerHealthy) { Get-AgeHours $procurementWorkerStatus.last_success_at } else { [double]::PositiveInfinity }
+$procurementDeadletters = if ($null -ne $procurementWorkerStatus -and $procurementWorkerStatus.PSObject.Properties["queue"] -and $procurementWorkerStatus.queue.PSObject.Properties["dead_letters"]) {
+    [int]$procurementWorkerStatus.queue.dead_letters
+} else { 0 }
+$procurementWorkerPass = $procurementWorkerTaskReady -and $procurementWorkerHealthy -and $procurementWorkerAge -le (15 / 60) -and $procurementDeadletters -eq 0
+Add-Check "procurement_worker" $(if ($procurementWorkerPass) { "pass" } else { "critical" }) "Đề xuất mua sắm vừa đồng bộ và không có lệnh lỗi" @{
+    task_ready = [bool]$procurementWorkerTaskReady
+    age_minutes = if ([double]::IsInfinity($procurementWorkerAge)) { $null } else { [math]::Round($procurementWorkerAge * 60, 1) }
+    maximum_minutes = 15
+    dead_letters = $procurementDeadletters
 }
 
 $assistantWorkerHealthy = $null -ne $assistantWorkerStatus -and [string]$assistantWorkerStatus.status -eq "ok" -and $assistantWorkerStatus.last_success_at

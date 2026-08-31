@@ -45,7 +45,7 @@ if (-not $principalCheck.IsInRole([Security.Principal.WindowsBuiltInRole]::Admin
 }
 $installStep = "task_installation"
 
-$python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+$python = Join-Path $ProjectRoot ".venv\Scripts\pythonw.exe"
 $syncScript = Join-Path $ProjectRoot "services\local-bff\src\sync_portal.py"
 $bridgeScript = Join-Path $ProjectRoot "services\babybuddy-memos-sync\src\embe_sync\main.py"
 $provisioner = Join-Path $ProjectRoot "scripts\provision-local-integrations.ps1"
