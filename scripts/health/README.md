@@ -6,6 +6,12 @@ read-only MCP runtime, and the latest monthly PDF. Its JSON contains only status
 ages, counts, booleans, and HTTP status codes—never response bodies, credentials,
 family notes, names, photos, or URL query strings.
 
+`install-tailscale-private-probe.ps1` installs a limited current-user probe every
+five minutes because Tailscale identity is not available to the isolated backup
+account. The probe persists only three HTTP status codes; `health-audit.ps1`
+accepts them for at most ten minutes and otherwise fails closed or attempts a
+live check.
+
 Mỗi lần health audit chạy thật, `record-soak.ps1` tự cập nhật bằng chứng ổn định
 liên tục. Một lần health không đạt sẽ đặt lại thời gian tính bảy ngày; soak chỉ
 đạt khi đủ thời gian và cả năm failure drill đã có bằng chứng `pass`.
