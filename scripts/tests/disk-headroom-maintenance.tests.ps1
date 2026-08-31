@@ -13,7 +13,7 @@ $installerSource = Get-Content -LiteralPath $installer -Raw
 foreach ($forbidden in @("docker system prune", "docker image prune", "docker volume prune", "Remove-Item")) {
     if ($runnerSource.Contains($forbidden)) { throw "Disk maintenance contains destructive behavior: $forbidden" }
 }
-foreach ($required in @("docker builder prune", "until=168h", "fstrim", "TargetFreePercent", "MinimumFreePercent", "disk-maintenance.json")) {
+foreach ($required in @("docker builder prune", "until=168h", "fstrim", "npm cache clean --force", "pip cache purge", "TargetFreePercent", "MinimumFreePercent", "disk-maintenance.json")) {
     if (-not $runnerSource.Contains($required)) { throw "Disk maintenance is missing: $required" }
 }
 foreach ($required in @("New-ScheduledTaskTrigger -Daily", "StartWhenAvailable", "LogonType Interactive", "RunLevel Limited", "VerifyNow")) {

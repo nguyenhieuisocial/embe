@@ -6,9 +6,11 @@ read-only MCP runtime, and the latest monthly PDF. Its JSON contains only status
 ages, counts, booleans, and HTTP status codes—never response bodies, credentials,
 family notes, names, photos, or URL query strings.
 
-`EmBe-DiskMaintenance` runs daily with limited current-user rights. It only
-trims free WSL blocks and Docker build cache older than seven days; it never
-prunes images, containers, volumes, databases, or family media. The health
+`EmBe-DiskMaintenance` runs daily with limited current-user rights. It trims
+free WSL blocks and Docker build cache older than seven days. Only when free
+space remains below the safety floor does it clear npm/pip download caches,
+which are reproducible. It never prunes images, containers, volumes, databases,
+or family media. The health
 audit fails closed if its sanitized status is missing, stale, or the task is
 disabled.
 

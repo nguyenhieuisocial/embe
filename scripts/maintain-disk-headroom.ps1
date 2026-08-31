@@ -28,6 +28,7 @@ $before = Get-FreePercent
 $maintenanceAttempted = $false
 $builderCachePruned = $false
 $filesystemTrimmed = $false
+$packageCachesCleared = $false
 
 if ($before -lt $TargetFreePercent -and -not $SkipActions) {
     $maintenanceAttempted = $true
@@ -39,6 +40,23 @@ if ($before -lt $TargetFreePercent -and -not $SkipActions) {
 
     & wsl.exe -d docker-desktop -u root -- fstrim -av *> $null
     $filesystemTrimmed = $LASTEXITCODE -eq 0
+
+    if ((Get-FreePercent) -lt $MinimumFreePercent) {
+        $npmAvailable = $null -ne (Get-Command npm -ErrorAction SilentlyContinue)
+        $npmCleared = $false
+        if ($npmAvailable) {
+            & npm cache clean --force *> $null
+            $npmCleared = $LASTEXITCODE -eq 0
+        }
+
+        $python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+        $pipCleared = $false
+        if (Test-Path -LiteralPath $python -PathType Leaf) {
+            & $python -m pip cache purge *> $null
+            $pipCleared = $LASTEXITCODE -eq 0
+        }
+        $packageCachesCleared = $npmCleared -or $pipCleared
+    }
 }
 
 $after = Get-FreePercent
@@ -55,6 +73,7 @@ $report = [ordered]@{
     maintenance_attempted = $maintenanceAttempted
     builder_cache_pruned = $builderCachePruned
     filesystem_trimmed = $filesystemTrimmed
+    package_caches_cleared = $packageCachesCleared
     privacy = "No path, file name, image, volume, container output, or family content is included."
 }
 

@@ -18,7 +18,7 @@ $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit
 $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force `
-    -Description "Safely trims Docker free blocks and old build cache without deleting images, volumes, or family data." | Out-Null
+    -Description "Safely trims Docker blocks and, only below the safety floor, re-downloadable package caches without deleting images, volumes, or family data." | Out-Null
 
 if ($VerifyNow) {
     $startedAt = Get-Date
