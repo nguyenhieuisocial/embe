@@ -185,12 +185,31 @@ if ($FixturePath) {
     $nodeRed = Test-HttpEndpoint "http://127.0.0.1:1880/"
     $uptimeKuma = Test-UptimeKumaEndpoint
     $uptimeMonitoring = [pscustomobject]@{ active = 0; healthy = 0; stale = 0 }
-    $uptimeStateScript = Join-Path $ProjectRoot "scripts\health\uptime-kuma-state.py"
-    $uptimeDatabase = Join-Path $ProjectRoot "data\appdata\uptime-kuma\kuma.db"
-    $uptimePython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
-    if ((Test-Path -LiteralPath $uptimeStateScript -PathType Leaf) -and (Test-Path -LiteralPath $uptimeDatabase -PathType Leaf) -and (Test-Path -LiteralPath $uptimePython -PathType Leaf)) {
-        $uptimeStateJson = & $uptimePython $uptimeStateScript --database $uptimeDatabase 2>$null
-        if ($LASTEXITCODE -eq 0) { $uptimeMonitoring = $uptimeStateJson | ConvertFrom-Json }
+    $uptimeProbeFresh = $false
+    $uptimeProbePath = Join-Path $ProjectRoot "data\health\uptime-monitors.json"
+    if (Test-Path -LiteralPath $uptimeProbePath -PathType Leaf) {
+        try {
+            $uptimeProbe = Get-Content -LiteralPath $uptimeProbePath -Raw | ConvertFrom-Json
+            if ((Get-AgeHours $uptimeProbe.generated_at) -le (5 / 60)) {
+                $uptimeMonitoring = [pscustomobject]@{
+                    active = [int]$uptimeProbe.active
+                    healthy = [int]$uptimeProbe.healthy
+                    stale = [int]$uptimeProbe.stale
+                }
+                $uptimeProbeFresh = $true
+            }
+        } catch {
+            # A malformed probe fails closed unless the read-only local fallback succeeds.
+        }
+    }
+    if (-not $uptimeProbeFresh) {
+        $uptimeStateScript = Join-Path $ProjectRoot "scripts\health\uptime-kuma-state.py"
+        $uptimeDatabase = Join-Path $ProjectRoot "data\appdata\uptime-kuma\kuma.db"
+        $uptimePython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+        if ((Test-Path -LiteralPath $uptimeStateScript -PathType Leaf) -and (Test-Path -LiteralPath $uptimeDatabase -PathType Leaf) -and (Test-Path -LiteralPath $uptimePython -PathType Leaf)) {
+            $uptimeStateJson = & $uptimePython $uptimeStateScript --database $uptimeDatabase 2>$null
+            if ($LASTEXITCODE -eq 0) { $uptimeMonitoring = $uptimeStateJson | ConvertFrom-Json }
+        }
     }
 
     $ollama = [pscustomobject]@{ reachable = $false; required_model_present = $false }

@@ -66,6 +66,7 @@ jobs:
         run: |
           $tests = @(
             '.\scripts\health\tests\tailscale-private-probe.tests.ps1',
+            '.\scripts\health\tests\uptime-monitor-probe.tests.ps1',
             '.\scripts\tests\install-scheduled-backup.tests.ps1',
             '.\scripts\tests\babybuddy-memos-sync-scheduler.tests.ps1',
             '.\scripts\tests\portal-sync.tests.ps1',
