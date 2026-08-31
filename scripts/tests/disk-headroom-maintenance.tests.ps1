@@ -42,3 +42,7 @@ try {
 } finally {
     if (Test-Path -LiteralPath $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force }
 }
+
+# The warning fixture intentionally returns 2. Do not leak that expected child
+# exit code as the result of the test process after all assertions passed.
+exit 0
