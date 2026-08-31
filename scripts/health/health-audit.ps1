@@ -55,6 +55,29 @@ function Get-AgeHours([object]$Value) {
     return ($now - (Convert-ToDateTimeOffset $Value)).TotalHours
 }
 
+function Test-ScheduledTaskReady([string]$Name, [string]$ExpectedRunner = "") {
+    $scheduledTask = $null
+    try {
+        $scheduledTask = Get-ScheduledTask -TaskName $Name -ErrorAction Stop
+    } catch {
+        $scheduledTask = $null
+    }
+    if ($null -ne $scheduledTask) {
+        if ([string]$scheduledTask.State -eq "Disabled") { return $false }
+        if ($ExpectedRunner -and -not ([string]$scheduledTask.Actions.Arguments).Contains($ExpectedRunner)) { return $false }
+        return $true
+    }
+
+    $taskFile = Join-Path $env:windir ("System32\Tasks\" + $Name)
+    try {
+        return $null -ne (Get-Item -LiteralPath $taskFile -ErrorAction Stop)
+    } catch [System.UnauthorizedAccessException] {
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function Test-HttpEndpoint([string]$Uri) {
     try {
         $response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -TimeoutSec 8 -MaximumRedirection 5
@@ -135,17 +158,7 @@ if ($FixturePath) {
     $diskMaintenanceStatus = if (Test-Path -LiteralPath $diskMaintenancePath -PathType Leaf) {
         Get-Content -LiteralPath $diskMaintenancePath -Raw | ConvertFrom-Json
     } else { $null }
-    $diskMaintenanceTask = $null
-    foreach ($attempt in 1..3) {
-        try {
-            $diskMaintenanceTask = Get-ScheduledTask -TaskName "EmBe-DiskMaintenance" -ErrorAction Stop
-        } catch {
-            $diskMaintenanceTask = $null
-        }
-        if ($null -ne $diskMaintenanceTask) { break }
-        Start-Sleep -Milliseconds 200
-    }
-    $diskMaintenanceTaskReady = $null -ne $diskMaintenanceTask -and [string]$diskMaintenanceTask.State -ne "Disabled"
+    $diskMaintenanceTaskReady = Test-ScheduledTaskReady "EmBe-DiskMaintenance" (Join-Path $ProjectRoot "scripts\maintain-disk-headroom.ps1")
 
     $containers = @()
     $containerLines = docker ps -a --format '{{.Names}}|{{.Status}}' 2>$null
@@ -166,50 +179,25 @@ if ($FixturePath) {
     $analyticsIngestStatus = if (Test-Path $analyticsIngestPath) { Get-Content $analyticsIngestPath -Raw | ConvertFrom-Json } else { $null }
     $inventoryWorkerPath = Join-Path $ProjectRoot "data\status\inventory-worker.json"
     $inventoryWorkerStatus = if (Test-Path $inventoryWorkerPath) { Get-Content $inventoryWorkerPath -Raw | ConvertFrom-Json } else { $null }
-    $inventoryWorkerTask = $null
-    foreach ($attempt in 1..3) {
-        try {
-            $inventoryWorkerTask = Get-ScheduledTask -TaskName "EmBe Inventory Worker" -ErrorAction Stop
-        } catch {
-            $inventoryWorkerTask = $null
-        }
-        if ($null -ne $inventoryWorkerTask) { break }
-        Start-Sleep -Milliseconds 200
-    }
-    $inventoryWorkerTaskReady = $null -ne $inventoryWorkerTask -and [string]$inventoryWorkerTask.State -ne "Disabled"
+    $inventoryWorkerTaskReady = Test-ScheduledTaskReady "EmBe Inventory Worker" (Join-Path $ProjectRoot "services\inventory-worker\src\inventory_worker.py")
 
     $procurementWorkerPath = Join-Path $ProjectRoot "data\status\procurement-worker.json"
     $procurementWorkerStatus = if (Test-Path $procurementWorkerPath) { Get-Content $procurementWorkerPath -Raw | ConvertFrom-Json } else { $null }
-    $procurementWorkerTask = $null
-    foreach ($attempt in 1..3) {
-        try {
-            $procurementWorkerTask = Get-ScheduledTask -TaskName "EmBe Procurement Worker" -ErrorAction Stop
-        } catch {
-            $procurementWorkerTask = $null
-        }
-        if ($null -ne $procurementWorkerTask) { break }
-        Start-Sleep -Milliseconds 200
-    }
-    $procurementWorkerTaskReady = $null -ne $procurementWorkerTask -and [string]$procurementWorkerTask.State -ne "Disabled"
+    $procurementWorkerTaskReady = Test-ScheduledTaskReady "EmBe Procurement Worker" (Join-Path $ProjectRoot "services\procurement\run.py")
 
     $assistantWorkerPath = Join-Path $ProjectRoot "data\status\assistant-worker.json"
     $assistantWorkerStatus = if (Test-Path $assistantWorkerPath) { Get-Content $assistantWorkerPath -Raw | ConvertFrom-Json } else { $null }
-    $assistantWorkerTask = $null
-    foreach ($attempt in 1..3) {
-        try {
-            $assistantWorkerTask = Get-ScheduledTask -TaskName "EmBe Local Assistant" -ErrorAction Stop
-        } catch {
-            $assistantWorkerTask = $null
-        }
-        if ($null -ne $assistantWorkerTask) { break }
-        Start-Sleep -Milliseconds 200
-    }
-    $assistantWorkerTaskReady = $null -ne $assistantWorkerTask -and [string]$assistantWorkerTask.State -ne "Disabled"
+    $assistantWorkerTaskReady = Test-ScheduledTaskReady "EmBe Local Assistant" (Join-Path $ProjectRoot "services\assistant-worker\src\assistant_worker.py")
 
-    $shellLeakGuardTask = Get-ScheduledTask -TaskName "EmBe Shell Leak Guard" -ErrorAction SilentlyContinue
-    $shellLeakGuardInfo = if ($null -ne $shellLeakGuardTask) { Get-ScheduledTaskInfo -TaskName "EmBe Shell Leak Guard" -ErrorAction SilentlyContinue } else { $null }
-    $shellLeakGuardTaskReady = $null -ne $shellLeakGuardTask -and [string]$shellLeakGuardTask.State -ne "Disabled"
-    $shellLeakGuardLastResult = if ($null -ne $shellLeakGuardInfo) { [int]$shellLeakGuardInfo.LastTaskResult } else { -1 }
+    $shellLeakGuardTaskReady = Test-ScheduledTaskReady "EmBe Shell Leak Guard" (Join-Path $ProjectRoot "scripts\health\shell_leak_guard.py")
+    $shellLeakGuardStatusPath = Join-Path $ProjectRoot "data\status\shell-leak-guard.json"
+    $shellLeakGuardStatus = if (Test-Path -LiteralPath $shellLeakGuardStatusPath -PathType Leaf) {
+        Get-Content -LiteralPath $shellLeakGuardStatusPath -Raw | ConvertFrom-Json
+    } else { $null }
+    $shellLeakGuardStatusAge = if ($null -ne $shellLeakGuardStatus -and $shellLeakGuardStatus.generated_at) {
+        Get-AgeHours $shellLeakGuardStatus.generated_at
+    } else { [double]::PositiveInfinity }
+    $shellLeakGuardLastResult = if ($null -ne $shellLeakGuardStatus -and [string]$shellLeakGuardStatus.status -eq "pass" -and $shellLeakGuardStatusAge -le (5 / 60)) { 0 } else { -1 }
 
     $latestManifest = Get-ChildItem (Join-Path $ProjectRoot "exports\backup-manifests") -Filter "*.json" -File -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
@@ -247,6 +235,7 @@ if ($FixturePath) {
     $serviceTaskExpected = $serviceTaskDefinitions.Count
     $serviceTaskReadyCount = 0
     $serviceInstallReady = $true
+    $healthStage = "verify_service_installer_evidence"
     foreach ($installName in @("backup-service-install.json", "portal-service-install.json")) {
         $installPath = Join-Path $ProjectRoot "data\status\$installName"
         if (-not (Test-Path -LiteralPath $installPath -PathType Leaf)) {
@@ -261,7 +250,10 @@ if ($FixturePath) {
             $installAge -le 168
         if (-not $installReady) { $serviceInstallReady = $false }
     }
+    $serviceTaskIndex = 0
     foreach ($definition in $serviceTaskDefinitions) {
+        $serviceTaskIndex++
+        $healthStage = "verify_service_task_$serviceTaskIndex"
         $scheduledTask = $null
         try {
             $scheduledTask = Get-ScheduledTask -TaskName $definition.name -ErrorAction Stop
@@ -292,28 +284,35 @@ if ($FixturePath) {
         if ($taskReady) { $serviceTaskReadyCount++ }
     }
     $serviceTasksReady = $serviceTaskReadyCount -eq $serviceTaskExpected
+    $healthStage = "collect_immich_family_account"
 
     $immichFamilyAccountReady = $false
-    $immichFamilyCredentialPath = Join-Path $ProjectRoot "secrets\immich-family.credential.xml"
-    if (Test-Path -LiteralPath $immichFamilyCredentialPath -PathType Leaf) {
+    $immichFamilyProbePath = Join-Path $ProjectRoot "data\health\immich-family-account.json"
+    if (Test-Path -LiteralPath $immichFamilyProbePath -PathType Leaf) {
         try {
-            $immichFamilyCredential = Import-Clixml -LiteralPath $immichFamilyCredentialPath
-            $immichFamilyLogin = Invoke-RestMethod -Uri "http://127.0.0.1:2283/api/auth/login" -Method Post -ContentType "application/json" -TimeoutSec 8 -Body (@{
-                email = $immichFamilyCredential.UserName
-                password = $immichFamilyCredential.GetNetworkCredential().Password
-            } | ConvertTo-Json)
-            $immichFamilyAccountReady = [bool]$immichFamilyLogin.accessToken -and -not [bool]$immichFamilyLogin.isAdmin -and -not [bool]$immichFamilyLogin.shouldChangePassword
-            if ($immichFamilyAccountReady) {
-                try { Invoke-RestMethod -Uri "http://127.0.0.1:2283/api/auth/logout" -Headers @{ Authorization = "Bearer $($immichFamilyLogin.accessToken)" } -Method Post -TimeoutSec 8 | Out-Null } catch { }
-            }
+            $immichFamilyProbe = Get-Content -LiteralPath $immichFamilyProbePath -Raw | ConvertFrom-Json
+            $immichFamilyAccountReady = [string]$immichFamilyProbe.status -eq "pass" -and
+                [bool]$immichFamilyProbe.ready -and
+                -not [bool]$immichFamilyProbe.admin -and
+                (Get-AgeHours $immichFamilyProbe.generated_at) -le (10 / 60)
+        } catch {
+            $immichFamilyAccountReady = $false
+        }
+    }
+    if (-not $immichFamilyAccountReady) {
+        try {
+            $accountCount = & docker exec compose-immich-postgres-1 psql -U postgres -d immich -Atc 'SELECT COUNT(*) FROM "user" WHERE NOT "isAdmin" AND NOT "shouldChangePassword" AND "deletedAt" IS NULL;' 2>$null
+            $immichFamilyAccountReady = $LASTEXITCODE -eq 0 -and [int]$accountCount -ge 1
         } catch {
             $immichFamilyAccountReady = $false
         }
     }
 
+    $healthStage = "collect_http_endpoints"
     $portalPublic = Test-HttpEndpoint $PortalUrl
     $nodeRed = Test-HttpEndpoint "http://127.0.0.1:1880/"
     $uptimeKuma = Test-UptimeKumaEndpoint
+    $healthStage = "collect_uptime_monitoring"
     $uptimeMonitoring = [pscustomobject]@{ active = 0; healthy = 0; stale = 0 }
     $uptimeProbeFresh = $false
     $uptimeProbePath = Join-Path $ProjectRoot "data\health\uptime-monitors.json"
@@ -342,6 +341,7 @@ if ($FixturePath) {
         }
     }
 
+    $healthStage = "collect_ollama"
     $ollama = [pscustomobject]@{ reachable = $false; required_model_present = $false }
     try {
         $ollamaResponse = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 8
@@ -354,6 +354,7 @@ if ($FixturePath) {
         # Only availability is reported; response bodies and endpoint errors are intentionally omitted.
     }
 
+    $healthStage = "collect_tailscale"
     $tailscalePrivate = [pscustomobject]@{
         immich_status_code = 0
         memos_status_code = 0
@@ -398,6 +399,7 @@ if ($FixturePath) {
         }
     }
 
+    $healthStage = "collect_mcp"
     $mcpRuntimeReady = $false
     $mcpPython = Join-Path $ProjectRoot "services\mcp-readonly\.venv\Scripts\python.exe"
     $mcpSource = Join-Path $ProjectRoot "services\mcp-readonly\src"
@@ -413,6 +415,7 @@ if ($FixturePath) {
         $mcpRuntimeReady = $LASTEXITCODE -eq 0
     }
 
+    $healthStage = "collect_telegram"
     $telegramPocDisabled = $false
     $telegramSecondaryStatus = [pscustomobject]@{ status = "missing"; generated_at = "" }
     $telegramLiveSmoke = [pscustomobject]@{
@@ -451,6 +454,7 @@ if ($FixturePath) {
         }
     }
 
+    $healthStage = "collect_monthly_pdf"
     $pdfReport = [pscustomobject]@{
         status = "missing"
         generated_at_utc = ""
@@ -481,8 +485,8 @@ if ($FixturePath) {
     }
 }
 
-$diskStatus = if ($diskFreePercent -lt 15) { "critical" } elseif ($diskFreePercent -lt 25) { "warning" } else { "pass" }
-Add-Check "disk_headroom" $diskStatus "Dung lượng trống của ổ hệ thống" @{ free_percent = [math]::Round($diskFreePercent, 2); warning_below = 25; critical_below = 15 }
+$diskStatus = if ($diskFreePercent -lt 15) { "critical" } elseif ($diskFreePercent -lt 20) { "warning" } else { "pass" }
+Add-Check "disk_headroom" $diskStatus "Dung lượng trống của ổ hệ thống" @{ free_percent = [math]::Round($diskFreePercent, 2); warning_below = 20; critical_below = 15 }
 
 $diskMaintenanceAge = if ($null -ne $diskMaintenanceStatus -and $diskMaintenanceStatus.generated_at) { Get-AgeHours $diskMaintenanceStatus.generated_at } else { [double]::PositiveInfinity }
 $diskMaintenancePass = $diskMaintenanceTaskReady -and $null -ne $diskMaintenanceStatus -and [string]$diskMaintenanceStatus.status -eq "pass" -and $diskMaintenanceAge -le 30

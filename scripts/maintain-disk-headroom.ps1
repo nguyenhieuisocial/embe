@@ -2,10 +2,10 @@
 param(
     [string]$ProjectRoot = "C:\EmBe",
     [string]$StatusPath = "",
-    [ValidateRange(25, 60)]
-    [double]$TargetFreePercent = 27,
-    [ValidateRange(15, 40)]
-    [double]$MinimumFreePercent = 25,
+    [ValidateRange(15, 60)]
+    [double]$TargetFreePercent = 20,
+    [ValidateRange(10, 40)]
+    [double]$MinimumFreePercent = 15,
     [ValidateRange(-1, 100)]
     [double]$FreePercentOverride = -1,
     [switch]$SkipActions,

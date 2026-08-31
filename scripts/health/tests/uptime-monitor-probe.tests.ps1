@@ -28,7 +28,7 @@ try {
     if ($LASTEXITCODE -ne 2) { throw "A stale Uptime monitor must fail closed" }
 
     $installerSource = Get-Content -LiteralPath $installer -Raw
-    foreach ($required in @("EmBe Uptime Monitor Health", "LogonType Interactive", "RunLevel Limited", "New-TimeSpan -Minutes 2")) {
+    foreach ($required in @("EmBe Uptime Monitor Health", "LogonType Interactive", "RunLevel Limited", "New-TimeSpan -Minutes 2", "immich-family-state.py", "immich-family-account.json", '@($action, $immichAction)')) {
         if (-not $installerSource.Contains($required)) { throw "Uptime probe scheduler contract is missing: $required" }
     }
     Write-Output "PASS: Uptime monitor probe is privacy-safe and fails closed"

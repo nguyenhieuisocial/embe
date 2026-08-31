@@ -32,6 +32,14 @@ foreach ($taskName in @(
 if (-not $healthSource.Contains('System32\Tasks') -or -not $healthSource.Contains('UnauthorizedAccessException')) {
     throw "Service-account health must distinguish an ACL-hidden task from a deleted task"
 }
+foreach ($immichAccountContract in @('compose-immich-postgres-1', 'NOT "isAdmin"', 'NOT "shouldChangePassword"', '"deletedAt" IS NULL')) {
+    if (-not $healthSource.Contains($immichAccountContract)) {
+        throw "Immich family-account health must have a secret-free database fallback: $immichAccountContract"
+    }
+}
+if ($healthSource.Contains('SELECT email')) {
+    throw "Immich family-account health must never read or expose account email addresses"
+}
 $testRoot = Join-Path $env:TEMP ("embe-health-gates-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory $testRoot | Out-Null
 

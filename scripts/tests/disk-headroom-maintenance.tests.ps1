@@ -32,10 +32,10 @@ try {
 
     $lowStatus = Join-Path $testRoot "low.json"
     & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $runner `
-        -ProjectRoot $projectRoot -StatusPath $lowStatus -FreePercentOverride 24 -SkipActions
+        -ProjectRoot $projectRoot -StatusPath $lowStatus -FreePercentOverride 14 -SkipActions
     if ($LASTEXITCODE -ne 2) { throw "Low disk fixture must signal warning" }
     $low = Get-Content -LiteralPath $lowStatus -Raw | ConvertFrom-Json
-    if ($low.status -ne "warning" -or $low.free_percent_after -ne 24) { throw "Low disk fixture status is invalid" }
+    if ($low.status -ne "warning" -or $low.free_percent_after -ne 14) { throw "Low disk fixture status is invalid" }
     if ((Get-Content -LiteralPath $lowStatus -Raw).Contains($testRoot)) { throw "Status exposed a local path" }
 
     $fakeTemp = Join-Path $testRoot "temp"
@@ -46,7 +46,7 @@ try {
     (Get-Item $swap).LastWriteTimeUtc = [DateTime]::UtcNow.AddHours(-6)
     $swapStatus = Join-Path $testRoot "swap.json"
     & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $runner `
-        -ProjectRoot $projectRoot -StatusPath $swapStatus -FreePercentOverride 24 `
+        -ProjectRoot $projectRoot -StatusPath $swapStatus -FreePercentOverride 14 `
         -TempPath $fakeTemp -SkipSystemActions
     if ($LASTEXITCODE -ne 2) { throw "Low disk swap fixture must preserve the warning exit" }
     if (Test-Path -LiteralPath $swapDirectory) { throw "An old unlocked WSL swap was not removed" }

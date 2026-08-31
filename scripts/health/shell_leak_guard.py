@@ -7,7 +7,7 @@ import csv
 import io
 import json
 import subprocess
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -114,12 +114,35 @@ def clean_once(rows: list[dict[str, str]] | None = None) -> int:
     return len(leaked)
 
 
+def write_status(path: Path, removed: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "generated_at": datetime.now(UTC).isoformat(),
+                "status": "pass",
+                "removed": removed,
+            }
+        ),
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Clean abandoned Claude Desktop PowerShell shells once.")
     parser.add_argument("--report", action="store_true")
+    parser.add_argument(
+        "--status",
+        type=Path,
+        default=Path(__file__).resolve().parents[2] / "data" / "status" / "shell-leak-guard.json",
+    )
     args = parser.parse_args()
     rows = process_rows()
     removed = clean_once(rows)
+    write_status(args.status, removed)
     if args.report:
         print(json.dumps({"removed": removed}))
     return 0
