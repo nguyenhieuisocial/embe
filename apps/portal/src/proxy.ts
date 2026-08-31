@@ -5,6 +5,7 @@ import { verifySessionCookie } from "./lib/portal-auth";
 const PUBLIC_PATHS = new Set([
   "/login",
   "/api/auth/login",
+  "/api/health",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",

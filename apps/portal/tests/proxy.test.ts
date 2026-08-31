@@ -47,6 +47,14 @@ describe("portal access gate", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it("keeps the content-free deployment health endpoint public", () => {
+    const response = proxy(new NextRequest("https://embe.hieu.asia/api/health"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("blocks the direct Vercel hostname from bypassing Cloudflare protection", () => {
     const response = proxy(new NextRequest("https://embe-portal.vercel.app/api/auth/login"));
 
