@@ -62,6 +62,23 @@ export default function GuidePage() {
         </div>
       </section>
 
+      <section className="install-app" aria-labelledby="install-app-title">
+        <div className="install-app-heading">
+          <p className="panel-kicker">DÙNG NHƯ MỘT ỨNG DỤNG</p>
+          <h2 id="install-app-title">Đặt EmBe lên màn hình chính</h2>
+          <p>Không cần tải từ App Store. Sau khi cài, EmBe mở toàn màn hình và nằm cạnh các ứng dụng quen thuộc.</p>
+        </div>
+        <div className="home-screen-mark" aria-hidden="true">
+          <span>EB</span>
+          <small>EmBe</small>
+        </div>
+        <ol className="install-steps">
+          <li><span>1</span><p><strong>Mở EmBe bằng Safari</strong> tại embe.hieu.asia.</p></li>
+          <li><span>2</span><p>Chạm nút <strong>Chia sẻ</strong> ở thanh công cụ.</p></li>
+          <li><span>3</span><p>Chọn <strong>Thêm vào Màn hình chính</strong>, rồi chạm Thêm.</p></li>
+        </ol>
+      </section>
+
       <section className="daily-rhythm" aria-labelledby="rhythm-title">
         <div className="rhythm-heading">
           <p className="panel-kicker">MỖI NGÀY CHỈ BA NHỊP</p>

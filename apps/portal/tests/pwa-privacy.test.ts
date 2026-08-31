@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 import nextConfig from "../next.config";
 import manifest from "../src/app/manifest";
@@ -11,7 +13,11 @@ describe("private installable portal", () => {
     expect(appManifest.lang).toBe("vi");
     expect(appManifest.start_url).toBe("/");
     expect(appManifest.display).toBe("standalone");
-    expect(appManifest.icons?.length).toBeGreaterThan(0);
+    expect(appManifest.icons).toEqual(expect.arrayContaining([
+      expect.objectContaining({ src: "/icon-192.png", sizes: "192x192", type: "image/png" }),
+      expect.objectContaining({ src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" })
+    ]));
+    expect(existsSync(join(process.cwd(), "src", "app", "apple-icon.png"))).toBe(true);
   });
 
   it("explicitly blocks search-engine crawling", () => {

@@ -45,6 +45,15 @@ describe("simple family guide", () => {
     expect(screen.queryByText(/192\.168\./)).not.toBeInTheDocument();
   });
 
+  it("shows the native iPhone home-screen installation steps", () => {
+    render(<GuidePage />);
+
+    expect(screen.getByRole("heading", { name: "Đặt EmBe lên màn hình chính" })).toBeInTheDocument();
+    expect(screen.getByText(/Mở EmBe bằng Safari/)).toBeInTheDocument();
+    expect(screen.getByText(/Thêm vào Màn hình chính/)).toBeInTheDocument();
+    expect(screen.getByText(/Không cần tải từ App Store/)).toBeInTheDocument();
+  });
+
   it("lets an iPhone user open or copy the private Immich server address", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
