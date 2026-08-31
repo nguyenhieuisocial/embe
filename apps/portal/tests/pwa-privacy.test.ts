@@ -28,6 +28,7 @@ describe("private installable portal", () => {
     expect(rules?.[0].source).toBe("/(.*)");
     expect(headers["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
     expect(headers["Content-Security-Policy"]).toContain("object-src 'none'");
+    expect(headers["Content-Security-Policy"]).toContain("https://static.cloudflareinsights.com");
     expect(headers["X-Frame-Options"]).toBe("DENY");
     expect(headers["X-Content-Type-Options"]).toBe("nosniff");
     expect(headers["Referrer-Policy"]).toBe("no-referrer");

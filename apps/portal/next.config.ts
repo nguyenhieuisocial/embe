@@ -6,7 +6,7 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com",
   "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com",
   "img-src 'self' data: blob: https://www.google-analytics.com",
   "style-src 'self' 'unsafe-inline'",
