@@ -40,9 +40,10 @@ $failedSamples = if ($previous -and $previous.failed_samples) { [int]$previous.f
 $healthySamples = if ($previous -and $previous.healthy_samples) { [int]$previous.healthy_samples } else { 0 }
 $startedAt = if ($previous -and $previous.started_at) { Convert-ToDateTimeOffset $previous.started_at } else { $null }
 $lastFailureAt = if ($previous -and $previous.last_failure_at) { [string]$previous.last_failure_at } else { $null }
-$lastFailureChecks = if ($previous -and $previous.PSObject.Properties["last_failure_checks"]) {
-    @($previous.last_failure_checks | ForEach-Object { [string]$_ })
-} else { @() }
+$lastFailureChecks = @()
+if ($previous -and $previous.PSObject.Properties["last_failure_checks"]) {
+    $lastFailureChecks = @($previous.last_failure_checks | ForEach-Object { [string]$_ })
+}
 
 if ($healthy) {
     if ($null -eq $startedAt) { $startedAt = $now }
@@ -89,7 +90,7 @@ $report = [ordered]@{
     started_at = $(if ($null -ne $startedAt) { $startedAt.ToString("o") } else { $null })
     last_sample_at = $now.ToString("o")
     last_failure_at = $lastFailureAt
-    last_failure_checks = $lastFailureChecks
+    last_failure_checks = @($lastFailureChecks)
     duration_days = [math]::Round($durationDays, 4)
     required_days = $RequiredDays
     healthy_samples = $healthySamples

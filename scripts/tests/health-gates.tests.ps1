@@ -276,6 +276,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "The first healthy soak sample must be recorded" }
     $collecting = Get-Content $soakState -Raw | ConvertFrom-Json
     if ($collecting.status -ne "collecting" -or $collecting.duration_days -ne 0) { throw "Soak must start in collecting state" }
+    if ($collecting.last_failure_checks -isnot [Array]) { throw "Soak diagnostics must use a stable array shape" }
 
     $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:00:00Z"
     if ($LASTEXITCODE -ne 0) { throw "Seven healthy days must produce soak evidence" }
