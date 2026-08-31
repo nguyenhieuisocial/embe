@@ -436,7 +436,10 @@ Add-Check "tailscale_private" $(if ($tailscalePass) { "pass" } else { "critical"
 
 Add-Check "mcp_runtime" $(if ($mcpRuntimeReady) { "pass" } else { "critical" }) "Lớp truy vấn AI chỉ đọc khởi tạo được" @{ runtime_ready = [bool]$mcpRuntimeReady }
 
-Add-Check "telegram_poc_disabled" $(if ($telegramPocDisabled) { "pass" } else { "critical" }) "Kho Telegram thử nghiệm bị khóa khỏi dữ liệu production" @{ disabled = [bool]$telegramPocDisabled }
+Add-Check "telegram_poc_disabled" $(if ($telegramPocDisabled) { "pass" } else { "critical" }) "Kết nối Telegram trực tiếp từ Linux bị khóa đúng thiết kế" @{
+    disabled = [bool]$telegramPocDisabled
+    direct_provider_disabled = [bool]$telegramPocDisabled
+}
 
 $telegramSecondaryAge = if ($telegramSecondaryStatus.generated_at) { 60 * (Get-AgeHours $telegramSecondaryStatus.generated_at) } else { [double]::PositiveInfinity }
 $telegramSecondaryPass = [string]$telegramSecondaryStatus.status -eq "pass" -and $telegramSecondaryAge -le 30

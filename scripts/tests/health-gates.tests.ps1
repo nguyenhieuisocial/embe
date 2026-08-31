@@ -131,6 +131,9 @@ try {
     if ($LASTEXITCODE -ne 2) { throw "An enabled Telegram storage PoC must block production health" }
     $telegramHealth = Get-Content $telegramReport -Raw | ConvertFrom-Json
     if (@($telegramHealth.checks | Where-Object id -eq "telegram_poc_disabled")[0].status -ne "critical") { throw "Telegram PoC safety gate did not block" }
+    $telegramDirectCheck = @($healthy.checks | Where-Object id -eq "telegram_poc_disabled")[0]
+    if ($telegramDirectCheck.summary -ne "Kết nối Telegram trực tiếp từ Linux bị khóa đúng thiết kế") { throw "Telegram direct-provider health label is misleading" }
+    if (-not [bool]$telegramDirectCheck.evidence.direct_provider_disabled) { throw "Telegram direct-provider evidence is missing" }
 
     $missingServiceTaskFixture = Join-Path $testRoot "missing-service-task.json"
     Write-Fixture $missingServiceTaskFixture 40 2

@@ -15,7 +15,10 @@ trạng thái.
 - `disk_headroom`: ngừng import media dưới 15%; lên kế hoạch mở rộng dưới 25%.
 - `backup_freshness` hoặc `restore_drill`: dừng nâng cấp và chạy lại backup/restore.
 - `sync_deadletters`: không tự xóa ledger; xử lý lỗi nguồn/sink trước.
-- `containers`: kiểm tra Docker, sau đó khởi động lại đúng service bị lỗi.
+- `containers`: luôn phục hồi bằng `scripts\start-local-runtime.ps1`; không mở
+  `Docker Desktop.exe` trực tiếp. Bộ khởi động sẽ chờ lần khởi động hợp lệ, cách
+  ly các socket Windows bị kẹt mà không xóa chúng, rồi chỉ báo sẵn sàng khi cả
+  Docker engine và Ollama đã phản hồi thật.
 
 Sau sự cố, ghi thời điểm, tác động, nguyên nhân và bằng chứng phục hồi; không ghi
 nội dung gia đình vào báo cáo vận hành.
