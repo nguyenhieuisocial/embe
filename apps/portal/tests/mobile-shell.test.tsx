@@ -18,6 +18,7 @@ describe("mobile family shell", () => {
     expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("href", "/ghi-lai");
     expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Mẹ bầu" })).toHaveAttribute("href", "/me-bau");
+    expect(screen.getByRole("link", { name: "Kỷ niệm" })).toHaveAttribute("href", "/ky-niem");
     expect(screen.getByRole("link", { name: "Gia đình" })).toHaveAttribute("href", "/huong-dan");
   });
 

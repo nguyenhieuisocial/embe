@@ -97,7 +97,7 @@ export default async function Home() {
           ) : null}
         </article>
 
-        <article className="panel gallery-panel">
+        <a className="panel gallery-panel" href="/ky-niem" aria-label="Mở album kỷ niệm">
           <div className="panel-heading">
             <p className="panel-kicker">ALBUM GIA ĐÌNH</p>
             <h2>Khoảnh khắc</h2>
@@ -106,7 +106,7 @@ export default async function Home() {
             <span className="photo-mark" aria-hidden="true">◎</span>
             <p>Ảnh đã chọn sẽ được đặt ở đây</p>
           </div>
-        </article>
+        </a>
       </section>
 
       <footer>
