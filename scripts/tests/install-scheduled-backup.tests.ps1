@@ -27,7 +27,9 @@ foreach ($required in @(
     'error_type',
     'LsaAddAccountRights',
     'SeBatchLogonRight',
-    '$installStep = "batch_logon_right"'
+    '$installStep = "batch_logon_right"',
+    'data\evidence',
+    'Unable to grant soak evidence access'
 )) {
     if (-not $source.Contains($required)) { throw "Scheduled backup installer is missing: $required" }
 }
