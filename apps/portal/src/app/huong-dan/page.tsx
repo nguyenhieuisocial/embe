@@ -127,7 +127,10 @@ export default function GuidePage() {
           </li>
           <li>
             <span>3</span>
-            <div><strong>Tạo tài khoản đầu tiên</strong><p>Tự đặt email và mật khẩu quản trị trong Immich. Chưa bật sao lưu ảnh thật cho đến khi ổ lưu trữ riêng sẵn sàng.</p></div>
+            <div>
+              <strong>Đăng nhập tài khoản gia đình</strong>
+              <p>Đăng nhập bằng tài khoản gia đình đã được chuẩn bị, rồi bật Sao lưu trong Immich. Ảnh gốc sẽ về máy nhà qua kết nối riêng.</p>
+            </div>
           </li>
         </ol>
         <small>Khi được bật, hãy thử trước với 10 ảnh thường và không xóa ảnh gốc trên iPhone.</small>

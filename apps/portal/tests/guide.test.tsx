@@ -41,7 +41,9 @@ describe("simple family guide", () => {
       "href",
       "https://apps.apple.com/us/app/immich/id1613945652"
     );
-    expect(screen.getByText(/Chưa bật sao lưu ảnh thật/)).toBeInTheDocument();
+    expect(screen.getByText(/Đăng nhập bằng tài khoản gia đình đã được chuẩn bị/)).toBeInTheDocument();
+    expect(screen.queryByText(/Tạo tài khoản đầu tiên/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/chờ.*ổ lưu trữ riêng/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/192\.168\./)).not.toBeInTheDocument();
   });
 
