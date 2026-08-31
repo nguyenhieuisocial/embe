@@ -262,7 +262,12 @@ if ($FixturePath) {
         if (-not $installReady) { $serviceInstallReady = $false }
     }
     foreach ($definition in $serviceTaskDefinitions) {
-        $scheduledTask = Get-ScheduledTask -TaskName $definition.name -ErrorAction SilentlyContinue
+        $scheduledTask = $null
+        try {
+            $scheduledTask = Get-ScheduledTask -TaskName $definition.name -ErrorAction Stop
+        } catch {
+            $scheduledTask = $null
+        }
         $taskReady = $false
         if ($null -ne $scheduledTask) {
             $actionArguments = [string]$scheduledTask.Actions.Arguments
