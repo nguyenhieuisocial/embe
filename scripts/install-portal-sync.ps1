@@ -11,12 +11,39 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+$installStatusPath = Join-Path $ProjectRoot "data\status\portal-service-install.json"
+$installStep = "administrator_check"
+
+function Write-InstallStatus([string]$Status, [string]$ErrorType = "", [string]$ErrorMessage = "") {
+    $payload = [ordered]@{
+        schema_version = 1
+        generated_at = [DateTimeOffset]::UtcNow.ToString("o")
+        status = $Status
+        install_step = $installStep
+        verified_now = $(if ($Status -eq "ready") { [bool]$VerifyNow } else { $false })
+        tasks_expected = 3
+        tasks_verified = $(if ($Status -eq "ready" -and $VerifyNow) { 3 } else { 0 })
+        error_type = $ErrorType
+        error_message = $ErrorMessage
+    }
+    [IO.Directory]::CreateDirectory((Split-Path $installStatusPath -Parent)) | Out-Null
+    $temporary = "$installStatusPath.tmp"
+    [IO.File]::WriteAllText($temporary, ($payload | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $temporary -Destination $installStatusPath -Force
+}
+
+trap {
+    Write-InstallStatus -Status "failed" -ErrorType $_.Exception.GetType().Name -ErrorMessage $_.Exception.Message
+    Write-Error $_
+    exit 1
+}
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principalCheck = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principalCheck.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     throw "Administrator elevation is required to install isolated EmBe service accounts"
 }
+$installStep = "task_installation"
 
 $python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 $syncScript = Join-Path $ProjectRoot "services\local-bff\src\sync_portal.py"
@@ -222,6 +249,7 @@ foreach ($path in @((Split-Path $bridgeStatusFile -Parent), (Split-Path $bridgeL
 }
 
 if ($VerifyNow) {
+    $installStep = "live_verification"
     Test-TaskNow $RotationTaskName 5
     Test-TaskNow $BridgeTaskName 3
     Test-TaskNow $TaskName 3
@@ -233,6 +261,8 @@ $rotationTask = Get-ScheduledTask -TaskName $RotationTaskName
 $rotationInfo = Get-ScheduledTaskInfo -TaskName $RotationTaskName
 $bridgeTask = Get-ScheduledTask -TaskName $BridgeTaskName
 $bridgeInfo = Get-ScheduledTaskInfo -TaskName $BridgeTaskName
+$installStep = "complete"
+Write-InstallStatus -Status "ready"
 [ordered]@{
     status = "ready"
     sync_account = $syncTask.Principal.UserId

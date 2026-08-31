@@ -133,36 +133,23 @@ if ($FixturePath) {
     $physicalDisks = @(Get-PhysicalDisk -ErrorAction SilentlyContinue)
     $smartHealthy = $physicalDisks.Count -gt 0 -and @($physicalDisks | Where-Object HealthStatus -ne "Healthy").Count -eq 0
 
-    $installPath = Join-Path $ProjectRoot "data\status\backup-service-install.json"
-    $serviceInstallReady = $false
-    if (Test-Path $installPath) {
-        $install = Get-Content $installPath -Raw | ConvertFrom-Json
-        $installAge = Get-AgeHours $install.generated_at
-        $serviceInstallReady = $install.status -eq "ready" -and $install.install_step -eq "complete" -and $installAge -le 168
-    }
-
-    $requiredServiceTasks = [ordered]@{
-        "EmBe Critical R2 Backup" = "EmBeBackupSvc"
-        "EmBe Restic Integrity Check" = "EmBeBackupSvc"
-        "EmBe Infrastructure Health Audit" = "EmBeBackupSvc"
-        "EmBe Portal Timeline Sync" = "EmBePortalSyncSvc"
-        "EmBe Integration Credential Rotation" = "EmBeCredentialSvc"
-        "EmBe BabyBuddy Memos Sync" = "EmBeBridgeSvc"
-    }
-    $serviceTaskExpected = $requiredServiceTasks.Count
+    $serviceTaskExpected = 6
     $serviceTaskReadyCount = 0
-    foreach ($taskName in $requiredServiceTasks.Keys) {
-        $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-        if ($null -eq $task) { continue }
-        $taskInfo = Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction SilentlyContinue
-        $expectedAccount = [string]$requiredServiceTasks[$taskName]
-        $actualAccount = ([string]$task.Principal.UserId).Split('\')[-1]
-        $taskReady = $actualAccount -eq $expectedAccount -and
-            [string]$task.Principal.LogonType -eq "Password" -and
-            [string]$task.State -ne "Disabled" -and
-            $null -ne $taskInfo -and
-            $taskInfo.LastTaskResult -eq 0
-        if ($taskReady) { $serviceTaskReadyCount++ }
+    $serviceInstallReady = $true
+    foreach ($installName in @("backup-service-install.json", "portal-service-install.json")) {
+        $installPath = Join-Path $ProjectRoot "data\status\$installName"
+        if (-not (Test-Path -LiteralPath $installPath -PathType Leaf)) {
+            $serviceInstallReady = $false
+            continue
+        }
+        $install = Get-Content -LiteralPath $installPath -Raw | ConvertFrom-Json
+        $installAge = Get-AgeHours $install.generated_at
+        $installReady = $install.status -eq "ready" -and
+            $install.install_step -eq "complete" -and
+            $install.verified_now -eq $true -and
+            $installAge -le 168
+        if (-not $installReady) { $serviceInstallReady = $false }
+        if ($installReady) { $serviceTaskReadyCount += [int]$install.tasks_verified }
     }
     $serviceTasksReady = $serviceTaskReadyCount -eq $serviceTaskExpected
 

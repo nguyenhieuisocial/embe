@@ -19,6 +19,9 @@ function Write-InstallStatus([string]$Status, [string]$ErrorType = "", [string]$
         generated_at = [DateTimeOffset]::UtcNow.ToString("o")
         status = $Status
         install_step = $installStep
+        verified_now = $(if ($Status -eq "ready") { [bool]$VerifyNow } else { $false })
+        tasks_expected = 3
+        tasks_verified = $(if ($Status -eq "ready" -and $VerifyNow) { 3 } else { 0 })
         error_type = $ErrorType
         error_message = $ErrorMessage
     }

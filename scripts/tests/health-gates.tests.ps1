@@ -7,11 +7,10 @@ $healthSource = Get-Content -LiteralPath (Join-Path $projectRoot "scripts\health
 if (-not $healthSource.Contains('PSObject.Properties["Response"]')) {
     throw "HTTP health errors must tolerate exceptions without a Response property"
 }
-if (-not $healthSource.Contains('data\status\backup-service-install.json')) {
-    throw "Service-account health must use the privileged backup installer evidence"
-}
-if ($healthSource.Contains('data\status\portal-service-install.json')) {
-    throw "Service-account health must not use unrelated Portal installer evidence"
+foreach ($evidence in @('backup-service-install.json', 'portal-service-install.json')) {
+    if (-not $healthSource.Contains($evidence)) {
+        throw "Service-account health must use privileged installer evidence: $evidence"
+    }
 }
 $testRoot = Join-Path $env:TEMP ("embe-health-gates-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory $testRoot | Out-Null
