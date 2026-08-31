@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlparse
 from urllib.request import Request, urlopen
 
@@ -29,6 +29,10 @@ class HttpResponse:
 
 
 Transport = Callable[[str, str, Mapping[str, str], bytes | None], HttpResponse]
+
+
+class PreviewUnavailable(RuntimeError):
+    """Immich accepted the asset but has not produced its lightweight preview yet."""
 
 
 def default_transport(method: str, url: str, headers: Mapping[str, str], body: bytes | None) -> HttpResponse:
@@ -51,7 +55,13 @@ def request_with_retry(
     sleep: Callable[[float], None] = time.sleep,
 ) -> HttpResponse:
     for attempt in range(3):
-        response = transport(method, url, headers, body)
+        try:
+            response = transport(method, url, headers, body)
+        except (TimeoutError, URLError):
+            if attempt == 2:
+                raise
+            sleep(float(2**attempt))
+            continue
         if response.status not in {429, 502, 503, 504} or attempt == 2:
             return response
         retry_after = response.headers.get("Retry-After") or response.headers.get("retry-after")
@@ -108,6 +118,7 @@ class Config:
     supabase_url: str
     supabase_secret_key: str
     bucket: str = "embe-portal-previews"
+    batch_size: int = 50
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> "Config":
@@ -117,6 +128,9 @@ class Config:
         immich_base_url = env.get("IMMICH_BASE_URL", "").rstrip("/")
         supabase_url = env.get("SUPABASE_URL", "").rstrip("/")
         album_ids = tuple(value.strip().lower() for value in env.get("IMMICH_ALBUM_IDS", "").split(",") if value.strip())
+        batch_size_text = env.get("EMBE_MEDIA_PUBLISHER_BATCH_SIZE", "50")
+        if not batch_size_text.isdigit() or not 1 <= int(batch_size_text) <= 500:
+            raise ValueError("EMBE_MEDIA_PUBLISHER_BATCH_SIZE must be between 1 and 500")
         if not _valid_local_url(immich_base_url):
             raise ValueError("IMMICH_BASE_URL must be a local or private URL")
         if not supabase_url.startswith("https://") or urlparse(supabase_url).username:
@@ -133,6 +147,7 @@ class Config:
             album_ids,
             supabase_url,
             env["SUPABASE_SECRET_KEY"],
+            batch_size=int(batch_size_text),
         )
 
 
@@ -251,6 +266,8 @@ class ImmichClient:
             {"Accept": "image/webp,image/jpeg", "x-api-key": self.config.immich_api_key},
             sleep=self.sleep,
         )
+        if response.status in {404, 425, 429, 502, 503, 504}:
+            raise PreviewUnavailable("Immich preview is not ready")
         if response.status != 200 or not response.body or len(response.body) > MAX_PREVIEW_BYTES:
             raise RuntimeError("Immich preview download failed")
         content_type = response.headers.get("Content-Type") or response.headers.get("content-type") or ""
@@ -359,15 +376,26 @@ def publish(config: Config, transport: Transport = default_transport, sleep: Cal
     items: list[dict[str, Any]] = []
     uploaded = 0
     reused = 0
+    deferred = 0
     for asset in immich.list_assets():
         asset_id = str(uuid.UUID(str(asset.get("id", "")))).lower()
         source_updated_at = _iso_date(asset.get("updatedAt"))
         state = existing.get(asset_id)
-        if state and state.get("source_updated_at") == source_updated_at:
+        if state:
             preview = state
             reused += 1
+        elif "thumbhash" in asset and not asset.get("thumbhash"):
+            deferred += 1
+            continue
+        elif uploaded >= config.batch_size:
+            deferred += 1
+            continue
         else:
-            body, mime_type = immich.download_preview(asset_id)
+            try:
+                body, mime_type = immich.download_preview(asset_id)
+            except (PreviewUnavailable, TimeoutError, URLError):
+                deferred += 1
+                continue
             checksum = hashlib.sha256(body).hexdigest()
             extension = ALLOWED_MIME[mime_type]
             object_path = f"assets/{asset_id}/{checksum}.{extension}"
@@ -376,7 +404,7 @@ def publish(config: Config, transport: Transport = default_transport, sleep: Cal
             uploaded += 1
         items.append(_publication_item(asset, preview))
     result = store.sync(items)
-    return {"status": "ok", "published": len(items), "uploaded": uploaded, "reused": reused, **result}
+    return {"status": "ok", "published": len(items), "uploaded": uploaded, "reused": reused, "deferred": deferred, **result}
 
 
 def read_env(path: Path) -> dict[str, str]:

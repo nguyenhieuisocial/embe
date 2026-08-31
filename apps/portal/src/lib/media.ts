@@ -35,13 +35,22 @@ function safeText(value: unknown, maximum: number): string | null {
   return typeof value === "string" && value.length > 0 && value.length <= maximum ? value : null;
 }
 
-export async function getMediaMemories(): Promise<MediaMemory[]> {
+export async function getMediaMemories(
+  options: { limit?: number; offset?: number } = {}
+): Promise<MediaMemory[]> {
   const config = credentials();
   if (!config) return [];
+  const limit = Number.isInteger(options.limit) && options.limit! >= 1 && options.limit! <= 60
+    ? options.limit!
+    : 60;
+  const offset = Number.isInteger(options.offset) && options.offset! >= 0 && options.offset! <= 10_000
+    ? options.offset!
+    : 0;
   const query = new URLSearchParams({
     select: "id,event_at,title,caption,mime_type,width,height",
     order: "event_at.desc",
-    limit: "60"
+    limit: String(limit),
+    offset: String(offset)
   });
   try {
     const response = await fetch(`${config.baseUrl}/rest/v1/embe_media_item?${query}`, {

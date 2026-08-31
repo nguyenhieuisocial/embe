@@ -22,7 +22,10 @@ class FakeTransport:
         self.calls.append((method, url, headers, body))
         if not self.responses:
             raise AssertionError(f"unexpected request: {method} {url}")
-        return self.responses.pop(0)
+        response_or_error = self.responses.pop(0)
+        if isinstance(response_or_error, BaseException):
+            raise response_or_error
+        return response_or_error
 
 
 class FakeOriginalResponse:
@@ -78,6 +81,18 @@ class ConfigTests(unittest.TestCase):
                 "SUPABASE_SECRET_KEY": "secret",
             })
 
+    def test_enabled_config_uses_a_bounded_incremental_batch(self):
+        configured = Config.from_env({
+            "EMBE_MEDIA_PUBLISHER_ENABLED": "true",
+            "EMBE_MEDIA_PUBLISHER_BATCH_SIZE": "25",
+            "IMMICH_BASE_URL": "http://127.0.0.1:2283",
+            "IMMICH_API_KEY": "secret",
+            "IMMICH_ALBUM_IDS": ALBUM_ID,
+            "SUPABASE_URL": "https://project.supabase.co",
+            "SUPABASE_SECRET_KEY": "secret",
+        })
+        self.assertEqual(configured.batch_size, 25)
+
 
 class PublisherTests(unittest.TestCase):
     def test_status_file_is_atomic_and_contains_no_credentials(self):
@@ -129,6 +144,53 @@ class PublisherTests(unittest.TestCase):
         self.assertEqual(result["reused"], 1)
         self.assertFalse(any("/storage/v1/object/" in call[1] for call in fake.calls))
 
+    def test_reuses_preview_when_postgres_formats_the_same_timestamp_differently(self):
+        state = {
+            "source_asset_id": ASSET_ID,
+            "source_updated_at": "2026-08-30T11:00:00+00:00",
+            "object_path": f"assets/{ASSET_ID}/{'a' * 64}.webp",
+            "mime_type": "image/webp",
+            "checksum_sha256": "a" * 64,
+            "width": 1000,
+            "height": 750,
+        }
+        fake = FakeTransport([
+            response(payload=[state]),
+            response(payload={"assets": {"items": [asset()], "nextPage": None, "nextCursor": None}}),
+            response(payload={"staged": 1}),
+            response(payload={"upserted": 1, "unapproved": 0}),
+        ])
+
+        result = publish(config(), fake, sleep=lambda _: None)
+
+        self.assertEqual(result["uploaded"], 0)
+        self.assertEqual(result["reused"], 1)
+        self.assertFalse(any("/storage/v1/object/" in call[1] for call in fake.calls))
+
+    def test_reuses_preview_when_only_immich_metadata_timestamp_changes(self):
+        state = {
+            "source_asset_id": ASSET_ID,
+            "source_updated_at": "2026-08-29T11:00:00Z",
+            "object_path": f"assets/{ASSET_ID}/{'a' * 64}.webp",
+            "mime_type": "image/webp",
+            "checksum_sha256": "a" * 64,
+            "width": 1000,
+            "height": 750,
+        }
+        fake = FakeTransport([
+            response(payload=[state]),
+            response(payload={"assets": {"items": [asset()], "nextPage": None, "nextCursor": None}}),
+            response(payload={"staged": 1}),
+            response(payload={"upserted": 1, "unapproved": 0}),
+        ])
+
+        result = publish(config(), fake, sleep=lambda _: None)
+
+        self.assertEqual(result["uploaded"], 0)
+        self.assertEqual(result["reused"], 1)
+        stage_body = json.loads(fake.calls[-2][3])
+        self.assertEqual(stage_body["p_items"][0]["source_updated_at"], "2026-08-30T11:00:00.000Z")
+
     def test_rejects_non_image_preview(self):
         fake = FakeTransport([
             response(payload=[]),
@@ -137,6 +199,51 @@ class PublisherTests(unittest.TestCase):
         ])
         with self.assertRaises(ValueError):
             publish(config(), fake, sleep=lambda _: None)
+
+    def test_defers_a_preview_that_immich_has_not_generated_yet(self):
+        fake = FakeTransport([
+            response(payload=[]),
+            response(payload={"assets": {"items": [asset()], "nextPage": None, "nextCursor": None}}),
+            response(status=404, payload={}),
+            response(payload={"upserted": 0, "unapproved": 0}),
+        ])
+        result = publish(config(), fake, sleep=lambda _: None)
+        self.assertEqual(result["published"], 0)
+        self.assertEqual(result["deferred"], 1)
+
+    def test_skips_thumbnail_download_while_immich_marks_asset_unresized(self):
+        pending_asset = {**asset(), "thumbhash": None, "resized": False}
+        fake = FakeTransport([
+            response(payload=[]),
+            response(payload={"assets": {"items": [pending_asset], "nextPage": None, "nextCursor": None}}),
+            response(payload={"upserted": 0, "unapproved": 0}),
+        ])
+        result = publish(config(), fake, sleep=lambda _: None)
+        self.assertEqual(result["deferred"], 1)
+        self.assertFalse(any("/thumbnail?" in call[1] for call in fake.calls))
+
+    def test_limits_new_preview_uploads_per_run_but_keeps_the_sync_successful(self):
+        second = {**asset(), "id": "33333333-3333-4333-8333-333333333333"}
+        limited = Config(
+            True,
+            "http://127.0.0.1:2283",
+            "immich-secret",
+            (ALBUM_ID,),
+            "https://project.supabase.co",
+            "server-secret",
+            batch_size=1,
+        )
+        fake = FakeTransport([
+            response(payload=[]),
+            response(payload={"assets": {"items": [asset(), second], "nextPage": None, "nextCursor": None}}),
+            response(headers={"Content-Type": "application/octet-stream"}, body=JPEG),
+            response(status=200, payload={"Key": "stored"}),
+            response(payload={"staged": 1}),
+            response(payload={"upserted": 1, "unapproved": 0}),
+        ])
+        result = publish(limited, fake, sleep=lambda _: None)
+        self.assertEqual(result["uploaded"], 1)
+        self.assertEqual(result["deferred"], 1)
 
     def test_empty_album_atomically_unapproves_old_items(self):
         fake = FakeTransport([
@@ -157,6 +264,16 @@ class PublisherTests(unittest.TestCase):
         result = request_with_retry(fake, "GET", "https://project.supabase.co", {}, sleep=delays.append)
         self.assertEqual(result.status, 200)
         self.assertEqual(delays, [10.0])
+
+    def test_retries_a_temporary_transport_timeout(self):
+        fake = FakeTransport([
+            TimeoutError("Immich is still generating thumbnails"),
+            response(status=200, payload={}),
+        ])
+        delays = []
+        result = request_with_retry(fake, "GET", "http://127.0.0.1:2283", {}, sleep=delays.append)
+        self.assertEqual(result.status, 200)
+        self.assertEqual(delays, [1.0])
 
     def test_archive_listing_can_include_images_and_videos(self):
         fake = FakeTransport([

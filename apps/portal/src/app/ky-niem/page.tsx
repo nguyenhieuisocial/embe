@@ -2,33 +2,16 @@ import Image from "next/image";
 import { Suspense } from "react";
 
 import AppHeader from "../../components/app-header";
+import MemoryGrid from "../../components/memory-grid";
 import { getMediaMemories } from "../../lib/media";
 
 export const dynamic = "force-dynamic";
 
-function dateLabel(value: string): string {
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "long", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(value));
-}
-
 export async function MemoryGallery() {
-  const memories = await getMediaMemories();
+  const memories = await getMediaMemories({ limit: 24 });
 
   return memories.length ? (
-    <section className="memory-grid" aria-label="Ảnh kỷ niệm gia đình">
-      {memories.map((memory) => (
-        <article className="memory-card" key={memory.id}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/media/${memory.id}`}
-            alt={memory.title}
-            loading="lazy"
-            width={memory.width ?? 1200}
-            height={memory.height ?? 900}
-          />
-          <div><time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time><h2>{memory.title}</h2><p>{memory.caption}</p></div>
-        </article>
-      ))}
-    </section>
+    <MemoryGrid initial={memories} />
   ) : (
     <section className="memory-empty" role="status">
       <Image

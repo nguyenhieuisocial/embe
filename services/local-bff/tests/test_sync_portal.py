@@ -38,6 +38,21 @@ class TestPortalSyncPolicy(unittest.TestCase):
             {"status": "error", "error_type": "RuntimeError"},
         )
 
+    def test_media_progress_includes_deferred_count_without_leaking_extra_fields(self) -> None:
+        runner = Mock(
+            return_value=CompletedProcess(
+                [],
+                0,
+                '{"status":"ok","published":50,"uploaded":50,"reused":0,"deferred":1237,"secret":"must-not-pass"}',
+                "",
+            )
+        )
+
+        self.assertEqual(
+            run_media_publisher(Path(r"C:\EmBe"), Path("shared.env"), runner),
+            {"status": "ok", "published": 50, "uploaded": 50, "reused": 0, "deferred": 1237},
+        )
+
     def test_media_timeout_is_isolated(self) -> None:
         runner = Mock(side_effect=TimeoutExpired("publisher", 120))
         self.assertEqual(

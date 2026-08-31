@@ -363,7 +363,16 @@ def run_media_publisher(
     script = project_root / "services" / "media-publisher" / "publisher.py"
     media_env = project_root / "secrets" / "runtime" / "media-publisher.env"
     status_file = project_root / "data" / "status" / "media-publisher.json"
-    allowed_fields = {"status", "published", "uploaded", "reused", "upserted", "unapproved", "error_type"}
+    allowed_fields = {
+        "status",
+        "published",
+        "uploaded",
+        "reused",
+        "deferred",
+        "upserted",
+        "unapproved",
+        "error_type",
+    }
     try:
         completed = runner(
             [

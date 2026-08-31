@@ -23,6 +23,14 @@ describe("private media read model", () => {
     expect(fetchMock.mock.calls[0][0].toString()).not.toContain("object_path");
   });
 
+  it("supports bounded gallery pagination", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("[]", { status: 200 }));
+    await getMediaMemories({ limit: 24, offset: 48 });
+    const url = fetchMock.mock.calls[0][0].toString();
+    expect(url).toContain("limit=24");
+    expect(url).toContain("offset=48");
+  });
+
   it("validates the server-only locator contract", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify([{
       object_path: `assets/${ID}/${"a".repeat(64)}.webp`,

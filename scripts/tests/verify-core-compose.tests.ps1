@@ -87,7 +87,12 @@ foreach ($serviceName in $requiredServices) {
                     $mount.target -eq "/data" -and
                     [System.IO.Path]::IsPathRooted($normalizedSource) -and
                     [System.IO.Path]::GetPathRoot($normalizedSource) -ne [System.IO.Path]::GetPathRoot($normalizedRoot)
-                if ($isDedicatedMediaMount) { continue }
+                $isReadOnlyFamilyLibrary =
+                    $serviceName -eq "immich-server" -and
+                    $mount.target -eq "/external-library/family" -and
+                    [System.IO.Path]::IsPathRooted($normalizedSource) -and
+                    [bool]$mount.read_only
+                if ($isDedicatedMediaMount -or $isReadOnlyFamilyLibrary) { continue }
                 throw "$serviceName bind mounts a host path outside the project root"
             }
         }
@@ -111,6 +116,13 @@ $mediaMount = @($config.services."immich-server".volumes) |
     Select-Object -First 1
 if ($null -eq $mediaMount -or $mediaMount.type -ne "bind") {
     throw "Immich upload storage must be an explicit bind mount"
+}
+
+$familyLibraryMount = @($config.services."immich-server".volumes) |
+    Where-Object { $_.target -eq "/external-library/family" } |
+    Select-Object -First 1
+if ($null -eq $familyLibraryMount -or $familyLibraryMount.type -ne "bind" -or -not [bool]$familyLibraryMount.read_only) {
+    throw "Immich family library must be an explicit read-only bind mount"
 }
 
 Write-Output "core compose tests passed"

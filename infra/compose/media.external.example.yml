@@ -2,6 +2,6 @@ services:
   immich-server:
     volumes:
       - type: bind
-        source: ${IMMICH_EXTERNAL_LIBRARY_PATH:?Set a verified archive path on the dedicated media drive}
-        target: /external-library
+        source: ${IMMICH_EXTERNAL_LIBRARY_PATH:-C:/Anh}
+        target: /external-library/family
         read_only: true

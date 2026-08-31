@@ -10,6 +10,7 @@ Safety contract:
 - never publishes originals, filenames, EXIF, GPS, faces, camera data, or credentials;
 - validates JPEG/WebP bytes, limits previews to 10 MB, and skips unchanged assets;
 - stages metadata before one atomic publication switch.
+- uploads at most 50 new previews per run by default, then resumes from stored state on the next run.
 
 Every run writes only counts and timestamps to `data/status/media-publisher.json`; credentials, album IDs, filenames, and media paths are never written to status output.
 

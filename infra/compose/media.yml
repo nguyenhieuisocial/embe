@@ -14,6 +14,10 @@ services:
       - type: bind
         source: ${MEDIA_LOCATION:-C:/EmBe/data/media}
         target: /data
+      - type: bind
+        source: ${IMMICH_EXTERNAL_LIBRARY_PATH:-C:/Anh}
+        target: /external-library/family
+        read_only: true
     ports:
       - ${IMMICH_BIND_ADDRESS:-127.0.0.1}:${IMMICH_PORT:-2283}:2283
     networks:
