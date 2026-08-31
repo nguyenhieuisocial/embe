@@ -4,7 +4,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$python = Join-Path $ProjectRoot ".venv\Scripts\pythonw.exe"
+$venvPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+$basePython = (& $venvPython -c "import sys; print(sys._base_executable)").Trim()
+$python = Join-Path (Split-Path -Parent $basePython) "pythonw.exe"
+if (-not (Test-Path -LiteralPath $python -PathType Leaf)) { throw "Tracked base pythonw.exe is missing" }
 $runner = Join-Path $ProjectRoot "services\storage-poc\scripts\run_secondary_once.py"
 $telegramEnv = Join-Path $ProjectRoot "secrets\telegram-poc.env"
 $sessionLine = Get-Content -LiteralPath $telegramEnv | Where-Object {
@@ -36,7 +39,7 @@ do {
     if ($task.State -ne "Running" -and $info.LastRunTime -gt [datetime]"2000-01-01") { break }
 } while ((Get-Date) -lt $deadline)
 
-if ($info.LastTaskResult -ne 0) { throw "Telegram secondary task verification failed" }
+if ($task.State -ne "Running" -and $info.LastTaskResult -ne 0) { throw "Telegram secondary task verification failed" }
 [ordered]@{
     task = $TaskName
     principal = $task.Principal.UserId

@@ -21,7 +21,8 @@
 | Home Assistant + MQTT | Tích hợp MQTT chính thức đã tạo và ở trạng thái `loaded`; chưa tạo cảm biến hoặc dữ liệu giả |
 | Kho phân tích cục bộ | Lịch chạy 15 phút/lần đã cài bằng quyền giới hạn; hiện tắt an toàn vì BabyBuddy chưa có hồ sơ em bé và chưa có nguồn cảm biến/stock được phép, không tạo dữ liệu giả |
 | MCP/AI chỉ đọc | Kho SQLite rỗng được khởi tạo ngay cả khi chưa có nguồn; health gate mở read-only và chạy truy vấn cố định thật, thay vì chỉ kiểm tra import module |
-| Tailscale | Immich, Memos và BabyBuddy Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và Funnel tắt; probe quyền giới hạn chỉ lưu ba mã trạng thái vô danh để tác vụ health tài khoản dịch vụ xác minh |
+| Tailscale | Immich, Memos, BabyBuddy và Grocy Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và Funnel tắt; probe quyền giới hạn chỉ lưu bốn mã trạng thái vô danh để tác vụ health tài khoản dịch vụ xác minh |
+| MCP chính chủ | Endpoint MCP tích hợp của Memos được kiểm tra bằng handshake và danh sách tool; không đọc nội dung gia đình. BabyBuddy MCP giữ tắt cho đến khi có hồ sơ em bé và token giới hạn quyền. |
 | Chống dò mật khẩu Portal | Cloudflare Free WAF giới hạn `POST /api/auth/login` theo IP; production probe trả `303` rồi `429` cho hai lần thử sai liên tiếp |
 | Mobile production audit | Khung iPhone 390×844 qua toàn bộ 5 màn hình chính: không tràn ngang, không lỗi console, form dùng cỡ chữ 16px; App Store links đạt vùng chạm 44px và Cloudflare beacon tải qua CSP |
 | Mobile streaming | Trang chủ và album trả khung giao diện trước khi chờ dữ liệu riêng tư; ba lượt đo production sau warm-up ghi nhận trang chủ FCP 376–464 ms, album tốt nhất 368 ms, không tràn ngang và nội dung động vẫn tải đủ |

@@ -9,13 +9,14 @@ New-Item -ItemType Directory -Path $testRoot | Out-Null
 
 try {
     $healthyFixture = Join-Path $testRoot "healthy.json"
-    @{ immich_status_code = 200; memos_status_code = 200; babybuddy_status_code = 200 } |
+    @{ immich_status_code = 200; memos_status_code = 200; babybuddy_status_code = 200; grocy_status_code = 200 } |
         ConvertTo-Json | Set-Content -LiteralPath $healthyFixture -Encoding utf8
     $healthyReport = Join-Path $testRoot "healthy-report.json"
     $null = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $runner -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $healthyReport
     if ($LASTEXITCODE -ne 0) { throw "Healthy private routes must pass" }
     $report = Get-Content -LiteralPath $healthyReport -Raw | ConvertFrom-Json
     if ($report.status -ne "pass") { throw "Healthy probe report is invalid" }
+    if ($report.grocy_status_code -ne 200) { throw "Healthy Grocy private route is missing" }
     $serialized = Get-Content -LiteralPath $healthyReport -Raw
     foreach ($forbidden in @("https://", ".ts.net")) {
         if ($serialized.Contains($forbidden)) { throw "Probe report exposes forbidden data: $forbidden" }
@@ -25,7 +26,7 @@ try {
     }
 
     $criticalFixture = Join-Path $testRoot "critical.json"
-    @{ immich_status_code = 0; memos_status_code = 200; babybuddy_status_code = 200 } |
+    @{ immich_status_code = 0; memos_status_code = 200; babybuddy_status_code = 200; grocy_status_code = 200 } |
         ConvertTo-Json | Set-Content -LiteralPath $criticalFixture -Encoding utf8
     $null = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $runner -ProjectRoot $projectRoot -FixturePath $criticalFixture -OutputPath (Join-Path $testRoot "critical-report.json")
     if ($LASTEXITCODE -ne 2) { throw "A failed private route must fail closed" }

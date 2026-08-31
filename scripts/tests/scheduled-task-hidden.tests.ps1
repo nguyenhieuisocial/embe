@@ -17,6 +17,14 @@ foreach ($relative in $directFiles) {
         throw "Frequent scheduled action must run directly without PowerShell: $relative"
     }
 }
+$telegramInstaller = Get-Content -LiteralPath (Join-Path $projectRoot "scripts/install-telegram-secondary-task.ps1") -Raw
+foreach ($contract in @("sys._base_executable", "MultipleInstances IgnoreNew")) {
+    if (-not $telegramInstaller.Contains($contract)) { throw "Telegram task must use the tracked base interpreter and prevent overlap: $contract" }
+}
+$telegramRunner = Get-Content -LiteralPath (Join-Path $projectRoot "services/storage-poc/scripts/run_secondary_once.py") -Raw
+foreach ($contract in @("acquire_run_lock", "sys._base_executable", "site-packages")) {
+    if (-not $telegramRunner.Contains($contract)) { throw "Telegram runner overlap protection is missing: $contract" }
+}
 $mixedFiles = @("scripts/install-portal-sync.ps1")
 foreach ($relative in $mixedFiles) {
     $source = Get-Content -LiteralPath (Join-Path $projectRoot $relative) -Raw

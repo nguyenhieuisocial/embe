@@ -18,12 +18,13 @@ function Test-PrivateEndpoint([string]$Uri) {
     }
 }
 
-$codes = [ordered]@{ immich = 0; memos = 0; babybuddy = 0 }
+$codes = [ordered]@{ immich = 0; memos = 0; babybuddy = 0; grocy = 0 }
 if ($FixturePath) {
     $fixture = Get-Content -LiteralPath $FixturePath -Raw | ConvertFrom-Json
     $codes.immich = [int]$fixture.immich_status_code
     $codes.memos = [int]$fixture.memos_status_code
     $codes.babybuddy = [int]$fixture.babybuddy_status_code
+    $codes.grocy = [int]$fixture.grocy_status_code
 } else {
     $tailscalePath = "C:\Program Files\Tailscale\tailscale.exe"
     if (Test-Path -LiteralPath $tailscalePath -PathType Leaf) {
@@ -34,6 +35,7 @@ if ($FixturePath) {
                 $codes.immich = Test-PrivateEndpoint "https://$dnsName/"
                 $codes.memos = Test-PrivateEndpoint "https://${dnsName}:8443/"
                 $codes.babybuddy = Test-PrivateEndpoint "https://${dnsName}:10000/"
+                $codes.grocy = Test-PrivateEndpoint "https://${dnsName}:9283/"
             }
         } catch {
             # The persisted report below contains only status codes, never private routing details.
@@ -41,7 +43,7 @@ if ($FixturePath) {
     }
 }
 
-$passed = $codes.immich -eq 200 -and $codes.memos -eq 200 -and $codes.babybuddy -eq 200
+$passed = $codes.immich -eq 200 -and $codes.memos -eq 200 -and $codes.babybuddy -eq 200 -and $codes.grocy -eq 200
 $report = [ordered]@{
     schema_version = 1
     generated_at = [DateTimeOffset]::UtcNow.ToString("o")
@@ -49,6 +51,7 @@ $report = [ordered]@{
     immich_status_code = $codes.immich
     memos_status_code = $codes.memos
     babybuddy_status_code = $codes.babybuddy
+    grocy_status_code = $codes.grocy
     privacy = "No private URL, device name, token, response body, or family content is included."
 }
 

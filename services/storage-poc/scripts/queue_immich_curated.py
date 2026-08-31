@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import sys
+import traceback
 import uuid
 from pathlib import Path
 from types import SimpleNamespace
@@ -76,5 +77,11 @@ if __name__ == "__main__":
     try:
         raise SystemExit(asyncio.run(main()))
     except Exception as error:
-        print(json.dumps({"status": "error", "error_type": type(error).__name__}, separators=(",", ":")))
+        frame = traceback.extract_tb(error.__traceback__)[-1]
+        print(
+            json.dumps(
+                {"status": "error", "error_type": type(error).__name__, "error_origin": f"{frame.name}:{frame.lineno}"},
+                separators=(",", ":"),
+            )
+        )
         raise SystemExit(1)

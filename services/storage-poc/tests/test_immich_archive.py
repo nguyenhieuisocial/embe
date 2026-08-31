@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import embe_storage.immich_archive as archive_module
 from embe_storage.immich_archive import ImmichTelegramArchive
 from embe_storage.provider import StoredObject
 from embe_storage.repository import Repository
@@ -88,3 +89,53 @@ async def test_non_media_asset_is_rejected_without_download(tmp_path: Path):
     assert await archive.run_once() == {"seen": 1, "archived": 0, "reused": 0, "rejected": 1}
     assert immich.downloads == 0
     assert telegram.uploads == []
+
+
+@pytest.mark.asyncio
+async def test_windows_staging_does_not_delete_and_recreate_the_same_file(tmp_path: Path, monkeypatch):
+    def forbidden_mkstemp(*_args, **_kwargs):
+        raise AssertionError("mkstemp delete/recreate is racy on Windows")
+
+    monkeypatch.setattr(archive_module.tempfile, "mkstemp", forbidden_mkstemp)
+    migration = Path(__file__).parents[1] / "migrations" / "0001_storage_poc.sql"
+    repository = Repository(tmp_path / "storage.sqlite3", migration)
+    repository.migrate()
+    archive = ImmichTelegramArchive(
+        repository,
+        FakeImmich(),
+        FakeTelegram(),
+        tmp_path / "staging",
+        "family",
+        "parents",
+    )
+
+    assert (await archive.run_once())["archived"] == 1
+
+
+@pytest.mark.asyncio
+async def test_archive_limits_new_uploads_per_scheduled_run(tmp_path: Path):
+    ids = [f"{value:08d}-1111-4111-8111-111111111111" for value in range(1, 4)]
+
+    class MultipleImmich(FakeImmich):
+        def list_assets(self, asset_type=None):
+            return [{"id": value, "type": "IMAGE", "updatedAt": "v1"} for value in ids]
+
+        def download_original(self, asset_id, destination, max_bytes):
+            content = asset_id.encode()
+            self.downloads += 1
+            destination.write_bytes(content)
+            return {"size": len(content), "sha256": hashlib.sha256(content).hexdigest(), "mime_type": "image/jpeg"}
+
+    migration = Path(__file__).parents[1] / "migrations" / "0001_storage_poc.sql"
+    repository = Repository(tmp_path / "storage.sqlite3", migration)
+    repository.migrate()
+    immich = MultipleImmich()
+    telegram = FakeTelegram()
+    archive = ImmichTelegramArchive(repository, immich, telegram, tmp_path / "staging", "family", "parents")
+
+    first = await archive.run_once(max_new_assets=2)
+    second = await archive.run_once(max_new_assets=2)
+
+    assert first["archived"] == 2
+    assert second["archived"] == 1
+    assert immich.downloads == 3

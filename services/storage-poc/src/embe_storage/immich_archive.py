@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sqlite3
 import tempfile
 import uuid
@@ -28,8 +27,11 @@ class ImmichTelegramArchive:
         self.owner_id = owner_id
         self.staging.mkdir(parents=True, exist_ok=True)
 
-    async def run_once(self) -> dict[str, int]:
+    async def run_once(self, *, max_new_assets: int = 5) -> dict[str, int]:
+        if not 1 <= max_new_assets <= 100:
+            raise ValueError("archive batch limit is outside the accepted range")
         result = {"seen": 0, "archived": 0, "reused": 0, "rejected": 0}
+        new_assets = 0
         max_bytes = self.telegram.capabilities.max_object_bytes
         if not isinstance(max_bytes, int) or max_bytes < 1:
             raise RuntimeError("Telegram provider has no bounded object limit")
@@ -54,12 +56,12 @@ class ImmichTelegramArchive:
                 result["reused"] += 1
                 continue
 
-            handle, temporary_name = tempfile.mkstemp(
-                prefix="embe-immich-", suffix=".original", dir=self.staging
-            )
-            os.close(handle)
-            temporary = Path(temporary_name)
-            temporary.unlink(missing_ok=True)
+            if new_assets >= max_new_assets:
+                break
+            new_assets += 1
+
+            temporary_directory = Path(tempfile.mkdtemp(prefix="embe-immich-", dir=self.staging))
+            temporary = temporary_directory / "original"
             new_asset = False
             asset_id = ""
             try:
@@ -120,4 +122,8 @@ class ImmichTelegramArchive:
                 raise
             finally:
                 temporary.unlink(missing_ok=True)
+                try:
+                    temporary_directory.rmdir()
+                except OSError:
+                    pass
         return result

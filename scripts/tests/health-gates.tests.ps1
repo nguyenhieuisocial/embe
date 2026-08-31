@@ -81,10 +81,11 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
             node_red = @{ reachable = $true; status_code = 200 }
             uptime_kuma = @{ reachable = $true; status_code = 200; ready = $true }
             ollama = @{ reachable = $true; required_model_present = $true }
-            tailscale_private = @{ immich_status_code = 200; memos_status_code = 200; babybuddy_status_code = 200 }
+            tailscale_private = @{ immich_status_code = 200; memos_status_code = 200; babybuddy_status_code = 200; grocy_status_code = 200 }
         }
         uptime_monitoring = @{ active = 7; healthy = 7; stale = 0 }
         mcp_runtime_ready = $true
+        memos_mcp = @{ status = "pass"; tool_count = 20; contract_valid = $true }
         telegram_poc_disabled = $true
         telegram_secondary = @{
             status = "pass"
@@ -121,13 +122,16 @@ try {
     Write-Fixture $criticalFixture 10 12
 
     $healthyReport = Join-Path $testRoot "healthy-report.json"
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $healthyReport
-    if ($LASTEXITCODE -ne 0) { throw "Healthy fixture must pass" }
+    $healthyOutput = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $healthyReport 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $failedReport = if (Test-Path -LiteralPath $healthyReport) { Get-Content -LiteralPath $healthyReport -Raw } else { $healthyOutput | Out-String }
+        throw "Healthy fixture must pass: $failedReport"
+    }
     $healthy = Get-Content $healthyReport -Raw | ConvertFrom-Json
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "inventory_worker", "procurement_worker", "local_assistant", "shell_leak_guard", "immich_family_account", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "telegram_live_smoke", "monthly_pdf")) {
+    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "inventory_worker", "procurement_worker", "local_assistant", "shell_leak_guard", "immich_family_account", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "memos_mcp", "telegram_poc_disabled", "telegram_secondary", "telegram_live_smoke", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -224,6 +228,18 @@ try {
     $telegramSessionHealth = Get-Content $telegramSessionReport -Raw | ConvertFrom-Json
     if (@($telegramSessionHealth.checks | Where-Object id -eq "telegram_secondary")[0].status -ne "critical") { throw "Telegram session health did not block" }
 
+    $telegramWorkerNullFixture = Join-Path $testRoot "telegram-worker-null.json"
+    Write-Fixture $telegramWorkerNullFixture 40 2
+    $telegramWorkerNull = Get-Content $telegramWorkerNullFixture -Raw | ConvertFrom-Json
+    $telegramWorkerNull.telegram_secondary.status = "critical"
+    $telegramWorkerNull.telegram_secondary.archive = @{ status = "error"; error_type = "FileExistsError" }
+    $telegramWorkerNull.telegram_secondary.worker = $null
+    $telegramWorkerNull | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $telegramWorkerNullFixture -Encoding utf8
+    $telegramWorkerNullReport = Join-Path $testRoot "telegram-worker-null-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $telegramWorkerNullFixture -OutputPath $telegramWorkerNullReport
+    if ($LASTEXITCODE -ne 2) { throw "A missing Telegram worker must produce a critical report without crashing" }
+    if (-not (Test-Path -LiteralPath $telegramWorkerNullReport)) { throw "A missing Telegram worker must still produce a health report" }
+
     $telegramSmokeFixture = Join-Path $testRoot "telegram-smoke-stale.json"
     Write-Fixture $telegramSmokeFixture 40 2
     $telegramSmoke = Get-Content $telegramSmokeFixture -Raw | ConvertFrom-Json
@@ -300,13 +316,14 @@ try {
     $dependency.endpoints.ollama.required_model_present = $false
     $dependency.endpoints.tailscale_private.memos_status_code = 503
     $dependency.mcp_runtime_ready = $false
+    $dependency.memos_mcp.contract_valid = $false
     $dependency.pdf_report.checksum_matches = $false
     $dependency | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $dependencyFixture -Encoding utf8
     $dependencyReport = Join-Path $testRoot "dependency-report.json"
     $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $dependencyFixture -OutputPath $dependencyReport
     if ($LASTEXITCODE -ne 2) { throw "Unavailable dependencies must block" }
     $dependencyHealth = Get-Content $dependencyReport -Raw | ConvertFrom-Json
-    foreach ($id in @("portal_public", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
+    foreach ($id in @("portal_public", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "memos_mcp", "monthly_pdf")) {
         if (@($dependencyHealth.checks | Where-Object id -eq $id)[0].status -ne "critical") { throw "Dependency gate did not block: $id" }
     }
 

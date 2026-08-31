@@ -26,6 +26,8 @@ if ($Apply) {
     if ($LASTEXITCODE -ne 0) { throw "Unable to configure private Memos access." }
     $null = & $TailscalePath serve --bg --yes --https=10000 http://127.0.0.1:8000 2>&1
     if ($LASTEXITCODE -ne 0) { throw "Unable to configure private BabyBuddy access." }
+    $null = & $TailscalePath serve --bg --yes --https=9283 http://127.0.0.1:9283 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "Unable to configure private Grocy access." }
 }
 
 [ordered]@{
@@ -33,4 +35,5 @@ if ($Apply) {
     privacy = "tailnet-only"
     memos_url = "https://${dnsName}:8443"
     babybuddy_url = "https://${dnsName}:10000"
+    grocy_url = "https://${dnsName}:9283"
 } | ConvertTo-Json -Compress

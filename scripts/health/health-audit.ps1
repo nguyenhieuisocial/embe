@@ -24,6 +24,7 @@ trap {
             status = "error"
             stage = $healthStage
             error_type = $_.Exception.GetType().Name
+            error_line = [int]$_.InvocationInfo.ScriptLineNumber
             privacy = "No exception message, path, URL, token, or family content is included."
         }
         try {
@@ -145,6 +146,7 @@ if ($FixturePath) {
     $ollama = $fixture.endpoints.ollama
     $tailscalePrivate = $fixture.endpoints.tailscale_private
     $mcpRuntimeReady = [bool]$fixture.mcp_runtime_ready
+    $memosMcp = $fixture.memos_mcp
     $telegramPocDisabled = [bool]$fixture.telegram_poc_disabled
     $telegramSecondaryStatus = $fixture.telegram_secondary
     $telegramLiveSmoke = $fixture.telegram_live_smoke
@@ -359,6 +361,7 @@ if ($FixturePath) {
         immich_status_code = 0
         memos_status_code = 0
         babybuddy_status_code = 0
+        grocy_status_code = 0
     }
     $tailscaleProbePath = Join-Path $ProjectRoot "data\health\tailscale-private.json"
     if (Test-Path -LiteralPath $tailscaleProbePath -PathType Leaf) {
@@ -370,6 +373,7 @@ if ($FixturePath) {
                     immich_status_code = [int]$tailscaleProbe.immich_status_code
                     memos_status_code = [int]$tailscaleProbe.memos_status_code
                     babybuddy_status_code = [int]$tailscaleProbe.babybuddy_status_code
+                    grocy_status_code = [int]$tailscaleProbe.grocy_status_code
                 }
             }
         } catch {
@@ -379,7 +383,8 @@ if ($FixturePath) {
     $tailscalePath = "C:\Program Files\Tailscale\tailscale.exe"
     $tailscaleProbePassed = [int]$tailscalePrivate.immich_status_code -eq 200 -and
         [int]$tailscalePrivate.memos_status_code -eq 200 -and
-        [int]$tailscalePrivate.babybuddy_status_code -eq 200
+        [int]$tailscalePrivate.babybuddy_status_code -eq 200 -and
+        [int]$tailscalePrivate.grocy_status_code -eq 200
     if (-not $tailscaleProbePassed -and (Test-Path -LiteralPath $tailscalePath -PathType Leaf)) {
         try {
             $tailscaleStatus = (& $tailscalePath status --json 2>$null) | ConvertFrom-Json
@@ -388,10 +393,12 @@ if ($FixturePath) {
                 $immichPrivate = Test-HttpEndpoint "https://$dnsName/"
                 $memosPrivate = Test-HttpEndpoint "https://${dnsName}:8443/"
                 $babyBuddyPrivate = Test-HttpEndpoint "https://${dnsName}:10000/"
+                $grocyPrivate = Test-HttpEndpoint "https://${dnsName}:9283/"
                 $tailscalePrivate = [pscustomobject]@{
                     immich_status_code = [int]$immichPrivate.status_code
                     memos_status_code = [int]$memosPrivate.status_code
                     babybuddy_status_code = [int]$babyBuddyPrivate.status_code
+                    grocy_status_code = [int]$grocyPrivate.status_code
                 }
             }
         } catch {
@@ -401,6 +408,7 @@ if ($FixturePath) {
 
     $healthStage = "collect_mcp"
     $mcpRuntimeReady = $false
+    $memosMcp = [pscustomobject]@{ status = "critical"; tool_count = 0; contract_valid = $false }
     $mcpPython = Join-Path $ProjectRoot "services\mcp-readonly\.venv\Scripts\python.exe"
     $mcpSource = Join-Path $ProjectRoot "services\mcp-readonly\src"
     $mcpDatabase = Join-Path $ProjectRoot "data\analytics\family-analytics.sqlite3"
@@ -413,6 +421,15 @@ if ($FixturePath) {
             $env:PYTHONPATH = $previousPythonPath
         }
         $mcpRuntimeReady = $LASTEXITCODE -eq 0
+        try {
+            $env:PYTHONPATH = $mcpSource
+            $memosMcpJson = & $mcpPython -m embe_mcp.memos_health_probe 2>$null
+            if ($LASTEXITCODE -eq 0) { $memosMcp = $memosMcpJson | ConvertFrom-Json }
+        } catch {
+            # Only the bounded tool count and contract status are reported.
+        } finally {
+            $env:PYTHONPATH = $previousPythonPath
+        }
     }
 
     $healthStage = "collect_telegram"
@@ -630,14 +647,22 @@ Add-Check "ollama" $(if ($ollamaPass) { "pass" } else { "critical" }) "AI cục 
 
 $tailscalePass = [int]$tailscalePrivate.immich_status_code -eq 200 -and
     [int]$tailscalePrivate.memos_status_code -eq 200 -and
-    [int]$tailscalePrivate.babybuddy_status_code -eq 200
+    [int]$tailscalePrivate.babybuddy_status_code -eq 200 -and
+    [int]$tailscalePrivate.grocy_status_code -eq 200
 Add-Check "tailscale_private" $(if ($tailscalePass) { "pass" } else { "critical" }) "Các ứng dụng gia đình riêng trên điện thoại đang phản hồi" @{
     immich_status_code = [int]$tailscalePrivate.immich_status_code
     memos_status_code = [int]$tailscalePrivate.memos_status_code
     babybuddy_status_code = [int]$tailscalePrivate.babybuddy_status_code
+    grocy_status_code = [int]$tailscalePrivate.grocy_status_code
 }
 
 Add-Check "mcp_runtime" $(if ($mcpRuntimeReady) { "pass" } else { "critical" }) "Lớp truy vấn AI chỉ đọc khởi tạo được" @{ runtime_ready = [bool]$mcpRuntimeReady }
+
+$memosMcpPass = [string]$memosMcp.status -eq "pass" -and [bool]$memosMcp.contract_valid -and [int]$memosMcp.tool_count -ge 7
+Add-Check "memos_mcp" $(if ($memosMcpPass) { "pass" } else { "critical" }) "MCP chính chủ của Memos sẵn sàng" @{
+    contract_valid = [bool]$memosMcp.contract_valid
+    tool_count = [int]$memosMcp.tool_count
+}
 
 Add-Check "telegram_poc_disabled" $(if ($telegramPocDisabled) { "pass" } else { "critical" }) "Kết nối Telegram trực tiếp từ Linux bị khóa đúng thiết kế" @{
     disabled = [bool]$telegramPocDisabled
@@ -656,12 +681,12 @@ $telegramSecondaryPass = [string]$telegramSecondaryStatus.status -eq "pass" -and
 Add-Check "telegram_secondary" $(if ($telegramSecondaryPass) { "pass" } else { "critical" }) "Bản sao Immich sang Telegram mã hóa gần nhất" @{
     age_minutes = if ([double]::IsInfinity($telegramSecondaryAge)) { $null } else { [math]::Round($telegramSecondaryAge, 1) }
     maximum_minutes = 30
-    provider_ready = [bool]$telegramWorker.provider_ready
-    shard_count = if ($null -ne $telegramWorker) { [int]$telegramWorker.shard_count } else { 0 }
-    account_tier = if ($null -ne $telegramWorker) { [string]$telegramWorker.account_tier } else { "unknown" }
-    assets_seen = if ($null -ne $telegramArchive) { [int]$telegramArchive.seen } else { 0 }
-    assets_archived = if ($null -ne $telegramArchive) { [int]$telegramArchive.archived } else { 0 }
-    assets_reused = if ($null -ne $telegramArchive) { [int]$telegramArchive.reused } else { 0 }
+    provider_ready = if ($null -ne $telegramWorker -and $telegramWorker.PSObject.Properties["provider_ready"]) { [bool]$telegramWorker.provider_ready } else { $false }
+    shard_count = if ($null -ne $telegramWorker -and $telegramWorker.PSObject.Properties["shard_count"]) { [int]$telegramWorker.shard_count } else { 0 }
+    account_tier = if ($null -ne $telegramWorker -and $telegramWorker.PSObject.Properties["account_tier"]) { [string]$telegramWorker.account_tier } else { "unknown" }
+    assets_seen = if ($null -ne $telegramArchive -and $telegramArchive.PSObject.Properties["seen"]) { [int]$telegramArchive.seen } else { 0 }
+    assets_archived = if ($null -ne $telegramArchive -and $telegramArchive.PSObject.Properties["archived"]) { [int]$telegramArchive.archived } else { 0 }
+    assets_reused = if ($null -ne $telegramArchive -and $telegramArchive.PSObject.Properties["reused"]) { [int]$telegramArchive.reused } else { 0 }
 }
 
 $telegramLiveSmokeAge = if ($telegramLiveSmoke.generated_at) { (Get-AgeHours $telegramLiveSmoke.generated_at) / 24 } else { [double]::PositiveInfinity }

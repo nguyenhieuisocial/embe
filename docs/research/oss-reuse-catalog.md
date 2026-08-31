@@ -1,6 +1,6 @@
 # Danh mục tái sử dụng mã nguồn mở và dịch vụ miễn phí
 
-Ngày rà soát: 2026-08-30. Nguyên tắc: một công cụ cho một trách nhiệm, dữ liệu gia đình không bị khóa vào một nhà cung cấp, và không công khai các dịch vụ quản trị.
+Ngày rà soát: 2026-08-31. Nguyên tắc: một công cụ cho một trách nhiệm, dữ liệu gia đình không bị khóa vào một nhà cung cấp, và không công khai các dịch vụ quản trị.
 
 ## Dùng làm nền tảng chính
 
@@ -8,6 +8,8 @@ Ngày rà soát: 2026-08-30. Nguyên tắc: một công cụ cho một trách nh
 |---|---|---|
 | Ảnh/video từ iPhone | [Immich mobile backup](https://docs.immich.app/features/mobile-backup/) + [Tailscale iOS](https://tailscale.com/docs/install/ios) | Đồng bộ qua mạng riêng; không public Immich. |
 | Nhật ký và số liệu | Memos, BabyBuddy, Grocy | Giữ mỗi loại dữ liệu đúng một nguồn chính. |
+| AI kết nối nhật ký | [Memos MCP chính chủ](https://github.com/usememos/memos/tree/main/server/router/mcp) | Dùng endpoint `/mcp` có sẵn; health gate kiểm tra tool contract nhưng không đọc nội dung gia đình. |
+| AI kết nối chăm bé | [BabyBuddy MCP chính chủ](https://github.com/babybuddy/babybuddy-mcp) | Đã duyệt kiến trúc; chỉ bật sau khi có hồ sơ em bé và token của user giới hạn quyền. Không cấp quyền ghi cho trợ lý tự động. |
 | IoT | [Home Assistant](https://github.com/home-assistant/core), [Mosquitto](https://github.com/eclipse-mosquitto/mosquitto), [Node-RED](https://github.com/node-red/node-red) | HA giữ trạng thái/cảm biến; Node-RED chỉ nối các dịch vụ và gửi cảnh báo. |
 | Sách gia đình | Playwright/Chromium + pypdf | Giữ pipeline hiện tại; không thêm renderer thứ hai. |
 | Backup | [restic](https://github.com/restic/restic) + R2 | R2 chứa bản off-site đã mã hóa; freshness, integrity và restore drill là gate bắt buộc. |
@@ -23,6 +25,16 @@ Ngày rà soát: 2026-08-30. Nguyên tắc: một công cụ cho một trách nh
 - [Serwist](https://github.com/serwist/serwist): chỉ cache phần giao diện không nhạy cảm nếu thực sự cần offline.
 - [Backrest](https://github.com/garethgeorge/backrest): chỉ dùng nếu thay hoàn toàn lịch backup hiện tại, không chạy song song.
 - [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) và [Swift Paperless](https://github.com/paulgessinger/swift-paperless): PoC cô lập bằng tài liệu giả cho giấy khám/hóa đơn; local/Tailscale, tắt OCR/AI từ xa và chỉ dùng thật sau khi OCR tiếng Việt cùng export/restore đạt.
+
+## Đợt rà soát bổ sung 2026-08-31
+
+| Dự án | Bằng chứng duy trì | Kết luận cho EmBe |
+|---|---|---|
+| [Mealie](https://github.com/mealie-recipes/mealie) | Bản `v3.24.0` phát hành 2026-08-24; hỗ trợ recipe, meal plan, shopping list và REST API | Không cài: chất lượng tốt nhưng trùng Grocy, tạo nguồn thực đơn thứ hai và thêm một tài khoản phải học. |
+| [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) | Bản `v3.1.1` phát hành 2026-08-31; OCR, consume folder và REST API | Chỉ PoC sau: bản vừa phát hành và tài liệu lưu cleartext trên máy chủ; chưa đưa hồ sơ khám thật vào. |
+| [Barcode Buddy](https://github.com/Forceu/barcodebuddy) | Bản gần nhất `v1.8.1.8` từ 2024-06-02 | Không thêm: Grocy đang có camera barcode và Open Food Facts; dự án bổ trợ ít được cập nhật hơn. |
+| [ntfy](https://github.com/binwiederhier/ntfy) | iOS tự host vẫn cần relay qua ntfy.sh để nhận tức thời | Không thêm: Telegram và Home Assistant đã đủ cảnh báo, còn ntfy tạo thêm relay trung tâm và ứng dụng trên iPhone. |
+| [Open Food Facts](https://github.com/openfoodfacts/openfoodfacts-server) | API v3 là nhánh được khuyến nghị; v2 đã deprecated | Dùng qua plugin Grocy đã bật, chỉ hỗ trợ nhập nhãn/mã vạch; không coi dữ liệu cộng đồng là tư vấn thai kỳ. |
 
 ## Nguồn nội dung thai kỳ
 

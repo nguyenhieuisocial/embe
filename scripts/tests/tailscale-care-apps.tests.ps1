@@ -23,6 +23,7 @@ exit 0
     if ($planned.status -ne "planned") { throw "Dry-run is not the default." }
     if ($planned.memos_url -ne "https://embe-home.example.ts.net:8443") { throw "Memos URL is incorrect." }
     if ($planned.babybuddy_url -ne "https://embe-home.example.ts.net:10000") { throw "BabyBuddy URL is incorrect." }
+    if ($planned.grocy_url -ne "https://embe-home.example.ts.net:9283") { throw "Grocy URL is incorrect." }
     if ((Get-Content -LiteralPath $log -Raw) -match "serve") { throw "Dry-run changed Tailscale Serve." }
 
     $ready = & pwsh -NoProfile -File $runner -TailscalePath $fake -Apply | ConvertFrom-Json
@@ -30,6 +31,7 @@ exit 0
     $arguments = Get-Content -LiteralPath $log -Raw
     if ($arguments -notmatch "serve --bg --yes --https=8443 http://127.0.0.1:5230") { throw "Memos was not mapped safely." }
     if ($arguments -notmatch "serve --bg --yes --https=10000 http://127.0.0.1:8000") { throw "BabyBuddy was not mapped safely." }
+    if ($arguments -notmatch "serve --bg --yes --https=9283 http://127.0.0.1:9283") { throw "Grocy was not mapped safely." }
     if ($arguments -match "funnel") { throw "Public Funnel must never be enabled." }
 
     Write-Output "PASS: private care apps Tailscale tests passed"
