@@ -1,6 +1,14 @@
+import importlib.util
 import unittest
+from pathlib import Path
 
-from shell_leak_guard import is_leaked_shell
+
+SCRIPT = Path(__file__).resolve().parents[1] / "shell_leak_guard.py"
+SPEC = importlib.util.spec_from_file_location("shell_leak_guard", SCRIPT)
+assert SPEC and SPEC.loader
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+is_leaked_shell = MODULE.is_leaked_shell
 
 
 class ShellLeakGuardTests(unittest.TestCase):
