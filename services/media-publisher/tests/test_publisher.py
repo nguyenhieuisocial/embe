@@ -1,4 +1,5 @@
 import hashlib
+import io
 import json
 import tempfile
 import unittest
@@ -22,6 +23,23 @@ class FakeTransport:
         if not self.responses:
             raise AssertionError(f"unexpected request: {method} {url}")
         return self.responses.pop(0)
+
+
+class FakeOriginalResponse:
+    status = 200
+    headers = {"Content-Type": "image/heic", "Content-Length": "12"}
+
+    def __init__(self):
+        self.body = io.BytesIO(b"family-photo")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def read(self, size=-1):
+        return self.body.read(size)
 
 
 def response(status=200, payload=None, headers=None, body=None):
@@ -139,6 +157,28 @@ class PublisherTests(unittest.TestCase):
         result = request_with_retry(fake, "GET", "https://project.supabase.co", {}, sleep=delays.append)
         self.assertEqual(result.status, 200)
         self.assertEqual(delays, [10.0])
+
+    def test_archive_listing_can_include_images_and_videos(self):
+        fake = FakeTransport([
+            response(payload={"assets": {"items": [], "nextPage": None, "nextCursor": None}}),
+        ])
+        client = __import__("publisher").ImmichClient(config(), fake, sleep=lambda _: None)
+        self.assertEqual(client.list_assets(asset_type=None), [])
+        self.assertNotIn("type", json.loads(fake.calls[0][3]))
+
+    def test_original_download_streams_to_disk_without_using_original_filename(self):
+        client = __import__("publisher").ImmichClient(config())
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "opaque.upload"
+            result = client.download_original(
+                ASSET_ID,
+                destination,
+                100,
+                open_response=lambda *_args, **_kwargs: FakeOriginalResponse(),
+            )
+            self.assertEqual(destination.read_bytes(), b"family-photo")
+            self.assertEqual(result["mime_type"], "image/heic")
+            self.assertEqual(result["sha256"], hashlib.sha256(b"family-photo").hexdigest())
 
 
 if __name__ == "__main__":

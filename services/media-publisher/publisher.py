@@ -146,7 +146,7 @@ class ImmichClient:
     def headers(self) -> dict[str, str]:
         return {"Accept": "application/json", "x-api-key": self.config.immich_api_key}
 
-    def list_assets(self) -> list[dict[str, Any]]:
+    def list_assets(self, asset_type: str | None = "IMAGE") -> list[dict[str, Any]]:
         assets: dict[str, dict[str, Any]] = {}
         for album_id in self.config.album_ids:
             page = 1
@@ -154,12 +154,13 @@ class ImmichClient:
             while True:
                 payload: dict[str, Any] = {
                     "albumIds": [album_id],
-                    "type": "IMAGE",
                     "size": 250,
                     "withExif": False,
                     "withPeople": False,
                     "withStacked": False,
                 }
+                if asset_type:
+                    payload["type"] = asset_type
                 if cursor:
                     payload["cursor"] = cursor
                 else:
@@ -194,6 +195,50 @@ class ImmichClient:
                 else:
                     break
         return list(assets.values())
+
+    def download_original(
+        self,
+        asset_id: str,
+        destination: Path,
+        max_bytes: int,
+        *,
+        open_response=None,
+    ) -> dict[str, str | int]:
+        if str(uuid.UUID(asset_id)) != asset_id.lower():
+            raise ValueError("invalid asset id")
+        if max_bytes < 1:
+            raise ValueError("invalid original size limit")
+        opener = open_response or urlopen
+        request = Request(
+            f"{self.config.immich_base_url}/api/assets/{asset_id}/original",
+            headers={"Accept": "application/octet-stream", "x-api-key": self.config.immich_api_key},
+            method="GET",
+        )
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with opener(request, timeout=120) as response:
+                if int(getattr(response, "status", 0)) != 200:
+                    raise RuntimeError("Immich original download failed")
+                content_length = response.headers.get("Content-Length") or response.headers.get("content-length")
+                if content_length and (not content_length.isdigit() or int(content_length) > max_bytes):
+                    raise ValueError("Immich original exceeds the storage limit")
+                mime_type = (response.headers.get("Content-Type") or response.headers.get("content-type") or "").split(";", 1)[0].strip().lower()
+                if not (mime_type.startswith("image/") or mime_type.startswith("video/") or mime_type == "application/octet-stream"):
+                    raise ValueError("unsupported Immich original content")
+                with destination.open("xb") as writer:
+                    while chunk := response.read(1024 * 1024):
+                        size += len(chunk)
+                        if size > max_bytes:
+                            raise ValueError("Immich original exceeds the storage limit")
+                        digest.update(chunk)
+                        writer.write(chunk)
+            if size == 0:
+                raise ValueError("empty Immich original")
+            return {"size": size, "sha256": digest.hexdigest(), "mime_type": mime_type}
+        except Exception:
+            destination.unlink(missing_ok=True)
+            raise
 
     def download_preview(self, asset_id: str) -> tuple[bytes, str]:
         if str(uuid.UUID(asset_id)) != asset_id.lower():

@@ -6,7 +6,7 @@ Safety contract:
 
 - disabled by default;
 - accepts only local/private Immich URLs and explicit album UUIDs;
-- needs only Immich `asset.read` and `asset.view` permissions;
+- needs only Immich `asset.read`, `asset.view`, and `asset.download` permissions;
 - never publishes originals, filenames, EXIF, GPS, faces, camera data, or credentials;
 - validates JPEG/WebP bytes, limits previews to 10 MB, and skips unchanged assets;
 - stages metadata before one atomic publication switch.
@@ -15,7 +15,7 @@ Every run writes only counts and timestamps to `data/status/media-publisher.json
 
 Run `scripts/provision-immich-media-publisher.ps1` once with the existing Immich
 administrator credential. It creates or reuses the curated `Em Bé` album,
-creates a key with exactly `asset.read` and `asset.view`, writes the restricted
+creates a key with exactly `asset.read`, `asset.view`, and `asset.download`, writes the restricted
 runtime file, and verifies both API routes. Subsequent runs verify the scoped key
 without needing the administrator credential. Supabase settings are reused from
 the existing private portal sync file. Keep both files outside Git.
