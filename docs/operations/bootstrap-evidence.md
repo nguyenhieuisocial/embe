@@ -18,11 +18,12 @@
 | Tự phục hồi sau đăng nhập Windows | Tác vụ quyền giới hạn chờ 30 giây rồi phục hồi socket Docker bằng cách chuyển cả thư mục sang vùng cách ly, sau đó khởi động Docker và Ollama; lần chạy thật đạt, không xóa dữ liệu và không cần UAC |
 | Grocy | Khóa tích hợp riêng đã kiểm tra; 10 danh mục nền tảng đã có, không tạo tồn kho giả |
 | Home Assistant + MQTT | Tích hợp MQTT chính thức đã tạo và ở trạng thái `loaded`; chưa tạo cảm biến hoặc dữ liệu giả |
+| Kho phân tích cục bộ | Lịch chạy 15 phút/lần đã cài bằng quyền giới hạn; hiện tắt an toàn vì BabyBuddy chưa có hồ sơ em bé và chưa có nguồn cảm biến/stock được phép, không tạo dữ liệu giả |
 | Tailscale | Immich, Memos và BabyBuddy Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và Funnel tắt |
 | Chống dò mật khẩu Portal | Cloudflare Free WAF giới hạn `POST /api/auth/login` theo IP; production probe trả `303` rồi `429` cho hai lần thử sai liên tiếp |
 | Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
 | Immich media publisher | Đã nối vào tác vụ Portal bằng tài khoản dịch vụ, lỗi được cô lập và health gate fail-closed; vẫn tắt cho tới khi có album chọn lọc + API key chỉ đọc |
-| Sức khỏe phần mềm | 18/18 kiểm tra đạt; CI `main`, Vercel production và smoke test sau đăng nhập đạt |
+| Sức khỏe phần mềm | 19/19 kiểm tra đạt; gồm cổng freshness cho kho phân tích; CI `main`, Vercel production và smoke test sau đăng nhập đạt |
 
 ## Go/no-go
 

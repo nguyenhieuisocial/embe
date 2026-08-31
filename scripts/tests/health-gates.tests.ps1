@@ -29,6 +29,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         portal_sync = @{ status = "ok"; last_success_at = $now.AddMinutes(-5).ToString("o"); journal_inbox = @{ dead_letters = 0 } }
         media_publisher = @{ status = "disabled"; last_attempt_at = $now.AddMinutes(-5).ToString("o") }
         babybuddy_sync = @{ healthy = $true; time = $now.AddMinutes(-2).ToString("o") }
+        analytics_ingest = @{ status = "skipped"; reason = "all_sources_disabled"; updated_at = $now.AddMinutes(-5).ToString("o") }
         backup_created_utc = $now.AddHours(-$BackupAgeHours).ToString("o")
         restore = @{ status = "pass"; verified_at = $now.AddDays(-1).ToString("o") }
         integrity = @{ status = "pass"; checked_at = $now.AddDays(-1).ToString("o") }
@@ -67,7 +68,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("media_publisher", "portal_public", "node_red", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
+    foreach ($id in @("media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -87,6 +88,17 @@ try {
     if ($critical.status -ne "critical") { throw "Critical report is invalid" }
     if (@($critical.checks | Where-Object id -eq "disk_headroom")[0].status -ne "critical") { throw "Disk gate did not block" }
     if (@($critical.checks | Where-Object id -eq "backup_freshness")[0].status -ne "critical") { throw "Backup gate did not block" }
+
+    $staleAnalyticsFixture = Join-Path $testRoot "stale-analytics.json"
+    Write-Fixture $staleAnalyticsFixture 40 2
+    $staleAnalytics = Get-Content $staleAnalyticsFixture -Raw | ConvertFrom-Json
+    $staleAnalytics.analytics_ingest.updated_at = ([DateTimeOffset]::Parse("2026-08-30T12:00:00Z")).AddMinutes(-31).ToString("o")
+    $staleAnalytics | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $staleAnalyticsFixture -Encoding utf8
+    $staleAnalyticsReport = Join-Path $testRoot "stale-analytics-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $staleAnalyticsFixture -OutputPath $staleAnalyticsReport
+    if ($LASTEXITCODE -ne 2) { throw "A stale analytics job must block health" }
+    $staleAnalyticsHealth = Get-Content $staleAnalyticsReport -Raw | ConvertFrom-Json
+    if (@($staleAnalyticsHealth.checks | Where-Object id -eq "analytics_ingest")[0].status -ne "critical") { throw "Stale analytics gate did not block" }
 
     $missingServiceTaskFixture = Join-Path $testRoot "missing-service-task.json"
     Write-Fixture $missingServiceTaskFixture 40 2

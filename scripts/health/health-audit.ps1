@@ -72,6 +72,7 @@ if ($FixturePath) {
     $portalStatus = $fixture.portal_sync
     $mediaPublisherStatus = $fixture.media_publisher
     $bridgeStatus = $fixture.babybuddy_sync
+    $analyticsIngestStatus = $fixture.analytics_ingest
     $backupCreated = $fixture.backup_created_utc
     $restoreStatus = [string]$fixture.restore.status
     $restoreVerified = $fixture.restore.verified_at
@@ -110,6 +111,8 @@ if ($FixturePath) {
     $portalStatus = if (Test-Path $portalPath) { Get-Content $portalPath -Raw | ConvertFrom-Json } else { $null }
     $mediaPublisherStatus = if (Test-Path $mediaPublisherPath) { Get-Content $mediaPublisherPath -Raw | ConvertFrom-Json } else { $null }
     $bridgeStatus = if (Test-Path $bridgePath) { Get-Content $bridgePath -Raw | ConvertFrom-Json } else { $null }
+    $analyticsIngestPath = Join-Path $ProjectRoot "data\health\analytics-ingest.json"
+    $analyticsIngestStatus = if (Test-Path $analyticsIngestPath) { Get-Content $analyticsIngestPath -Raw | ConvertFrom-Json } else { $null }
 
     $latestManifest = Get-ChildItem (Join-Path $ProjectRoot "exports\backup-manifests") -Filter "*.json" -File -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
@@ -266,6 +269,20 @@ Add-Check "media_publisher" $(if ($mediaPublisherPass) { "pass" } else { "critic
 $bridgeHealthy = $null -ne $bridgeStatus -and $bridgeStatus.healthy -eq $true -and $bridgeStatus.time
 $bridgeAge = if ($bridgeHealthy) { Get-AgeHours $bridgeStatus.time } else { [double]::PositiveInfinity }
 Add-Check "babybuddy_sync" $(if ($bridgeHealthy -and $bridgeAge -le (5 / 60)) { "pass" } else { "critical" }) "Đồng bộ BabyBuddy gần nhất" @{ age_minutes = if ([double]::IsInfinity($bridgeAge)) { $null } else { [math]::Round($bridgeAge * 60, 1) }; maximum_minutes = 5 }
+
+$analyticsMode = if ($null -ne $analyticsIngestStatus -and $analyticsIngestStatus.PSObject.Properties["status"]) { [string]$analyticsIngestStatus.status } else { "missing" }
+$analyticsReason = if ($null -ne $analyticsIngestStatus -and $analyticsIngestStatus.PSObject.Properties["reason"]) { [string]$analyticsIngestStatus.reason } else { "" }
+$analyticsAge = if ($null -ne $analyticsIngestStatus -and $analyticsIngestStatus.PSObject.Properties["updated_at"] -and $analyticsIngestStatus.updated_at) {
+    Get-AgeHours $analyticsIngestStatus.updated_at
+} else { [double]::PositiveInfinity }
+$analyticsModePass = $analyticsMode -eq "ok" -or ($analyticsMode -eq "skipped" -and $analyticsReason -eq "all_sources_disabled")
+$analyticsPass = $analyticsModePass -and $analyticsAge -le 0.5
+Add-Check "analytics_ingest" $(if ($analyticsPass) { "pass" } else { "critical" }) "Kho phân tích cục bộ vừa chạy hoặc đang tắt an toàn vì chưa có nguồn" @{
+    mode = $analyticsMode
+    reason = $analyticsReason
+    age_minutes = if ([double]::IsInfinity($analyticsAge)) { $null } else { [math]::Round($analyticsAge * 60, 1) }
+    maximum_minutes = 30
+}
 
 $backupAge = if ($backupCreated) { Get-AgeHours $backupCreated } else { [double]::PositiveInfinity }
 Add-Check "backup_freshness" $(if ($backupAge -le $BackupMaxAgeHours) { "pass" } else { "critical" }) "Backup dữ liệu có cấu trúc gần nhất" @{ age_hours = if ([double]::IsInfinity($backupAge)) { $null } else { [math]::Round($backupAge, 2) }; maximum_hours = $BackupMaxAgeHours }
