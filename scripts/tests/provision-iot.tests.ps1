@@ -19,9 +19,9 @@ try {
     }
 
     $docker = Get-Command docker -ErrorAction SilentlyContinue
-    if ($null -ne $docker) { $null = docker info 2>$null }
-    if ($null -eq $docker -or $LASTEXITCODE -ne 0) {
-        Write-Output 'PASS: MQTT security contract verified; container integration requires a running Docker engine'
+    $dockerOs = if ($null -ne $docker) { docker info --format '{{.OSType}}' 2>$null } else { '' }
+    if ($null -eq $docker -or $LASTEXITCODE -ne 0 -or ([string]$dockerOs).Trim() -ne 'linux') {
+        Write-Output 'PASS: MQTT security contract verified; integration requires a running Linux Docker engine'
         exit 0
     }
 
