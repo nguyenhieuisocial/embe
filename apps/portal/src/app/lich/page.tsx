@@ -6,7 +6,11 @@ import { getMediaMemoryDates } from "../../lib/media";
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendarPage({ searchParams }: PageProps<"/lich">) {
+export default async function CalendarPage({
+  searchParams
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const query = await searchParams;
   const monthValue = typeof query.month === "string" ? query.month : undefined;
   const dateValue = typeof query.date === "string" ? query.date : undefined;

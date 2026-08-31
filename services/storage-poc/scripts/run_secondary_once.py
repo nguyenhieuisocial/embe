@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import msvcrt
 import os
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 
 def acquire_run_lock(path: Path):
@@ -21,7 +25,10 @@ def acquire_run_lock(path: Path):
         handle.flush()
         handle.seek(0)
     try:
-        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        if os.name == "nt":
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         handle.close()
         return None
@@ -29,8 +36,11 @@ def acquire_run_lock(path: Path):
 
 
 def release_run_lock(handle) -> None:
-    handle.seek(0)
-    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    if os.name == "nt":
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
     handle.close()
 
 

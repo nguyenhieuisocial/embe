@@ -42,7 +42,11 @@ function MemoryLoading() {
   );
 }
 
-export default async function MemoriesPage({ searchParams }: PageProps<"/ky-niem">) {
+export default async function MemoriesPage({
+  searchParams
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const query = await searchParams;
   const dateValue = typeof query.date === "string" ? query.date : undefined;
   const selectedDate = parseDateKey(dateValue);
