@@ -13,7 +13,19 @@ function dateLabel(value: string): string {
   }).format(new Date(value));
 }
 
-export default function MemoryGrid({ initial }: { initial: MediaMemory[] }) {
+function calendarHref(value: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric"
+  }).formatToParts(new Date(value));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
+  const day = `${part("year")}-${part("month")}-${part("day")}`;
+  return `/lich?month=${day.slice(0, 7)}&date=${day}#date-${day}`;
+}
+
+export default function MemoryGrid({ initial, date }: { initial: MediaMemory[]; date?: string }) {
   const [memories, setMemories] = useState(initial);
   const [hasMore, setHasMore] = useState(initial.length === PAGE_SIZE);
   const [state, setState] = useState<"ready" | "loading" | "error">("ready");
@@ -22,7 +34,9 @@ export default function MemoryGrid({ initial }: { initial: MediaMemory[] }) {
     if (state === "loading") return;
     setState("loading");
     try {
-      const response = await fetch(`/api/memories?offset=${memories.length}&limit=${PAGE_SIZE}`, {
+      const params = new URLSearchParams({ offset: String(memories.length), limit: String(PAGE_SIZE) });
+      if (date) params.set("date", date);
+      const response = await fetch(`/api/memories?${params}`, {
         credentials: "same-origin",
         headers: { Accept: "application/json" }
       });
@@ -51,7 +65,9 @@ export default function MemoryGrid({ initial }: { initial: MediaMemory[] }) {
               height={memory.height ?? 900}
             />
             <div>
-              <time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time>
+              <a className="memory-date-link" href={calendarHref(memory.eventAt)}>
+                <time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time>
+              </a>
               <h2>{memory.title}</h2>
             </div>
           </article>

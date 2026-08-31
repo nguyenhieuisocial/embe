@@ -36,7 +36,7 @@ function safeText(value: unknown, maximum: number): string | null {
 }
 
 export async function getMediaMemories(
-  options: { limit?: number; offset?: number } = {}
+  options: { from?: string; limit?: number; offset?: number; to?: string } = {}
 ): Promise<MediaMemory[]> {
   const config = credentials();
   if (!config) return [];
@@ -52,6 +52,8 @@ export async function getMediaMemories(
     limit: String(limit),
     offset: String(offset)
   });
+  if (options.from) query.append("event_at", `gte.${options.from}`);
+  if (options.to) query.append("event_at", `lt.${options.to}`);
   try {
     const response = await fetch(`${config.baseUrl}/rest/v1/embe_media_item?${query}`, {
       cache: "no-store",
@@ -73,6 +75,41 @@ export async function getMediaMemories(
       const height = typeof value.height === "number" && value.height > 0 ? value.height : null;
       return [{ id, eventAt, title, caption, mimeType: mimeType as MediaMemory["mimeType"], width, height }];
     });
+  } catch {
+    return [];
+  }
+}
+
+export async function getMediaMemoryDates(range: { from: string; to: string }): Promise<string[]> {
+  const config = credentials();
+  if (!config) return [];
+  const pageSize = 1000;
+  const dates: string[] = [];
+  try {
+    for (let offset = 0; offset < 20_000; offset += pageSize) {
+      const query = new URLSearchParams({
+        select: "event_at",
+        order: "event_at.asc",
+        limit: String(pageSize),
+        offset: String(offset)
+      });
+      query.append("event_at", `gte.${range.from}`);
+      query.append("event_at", `lt.${range.to}`);
+      const response = await fetch(`${config.baseUrl}/rest/v1/embe_media_item?${query}`, {
+        cache: "no-store",
+        headers: { Accept: "application/json", apikey: config.secretKey }
+      });
+      if (!response.ok) return [];
+      const payload: unknown = await response.json();
+      if (!Array.isArray(payload)) return [];
+      dates.push(...payload.flatMap((raw): string[] => {
+        if (!raw || typeof raw !== "object") return [];
+        const eventAt = safeText((raw as Record<string, unknown>).event_at, 40);
+        return eventAt && !Number.isNaN(new Date(eventAt).getTime()) ? [eventAt] : [];
+      }));
+      if (payload.length < pageSize) break;
+    }
+    return dates;
   } catch {
     return [];
   }

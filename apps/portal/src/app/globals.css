@@ -1,23 +1,23 @@
 /* EmBe 2026 — hệ thiết kế riêng của gia đình.
-   Giấy · jade · indigo · nắng · san hô. Motif duy nhất: sợi chỉ gia đình. */
+   Sương · ngọc · chàm · nắng · san hô. Motif duy nhất: sợi chỉ gia đình. */
 
 :root {
   color-scheme: light;
 
   /* Nền và bề mặt */
-  --paper: #FBF8F1;
-  --surface: #FFFDF8;
-  --line: #E6DECE;
-  --line-strong: #D6CBB4;
+  --paper: #F5F8F6;
+  --surface: #FFFFFF;
+  --line: #DEE7E2;
+  --line-strong: #CAD8D1;
 
   /* Chữ */
-  --ink: #1C231F;
-  --ink-soft: #55605A;
+  --ink: #182621;
+  --ink-soft: #586660;
 
   /* Màu dẫn */
   --jade: #0F4A44;
   --jade-press: #0A342F;
-  --jade-soft: #E8F0ED;
+  --jade-soft: #E6F0EC;
   --indigo: #303C5E;
 
   /* Màu trạng thái — dùng đúng chỗ, không trang trí */
@@ -36,12 +36,13 @@
   --radius-sm: 10px;
   --radius: 16px;
   --radius-lg: 22px;
+  --radius-pill: 999px;
   --tap: 44px;
   --rail: 92px;
   --measure: 560px;
 
-  --shadow-card: 0 1px 2px rgba(28, 35, 31, .05);
-  --shadow-lift: 0 -6px 28px rgba(28, 35, 31, .10);
+  --shadow-card: 0 1px 2px rgba(24, 38, 33, .04), 0 8px 28px rgba(24, 38, 33, .035);
+  --shadow-lift: 0 -6px 28px rgba(24, 38, 33, .10);
 }
 
 * { box-sizing: border-box; }
@@ -109,6 +110,7 @@ ol, ul { margin: 0; padding: 0; }
 .pregnancy-main,
 .journal-main,
 .memories-main,
+.calendar-main,
 .inventory-main,
 .assistant-main,
 .guide-main {
@@ -123,6 +125,7 @@ ol, ul { margin: 0; padding: 0; }
 .has-nav .pregnancy-main,
 .has-nav .journal-main,
 .has-nav .memories-main,
+.has-nav .calendar-main,
 .has-nav .inventory-main,
 .has-nav .assistant-main,
 .has-nav .guide-main { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
@@ -469,7 +472,10 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 /* ── Điều hướng gia đình ─────────────────────────────────────── */
 
 .family-nav {
-  background: var(--surface);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  backdrop-filter: blur(18px) saturate(1.15);
+  background: rgba(255, 255, 255, .94);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
   border-top: 1px solid var(--line);
   bottom: 0;
   display: flex;
@@ -895,6 +901,55 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 /* ── Kỷ niệm ─────────────────────────────────────────────────── */
 
+.calendar-hero,
+.memories-hero { display: grid; gap: 14px; }
+
+.memory-tabs {
+  background: var(--jade-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+}
+.memory-tabs a {
+  align-items: center;
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  display: flex;
+  font-size: .875rem;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+.memory-tabs a[aria-current="page"] {
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(24, 38, 33, .08);
+  color: var(--jade);
+}
+
+.selected-date-card {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 16px;
+}
+.selected-date-card > div { display: grid; gap: 3px; }
+.selected-date-card span { color: var(--ink-soft); font-size: .6875rem; font-weight: 600; letter-spacing: .1em; }
+.selected-date-card strong { font-family: var(--font-display), Georgia, serif; font-size: .9875rem; text-transform: capitalize; }
+.selected-date-card small { color: var(--ink-soft); font-size: .8125rem; }
+.selected-date-card a { color: var(--jade); flex: none; font-size: .875rem; font-weight: 600; line-height: 44px; text-decoration: none; }
+
+.memory-date-link { color: var(--ink-soft); text-decoration: none; }
+.memory-date-link time { border-bottom: 1px solid var(--line-strong); }
+
 .memory-grid {
   display: grid;
   gap: 8px;
@@ -905,6 +960,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 16px;
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 .memory-card:nth-child(5n + 1) { grid-column: 1 / -1; }
@@ -950,6 +1006,113 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .memory-empty a { color: var(--jade); font-weight: 600; line-height: 44px; }
 .memory-loading { display: grid; gap: 12px; margin-top: 24px; }
 .memory-loading .skeleton-line.is-block { border-radius: var(--radius); height: 180px; }
+
+/* ── Lịch gia đình: dương lớn, âm nhỏ, kỷ niệm bằng một chấm ── */
+
+.calendar-main > section,
+.calendar-main > nav { margin-top: 24px; }
+.calendar-main > .calendar-hero { margin-top: 0; padding-top: 8px; }
+
+.family-calendar {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  padding: 14px;
+}
+.calendar-toolbar {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.calendar-toolbar > div { display: flex; gap: 7px; justify-content: center; }
+.calendar-toolbar p { font-family: var(--font-display), Georgia, serif; font-size: 1.25rem; font-weight: 600; }
+.calendar-toolbar strong { color: var(--jade); font-size: .875rem; line-height: 2; }
+.calendar-arrow {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--jade);
+  display: flex;
+  font-size: 1.15rem;
+  height: 44px;
+  justify-content: center;
+  text-decoration: none;
+  width: 44px;
+}
+.calendar-arrow:last-child { justify-self: end; }
+
+.calendar-jump {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto auto;
+  padding-bottom: 14px;
+}
+.calendar-jump label { grid-column: 1 / -1; color: var(--ink-soft); font-size: .75rem; font-weight: 600; }
+.calendar-jump input { min-height: 44px; padding-block: 8px; }
+.calendar-jump button,
+.calendar-jump a {
+  align-items: center;
+  background: var(--jade);
+  border: 1px solid var(--jade);
+  border-radius: 12px;
+  color: var(--surface);
+  display: flex;
+  font-size: .8125rem;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+.calendar-jump a { background: var(--surface); color: var(--jade); }
+
+.calendar-weekdays,
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.calendar-weekdays { color: var(--ink-soft); font-size: .6875rem; font-weight: 600; padding-top: 12px; text-align: center; }
+.calendar-weekdays span { line-height: 32px; }
+.calendar-grid { gap: 3px; }
+.calendar-day {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 58px;
+  position: relative;
+  text-decoration: none;
+}
+.calendar-day.is-outside { opacity: .34; }
+.calendar-day.is-today { background: var(--jade-soft); color: var(--jade); }
+.calendar-day.is-selected { border-color: var(--jade); box-shadow: inset 0 0 0 1px var(--jade); }
+.solar-day { font-size: .9375rem; font-weight: 600; line-height: 1.2; }
+.lunar-day { color: var(--ink-soft); font-size: .625rem; line-height: 1.45; }
+.calendar-day.is-today .lunar-day { color: var(--jade); }
+.memory-dot {
+  background: var(--sun);
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  bottom: 3px;
+  height: 7px;
+  position: absolute;
+  width: 7px;
+}
+.calendar-legend {
+  color: var(--ink-soft);
+  display: flex;
+  font-size: .6875rem;
+  justify-content: space-between;
+  padding: 13px 3px 1px;
+}
+.calendar-legend span { align-items: center; display: inline-flex; gap: 6px; }
+.calendar-legend .memory-dot { border: none; display: inline-block; position: static; }
 
 .sr-only {
   clip: rect(0, 0, 0, 0);
@@ -1325,6 +1488,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .has-nav .pregnancy-main,
   .has-nav .journal-main,
   .has-nav .memories-main,
+  .has-nav .calendar-main,
   .has-nav .inventory-main,
   .has-nav .assistant-main,
   .has-nav .guide-main { padding-bottom: 48px; }
@@ -1332,6 +1496,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .pregnancy-main,
   .journal-main,
   .memories-main,
+  .calendar-main,
   .inventory-main,
   .assistant-main,
   .guide-main { max-width: var(--measure); }

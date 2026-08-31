@@ -1,4 +1,5 @@
 import { getMediaMemories } from "../../../lib/media";
+import { dayRange } from "../../../lib/calendar";
 import { verifySessionCookie } from "../../../lib/portal-auth";
 
 function cookieValue(header: string | null, name: string): string | undefined {
@@ -25,7 +26,15 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const limit = Math.max(1, integerParam(url.searchParams.get("limit"), 24, 60));
   const offset = integerParam(url.searchParams.get("offset"), 0, 10_000);
-  const memories = await getMediaMemories({ limit, offset });
+  const date = url.searchParams.get("date");
+  const range = date ? dayRange(date) : null;
+  if (date && !range) {
+    return Response.json({ error: "invalid_date" }, {
+      status: 400,
+      headers: { "Cache-Control": "private, no-store" }
+    });
+  }
+  const memories = await getMediaMemories({ limit, offset, ...range });
   return Response.json({ memories, hasMore: memories.length === limit }, {
     headers: { "Cache-Control": "private, no-store" }
   });

@@ -8,7 +8,7 @@ const destinations: Array<{ href: string; icon: IconName; label: string }> = [
   { href: "/", icon: "home", label: "Hôm nay" },
   { href: "/ghi-lai", icon: "write", label: "Ghi lại" },
   { href: "/me-bau", icon: "care", label: "Mẹ bầu" },
-  { href: "/ky-niem", icon: "memory", label: "Kỷ niệm" },
+  { href: "/lich", icon: "calendar", label: "Lịch" },
   { href: "/do-dung", icon: "supply", label: "Đồ dùng" }
 ];
 

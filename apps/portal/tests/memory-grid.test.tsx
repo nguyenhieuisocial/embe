@@ -33,4 +33,11 @@ describe("mobile memory grid", () => {
     expect(screen.getByAltText("Kỷ niệm 0")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Xem thêm kỷ niệm" })).not.toBeInTheDocument();
   });
+
+  it("links every memory date back to the matching calendar day", () => {
+    render(<MemoryGrid initial={[memory(1)]} />);
+
+    expect(screen.getByRole("link", { name: /30 thg 8, 2026/ }))
+      .toHaveAttribute("href", "/lich?month=2026-08&date=2026-08-30#date-2026-08-30");
+  });
 });

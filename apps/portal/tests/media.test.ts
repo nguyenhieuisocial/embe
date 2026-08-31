@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getMediaLocator, getMediaMemories } from "../src/lib/media";
+import { getMediaLocator, getMediaMemories, getMediaMemoryDates } from "../src/lib/media";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 
@@ -29,6 +29,23 @@ describe("private media read model", () => {
     const url = fetchMock.mock.calls[0][0].toString();
     expect(url).toContain("limit=24");
     expect(url).toContain("offset=48");
+  });
+
+  it("loads the date index for one calendar month without exposing media locators", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify([
+      { event_at: "2026-08-30T10:00:00Z" },
+      { event_at: "invalid" }
+    ]), { status: 200 }));
+
+    expect(await getMediaMemoryDates({
+      from: "2026-08-01T00:00:00+07:00",
+      to: "2026-09-01T00:00:00+07:00"
+    })).toEqual(["2026-08-30T10:00:00Z"]);
+    const url = fetchMock.mock.calls[0][0].toString();
+    expect(url).toContain("select=event_at");
+    expect(url).toContain("event_at=gte.");
+    expect(url).toContain("event_at=lt.");
+    expect(url).not.toContain("object_path");
   });
 
   it("validates the server-only locator contract", async () => {
