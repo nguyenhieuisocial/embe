@@ -7,6 +7,9 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/login",
   "/manifest.webmanifest",
   "/icon.svg",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-icon.png",
   "/robots.txt"
 ]);
 const PRIVATE_NO_STORE = "private, no-store";

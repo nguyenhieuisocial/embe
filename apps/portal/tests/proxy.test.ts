@@ -54,7 +54,14 @@ describe("portal access gate", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
-  it.each(["/manifest.webmanifest", "/icon.svg", "/robots.txt"])(
+  it.each([
+    "/manifest.webmanifest",
+    "/icon.svg",
+    "/icon-192.png",
+    "/icon-512.png",
+    "/apple-icon.png",
+    "/robots.txt"
+  ])(
     "keeps install and privacy metadata public: %s",
     (path) => {
       const response = proxy(new NextRequest(`https://embe.hieu.asia${path}`));
