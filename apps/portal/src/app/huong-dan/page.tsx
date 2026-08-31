@@ -16,7 +16,7 @@ const dailyRhythm = [
   {
     moment: "Cuối ngày",
     title: "Yên tâm nghỉ ngơi",
-    detail: "Bạn không cần mở trang giám sát hoặc tự kiểm tra hệ thống. Nếu trang Em Bé không mở, chỉ cần báo tôi.",
+    detail: "Bạn không cần mở trang giám sát hoặc tự kiểm tra hệ thống. Nếu trang EmBe không mở, chỉ cần báo tôi.",
     status: "Không có việc phải làm"
   }
 ];
@@ -34,8 +34,8 @@ export default function GuidePage() {
   return (
     <main className="guide-main">
       <header className="masthead">
-        <a className="wordmark" href="/" aria-label="Em Bé — về trang gia đình">
-          Em Bé
+        <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">
+          EmBe
         </a>
         <p className="privacy-note">
           <span aria-hidden="true">●</span> Một nơi để dùng mọi thứ
@@ -47,7 +47,7 @@ export default function GuidePage() {
           <p className="eyebrow">BẮT ĐẦU Ở ĐÂY</p>
           <h1>Bạn không cần học các ứng dụng phía sau</h1>
           <p className="intro">
-            Từ giờ, hãy coi <strong>Em Bé</strong> là cánh cửa duy nhất. Những phần
+            Từ giờ, hãy coi <strong>EmBe</strong> là cánh cửa duy nhất. Những phần
             kỹ thuật tự lưu, tự chuyển và tự kiểm tra ở phía sau.
           </p>
         </div>
@@ -85,7 +85,7 @@ export default function GuidePage() {
       <section className="iphone-setup" aria-labelledby="iphone-title">
         <div className="iphone-heading">
           <p className="panel-kicker">ẢNH TỰ VỀ MÁY NHÀ</p>
-          <h2 id="iphone-title">Đưa ảnh từ iPhone vào Em Bé</h2>
+          <h2 id="iphone-title">Đưa ảnh từ iPhone vào EmBe</h2>
           <p>Chỉ cần thiết lập một lần. Ảnh gốc không đi qua Vercel hay trang web công khai.</p>
         </div>
         <ol className="iphone-steps">
@@ -134,11 +134,11 @@ export default function GuidePage() {
       <aside className="help-rule">
         <strong>Nếu có trục trặc</strong>
         <p>
-          Nếu trang Em Bé không mở hoặc một thao tác không lưu được, chỉ cần báo
+          Nếu trang EmBe không mở hoặc một thao tác không lưu được, chỉ cần báo
           tôi. Bạn không phải tự vào máy chủ hay sửa công cụ nào.
         </p>
         <form className="logout-form" action="/api/auth/logout" method="post">
-          <button type="submit">Đăng xuất khỏi Em Bé</button>
+          <button type="submit">Đăng xuất khỏi EmBe</button>
         </form>
       </aside>
 

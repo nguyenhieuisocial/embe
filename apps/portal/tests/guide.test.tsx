@@ -31,7 +31,7 @@ describe("simple family guide", () => {
   it("gives iPhone photo backup instructions without exposing credentials", () => {
     render(<GuidePage />);
 
-    expect(screen.getByRole("heading", { name: "Đưa ảnh từ iPhone vào Em Bé" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Đưa ảnh từ iPhone vào EmBe" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Cài Tailscale/ })).toHaveAttribute(
       "href",
       "https://apps.apple.com/us/app/tailscale/id1470499037"

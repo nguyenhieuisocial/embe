@@ -67,8 +67,8 @@ export default function PregnancyPage() {
   return (
     <main className="pregnancy-main">
       <header className="masthead">
-        <a className="wordmark" href="/" aria-label="Em Bé — về trang gia đình">
-          Em Bé
+        <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">
+          EmBe
         </a>
         <p className="privacy-note">
           <span aria-hidden="true">●</span> Chỉ lưu dấu tích trên thiết bị này
@@ -77,11 +77,10 @@ export default function PregnancyPage() {
 
       <section className="pregnancy-hero">
         <div>
-          <p className="eyebrow">MỘT NGÀY DỊU DÀNG</p>
+          <p className="eyebrow">CHĂM MẸ NGÂN · TỪNG NGÀY</p>
           <h1>Mẹ bầu hôm nay</h1>
           <p className="intro">
-            Một bảng nhỏ để nhớ điều cần làm, chọn bữa ăn và gom câu hỏi cho lần
-            khám tới — không cần biến thai kỳ thành một cuộc chạy chỉ tiêu.
+            Chỉ những điều cần nhớ hôm nay — nhẹ nhàng, rõ ràng và không tạo áp lực.
           </p>
         </div>
         <div className="week-card">

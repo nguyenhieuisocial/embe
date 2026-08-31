@@ -17,8 +17,8 @@ describe("mobile family shell", () => {
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("href", "/ghi-lai");
     expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Mẹ Ngân" })).toHaveAttribute("href", "/me-bau");
-    expect(screen.getByRole("link", { name: "Cách dùng" })).toHaveAttribute("href", "/huong-dan");
+    expect(screen.getByRole("link", { name: "Mẹ bầu" })).toHaveAttribute("href", "/me-bau");
+    expect(screen.getByRole("link", { name: "Gia đình" })).toHaveAttribute("href", "/huong-dan");
   });
 
   it("reserves iPhone safe areas and prevents password-field zoom", () => {
@@ -50,7 +50,7 @@ describe("mobile family shell", () => {
   it("offers an explicit logout action for a shared or lost phone", () => {
     render(<GuidePage />);
 
-    const button = screen.getByRole("button", { name: "Đăng xuất khỏi Em Bé" });
+    const button = screen.getByRole("button", { name: "Đăng xuất khỏi EmBe" });
     expect(button.closest("form")).toHaveAttribute("action", "/api/auth/logout");
     expect(button.closest("form")).toHaveAttribute("method", "post");
   });

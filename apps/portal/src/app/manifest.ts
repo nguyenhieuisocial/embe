@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Em Bé — Nhật ký gia đình",
-    short_name: "Em Bé",
+    name: "EmBe — Sổ gia đình",
+    short_name: "EmBe",
     description: "Không gian riêng của gia đình Mẹ Ngân, Ba Hiếu và em bé.",
     start_url: "/",
     display: "standalone",

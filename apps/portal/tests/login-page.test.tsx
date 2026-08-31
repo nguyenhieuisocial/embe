@@ -9,7 +9,7 @@ describe("family password page", () => {
 
     expect(screen.getByRole("heading", { name: "Mời cả nhà vào bên trong" })).toBeInTheDocument();
     expect(screen.getByLabelText("Mật khẩu")).toHaveAttribute("type", "password");
-    expect(screen.getByRole("button", { name: "Mở nhật ký" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vào sổ gia đình" })).toBeInTheDocument();
     expect(document.querySelector('form[action="/api/auth/login"]')).not.toBeNull();
     expect(document.querySelector('input[name="next"]')).toHaveValue("/family");
   });

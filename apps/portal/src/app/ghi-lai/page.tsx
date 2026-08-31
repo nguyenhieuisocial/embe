@@ -31,13 +31,13 @@ export default function JournalPage() {
   return (
     <main className="journal-main">
       <header className="masthead">
-        <a className="wordmark" href="/" aria-label="Em Bé — về trang gia đình">Em Bé</a>
+        <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">EmBe</a>
         <p className="privacy-note"><span aria-hidden="true">●</span> Chỉ gia đình nhìn thấy</p>
       </header>
       <section className="journal-shell">
-        <p className="eyebrow">NHẬT KÝ GIA ĐÌNH</p>
+        <p className="eyebrow">MỘT DÒNG CHO MAI SAU</p>
         <h1>Hôm nay có gì đáng nhớ?</h1>
-        <p className="intro">Một câu ngắn cũng đủ. Em Bé sẽ tự đưa vào dòng thời gian.</p>
+        <p className="intro">Một câu ngắn cũng đủ. EmBe sẽ tự đưa vào dòng thời gian gia đình.</p>
         <form className="journal-form" onSubmit={submit}>
           <fieldset>
             <legend>Người ghi</legend>

@@ -17,13 +17,13 @@ const display = Noto_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Em Bé — Nhật ký gia đình",
+  title: "EmBe — Sổ gia đình",
   description: "Không gian riêng để gia đình dõi theo hành trình của em bé.",
-  applicationName: "Em Bé",
+  applicationName: "EmBe",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Em Bé"
+    title: "EmBe"
   },
   formatDetection: { telephone: false },
   robots: { index: false, follow: false, nocache: true }
@@ -33,7 +33,8 @@ export const viewport: Viewport = {
   themeColor: "#173f49",
   viewportFit: "cover",
   width: "device-width",
-  initialScale: 1
+  initialScale: 1,
+  interactiveWidget: "resizes-content"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

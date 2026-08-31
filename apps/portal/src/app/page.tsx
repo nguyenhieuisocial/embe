@@ -17,35 +17,33 @@ export default async function Home() {
   return (
     <main>
       <header className="masthead">
-        <a className="wordmark" href="#top" aria-label="Em Bé — về đầu trang">
-          Em Bé
+        <a className="wordmark" href="#top" aria-label="EmBe — về đầu trang">
+          EmBe
         </a>
-        <p className="privacy-note">
-          <span aria-hidden="true">●</span> Không gian riêng của gia đình
-        </p>
+        <span className="family-chip" aria-label="Gia đình Ngân và Hiếu">N · H</span>
       </header>
 
       <section className="hero home-hero" id="top">
         <div className="hero-copy">
-          <p className="eyebrow">EM BÉ · MỖI NGÀY BÊN NHAU</p>
+          <p className="eyebrow">SỔ NHÀ NGÂN & HIẾU</p>
           <h1 aria-label="Hôm nay, mình cần làm gì?">Hôm nay,<br /><em>mình cần làm gì?</em></h1>
           <p className="intro">
             Một nơi duy nhất để mẹ xem việc cần làm, cả nhà lưu điều đáng nhớ
             và cùng dõi theo em bé lớn lên.
           </p>
           <a className="primary-link" href="/me-bau">
-            Mở việc của mẹ hôm nay <span aria-hidden="true">→</span>
+            Xem việc hôm nay <span aria-hidden="true">→</span>
           </a>
         </div>
 
         <div className="day-ribbon" aria-label="Ba nhịp đơn giản trong ngày">
-          <p className="day-ribbon-title">Nhịp của một ngày</p>
+          <p className="day-ribbon-title">Ba nhịp nhẹ nhàng</p>
           <ol>
             <li><span>Sáng</span><strong>Mẹ Ngân xem việc hôm nay</strong></li>
             <li><span>Trong ngày</span><strong><a href="/ghi-lai">Ba Hiếu ghi một điều đáng nhớ</a></strong></li>
             <li><span>Tối</span><strong>Thảnh thơi nghỉ ngơi</strong></li>
           </ol>
-          <p className="day-ribbon-note">Những phần kỹ thuật đã có hệ thống lo.</p>
+          <p className="day-ribbon-note">Cả nhà chỉ cần dùng EmBe. Phần còn lại hệ thống tự lo.</p>
         </div>
       </section>
 
@@ -57,7 +55,7 @@ export default async function Home() {
         <span className="guide-entry-mark" aria-hidden="true">?</span>
         <span>
           <small>DÀNH CHO CẢ NHÀ</small>
-          <strong>Dùng Em Bé thật đơn giản</strong>
+          <strong>Dùng EmBe thật đơn giản</strong>
           <p>Chỉ một trang, mỗi ngày ba việc.</p>
         </span>
         <span aria-hidden="true">→</span>
