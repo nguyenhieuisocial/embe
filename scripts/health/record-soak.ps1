@@ -40,6 +40,9 @@ $failedSamples = if ($previous -and $previous.failed_samples) { [int]$previous.f
 $healthySamples = if ($previous -and $previous.healthy_samples) { [int]$previous.healthy_samples } else { 0 }
 $startedAt = if ($previous -and $previous.started_at) { Convert-ToDateTimeOffset $previous.started_at } else { $null }
 $lastFailureAt = if ($previous -and $previous.last_failure_at) { [string]$previous.last_failure_at } else { $null }
+$lastFailureChecks = if ($previous -and $previous.PSObject.Properties["last_failure_checks"]) {
+    @($previous.last_failure_checks | ForEach-Object { [string]$_ })
+} else { @() }
 
 if ($healthy) {
     if ($null -eq $startedAt) { $startedAt = $now }
@@ -49,6 +52,14 @@ if ($healthy) {
     $healthySamples = 0
     $failedSamples++
     $lastFailureAt = $now.ToString("o")
+    $lastFailureChecks = @(
+        if ($health.PSObject.Properties["checks"]) {
+            $health.checks |
+                Where-Object { [string]$_.status -ne "pass" } |
+                ForEach-Object { [string]$_.id }
+        }
+    )
+    if ($lastFailureChecks.Count -eq 0) { $lastFailureChecks = @("health_status") }
 }
 
 $durationDays = if ($null -ne $startedAt) { [math]::Max(0, ($now - $startedAt).TotalDays) } else { 0 }
@@ -78,6 +89,7 @@ $report = [ordered]@{
     started_at = $(if ($null -ne $startedAt) { $startedAt.ToString("o") } else { $null })
     last_sample_at = $now.ToString("o")
     last_failure_at = $lastFailureAt
+    last_failure_checks = $lastFailureChecks
     duration_days = [math]::Round($durationDays, 4)
     required_days = $RequiredDays
     healthy_samples = $healthySamples

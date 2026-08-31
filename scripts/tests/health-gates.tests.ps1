@@ -286,6 +286,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "A failed sample must be recorded without hiding the failure" }
     $resetSoak = Get-Content $soakState -Raw | ConvertFrom-Json
     if ($resetSoak.status -ne "collecting" -or $resetSoak.started_at) { throw "A failed health sample must reset consecutive soak time" }
+    if (@($resetSoak.last_failure_checks).Count -eq 0) { throw "A failed health sample must retain safe diagnostic check IDs" }
+    if (@($resetSoak.last_failure_checks | Where-Object { $_ -match '[\\/:]' }).Count) { throw "Soak diagnostics must contain check IDs only" }
 
     Write-Output "PASS: health, update, and go-live gates fail closed"
 } finally {

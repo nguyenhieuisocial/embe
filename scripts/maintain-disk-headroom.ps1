@@ -41,19 +41,31 @@ if ($before -lt $TargetFreePercent -and -not $SkipActions) {
     & wsl.exe -d docker-desktop -u root -- fstrim -av *> $null
     $filesystemTrimmed = $LASTEXITCODE -eq 0
 
-    if ((Get-FreePercent) -lt $MinimumFreePercent) {
+    if ((Get-FreePercent) -lt $TargetFreePercent) {
         $npmAvailable = $null -ne (Get-Command npm -ErrorAction SilentlyContinue)
         $npmCleared = $false
         if ($npmAvailable) {
-            & npm cache clean --force *> $null
-            $npmCleared = $LASTEXITCODE -eq 0
+            $previousErrorActionPreference = $ErrorActionPreference
+            try {
+                $ErrorActionPreference = "Continue"
+                & npm cache clean --force *> $null
+                $npmCleared = $LASTEXITCODE -eq 0
+            } finally {
+                $ErrorActionPreference = $previousErrorActionPreference
+            }
         }
 
         $python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
         $pipCleared = $false
         if (Test-Path -LiteralPath $python -PathType Leaf) {
-            & $python -m pip cache purge *> $null
-            $pipCleared = $LASTEXITCODE -eq 0
+            $previousErrorActionPreference = $ErrorActionPreference
+            try {
+                $ErrorActionPreference = "Continue"
+                & $python -m pip cache purge *> $null
+                $pipCleared = $LASTEXITCODE -eq 0
+            } finally {
+                $ErrorActionPreference = $previousErrorActionPreference
+            }
         }
         $packageCachesCleared = $npmCleared -or $pipCleared
     }
