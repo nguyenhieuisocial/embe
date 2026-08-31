@@ -35,9 +35,9 @@ class FamilyContentTests(unittest.TestCase):
         content_path = ROOT / "content" / "pregnancy-care.vi.json"
         content = load_content(content_path)
         markdown = render_markdown(content)
-        self.assertEqual(len(content["checklist"]), 7)
+        self.assertEqual(len(content["checklist"]), 13)
         self.assertEqual(len(content["weekly_menu"]), 7)
-        self.assertEqual(markdown.count("- [ ] **"), 7)
+        self.assertEqual(markdown.count("- [ ] **"), 13)
         self.assertIn("Ranh giới an toàn", markdown)
         self.assertIn("Viện Dinh dưỡng Quốc gia", markdown)
 

@@ -51,6 +51,7 @@ describe("machine-readable Portal API contract", () => {
       "/api/journal",
       "/api/media/{id}",
       "/api/pregnancy",
+      "/api/pregnancy/health",
       "/api/procurement"
     ]);
   });

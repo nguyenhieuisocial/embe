@@ -177,6 +177,74 @@
         }
       }
     },
+    "/api/pregnancy/health": {
+      "get": {
+        "operationId": "getPregnancyHealthHistory",
+        "summary": "Read a bounded private maternal health history",
+        "tags": ["Pregnancy"],
+        "parameters": [
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "enum": [7, 28, 90], "default": 28 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private maternal measurements and checklist completion",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PregnancyHealthHistory" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      },
+      "patch": {
+        "operationId": "savePregnancyHealth",
+        "summary": "Save one bounded private maternal health snapshot",
+        "tags": ["Pregnancy"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PregnancyHealthInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved maternal health snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["metric"],
+                  "properties": { "metric": { "$ref": "#/components/schemas/PregnancyHealthMetric" } },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/RequestTooLarge" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
     "/api/inventory": {
       "get": {
         "operationId": "getInventory",
@@ -535,6 +603,49 @@
           { "required": ["dueDate"] },
           { "required": ["completed"] }
         ],
+        "additionalProperties": false
+      },
+      "PregnancyHealthInput": {
+        "type": "object",
+        "required": ["day"],
+        "properties": {
+          "day": { "type": "string", "format": "date" },
+          "weightKg": { "type": "number", "minimum": 25, "maximum": 300, "nullable": true },
+          "systolic": { "type": "integer", "minimum": 60, "maximum": 250, "nullable": true },
+          "diastolic": { "type": "integer", "minimum": 30, "maximum": 160, "nullable": true },
+          "sleepMinutes": { "type": "integer", "minimum": 0, "maximum": 1440, "nullable": true },
+          "waterGlasses": { "type": "integer", "minimum": 0, "maximum": 30, "nullable": true },
+          "movementMinutes": { "type": "integer", "minimum": 0, "maximum": 600, "nullable": true },
+          "wellbeing": { "type": "integer", "minimum": 1, "maximum": 5, "nullable": true }
+        },
+        "additionalProperties": false
+      },
+      "PregnancyHealthMetric": {
+        "type": "object",
+        "required": ["day", "weightKg", "systolic", "diastolic", "sleepMinutes", "waterGlasses", "movementMinutes", "wellbeing", "checklistPercent"],
+        "properties": {
+          "day": { "type": "string", "format": "date" },
+          "weightKg": { "type": "number", "minimum": 25, "maximum": 300, "nullable": true },
+          "systolic": { "type": "integer", "minimum": 60, "maximum": 250, "nullable": true },
+          "diastolic": { "type": "integer", "minimum": 30, "maximum": 160, "nullable": true },
+          "sleepMinutes": { "type": "integer", "minimum": 0, "maximum": 1440, "nullable": true },
+          "waterGlasses": { "type": "integer", "minimum": 0, "maximum": 30, "nullable": true },
+          "movementMinutes": { "type": "integer", "minimum": 0, "maximum": 600, "nullable": true },
+          "wellbeing": { "type": "integer", "minimum": 1, "maximum": 5, "nullable": true },
+          "checklistPercent": { "type": "integer", "minimum": 0, "maximum": 100 }
+        },
+        "additionalProperties": false
+      },
+      "PregnancyHealthHistory": {
+        "type": "object",
+        "required": ["history"],
+        "properties": {
+          "history": {
+            "type": "array",
+            "maxItems": 90,
+            "items": { "$ref": "#/components/schemas/PregnancyHealthMetric" }
+          }
+        },
         "additionalProperties": false
       },
       "InventoryItem": {

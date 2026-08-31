@@ -1,6 +1,6 @@
 # Nguồn nội dung “Mẹ bầu hôm nay”
 
-**Ngày rà soát:** 2026-08-30
+**Ngày rà soát:** 2026-09-01
 **Phạm vi:** Checklist hằng ngày, thực đơn Việt Nam tham khảo, an toàn thực
 phẩm và lựa chọn phần mềm miễn phí/mã nguồn mở.
 
@@ -14,6 +14,10 @@ phẩm và lựa chọn phần mềm miễn phí/mã nguồn mở.
 - Ngày dự sinh và trạng thái checklist được lưu qua API riêng tư, chỉ server có
   quyền gọi Supabase. Trình duyệt vẫn giữ một bản cục bộ để dùng khi mất mạng và
   tự đồng bộ lại; GA4 không nhận các giá trị này.
+- Cân nặng, huyết áp, giấc ngủ, số cốc nước, thời gian vận động và cảm nhận hằng
+  ngày chỉ là số do gia đình nhập. Biểu đồ không tô vùng “bình thường”, không
+  cảnh báo tự động và không suy ra chẩn đoán. Huyết áp/cân nặng được mang tới
+  buổi khám để nhân viên y tế diễn giải theo hồ sơ thực tế.
 - Giữ Grocy làm nguồn sự thật cho recipe, meal plan, tồn kho và shopping list.
   Không cài thêm Mealie, Yuvomi/Oikos hay OpenFamily vì trùng vai trò.
 - Grocy đã có plugin tra barcode Open Food Facts. Dữ liệu Open Food Facts là dữ
@@ -37,6 +41,15 @@ phẩm và lựa chọn phần mềm miễn phí/mã nguồn mở.
   NHS: vận động nhẹ, tăng dần nếu trước đó ít vận động và lắng nghe cơ thể.
 - [VNeNUTRITION](https://viendinhduong.vn/landing-page), Viện Dinh dưỡng Quốc
   gia — Bộ Y tế: nguồn Việt Nam ưu tiên để tham khảo thực phẩm và thực đơn.
+- [Preeclampsia and High Blood Pressure During Pregnancy](https://www.acog.org/womens-health/faqs/preeclampsia-and-high-blood-pressure-during-pregnancy),
+  ACOG: huyết áp được kiểm tra ở mỗi lần chăm sóc trước sinh; một số đo đơn lẻ
+  không được Portal dùng để tự chẩn đoán.
+- [Weight Gain During Pregnancy](https://www.cdc.gov/maternal-infant-health/pregnancy-weight/index.html),
+  CDC, cập nhật 15-05-2024: mục tiêu tăng cân phụ thuộc BMI trước thai kỳ và số
+  thai, nên EmBe chỉ vẽ xu hướng cân nặng, không tự đặt vùng mục tiêu.
+- [Water, drinks and hydration](https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/water-drinks-nutrition/),
+  NHS: uống đều trong ngày; nhu cầu thay đổi khi mang thai, vận động, thời tiết
+  và tình trạng sức khỏe, nên Portal không đặt mục tiêu cốc cố định.
 
 ## Công cụ và dữ liệu đã đánh giá
 

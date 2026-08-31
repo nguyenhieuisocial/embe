@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(52);
+SELECT plan(60);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -244,6 +244,45 @@ SELECT is(
   '["notes", "water-rest"]'::jsonb,
   'An atomic checklist save returns the normalized private state'
 );
+
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.pregnancy_health', 'SELECT'),
+  'Anonymous clients cannot read maternal health entries'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.pregnancy_health', 'INSERT'),
+  'Authenticated clients cannot write maternal health entries directly'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_get_pregnancy_health_history(date,integer)', 'EXECUTE'),
+  'Anonymous clients cannot read maternal health history'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_save_pregnancy_health(date,numeric,integer,integer,integer,integer,integer,integer)', 'EXECUTE'),
+  'Anonymous clients cannot write maternal health history'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_get_pregnancy_health_history(date,integer)', 'EXECUTE'),
+  'The portal server can read maternal health history'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_save_pregnancy_health(date,numeric,integer,integer,integer,integer,integer,integer)', 'EXECUTE'),
+  'The portal server can save a bounded maternal health snapshot'
+);
+SET ROLE service_role;
+SELECT is(
+  public.embe_save_pregnancy_health(
+    DATE '2099-12-29', 55.5, 110, 70, 420, 7, 25, 4
+  ) -> 'weight_kg',
+  '55.5'::jsonb,
+  'The portal server can round-trip a bounded maternal snapshot'
+);
+SELECT is(
+  public.embe_get_pregnancy_health_history(DATE '2099-12-29', 7) -> -1 ->> 'day',
+  '2099-12-29',
+  'The private history returns the requested end day'
+);
+SET ROLE postgres;
 
 SELECT ok(
   NOT has_table_privilege('anon', 'portal_read_model.procurement_proposal', 'SELECT'),

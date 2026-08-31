@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
+import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
 import {
   dailyChecklist,
   pregnancySources,
@@ -15,6 +16,7 @@ import { calculatePregnancyWeek, localDateKey } from "../../lib/pregnancy";
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
 const DUE_DATE_DIRTY_KEY = `${DUE_DATE_KEY}:dirty`;
+const checklistGroups = ["Ăn uống", "Chăm cơ thể"] as const;
 
 type PregnancyState = {
   dueDate: string | null;
@@ -260,26 +262,33 @@ export default function PregnancyPage() {
         </div>
 
         <div className="checklist">
-          {dailyChecklist.map((task) => {
-            const isDone = completed.includes(task.id);
-            return (
-              <label className={`check-item${isDone ? " is-done" : ""}`} key={task.id}>
-                <input
-                  type="checkbox"
-                  checked={isDone}
-                  disabled={!ready}
-                  onChange={() => toggleTask(task.id)}
-                />
-                <span className="custom-check" aria-hidden="true">✓</span>
-                <span>
-                  <strong>{task.title}</strong>
-                  <small>{task.detail}</small>
-                </span>
-              </label>
-            );
-          })}
+          {checklistGroups.map((group) => (
+            <div className="checklist-group" key={group}>
+              <h3>{group}</h3>
+              {dailyChecklist.filter((task) => task.group === group).map((task) => {
+                const isDone = completed.includes(task.id);
+                return (
+                  <label className={`check-item${isDone ? " is-done" : ""}`} key={task.id}>
+                    <input
+                      type="checkbox"
+                      checked={isDone}
+                      disabled={!ready}
+                      onChange={() => toggleTask(task.id)}
+                    />
+                    <span className="custom-check" aria-hidden="true">✓</span>
+                    <span className="check-text">
+                      <strong>{task.title}</strong>
+                      <small>{task.detail}</small>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </section>
+
+      <PregnancyHealthTracker />
 
       <section className="menu-section" aria-labelledby="menu-title">
         <div className="section-heading-row">

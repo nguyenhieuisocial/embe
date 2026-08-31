@@ -1,16 +1,22 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-08-30",
+  "reviewed_at": "2026-09-01",
   "title": "Mẹ bầu hôm nay",
   "safety": "Nội dung chỉ để nhắc việc và gợi ý bữa ăn, không thay thế tư vấn, chẩn đoán hoặc điều trị. Khi có dấu hiệu bất thường hoặc cảm thấy không ổn, liên hệ cơ sở sản khoa.",
   "menu_note": "Điều chỉnh theo thể trạng, dị ứng, khẩu vị và hướng dẫn của bác sĩ. Thịt, cá, trứng và hải sản cần được nấu chín kỹ.",
   "checklist": [
     {"id": "supplements", "title": "Thuốc và vi chất theo đúng đơn", "detail": "Chỉ dùng loại và liều đã được bác sĩ hoặc nữ hộ sinh xác nhận."},
+    {"id": "breakfast", "title": "Đã ăn sáng", "detail": "Đánh dấu sau khi ăn; không cần ghi calo hoặc cân từng món."},
+    {"id": "lunch", "title": "Đã ăn trưa", "detail": "Ưu tiên món chín kỹ và phù hợp với khẩu vị, thể trạng hiện tại."},
+    {"id": "dinner", "title": "Đã ăn tối", "detail": "Ăn lượng vừa sức; không dùng checklist để ép ăn khi đang khó chịu."},
     {"id": "varied-meals", "title": "Ăn đa dạng trong ngày", "detail": "Phối hợp rau, quả, ngũ cốc, đạm và sữa tiệt trùng nếu phù hợp."},
+    {"id": "fruit-veg", "title": "Có rau hoặc quả trong ngày", "detail": "Rửa sạch và chọn loại phù hợp; ưu tiên thay đổi màu sắc, chủng loại."},
+    {"id": "protein", "title": "Có nguồn đạm trong ngày", "detail": "Ví dụ thịt, cá, trứng chín kỹ, đậu hoặc hạt phù hợp."},
     {"id": "food-safety", "title": "Kiểm tra an toàn thực phẩm", "detail": "Rửa sạch, tách sống - chín, nấu chín kỹ và giữ lạnh đúng cách."},
+    {"id": "water-rest", "title": "Uống nước đều trong ngày", "detail": "Chia đều theo cảm giác khát và hướng dẫn riêng nếu có."},
     {"id": "no-alcohol", "title": "Không rượu bia, thuốc lá", "detail": "Tránh cả khói thuốc thụ động và các chất kích thích không được chỉ định."},
     {"id": "movement", "title": "Vận động nhẹ nếu cơ thể cho phép", "detail": "Đi bộ hoặc bài tập đã được nhân viên y tế đồng ý; dừng khi khó chịu."},
-    {"id": "water-rest", "title": "Uống nước và nghỉ ngơi", "detail": "Chia đều trong ngày, lắng nghe cảm giác khát và mệt của cơ thể."},
+    {"id": "rest", "title": "Có khoảng nghỉ cho cơ thể", "detail": "Nghỉ khi mệt và ưu tiên nhịp sinh hoạt mà cơ thể chịu được."},
     {"id": "notes", "title": "Ghi lại điều muốn hỏi khi khám", "detail": "Triệu chứng, thuốc đang dùng, giấc ngủ, tâm trạng hoặc thay đổi đáng chú ý."}
   ],
   "weekly_menu": [
@@ -27,6 +33,8 @@
     {"label": "CDC - an toàn thực phẩm khi mang thai", "url": "https://www.cdc.gov/food-safety/foods/pregnant-women.html"},
     {"label": "CDC - rượu bia và thai kỳ", "url": "https://www.cdc.gov/alcohol-pregnancy/about/index.html"},
     {"label": "NHS - vận động trong thai kỳ", "url": "https://www.nhs.uk/best-start-in-life/pregnancy/exercising-in-pregnancy/"},
-    {"label": "Viện Dinh dưỡng Quốc gia - VNeNUTRITION", "url": "https://viendinhduong.vn/landing-page"}
+    {"label": "Viện Dinh dưỡng Quốc gia - VNeNUTRITION", "url": "https://viendinhduong.vn/landing-page"},
+    {"label": "ACOG - huyết áp trong thai kỳ", "url": "https://www.acog.org/womens-health/faqs/preeclampsia-and-high-blood-pressure-during-pregnancy"},
+    {"label": "CDC - theo dõi cân nặng trong thai kỳ", "url": "https://www.cdc.gov/maternal-infant-health/pregnancy-weight/index.html"}
   ]
 }

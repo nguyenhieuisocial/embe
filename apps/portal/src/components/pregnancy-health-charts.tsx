@@ -1,0 +1,172 @@
+"use client";
+
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
+
+export type PregnancyHealthMetric = {
+  day: string;
+  weightKg: number | null;
+  systolic: number | null;
+  diastolic: number | null;
+  sleepMinutes: number | null;
+  waterGlasses: number | null;
+  movementMinutes: number | null;
+  wellbeing: number | null;
+  checklistPercent: number;
+};
+
+type ChartKey = keyof Omit<PregnancyHealthMetric, "day">;
+
+function shortDay(day: string): string {
+  return `${day.slice(8, 10)}/${day.slice(5, 7)}`;
+}
+
+function latestValue(history: PregnancyHealthMetric[], key: ChartKey): number | null {
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const value = history[index][key];
+    if (typeof value === "number") return value;
+  }
+  return null;
+}
+
+function ChartCard({
+  title,
+  summary,
+  children
+}: {
+  title: string;
+  summary: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <figure className="health-chart-card">
+      <figcaption>
+        <strong>{title}</strong>
+        <span>{summary}</span>
+      </figcaption>
+      <div className="health-chart-canvas">{children}</div>
+    </figure>
+  );
+}
+
+const axis = { fill: "#6d746f", fontSize: 11 };
+const tooltipStyle = {
+  background: "#fff",
+  border: "1px solid #dfe6e1",
+  borderRadius: 12,
+  fontSize: 12
+};
+
+export default function PregnancyHealthCharts({ history }: { history: PregnancyHealthMetric[] }) {
+  const data = history.map((item) => ({
+    ...item,
+    label: shortDay(item.day),
+    sleepHours: item.sleepMinutes === null ? null : Number((item.sleepMinutes / 60).toFixed(1))
+  }));
+  const weight = latestValue(history, "weightKg");
+  const systolic = latestValue(history, "systolic");
+  const diastolic = latestValue(history, "diastolic");
+  const sleepMinutes = latestValue(history, "sleepMinutes");
+  const water = latestValue(history, "waterGlasses");
+  const movement = latestValue(history, "movementMinutes");
+  const wellbeing = latestValue(history, "wellbeing");
+  const checklist = latestValue(history, "checklistPercent");
+
+  return (
+    <div className="health-chart-scroll" aria-label="Các biểu đồ sức khỏe 28 ngày">
+      <ChartCard title="Cân nặng" summary={weight === null ? "Chưa ghi" : `${weight} kg`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} domain={["dataMin - 1", "dataMax + 1"]} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value} kg`, "Cân nặng"]} />
+            <Line type="monotone" dataKey="weightKg" stroke="#17624a" strokeWidth={3} dot={{ r: 3 }} connectNulls />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Huyết áp" summary={systolic === null || diastolic === null ? "Chưa ghi" : `${systolic}/${diastolic} mmHg`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Line name="Tâm thu" type="monotone" dataKey="systolic" stroke="#17624a" strokeWidth={3} dot={false} connectNulls />
+            <Line name="Tâm trương" type="monotone" dataKey="diastolic" stroke="#d96c50" strokeWidth={3} dot={false} connectNulls />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Giấc ngủ" summary={sleepMinutes === null ? "Chưa ghi" : `${(sleepMinutes / 60).toFixed(1)} giờ`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value} giờ`, "Giấc ngủ"]} />
+            <Bar dataKey="sleepHours" fill="#7f9f94" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Nước uống" summary={water === null ? "Chưa ghi" : `${water} cốc`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} allowDecimals={false} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value} cốc`, "Nước"]} />
+            <Bar dataKey="waterGlasses" fill="#6b9fc7" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Vận động" summary={movement === null ? "Chưa ghi" : `${movement} phút`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value} phút`, "Vận động"]} />
+            <Bar dataKey="movementMinutes" fill="#d19b52" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Cảm nhận" summary={wellbeing === null ? "Chưa ghi" : `${wellbeing}/5`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}/5`, "Cảm nhận"]} />
+            <Line type="monotone" dataKey="wellbeing" stroke="#986aa6" strokeWidth={3} dot={{ r: 3 }} connectNulls />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Checklist hằng ngày" summary={checklist === null ? "Chưa ghi" : `${checklist}%`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} domain={[0, 100]} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}%`, "Checklist"]} />
+            <Bar dataKey="checklistPercent" fill="#17624a" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}

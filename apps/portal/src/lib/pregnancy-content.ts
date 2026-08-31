@@ -1,36 +1,79 @@
 export const dailyChecklist = [
   {
     id: "supplements",
+    group: "Ăn uống",
     title: "Thuốc và vi chất theo đúng đơn",
     detail: "Chỉ dùng loại và liều đã được bác sĩ hoặc nữ hộ sinh xác nhận."
   },
   {
+    id: "breakfast",
+    group: "Ăn uống",
+    title: "Đã ăn sáng",
+    detail: "Đánh dấu sau khi ăn; không cần ghi calo hoặc cân từng món."
+  },
+  {
+    id: "lunch",
+    group: "Ăn uống",
+    title: "Đã ăn trưa",
+    detail: "Ưu tiên món chín kỹ và phù hợp với khẩu vị, thể trạng hiện tại."
+  },
+  {
+    id: "dinner",
+    group: "Ăn uống",
+    title: "Đã ăn tối",
+    detail: "Ăn lượng vừa sức; không dùng checklist để ép ăn khi đang khó chịu."
+  },
+  {
     id: "varied-meals",
+    group: "Ăn uống",
     title: "Ăn đa dạng trong ngày",
     detail: "Phối hợp rau, quả, ngũ cốc, đạm và sữa tiệt trùng nếu phù hợp."
   },
   {
+    id: "fruit-veg",
+    group: "Ăn uống",
+    title: "Có rau hoặc quả trong ngày",
+    detail: "Rửa sạch và chọn loại phù hợp; ưu tiên thay đổi màu sắc, chủng loại."
+  },
+  {
+    id: "protein",
+    group: "Ăn uống",
+    title: "Có nguồn đạm trong ngày",
+    detail: "Ví dụ thịt, cá, trứng chín kỹ, đậu hoặc hạt phù hợp."
+  },
+  {
     id: "food-safety",
+    group: "Ăn uống",
     title: "Kiểm tra an toàn thực phẩm",
     detail: "Rửa sạch, tách sống–chín, nấu chín kỹ và giữ lạnh đúng cách."
   },
   {
+    id: "water-rest",
+    group: "Chăm cơ thể",
+    title: "Uống nước đều trong ngày",
+    detail: "Chia đều theo cảm giác khát và hướng dẫn riêng nếu có."
+  },
+  {
     id: "no-alcohol",
+    group: "Chăm cơ thể",
     title: "Không rượu bia, thuốc lá",
     detail: "Tránh cả khói thuốc thụ động và các chất kích thích không được chỉ định."
   },
   {
     id: "movement",
+    group: "Chăm cơ thể",
     title: "Vận động nhẹ nếu cơ thể cho phép",
     detail: "Đi bộ hoặc bài tập đã được nhân viên y tế đồng ý; dừng khi khó chịu."
   },
   {
-    id: "water-rest",
-    title: "Uống nước và nghỉ ngơi",
-    detail: "Chia đều trong ngày, lắng nghe cảm giác khát và mệt của cơ thể."
+    id: "rest",
+    group: "Chăm cơ thể",
+    title: "Có khoảng nghỉ cho cơ thể",
+    detail: "Nghỉ khi mệt và ưu tiên nhịp sinh hoạt mà cơ thể chịu được."
   },
   {
     id: "notes",
+    group: "Chăm cơ thể",
     title: "Ghi lại điều muốn hỏi khi khám",
     detail: "Triệu chứng, thuốc đang dùng, giấc ngủ, tâm trạng hoặc thay đổi đáng chú ý."
   }
@@ -105,6 +148,14 @@ export const pregnancySources = [
   {
     label: "ACOG — dấu hiệu cảnh báo khẩn cấp trong thai kỳ",
     href: "https://www.acog.org/giving/programs/quality-and-safety/resources"
+  },
+  {
+    label: "ACOG — huyết áp trong thai kỳ",
+    href: "https://www.acog.org/womens-health/faqs/preeclampsia-and-high-blood-pressure-during-pregnancy"
+  },
+  {
+    label: "CDC — theo dõi cân nặng trong thai kỳ",
+    href: "https://www.cdc.gov/maternal-infant-health/pregnancy-weight/index.html"
   }
 ] as const;
 

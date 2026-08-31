@@ -23,7 +23,14 @@ describe("pregnancy week calculation", () => {
 describe("pregnancy daily page", () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes("/api/pregnancy/health")) {
+        if (init?.method === "PATCH") {
+          const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+          return Response.json({ metric: { ...body, checklistPercent: 0 } });
+        }
+        return Response.json({ history: [] });
+      }
       if (init?.method === "PATCH") {
         const body = JSON.parse(String(init.body)) as Record<string, unknown>;
         return Response.json({
@@ -48,13 +55,59 @@ describe("pregnancy daily page", () => {
     render(<PregnancyPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Mẹ bầu hôm nay" })).toBeInTheDocument();
-    expect(screen.getAllByRole("checkbox").length).toBeGreaterThanOrEqual(6);
+    expect(screen.getByText("Đã ăn sáng")).toBeInTheDocument();
+    expect(screen.getByText("Đã ăn trưa")).toBeInTheDocument();
+    expect(screen.getByText("Đã ăn tối")).toBeInTheDocument();
+    expect(screen.getByText("Có rau hoặc quả trong ngày")).toBeInTheDocument();
+    expect(screen.getByText("Có nguồn đạm trong ngày")).toBeInTheDocument();
+    expect(screen.getByText("Uống nước đều trong ngày")).toBeInTheDocument();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(13);
+    expect(screen.getByRole("heading", { level: 3, name: "Ăn uống" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Điều nên ưu tiên theo giai đoạn" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nhật ký sức khỏe" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Biểu đồ 28 ngày" })).toBeInTheDocument();
+    expect(screen.getByText("Chưa có số liệu sức khỏe")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Khi nào cần liên hệ ngay" })).toBeInTheDocument();
     expect(screen.getByText(/không thay thế tư vấn/iu)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /WHO/ })).toHaveAttribute("href", expect.stringContaining("who.int"));
-    expect(screen.getByRole("link", { name: /ACOG/ })).toHaveAttribute("href", expect.stringContaining("acog.org"));
+    expect(screen.getAllByRole("link", { name: /ACOG/ })[0]).toHaveAttribute("href", expect.stringContaining("acog.org"));
+  });
+
+  it("saves one bounded daily health snapshot from simple mobile fields", async () => {
+    render(<PregnancyPage />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    fireEvent.change(screen.getByLabelText("Cân nặng (kg)"), { target: { value: "56.4" } });
+    fireEvent.change(screen.getByLabelText("Huyết áp tâm thu"), { target: { value: "112" } });
+    fireEvent.change(screen.getByLabelText("Huyết áp tâm trương"), { target: { value: "72" } });
+    fireEvent.change(screen.getByLabelText("Giấc ngủ (giờ)"), { target: { value: "7.5" } });
+    fireEvent.change(screen.getByLabelText("Số cốc nước"), { target: { value: "7" } });
+    fireEvent.change(screen.getByLabelText("Vận động (phút)"), { target: { value: "25" } });
+    fireEvent.click(screen.getByRole("button", { name: "Khá ổn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu sức khỏe hôm nay" }));
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(fetch).toHaveBeenCalledWith("/api/pregnancy/health", expect.objectContaining({
+      method: "PATCH",
+      body: JSON.stringify({
+        day: "2026-08-30",
+        weightKg: 56.4,
+        systolic: 112,
+        diastolic: 72,
+        sleepMinutes: 450,
+        waterGlasses: 7,
+        movementMinutes: 25,
+        wellbeing: 4
+      })
+    }));
   });
 
   it("keeps today's completion state on the device", () => {
@@ -78,12 +131,14 @@ describe("pregnancy daily page", () => {
   });
 
   it("hydrates private state saved by another signed-in device", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(Response.json({
-      dueDate: "2026-10-08",
-      completed: ["supplements"],
-      hasProfile: true,
-      hasDayState: true
-    }));
+    vi.mocked(fetch).mockImplementation(async (input) => String(input).includes("/api/pregnancy/health")
+      ? Response.json({ history: [] })
+      : Response.json({
+          dueDate: "2026-10-08",
+          completed: ["supplements"],
+          hasProfile: true,
+          hasDayState: true
+        }));
 
     render(<PregnancyPage />);
     await act(async () => {
