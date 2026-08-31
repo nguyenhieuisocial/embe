@@ -337,6 +337,15 @@ try {
     if ($collecting.status -ne "collecting" -or $collecting.duration_days -ne 0) { throw "Soak must start in collecting state" }
     if ($collecting.last_failure_checks -isnot [Array]) { throw "Soak diagnostics must use a stable array shape" }
 
+    $deploymentResetState = Join-Path $testRoot "soak-deployment-reset.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $deploymentResetState -NowUtc "2026-08-30T12:00:00Z"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $deploymentResetState -NowUtc "2026-08-31T12:00:00Z" -ResetReason deployment_change
+    if ($LASTEXITCODE -ne 0) { throw "A production deployment must restart soak without fabricating a health failure" }
+    $deploymentReset = Get-Content $deploymentResetState -Raw | ConvertFrom-Json
+    if ($deploymentReset.started_at -ne "2026-08-31T12:00:00.0000000+00:00") { throw "Deployment reset did not restart consecutive soak time" }
+    if ($deploymentReset.last_reset_reason -ne "deployment_change" -or -not $deploymentReset.last_reset_at) { throw "Deployment reset evidence is incomplete" }
+    if ($deploymentReset.failed_samples -ne 0 -or $deploymentReset.healthy_samples -ne 1) { throw "Deployment reset must not be recorded as a health failure" }
+
     $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:00:00Z"
     if ($LASTEXITCODE -ne 0) { throw "Seven healthy days must produce soak evidence" }
     $completedSoak = Get-Content $soakState -Raw | ConvertFrom-Json

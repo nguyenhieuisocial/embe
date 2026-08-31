@@ -5,7 +5,9 @@ param(
     [string]$DrillEvidence = "",
     [string]$OutputPath = "",
     [string]$NowUtc = "",
-    [double]$RequiredDays = 7
+    [double]$RequiredDays = 7,
+    [ValidateSet("", "deployment_change", "configuration_change", "manual_reset")]
+    [string]$ResetReason = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,9 +42,18 @@ $failedSamples = if ($previous -and $previous.failed_samples) { [int]$previous.f
 $healthySamples = if ($previous -and $previous.healthy_samples) { [int]$previous.healthy_samples } else { 0 }
 $startedAt = if ($previous -and $previous.started_at) { Convert-ToDateTimeOffset $previous.started_at } else { $null }
 $lastFailureAt = if ($previous -and $previous.last_failure_at) { [string]$previous.last_failure_at } else { $null }
+$lastResetAt = if ($previous -and $previous.PSObject.Properties["last_reset_at"]) { [string]$previous.last_reset_at } else { $null }
+$lastResetReason = if ($previous -and $previous.PSObject.Properties["last_reset_reason"]) { [string]$previous.last_reset_reason } else { $null }
 $lastFailureChecks = @()
 if ($previous -and $previous.PSObject.Properties["last_failure_checks"]) {
     $lastFailureChecks = @($previous.last_failure_checks | ForEach-Object { [string]$_ })
+}
+
+if ($ResetReason) {
+    $startedAt = $null
+    $healthySamples = 0
+    $lastResetAt = $now.ToString("o")
+    $lastResetReason = $ResetReason
 }
 
 if ($healthy) {
@@ -91,6 +102,8 @@ $report = [ordered]@{
     last_sample_at = $now.ToString("o")
     last_failure_at = $lastFailureAt
     last_failure_checks = @($lastFailureChecks)
+    last_reset_at = $lastResetAt
+    last_reset_reason = $lastResetReason
     duration_days = [math]::Round($durationDays, 4)
     required_days = $RequiredDays
     healthy_samples = $healthySamples
