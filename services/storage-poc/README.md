@@ -39,3 +39,8 @@ filename from the recovery manifest, and then verifies the Telegram session and
 every shard even when the album is empty. A standard account is capped below
 2 GB per original; oversized media fails closed instead of being split to evade
 Telegram limits.
+
+`scripts/telegram_live_smoke.py` is the bounded live acceptance check. It sends
+random bytes through the encrypted provider, verifies a full read, verifies a
+range read, deletes the Telegram message, and retains only aggregate timing and
+boolean evidence. It never uses family media or stores a provider locator.
