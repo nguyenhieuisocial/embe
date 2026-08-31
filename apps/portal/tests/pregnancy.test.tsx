@@ -55,6 +55,10 @@ describe("pregnancy daily page", () => {
     render(<PregnancyPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Mẹ bầu hôm nay" })).toBeInTheDocument();
+    expect(screen.getByText("GIAI ĐOẠN HIỆN TẠI")).toBeInTheDocument();
+    expect(screen.getByText("Mới mang thai")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Việc hôm nay" })).toHaveAttribute("href", "#viec-hom-nay");
     expect(screen.getByText("Đã ăn sáng")).toBeInTheDocument();
     expect(screen.getByText("Đã ăn trưa")).toBeInTheDocument();
     expect(screen.getByText("Đã ăn tối")).toBeInTheDocument();
@@ -136,6 +140,7 @@ describe("pregnancy daily page", () => {
     });
 
     expect(screen.getByText("Tuần 34")).toBeInTheDocument();
+    expect(screen.getByText("Ba tháng cuối", { selector: ".stage-name" })).toBeInTheDocument();
     expect(localStorage.getItem("embe:pregnancy:due-date")).toBe("2026-10-08");
   });
 

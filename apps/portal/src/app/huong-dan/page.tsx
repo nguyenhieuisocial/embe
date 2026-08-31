@@ -98,6 +98,16 @@ export default function GuidePage() {
         </div>
       </section>
 
+      <section className="current-stage-guide" aria-labelledby="current-stage-title">
+        <p className="panel-kicker">GIAI ĐOẠN HIỆN TẠI · ĐANG MANG THAI</p>
+        <h2 id="current-stage-title">Lúc này chỉ cần ba việc</h2>
+        <ol>
+          <li><strong>Chăm Mẹ Ngân</strong><span>Tích việc hôm nay và ghi sức khỏe khi cần.</span></li>
+          <li><strong>Giữ lịch</strong><span>Lưu ngày khám và mở lại kỷ niệm theo đúng ngày.</span></li>
+          <li><strong>Lưu điều đáng nhớ</strong><span>Một câu hoặc một tấm ảnh là đủ.</span></li>
+        </ol>
+      </section>
+
       <section className="iphone-setup" aria-labelledby="iphone-title">
         <div className="iphone-heading">
           <p className="panel-kicker">ẢNH TỰ VỀ MÁY NHÀ</p>
@@ -140,8 +150,9 @@ export default function GuidePage() {
 
       <section className="no-touch" aria-labelledby="no-touch-title">
         <div>
-          <p className="panel-kicker">CỨ ĐỂ HỆ THỐNG LO</p>
+          <p className="panel-kicker">SAU KHI EM BÉ CHÀO ĐỜI</p>
           <h2 id="no-touch-title">Bạn không phải mở sáu công cụ riêng</h2>
+          <p className="stage-later-label">Sau khi em bé chào đời</p>
           <p>
             Các phần kỹ thuật chỉ dành cho lúc bảo trì. Trên điện thoại, mọi thứ
             được gọi bằng những việc quen thuộc dưới đây.

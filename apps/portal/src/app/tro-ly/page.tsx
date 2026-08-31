@@ -9,9 +9,15 @@ type Topic = "ngu" | "bu" | "moi-truong";
 type State = "ready" | "waiting" | "done" | "error";
 
 const topics: Array<{ id: Topic; icon: IconName; title: string; detail: string }> = [
-  { id: "ngu", icon: "sleep", title: "Giấc ngủ", detail: "Nhịp ngủ và thời lượng" },
-  { id: "bu", icon: "milk", title: "Bú sữa", detail: "Số lần và lượng sữa" },
-  { id: "moi-truong", icon: "room", title: "Môi trường", detail: "Nhiệt độ, độ ẩm và giấc ngủ" }
+  { id: "ngu", icon: "sleep", title: "Giấc ngủ của em bé", detail: "Nhịp ngủ và thời lượng" },
+  { id: "bu", icon: "milk", title: "Bú sữa của em bé", detail: "Số lần và lượng sữa" },
+  { id: "moi-truong", icon: "room", title: "Phòng ngủ của em bé", detail: "Nhiệt độ, độ ẩm và giấc ngủ" }
+];
+
+const pregnancyHelp = [
+  { href: "/me-bau#viec-hom-nay", icon: "check" as const, title: "Việc nên làm hôm nay", detail: "Checklist ngắn, không tạo áp lực" },
+  { href: "/me-bau#cam-nang", icon: "care" as const, title: "Ăn gì, kiêng gì", detail: "Chỉ dẫn đã đối chiếu nguồn y tế" },
+  { href: "/me-bau#can-lien-he", icon: "alert" as const, title: "Dấu hiệu cần liên hệ", detail: "Biết khi nào không nên chờ" }
 ];
 
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -53,22 +59,33 @@ export default function AssistantPage() {
     <main className="assistant-main">
       <AppHeader note="Trợ lý riêng của gia đình" />
       <section className="assistant-hero">
-        <p className="eyebrow">TRỢ LÝ RIÊNG CỦA GIA ĐÌNH</p>
-        <h1>EmBe hiểu<br /><em>số liệu của nhà mình</em></h1>
-        <p className="intro">Chọn điều muốn xem. EmBe chỉ đọc số liệu tổng hợp và không thay thế tư vấn của bác sĩ.</p>
+        <p className="eyebrow">ĐỒNG HÀNH ĐÚNG GIAI ĐOẠN</p>
+        <h1>Mẹ Ngân cần gì lúc này?</h1>
+        <p className="intro">Hiện tại EmBe ưu tiên thai kỳ. Chọn một việc cần xem ngay; nội dung không thay thế tư vấn của bác sĩ.</p>
       </section>
-      <div className="assistant-period" role="group" aria-label="Khoảng thời gian">
-        {[7, 14, 30].map((value) => (
-          <button key={value} type="button" aria-pressed={days === value} onClick={() => setDays(value)}>{value} ngày</button>
-        ))}
-      </div>
-      <section className="assistant-topics" aria-label="Chọn nội dung cần phân tích">
-        {topics.map((topic) => (
-          <button key={topic.id} type="button" disabled={state === "waiting"} onClick={() => void ask(topic.id)} aria-label={`Hỏi về ${topic.title}`}>
-            <span className="shortcut-mark" aria-hidden="true"><Icon name={topic.icon} /></span><span><strong>{topic.title}</strong><small>{topic.detail}</small></span><Icon name="arrow" className="icon icon-chevron" />
-          </button>
+      <section className="assistant-topics pregnancy-help" aria-label="Hỗ trợ thai kỳ">
+        {pregnancyHelp.map((item) => (
+          <a key={item.href} href={item.href} aria-label={item.title}>
+            <span className="shortcut-mark" aria-hidden="true"><Icon name={item.icon} /></span><span><strong>{item.title}</strong><small>{item.detail}</small></span><Icon name="arrow" className="icon icon-chevron" />
+          </a>
         ))}
       </section>
+      <details className="future-assistant">
+        <summary><span><small>ĐỂ DÀNH CHO GIAI ĐOẠN SAU</small><strong>Sau khi em bé chào đời</strong></span><span aria-hidden="true">⌄</span></summary>
+        <p>Phần này phân tích số liệu bú, ngủ và môi trường khi gia đình bắt đầu ghi nhận sau sinh.</p>
+        <div className="assistant-period" role="group" aria-label="Khoảng thời gian">
+          {[7, 14, 30].map((value) => (
+            <button key={value} type="button" aria-pressed={days === value} onClick={() => setDays(value)}>{value} ngày</button>
+          ))}
+        </div>
+        <section className="assistant-topics" aria-label="Chọn nội dung sau sinh cần phân tích">
+          {topics.map((topic) => (
+            <button key={topic.id} type="button" disabled={state === "waiting"} onClick={() => void ask(topic.id)} aria-label={`Hỏi về ${topic.title}`}>
+              <span className="shortcut-mark" aria-hidden="true"><Icon name={topic.icon} /></span><span><strong>{topic.title}</strong><small>{topic.detail}</small></span><Icon name="arrow" className="icon icon-chevron" />
+            </button>
+          ))}
+        </section>
+      </details>
       {state === "waiting" ? <section className="assistant-answer is-waiting" role="status"><span /><span /><p>Máy nhà đang xem lại số liệu…</p></section> : null}
       {state === "done" ? <section className="assistant-answer" aria-live="polite"><small>KẾT QUẢ TỪ MÁY NHÀ</small><p>{answer}</p></section> : null}
       {state === "error" ? <p className="assistant-error" role="alert">Máy nhà chưa trả lời được lúc này. Dữ liệu vẫn an toàn; hãy chạm thử lại sau.</p> : null}

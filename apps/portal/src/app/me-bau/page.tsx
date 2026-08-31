@@ -20,6 +20,13 @@ const DUE_DATE_KEY = "embe:pregnancy:due-date";
 const DUE_DATE_DIRTY_KEY = `${DUE_DATE_KEY}:dirty`;
 const checklistGroups = ["Ăn uống", "Chăm cơ thể"] as const;
 
+function pregnancyStage(week: number | null): string {
+  if (week === null) return "Mới mang thai";
+  if (week <= 13) return "Ba tháng đầu";
+  if (week <= 27) return "Ba tháng giữa";
+  return "Ba tháng cuối";
+}
+
 type PregnancyState = {
   dueDate: string | null;
   completed: string[];
@@ -122,6 +129,8 @@ export default function PregnancyPage() {
   }, []);
 
   const week = useMemo(() => calculatePregnancyWeek(dueDate), [dueDate]);
+  const stage = pregnancyStage(week);
+  const trimesterIndex = week !== null && week >= 28 ? 2 : week !== null && week >= 14 ? 1 : 0;
   const progress = Math.round((completed.length / dailyChecklist.length) * 100);
 
   function queueSave(
@@ -208,16 +217,12 @@ export default function PregnancyPage() {
             Chỉ những điều cần nhớ hôm nay — nhẹ nhàng, rõ ràng và không tạo áp lực.
           </p>
         </div>
-        <Image
-          className="pregnancy-care-art"
-          src="/illustrations/pregnancy-care.webp"
-          alt="Minh họa nước uống, bữa ăn chín, vận động nhẹ, nghỉ ngơi và ghi câu hỏi"
-          width={900}
-          height={675}
-          sizes="(max-width: 720px) 100vw, 340px"
-          priority
-        />
         <div className="week-card">
+          <p className="panel-kicker">GIAI ĐOẠN HIỆN TẠI</p>
+          <div className="stage-line">
+            <p className="week-number" aria-live="polite">{week ? `Tuần ${week}` : "Chưa có tuần thai"}</p>
+            <span className="stage-name">{stage}</span>
+          </div>
           <label htmlFor="due-date">Ngày dự sinh do bác sĩ xác nhận</label>
           <input
             id="due-date"
@@ -226,11 +231,23 @@ export default function PregnancyPage() {
             disabled={!ready}
             onChange={(event) => updateDueDate(event.target.value)}
           />
-          <p className="week-number" aria-live="polite">
-            {week ? `Tuần ${week}` : "Chưa chọn tuần thai"}
-          </p>
-          <p>Dữ liệu được giữ riêng tư và đồng bộ giữa các thiết bị đã đăng nhập.</p>
+          <p>Nhập khi đã có ngày bác sĩ xác nhận để EmBe hiển thị đúng tuần. Nếu chưa có, cứ để trống.</p>
         </div>
+        <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
+          <a href="#viec-hom-nay">Việc hôm nay</a>
+          <a href="#suc-khoe">Sức khỏe</a>
+          <a href="#cam-nang">Ăn &amp; kiêng</a>
+          <a href="#can-lien-he">Cần liên hệ</a>
+        </nav>
+        <Image
+          className="pregnancy-care-art"
+          src="/illustrations/pregnancy-care.webp"
+          alt="Minh họa nước uống, bữa ăn chín, vận động nhẹ, nghỉ ngơi và ghi câu hỏi"
+          width={900}
+          height={675}
+          sizes="(max-width: 720px) 100vw, 340px"
+          unoptimized
+        />
       </section>
 
       <section className="trimester-section" aria-labelledby="trimester-title">
@@ -242,16 +259,24 @@ export default function PregnancyPage() {
           <p>Ngày dự sinh chỉ giúp hiển thị tuần thai. Mọi lịch khám, xét nghiệm và thuốc vẫn theo nơi Mẹ Ngân đang được chăm sóc.</p>
         </div>
         <div className="trimester-grid">
-          {trimesterGuides.map((guide) => (
-            <article key={guide.title}>
-              <h3>{guide.title}</h3>
-              <p>{guide.detail}</p>
-            </article>
-          ))}
+          <article className="is-current">
+            <small>ƯU TIÊN LÚC NÀY</small>
+            <h3>{trimesterGuides[trimesterIndex].title}</h3>
+            <p>{trimesterGuides[trimesterIndex].detail}</p>
+          </article>
+          <details className="later-trimesters">
+            <summary>Xem các giai đoạn tiếp theo <span aria-hidden="true">⌄</span></summary>
+            {trimesterGuides.filter((_, index) => index !== trimesterIndex).map((guide) => (
+              <article key={guide.title}>
+                <h3>{guide.title}</h3>
+                <p>{guide.detail}</p>
+              </article>
+            ))}
+          </details>
         </div>
       </section>
 
-      <section className="care-board" aria-labelledby="daily-title">
+      <section className="care-board" id="viec-hom-nay" aria-labelledby="daily-title">
         <div className="care-summary">
           <div>
             <p className="panel-kicker">CHECKLIST {todayKey || "HÔM NAY"}</p>
@@ -290,9 +315,9 @@ export default function PregnancyPage() {
         </div>
       </section>
 
-      <PregnancyHealthTracker />
+      <div id="suc-khoe"><PregnancyHealthTracker /></div>
 
-      <section className="guidance-section" aria-labelledby="guidance-title">
+      <section className="guidance-section" id="cam-nang" aria-labelledby="guidance-title">
         <div className="section-heading-row">
           <div>
             <p className="panel-kicker">CẨM NANG THỰC HÀNH · CHẠM ĐỂ XEM CHI TIẾT</p>
@@ -380,7 +405,7 @@ export default function PregnancyPage() {
         </p>
       </aside>
 
-      <section className="urgent-care" aria-labelledby="urgent-title">
+      <section className="urgent-care" id="can-lien-he" aria-labelledby="urgent-title">
         <p className="panel-kicker">KHÔNG CHỜ CHECKLIST</p>
         <h2 id="urgent-title">Khi nào cần liên hệ ngay</h2>
         <p>Nếu có một trong các dấu hiệu dưới đây, liên hệ cơ sở sản khoa đang theo dõi hoặc cấp cứu địa phương; không chờ EmBe trả lời.</p>

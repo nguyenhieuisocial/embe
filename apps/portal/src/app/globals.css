@@ -709,6 +709,39 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 .family-hero-art img { display: block; height: auto; width: 100%; }
 
+.pregnancy-chapter {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 20px 1fr;
+  padding: 18px;
+}
+.chapter-thread { display: flex; justify-content: center; position: relative; }
+.chapter-thread::before { background: var(--thread); content: ""; height: 100%; position: absolute; top: 0; width: 1px; }
+.chapter-thread span { background: var(--sun); border: 4px solid var(--surface); border-radius: 50%; height: 14px; margin-top: 5px; position: relative; width: 14px; z-index: 1; }
+.pregnancy-chapter h2 { margin-top: 3px; }
+.pregnancy-chapter h2 + p { color: var(--ink-soft); font-size: .9rem; margin-top: 7px; }
+.chapter-actions { display: grid; gap: 8px; grid-column: 2; grid-template-columns: 1fr 1fr; }
+.chapter-actions a {
+  align-items: center;
+  background: var(--jade);
+  border: 1px solid var(--jade);
+  border-radius: 13px;
+  color: var(--surface);
+  display: flex;
+  font-size: .875rem;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 48px;
+  padding: 8px;
+  text-align: center;
+  text-decoration: none;
+}
+.chapter-actions a:last-child { background: var(--surface); color: var(--jade); }
+
 .day-thread { margin-top: 32px; }
 .day-thread .thread-body a { color: var(--jade); font-weight: 600; }
 
@@ -763,7 +796,17 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   height: auto;
   width: 100%;
 }
-.week-card { display: grid; gap: 12px; }
+.week-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+}
+.stage-line { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.stage-name { background: var(--sun-soft); border-radius: var(--radius-pill); color: var(--sun-ink); font-size: .75rem; font-weight: 600; padding: 6px 10px; }
 .week-number {
   color: var(--jade);
   font-family: var(--font-display), Georgia, serif;
@@ -771,8 +814,33 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   font-weight: 600;
   line-height: 1.1;
 }
+.week-card > p:last-child { color: var(--ink-soft); font-size: .8125rem; }
 .week-card .field-hint { font-size: .8125rem; }
 .week-empty { color: var(--ink-soft); font-size: .9375rem; }
+.pregnancy-jump {
+  display: flex;
+  gap: 8px;
+  margin-inline: calc(var(--gutter) * -1);
+  overflow-x: auto;
+  padding: 0 var(--gutter) 4px;
+  scrollbar-width: none;
+}
+.pregnancy-jump::-webkit-scrollbar { display: none; }
+.pregnancy-jump a {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  display: flex;
+  flex: none;
+  font-size: .8125rem;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 8px 14px;
+  text-decoration: none;
+}
+#viec-hom-nay, #suc-khoe, #cam-nang, #can-lien-he { scroll-margin-top: 18px; }
+.pregnancy-main > #suc-khoe { margin-top: 32px; }
 
 .care-summary {
   align-items: center;
@@ -984,6 +1052,12 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   padding: 16px;
 }
 .trimester-grid p { color: var(--ink-soft); font-size: .9375rem; }
+.trimester-grid article.is-current { background: var(--jade-soft); border-color: transparent; }
+.trimester-grid article.is-current small { color: var(--jade); font-size: .6875rem; font-weight: 700; letter-spacing: .1em; }
+.later-trimesters { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.later-trimesters > summary { align-items: center; background: var(--surface); cursor: pointer; display: flex; font-size: .875rem; font-weight: 600; justify-content: space-between; list-style: none; min-height: 48px; padding: 10px 14px; }
+.later-trimesters > summary::-webkit-details-marker { display: none; }
+.later-trimesters article { border: 0; border-radius: 0; border-top: 1px solid var(--line); }
 
 .guidance-levels { display: grid; gap: 16px; }
 .guidance-level {
@@ -1708,7 +1782,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   font-weight: 600;
 }
 .assistant-topics { display: grid; gap: 8px; margin-top: 16px; }
-.assistant-topics button {
+.assistant-topics button,
+.assistant-topics > a {
   align-items: center;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1721,6 +1796,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   text-align: left;
   width: 100%;
 }
+.assistant-topics > a { color: inherit; text-decoration: none; }
 .assistant-topics button:disabled { opacity: .55; }
 .assistant-topics .shortcut-mark { height: 40px; width: 40px; }
 .assistant-answer {
@@ -1742,9 +1818,25 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .assistant-answer p { white-space: pre-line; }
 .assistant-error { margin-top: 16px; }
 .assistant-error { background: var(--coral-soft); border-radius: var(--radius-sm); color: var(--coral); padding: 12px 14px; }
-.assistant-topics button > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; }
-.assistant-topics button small { color: var(--ink-soft); display: block; font-size: .8125rem; }
+.assistant-topics button > span:nth-child(2),
+.assistant-topics > a > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; }
+.assistant-topics button small,
+.assistant-topics > a small { color: var(--ink-soft); display: block; font-size: .8125rem; }
 .assistant-topics button b { color: var(--ink-soft); font-weight: 400; margin-left: auto; }
+.future-assistant {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  margin-top: 32px;
+  padding: 16px;
+}
+.future-assistant > summary { align-items: center; cursor: pointer; display: flex; justify-content: space-between; list-style: none; min-height: 48px; }
+.future-assistant > summary::-webkit-details-marker { display: none; }
+.future-assistant > summary span:first-child { display: grid; gap: 2px; }
+.future-assistant > summary small { color: var(--ink-soft); font-size: .6875rem; font-weight: 600; letter-spacing: .08em; }
+.future-assistant > summary strong { font-family: var(--font-display); font-size: 1.1rem; }
+.future-assistant > p { color: var(--ink-soft); font-size: .875rem; margin-top: 8px; }
+.future-assistant .assistant-period { margin-top: 16px; }
 
 /* ── Hướng dẫn ───────────────────────────────────────────────── */
 
@@ -1770,6 +1862,17 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .one-door strong { font-size: 1rem; letter-spacing: .01em; }
 
 .install-app, .daily-rhythm, .iphone-setup, .no-touch { margin-top: 32px; }
+.current-stage-guide {
+  background: var(--sun-soft);
+  border: 1px solid #E8D8B8;
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+.current-stage-guide ol { display: grid; gap: 12px; list-style: none; margin-top: 16px; }
+.current-stage-guide li { border-top: 1px solid rgba(122, 85, 16, .18); display: grid; gap: 2px; padding-top: 12px; }
+.current-stage-guide li:first-child { border-top: 0; padding-top: 0; }
+.current-stage-guide li span { color: var(--ink-soft); font-size: .875rem; }
+.stage-later-label { color: var(--jade) !important; font-size: .8125rem !important; font-weight: 600; margin-top: 8px; }
 .home-screen-mark {
   align-items: center;
   display: grid;
@@ -2060,7 +2163,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .quick-action:hover strong { color: var(--jade); }
   .journal-prompts button:hover { border-color: var(--jade); }
   .inventory-card:hover { border-color: var(--jade); }
-  .assistant-topics button:hover:not(:disabled) { border-color: var(--jade); }
+  .assistant-topics button:hover:not(:disabled), .assistant-topics > a:hover { border-color: var(--jade); }
   .source-section a:hover, .app-store-link:hover, .memory-empty a:hover { text-decoration: underline; }
 }
 
@@ -2080,7 +2183,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
     --thread: #6C8078;
   }
   .card, .shortcut, .check-item, .inventory-card, .memory-card,
-  .trimester-grid article, .menu-day, .assistant-topics button, .assistant-answer {
+  .trimester-grid article, .menu-day, .assistant-topics button, .assistant-topics > a, .assistant-answer {
     border-width: 2px;
   }
 }

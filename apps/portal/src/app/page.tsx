@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 
 const dayBeats = [
   { when: "Sáng", title: "Mẹ Ngân xem việc hôm nay", href: "/me-bau" },
-  { when: "Trong ngày", title: "Ba Hiếu ghi một điều đáng nhớ", href: "/ghi-lai" },
-  { when: "Tối", title: "Cả nhà thảnh thơi nghỉ ngơi", href: null }
+  { when: "Trong ngày", title: "Ghi điều muốn hỏi trong lần khám tới", href: "/ghi-lai" },
+  { when: "Tối", title: "Ba Hiếu cùng Mẹ Ngân xem lại một ngày", href: "/lich" }
 ];
 
 const shortcuts = [
@@ -24,15 +24,15 @@ const shortcuts = [
   {
     href: "/do-dung",
     icon: "supply" as const,
-    kicker: "BỈM · SỮA · VẬT TƯ",
-    title: "Biết món nào sắp hết",
+    kicker: "CHUẨN BỊ TỪNG CHÚT",
+    title: "Đồ cần cho mẹ và em bé",
     label: "Xem đồ dùng trong nhà"
   },
   {
     href: "/tro-ly",
     icon: "assistant" as const,
-    kicker: "CHẠY TẠI MÁY NHÀ",
-    title: "Hỏi về giấc ngủ và bú sữa",
+    kicker: "ĐÚNG GIAI ĐOẠN HIỆN TẠI",
+    title: "Mẹ Ngân cần gì lúc này?",
     label: "Hỏi trợ lý riêng của gia đình"
   },
   {
@@ -130,17 +130,31 @@ export default function Home() {
           <Icon name="arrow" className="icon" />
         </a>
 
-        <div className="family-hero-art">
-          <Image
-            src="/illustrations/family-thread-hero.webp"
-            alt=""
-            width={1280}
-            height={853}
-            sizes="(max-width: 767px) 100vw, 560px"
-            priority
-          />
+      </section>
+
+      <section className="section pregnancy-chapter" aria-labelledby="pregnancy-chapter-title">
+        <div className="chapter-thread" aria-hidden="true"><span /></div>
+        <div>
+          <p className="panel-kicker">ĐANG MANG THAI</p>
+          <h2 id="pregnancy-chapter-title">Mới mang thai, mình đi từng tuần</h2>
+          <p>Ưu tiên sức khỏe Mẹ Ngân, việc cần làm hôm nay và những câu hỏi cho lần khám tới. Các công cụ chăm em bé sẽ xuất hiện đúng lúc sau sinh.</p>
+        </div>
+        <div className="chapter-actions">
+          <a href="/me-bau">Chăm sóc hôm nay</a>
+          <a href="/lich" aria-label="Mở lịch gia đình">Mở lịch</a>
         </div>
       </section>
+
+      <div className="section family-hero-art" aria-hidden="true">
+        <Image
+          src="/illustrations/family-thread-hero.webp"
+          alt=""
+          width={1280}
+          height={853}
+          sizes="(max-width: 767px) 100vw, 560px"
+          unoptimized
+        />
+      </div>
 
       <section className="section day-thread" aria-labelledby="day-thread-title">
         <div className="section-head">

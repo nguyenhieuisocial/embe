@@ -6,11 +6,12 @@ import AssistantPage from "../src/app/tro-ly/page";
 describe("mobile family assistant", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("offers three safe one-tap questions", () => {
+  it("shows pregnancy-first help before postnatal analysis", () => {
     render(<AssistantPage />);
-    expect(screen.getByRole("button", { name: /giấc ngủ/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /bú sữa/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /môi trường/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Mẹ Ngân cần gì lúc này?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /việc nên làm hôm nay/i })).toHaveAttribute("href", "/me-bau#viec-hom-nay");
+    expect(screen.getByRole("link", { name: /ăn gì, kiêng gì/i })).toHaveAttribute("href", "/me-bau#cam-nang");
+    expect(screen.getByText("Sau khi em bé chào đời")).toBeInTheDocument();
   });
 
   it("submits and shows the locally generated answer", async () => {
@@ -19,7 +20,7 @@ describe("mobile family assistant", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: "completed", answer: "Chưa có dữ liệu giấc ngủ trong 7 ngày qua." }), { status: 200 }))
     );
     render(<AssistantPage />);
-    fireEvent.click(screen.getByRole("button", { name: /giấc ngủ/i }));
+    fireEvent.click(screen.getByRole("button", { name: /giấc ngủ của em bé/i }));
     expect(await screen.findByText("Chưa có dữ liệu giấc ngủ trong 7 ngày qua.")).toBeInTheDocument();
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
   });

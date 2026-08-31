@@ -31,6 +31,8 @@ describe("simple family guide", () => {
     expect(screen.getByText("Đồ dùng")).toBeInTheDocument();
     expect(screen.getByText("Trợ lý riêng")).toBeInTheDocument();
     expect(screen.getByText(/Bạn không phải tự vào máy chủ/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Lúc này chỉ cần ba việc" })).toBeInTheDocument();
+    expect(screen.getByText("Sau khi em bé chào đời")).toBeInTheDocument();
   });
 
   it("gives iPhone photo backup instructions without exposing credentials", () => {
