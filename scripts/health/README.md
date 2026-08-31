@@ -6,6 +6,12 @@ read-only MCP runtime, and the latest monthly PDF. Its JSON contains only status
 ages, counts, booleans, and HTTP status codes—never response bodies, credentials,
 family notes, names, photos, or URL query strings.
 
+`EmBe-DiskMaintenance` runs daily with limited current-user rights. It only
+trims free WSL blocks and Docker build cache older than seven days; it never
+prunes images, containers, volumes, databases, or family media. The health
+audit fails closed if its sanitized status is missing, stale, or the task is
+disabled.
+
 `install-tailscale-private-probe.ps1` installs a limited current-user probe every
 five minutes because Tailscale identity is not available to the isolated backup
 account. The probe persists only three HTTP status codes; `health-audit.ps1`

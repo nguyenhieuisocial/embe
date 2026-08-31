@@ -88,6 +88,8 @@ if ($FixturePath) {
     $fixture = Get-Content -LiteralPath $FixturePath -Raw | ConvertFrom-Json
     if ($fixture.now_utc) { $now = Convert-ToDateTimeOffset $fixture.now_utc }
     $diskFreePercent = [double]$fixture.disk_free_percent
+    $diskMaintenanceStatus = $fixture.disk_maintenance
+    $diskMaintenanceTaskReady = [bool]$fixture.disk_maintenance_task_ready
     $containers = @($fixture.containers)
     $portalStatus = $fixture.portal_sync
     $mediaPublisherStatus = $fixture.media_publisher
@@ -118,6 +120,13 @@ if ($FixturePath) {
     $driveName = ([IO.Path]::GetPathRoot($ProjectRoot)).TrimEnd(':', '\')
     $drive = Get-PSDrive -Name $driveName
     $diskFreePercent = 100 * $drive.Free / ($drive.Used + $drive.Free)
+
+    $diskMaintenancePath = Join-Path $ProjectRoot "data\status\disk-maintenance.json"
+    $diskMaintenanceStatus = if (Test-Path -LiteralPath $diskMaintenancePath -PathType Leaf) {
+        Get-Content -LiteralPath $diskMaintenancePath -Raw | ConvertFrom-Json
+    } else { $null }
+    $diskMaintenanceTask = Get-ScheduledTask -TaskName "EmBe-DiskMaintenance" -ErrorAction SilentlyContinue
+    $diskMaintenanceTaskReady = $null -ne $diskMaintenanceTask -and [string]$diskMaintenanceTask.State -ne "Disabled"
 
     $containers = @()
     $containerLines = docker ps -a --format '{{.Names}}|{{.Status}}' 2>$null
@@ -338,6 +347,14 @@ if ($FixturePath) {
 
 $diskStatus = if ($diskFreePercent -lt 15) { "critical" } elseif ($diskFreePercent -lt 25) { "warning" } else { "pass" }
 Add-Check "disk_headroom" $diskStatus "Dung lượng trống của ổ hệ thống" @{ free_percent = [math]::Round($diskFreePercent, 2); warning_below = 25; critical_below = 15 }
+
+$diskMaintenanceAge = if ($null -ne $diskMaintenanceStatus -and $diskMaintenanceStatus.generated_at) { Get-AgeHours $diskMaintenanceStatus.generated_at } else { [double]::PositiveInfinity }
+$diskMaintenancePass = $diskMaintenanceTaskReady -and $null -ne $diskMaintenanceStatus -and [string]$diskMaintenanceStatus.status -eq "pass" -and $diskMaintenanceAge -le 30
+Add-Check "disk_maintenance" $(if ($diskMaintenancePass) { "pass" } else { "critical" }) "Bảo trì dung lượng Docker hằng ngày" @{
+    task_ready = [bool]$diskMaintenanceTaskReady
+    age_hours = if ([double]::IsInfinity($diskMaintenanceAge)) { $null } else { [math]::Round($diskMaintenanceAge, 2) }
+    maximum_hours = 30
+}
 
 $expectedContainers = @(
     "embe-babybuddy-1", "embe-memos-1", "embe-grocy-1", "embe-node-red-1", "embe-uptime-kuma-1",

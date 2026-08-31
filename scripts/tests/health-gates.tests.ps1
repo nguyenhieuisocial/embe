@@ -30,6 +30,8 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
     $fixture = [ordered]@{
         now_utc = $now.ToString("o")
         disk_free_percent = $DiskPercent
+        disk_maintenance = @{ status = "pass"; generated_at = $now.AddHours(-1).ToString("o") }
+        disk_maintenance_task_ready = $true
         containers = $containers
         portal_sync = @{ status = "ok"; last_success_at = $now.AddMinutes(-5).ToString("o"); journal_inbox = @{ dead_letters = 0 } }
         media_publisher = @{ status = "disabled"; last_attempt_at = $now.AddMinutes(-5).ToString("o") }
@@ -78,7 +80,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "monthly_pdf")) {
+    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -100,6 +102,17 @@ try {
     if ($critical.status -ne "critical") { throw "Critical report is invalid" }
     if (@($critical.checks | Where-Object id -eq "disk_headroom")[0].status -ne "critical") { throw "Disk gate did not block" }
     if (@($critical.checks | Where-Object id -eq "backup_freshness")[0].status -ne "critical") { throw "Backup gate did not block" }
+
+    $missingDiskTaskFixture = Join-Path $testRoot "missing-disk-task.json"
+    Write-Fixture $missingDiskTaskFixture 40 2
+    $missingDiskTask = Get-Content $missingDiskTaskFixture -Raw | ConvertFrom-Json
+    $missingDiskTask.disk_maintenance_task_ready = $false
+    $missingDiskTask | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $missingDiskTaskFixture -Encoding utf8
+    $missingDiskTaskReport = Join-Path $testRoot "missing-disk-task-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $missingDiskTaskFixture -OutputPath $missingDiskTaskReport
+    if ($LASTEXITCODE -ne 2) { throw "A missing disk maintenance task must block health" }
+    $missingDiskTaskHealth = Get-Content $missingDiskTaskReport -Raw | ConvertFrom-Json
+    if (@($missingDiskTaskHealth.checks | Where-Object id -eq "disk_maintenance")[0].status -ne "critical") { throw "Disk maintenance gate did not block" }
 
     $downMonitorFixture = Join-Path $testRoot "down-monitor.json"
     Write-Fixture $downMonitorFixture 40 2

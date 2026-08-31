@@ -85,3 +85,6 @@ jobs:
       - name: Verify recoverable Windows runtime startup
         shell: pwsh
         run: .\scripts\tests\local-runtime-startup.tests.ps1
+      - name: Verify bounded disk maintenance
+        shell: pwsh
+        run: .\scripts\tests\disk-headroom-maintenance.tests.ps1

@@ -13,6 +13,8 @@ Chạy `scripts\health\health-audit.ps1`. Báo cáo an toàn nằm tại
 trạng thái.
 
 - `disk_headroom`: ngừng import media dưới 15%; lên kế hoạch mở rộng dưới 25%.
+- `disk_maintenance`: kiểm tra tác vụ `EmBe-DiskMaintenance`; không thay bằng
+  `docker system prune`, `image prune` hoặc `volume prune`.
 - `backup_freshness` hoặc `restore_drill`: dừng nâng cấp và chạy lại backup/restore.
 - `sync_deadletters`: không tự xóa ledger; xử lý lỗi nguồn/sink trước.
 - `containers`: luôn phục hồi bằng `scripts\start-local-runtime.ps1`; không mở
