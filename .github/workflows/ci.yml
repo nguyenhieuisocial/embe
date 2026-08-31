@@ -70,6 +70,7 @@ jobs:
             '.\scripts\tests\install-scheduled-backup.tests.ps1',
             '.\scripts\tests\babybuddy-memos-sync-scheduler.tests.ps1',
             '.\scripts\tests\portal-sync.tests.ps1',
+            '.\scripts\tests\provision-immich-media-publisher.tests.ps1',
             '.\scripts\tests\provision-babybuddy-sync.tests.ps1',
             '.\scripts\tests\rotate-integration-credentials.tests.ps1',
             '.\scripts\tests\tailscale-care-apps.tests.ps1',

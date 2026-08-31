@@ -13,7 +13,12 @@ Safety contract:
 
 Every run writes only counts and timestamps to `data/status/media-publisher.json`; credentials, album IDs, filenames, and media paths are never written to status output.
 
-Copy `media-publisher.example.env` to `C:\EmBe\secrets\runtime\media-publisher.env`, fill the Immich values, then set `EMBE_MEDIA_PUBLISHER_ENABLED=true`. Supabase settings are reused from the existing private portal sync file. Keep both files outside Git.
+Run `scripts/provision-immich-media-publisher.ps1` once with the existing Immich
+administrator credential. It creates or reuses the curated `Em Bé` album,
+creates a key with exactly `asset.read` and `asset.view`, writes the restricted
+runtime file, and verifies both API routes. Subsequent runs verify the scoped key
+without needing the administrator credential. Supabase settings are reused from
+the existing private portal sync file. Keep both files outside Git.
 
 Run tests from this directory:
 

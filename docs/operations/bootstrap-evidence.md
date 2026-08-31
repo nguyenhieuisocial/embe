@@ -29,14 +29,16 @@
 | Mẹ bầu đa thiết bị | Ngày dự sinh và checklist có API riêng tư, giao dịch lưu nguyên tử và bản cục bộ chịu mất mạng; 30 kiểm thử quyền Supabase cùng 82 kiểm thử Portal đạt, client không có khóa Supabase |
 | Sách tháng có provenance | Job production chỉ lấy Memos `PRIVATE` đã gắn `#portal`, ghi số nguồn đã chọn và health từ chối PDF fixture; vòng thật tháng 2026-07 đạt với 0 ghi chú được duyệt, không dùng dữ liệu giả |
 | Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
-| Immich media publisher | Đã nối vào tác vụ Portal bằng tài khoản dịch vụ, lỗi được cô lập và health gate fail-closed; vẫn tắt cho tới khi có album chọn lọc + API key chỉ đọc |
+| Immich media publisher | Onboarding đã hoàn tất; album chọn lọc `Em Bé` đang trống; API key riêng chỉ có `asset.read` + `asset.view`; vòng đồng bộ trống đạt 0 upload/0 lỗi và health gate fail-closed |
 | Sức khỏe phần mềm | 21/21 kiểm tra đạt; gồm cổng freshness cho kho phân tích, Telegram PoC kill switch và trạng thái thật của 7 monitor; CI `main`, Vercel production và smoke test công khai đạt |
 
 ## Go/no-go
 
-**Chưa Go** cho nhập ảnh iPhone: cần album Immich chọn lọc, API key chỉ đọc và
-một lần nhập synthetic đạt trước khi dùng 10 ảnh thử. Ổ vật lý riêng không còn
-là điều kiện; health vẫn chặn nhập khối lượng lớn nếu dung lượng hệ thống xuống thấp.
+**Chưa Go** cho nhập ảnh iPhone hàng loạt: cấu hình album và khóa chỉ đọc đã đạt;
+bước còn lại là thử bằng 10 ảnh do gia đình chủ động chọn trên iPhone. Không tạo
+ảnh hoặc dữ liệu gia đình giả chỉ để vượt gate. Ổ vật lý riêng không còn là điều
+kiện cho bản sao thứ ba; health vẫn chặn nhập khối lượng lớn nếu dung lượng hệ
+thống xuống thấp.
 
 **Backup off-site đã đạt:** R2 mã hóa, kiểm tra toàn vẹn và restore drill là gate
 backup được chấp nhận; không còn yêu cầu USB HDD/NAS. Go-live đầy đủ vẫn chờ
