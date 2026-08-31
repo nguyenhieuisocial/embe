@@ -125,7 +125,16 @@ if ($FixturePath) {
     $diskMaintenanceStatus = if (Test-Path -LiteralPath $diskMaintenancePath -PathType Leaf) {
         Get-Content -LiteralPath $diskMaintenancePath -Raw | ConvertFrom-Json
     } else { $null }
-    $diskMaintenanceTask = Get-ScheduledTask -TaskName "EmBe-DiskMaintenance" -ErrorAction SilentlyContinue
+    $diskMaintenanceTask = $null
+    foreach ($attempt in 1..3) {
+        try {
+            $diskMaintenanceTask = Get-ScheduledTask -TaskName "EmBe-DiskMaintenance" -ErrorAction Stop
+        } catch {
+            $diskMaintenanceTask = $null
+        }
+        if ($null -ne $diskMaintenanceTask) { break }
+        Start-Sleep -Milliseconds 200
+    }
     $diskMaintenanceTaskReady = $null -ne $diskMaintenanceTask -and [string]$diskMaintenanceTask.State -ne "Disabled"
 
     $containers = @()
