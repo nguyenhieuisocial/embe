@@ -23,6 +23,7 @@
 | MCP/AI chỉ đọc | Kho SQLite rỗng được khởi tạo ngay cả khi chưa có nguồn; health gate mở read-only và chạy truy vấn cố định thật, thay vì chỉ kiểm tra import module |
 | Tailscale | Immich, Memos và BabyBuddy Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và Funnel tắt |
 | Chống dò mật khẩu Portal | Cloudflare Free WAF giới hạn `POST /api/auth/login` theo IP; production probe trả `303` rồi `429` cho hai lần thử sai liên tiếp |
+| Mobile production audit | Khung iPhone 390×844 qua toàn bộ 5 màn hình chính: không tràn ngang, không lỗi console, form dùng cỡ chữ 16px; App Store links đạt vùng chạm 44px và Cloudflare beacon tải qua CSP |
 | Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
 | Immich media publisher | Đã nối vào tác vụ Portal bằng tài khoản dịch vụ, lỗi được cô lập và health gate fail-closed; vẫn tắt cho tới khi có album chọn lọc + API key chỉ đọc |
 | Sức khỏe phần mềm | 20/20 kiểm tra đạt; gồm cổng freshness cho kho phân tích và trạng thái thật của 7 monitor; CI `main`, Vercel production và smoke test sau đăng nhập đạt |
