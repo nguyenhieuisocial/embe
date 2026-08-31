@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import GuidePage from "../src/app/huong-dan/page";
 
@@ -41,7 +41,22 @@ describe("simple family guide", () => {
       "href",
       "https://apps.apple.com/us/app/immich/id1613945652"
     );
-    expect(screen.getByText(/Chưa tải ảnh thật lên/)).toBeInTheDocument();
+    expect(screen.getByText(/Chưa bật sao lưu ảnh thật/)).toBeInTheDocument();
     expect(screen.queryByText(/192\.168\./)).not.toBeInTheDocument();
+  });
+
+  it("lets an iPhone user open or copy the private Immich server address", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+    render(<GuidePage />);
+
+    const address = "https://henrynguyen.tail36cb4d.ts.net/";
+    expect(screen.getByRole("link", { name: "Mở Immich gia đình" })).toHaveAttribute("href", address);
+    fireEvent.click(screen.getByRole("button", { name: "Sao chép địa chỉ Immich" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(address));
+    expect(screen.getByRole("status")).toHaveTextContent("Đã sao chép");
   });
 });

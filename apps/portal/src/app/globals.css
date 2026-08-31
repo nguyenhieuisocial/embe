@@ -242,6 +242,13 @@ footer p { margin:0; }
 .iphone-steps strong { display:block; font-family:var(--font-display),serif; font-size:1.05rem; }
 .app-store-link { align-items:center; display:inline-flex; min-height:44px; }
 .iphone-steps p { color:var(--ink-soft); font-size:.72rem; line-height:1.5; margin:4px 0 0; }
+.immich-server-card { background:var(--jade-soft); border:1px solid rgba(31,107,90,.2); border-radius:12px; display:grid; gap:9px; margin-top:12px; padding:12px; }
+.immich-server-card code { color:var(--jade); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.68rem; line-height:1.5; overflow-wrap:anywhere; }
+.immich-server-card>div { display:grid; gap:8px; grid-template-columns:1fr; }
+.immich-server-card a,.immich-server-card button { align-items:center; border-radius:10px; display:flex; font-size:.72rem; font-weight:600; justify-content:center; min-height:48px; padding:9px 12px; text-align:center; }
+.immich-server-card a { background:var(--jade); color:white; text-decoration:none; }
+.immich-server-card button { background:var(--paper); border:1px solid var(--jade); color:var(--jade); cursor:pointer; }
+.immich-server-card small { color:var(--jade); font-size:.68rem; line-height:1.45; }
 .iphone-setup>small { border-left:3px solid var(--sun); color:var(--ink-soft); line-height:1.55; padding-left:10px; }
 .no-touch { display:grid; gap:24px; padding:52px 0 42px; }
 .no-touch>div>p:last-child { color:var(--ink-soft); font-size:.8rem; line-height:1.7; }

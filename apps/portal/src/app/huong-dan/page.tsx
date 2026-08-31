@@ -1,3 +1,7 @@
+import CopyServerAddress from "../../components/copy-server-address";
+
+const IMMICH_PRIVATE_URL = "https://henrynguyen.tail36cb4d.ts.net/";
+
 const dailyRhythm = [
   {
     moment: "Buổi sáng",
@@ -100,12 +104,13 @@ export default function GuidePage() {
             <span>2</span>
             <div>
               <strong><a className="app-store-link" href="https://apps.apple.com/us/app/immich/id1613945652">Cài Immich từ App Store</a></strong>
-              <p>Dùng địa chỉ riêng của gia đình; có thể kết nối an toàn cả khi không ở nhà.</p>
+              <p>Bật Tailscale, rồi dùng đúng địa chỉ riêng dưới đây trong ô Server Endpoint URL.</p>
+              <CopyServerAddress address={IMMICH_PRIVATE_URL} />
             </div>
           </li>
           <li>
             <span>3</span>
-            <div><strong>Chờ ổ lưu trữ riêng</strong><p>Chưa tải ảnh thật lên cho đến khi hệ thống báo đã sẵn sàng.</p></div>
+            <div><strong>Tạo tài khoản đầu tiên</strong><p>Tự đặt email và mật khẩu quản trị trong Immich. Chưa bật sao lưu ảnh thật cho đến khi ổ lưu trữ riêng sẵn sàng.</p></div>
           </li>
         </ol>
         <small>Khi được bật, hãy thử trước với 10 ảnh thường và không xóa ảnh gốc trên iPhone.</small>
