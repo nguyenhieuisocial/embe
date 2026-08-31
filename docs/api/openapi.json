@@ -1,0 +1,679 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "EmBe Family Portal API",
+    "description": "Same-origin backend contract for the private EmBe family web app. Raw medical data, provider locators and credentials are never returned.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://embe.hieu.asia",
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "Family password session" },
+    { "name": "Operations", "description": "Content-free service health" },
+    { "name": "Journal", "description": "Private idempotent journal inbox" },
+    { "name": "Pregnancy", "description": "Pregnancy profile and daily checklist state" },
+    { "name": "Inventory", "description": "Grocy-backed household supplies" },
+    { "name": "Assistant", "description": "Bounded local analytics questions" },
+    { "name": "Procurement", "description": "Human-confirmed purchase proposals" },
+    { "name": "Media", "description": "Private curated preview proxy" }
+  ],
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "operationId": "loginFamily",
+        "summary": "Create a family session",
+        "tags": ["Authentication"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "303": {
+            "description": "Redirect to the requested local path or back to login",
+            "headers": {
+              "Location": { "schema": { "type": "string", "format": "uri-reference" } },
+              "Set-Cookie": { "schema": { "type": "string" } }
+            }
+          },
+          "503": {
+            "description": "Authentication configuration is unavailable",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthUnavailable" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logoutFamily",
+        "summary": "Expire the family session",
+        "tags": ["Authentication"],
+        "responses": {
+          "303": {
+            "description": "Session expired and redirected to login",
+            "headers": {
+              "Location": { "schema": { "type": "string", "format": "uri-reference" } },
+              "Set-Cookie": { "schema": { "type": "string" } }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "getPortalHealth",
+        "summary": "Read content-free deployment health",
+        "tags": ["Operations"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Portal process is ready",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
+    "/api/journal": {
+      "post": {
+        "operationId": "submitJournalEntry",
+        "summary": "Submit an idempotent private journal entry",
+        "tags": ["Journal"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/JournalRequest" }
+            }
+          }
+        },
+        "responses": {
+          "202": { "$ref": "#/components/responses/Accepted" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
+    "/api/pregnancy": {
+      "get": {
+        "operationId": "getPregnancyState",
+        "summary": "Read pregnancy and checklist state for a day",
+        "tags": ["Pregnancy"],
+        "parameters": [
+          {
+            "name": "day",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current pregnancy state",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PregnancyState" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      },
+      "patch": {
+        "operationId": "savePregnancyState",
+        "summary": "Atomically update due date or daily checklist state",
+        "tags": ["Pregnancy"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PregnancyPatch" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved pregnancy state",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PregnancyState" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/RequestTooLarge" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
+    "/api/inventory": {
+      "get": {
+        "operationId": "getInventory",
+        "summary": "Read the bounded Grocy inventory projection",
+        "tags": ["Inventory"],
+        "responses": {
+          "200": {
+            "description": "Inventory items and pending command count",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InventoryResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      },
+      "post": {
+        "operationId": "submitInventoryAction",
+        "summary": "Queue an idempotent inventory action",
+        "tags": ["Inventory"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InventoryAction" }
+            }
+          }
+        },
+        "responses": {
+          "202": { "$ref": "#/components/responses/Accepted" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/RequestTooLarge" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
+    "/api/assistant": {
+      "get": {
+        "operationId": "getAssistantResponse",
+        "summary": "Poll a bounded local assistant request",
+        "tags": ["Assistant"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assistant request state",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AssistantResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      },
+      "post": {
+        "operationId": "submitAssistantRequest",
+        "summary": "Queue a bounded local analytics question",
+        "tags": ["Assistant"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AssistantRequest" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Assistant request accepted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AssistantAccepted" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/RequestTooLarge" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
+    "/api/procurement": {
+      "get": {
+        "operationId": "getProcurementProposals",
+        "summary": "Read bounded purchase proposals",
+        "tags": ["Procurement"],
+        "responses": {
+          "200": {
+            "description": "Purchase proposals and pending transition count",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProcurementResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      },
+      "patch": {
+        "operationId": "submitProcurementTransition",
+        "summary": "Queue a hash-locked human transition",
+        "description": "Never performs checkout. The expected proposal hash must match the latest local proposal.",
+        "tags": ["Procurement"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProcurementTransition" }
+            }
+          }
+        },
+        "responses": {
+          "202": { "$ref": "#/components/responses/Accepted" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "413": { "$ref": "#/components/responses/RequestTooLarge" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
+    "/api/media/{id}": {
+      "get": {
+        "operationId": "getMediaPreview",
+        "summary": "Stream a curated private media preview",
+        "tags": ["Media"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Curated image preview, limited to 10 MB",
+            "headers": {
+              "ETag": { "schema": { "type": "string" } },
+              "Content-Disposition": { "schema": { "type": "string", "enum": ["inline"] } },
+              "X-Content-Type-Options": { "schema": { "type": "string", "enum": ["nosniff"] } }
+            },
+            "content": {
+              "image/webp": {
+                "schema": { "type": "string", "format": "binary" }
+              },
+              "image/jpeg": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "Preview is missing, invalid or failed content validation",
+            "content": {
+              "text/plain": { "schema": { "type": "string" } }
+            }
+          },
+          "503": {
+            "description": "Preview provider is temporarily unavailable",
+            "content": {
+              "text/plain": { "schema": { "type": "string" } }
+            }
+          },
+          "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "FamilySession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "embe_session",
+        "description": "Signed HttpOnly family session cookie."
+      }
+    },
+    "responses": {
+      "Accepted": {
+        "description": "Command accepted for asynchronous processing",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/AcceptedResponse" }
+          }
+        }
+      },
+      "InvalidRequest": {
+        "description": "Request body or parameters failed validation",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/InvalidRequestError" }
+          }
+        }
+      },
+      "RequestTooLarge": {
+        "description": "Request exceeds the endpoint byte limit",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/InvalidRequestError" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid family session",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/UnauthorizedError" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Requested object does not exist",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/NotFoundError" }
+          }
+        }
+      },
+      "TemporarilyUnavailable": {
+        "description": "Server-side dependency is unavailable",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/UnavailableError" }
+          }
+        }
+      },
+      "Unexpected": {
+        "description": "Unexpected server error"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["password"],
+        "properties": {
+          "password": { "type": "string", "format": "password", "minLength": 1 },
+          "next": { "type": "string", "pattern": "^/(?!/)" }
+        },
+        "additionalProperties": false
+      },
+      "AuthUnavailable": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string", "enum": ["Authentication is unavailable"] }
+        },
+        "additionalProperties": false
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ok"] }
+        },
+        "additionalProperties": false
+      },
+      "AcceptedResponse": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["accepted"] }
+        },
+        "additionalProperties": false
+      },
+      "UnauthorizedError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string", "enum": ["unauthorized"] }
+        },
+        "additionalProperties": false
+      },
+      "InvalidRequestError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string", "enum": ["invalid_request"] }
+        },
+        "additionalProperties": false
+      },
+      "NotFoundError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string", "enum": ["not_found"] }
+        },
+        "additionalProperties": false
+      },
+      "UnavailableError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string", "enum": ["temporarily_unavailable"] }
+        },
+        "additionalProperties": false
+      },
+      "JournalRequest": {
+        "type": "object",
+        "required": ["content", "authorRole", "idempotencyKey"],
+        "properties": {
+          "content": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "authorRole": { "type": "string", "enum": ["father", "mother"] },
+          "idempotencyKey": { "type": "string", "format": "uuid" }
+        },
+        "additionalProperties": false
+      },
+      "PregnancyState": {
+        "type": "object",
+        "required": ["dueDate", "completed", "hasProfile", "hasDayState"],
+        "properties": {
+          "dueDate": { "type": "string", "format": "date", "nullable": true },
+          "completed": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string" }
+          },
+          "hasProfile": { "type": "boolean" },
+          "hasDayState": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "PregnancyPatch": {
+        "type": "object",
+        "required": ["day"],
+        "properties": {
+          "day": { "type": "string", "format": "date" },
+          "dueDate": { "type": "string", "format": "date", "nullable": true },
+          "completed": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string" }
+          }
+        },
+        "anyOf": [
+          { "required": ["dueDate"] },
+          { "required": ["completed"] }
+        ],
+        "additionalProperties": false
+      },
+      "InventoryItem": {
+        "type": "object",
+        "required": ["productId", "name", "quantity", "unit", "minQuantity", "needsRestock"],
+        "properties": {
+          "productId": { "type": "integer", "format": "int32", "minimum": 1 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "quantity": { "type": "number", "minimum": 0, "maximum": 100000 },
+          "unit": { "$ref": "#/components/schemas/InventoryUnit" },
+          "minQuantity": { "type": "number", "minimum": 0, "maximum": 100000 },
+          "needsRestock": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "InventoryResponse": {
+        "type": "object",
+        "required": ["items", "pending"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 500,
+            "items": { "$ref": "#/components/schemas/InventoryItem" }
+          },
+          "pending": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      },
+      "InventoryUnit": {
+        "type": "string",
+        "enum": ["cái", "gói", "hộp", "ml", "g"]
+      },
+      "InventoryAction": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/CreateInventoryItem" },
+          { "$ref": "#/components/schemas/SetInventoryAmount" }
+        ]
+      },
+      "CreateInventoryItem": {
+        "type": "object",
+        "required": ["action", "idempotencyKey", "name", "category", "unit", "amount", "minAmount"],
+        "properties": {
+          "action": { "type": "string", "enum": ["create"] },
+          "idempotencyKey": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "category": { "type": "string", "enum": ["baby", "nutrition", "mother", "other"] },
+          "unit": { "$ref": "#/components/schemas/InventoryUnit" },
+          "amount": { "type": "number", "minimum": 0, "maximum": 100000 },
+          "minAmount": { "type": "number", "minimum": 0, "maximum": 100000 }
+        },
+        "additionalProperties": false
+      },
+      "SetInventoryAmount": {
+        "type": "object",
+        "required": ["action", "idempotencyKey", "productId", "amount"],
+        "properties": {
+          "action": { "type": "string", "enum": ["set_amount"] },
+          "idempotencyKey": { "type": "string", "format": "uuid" },
+          "productId": { "type": "integer", "format": "int32", "minimum": 1, "maximum": 2147483647 },
+          "amount": { "type": "number", "minimum": 0, "maximum": 100000 }
+        },
+        "additionalProperties": false
+      },
+      "AssistantRequest": {
+        "type": "object",
+        "required": ["topic", "days", "idempotencyKey"],
+        "properties": {
+          "topic": { "type": "string", "enum": ["ngu", "bu", "moi-truong"] },
+          "days": { "type": "integer", "enum": [7, 14, 30] },
+          "idempotencyKey": { "type": "string", "format": "uuid" }
+        },
+        "additionalProperties": false
+      },
+      "AssistantAccepted": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["pending"] }
+        },
+        "additionalProperties": false
+      },
+      "AssistantResponse": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["pending", "processing", "completed", "failed"] },
+          "answer": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "ProcurementProposal": {
+        "type": "object",
+        "required": ["id", "productName", "state", "packs", "requiredUnits", "estimatedTotalVnd", "proposalHash", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "productName": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "state": {
+            "type": "string",
+            "enum": ["DRAFT", "REVIEWED", "APPROVED", "ORDERED", "RECEIVED", "CANCELLED"]
+          },
+          "packs": { "type": "integer", "minimum": 1, "maximum": 1000 },
+          "requiredUnits": { "type": "number", "minimum": 0, "maximum": 1000000 },
+          "estimatedTotalVnd": { "type": "number", "minimum": 0, "maximum": 1000000000000 },
+          "proposalHash": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "ProcurementResponse": {
+        "type": "object",
+        "required": ["proposals", "pending"],
+        "properties": {
+          "proposals": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "$ref": "#/components/schemas/ProcurementProposal" }
+          },
+          "pending": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      },
+      "ProcurementTransition": {
+        "type": "object",
+        "required": ["proposalId", "target", "proposalHash", "idempotencyKey"],
+        "properties": {
+          "proposalId": { "type": "string", "format": "uuid" },
+          "target": {
+            "type": "string",
+            "enum": ["REVIEWED", "APPROVED", "ORDERED", "RECEIVED", "CANCELLED"]
+          },
+          "proposalHash": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
+          "idempotencyKey": { "type": "string", "format": "uuid" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "security": [
+    { "FamilySession": [] }
+  ]
+}

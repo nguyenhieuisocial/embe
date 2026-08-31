@@ -4,6 +4,10 @@ Portal routes are same-origin, require the `embe_session` HttpOnly cookie and
 always return `Cache-Control: private, no-store`. Browser code must never call
 Supabase, Immich, Memos, BabyBuddy, Grocy, Telegram or Ollama directly.
 
+The machine-readable OpenAPI 3.0 contract is
+`docs/api/openapi.json`. CI verifies its stable paths, operation IDs, local
+references and public/private boundary against the Portal contract.
+
 ## Stable Portal APIs
 
 | Route | Methods | Purpose |
