@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(68);
+SELECT plan(75);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -349,6 +349,45 @@ SELECT ok(
   has_function_privilege('service_role', 'public.embe_confirm_meal_analysis(uuid,jsonb,text)', 'EXECUTE'),
   'The portal server can store user-confirmed meal results'
 );
+
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.family_task', 'SELECT'),
+  'Anonymous clients cannot read private family plans'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.family_task_completion', 'INSERT'),
+  'Authenticated clients cannot bypass the family planner API'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_list_family_tasks(date,date)', 'EXECUTE'),
+  'Anonymous clients cannot list private family plans'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_create_family_task(uuid,text,text,text,text,text,date,time,text)', 'EXECUTE'),
+  'The portal server can create family plans'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_set_family_task_completion(bigint,date,boolean,text)', 'EXECUTE'),
+  'The portal server can store per-day task completion'
+);
+SET ROLE service_role;
+SELECT is(
+  public.embe_create_family_task(
+    '611fe5a0-f59b-4f8c-8eb7-64fb2ef89256', 'Việc thử nghiệm', '', 'family',
+    'general', 'calendar', DATE '2099-12-28', NULL, 'daily'
+  ) ->> 'id',
+  public.embe_create_family_task(
+    '611fe5a0-f59b-4f8c-8eb7-64fb2ef89256', 'Việc thử nghiệm', '', 'family',
+    'general', 'calendar', DATE '2099-12-28', NULL, 'daily'
+  ) ->> 'id',
+  'Creating the same task command twice is idempotent'
+);
+SELECT is(
+  public.embe_list_family_tasks(DATE '2099-12-28', DATE '2099-12-29') -> 1 ->> 'occurrence_on',
+  '2099-12-29',
+  'A daily plan produces one occurrence for each requested day'
+);
+SET ROLE postgres;
 
 SELECT finish();
 

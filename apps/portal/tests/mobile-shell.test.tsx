@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/ghi-lai" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/ke-hoach" }));
 
 import FamilyNav from "../src/components/family-nav";
 import GuidePage from "../src/app/huong-dan/page";
@@ -27,8 +27,8 @@ describe("mobile family shell", () => {
 
     expect(screen.getByRole("navigation", { name: "Điều hướng gia đình" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("href", "/ghi-lai");
-    expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Kế hoạch" })).toHaveAttribute("href", "/ke-hoach");
+    expect(screen.getByRole("link", { name: "Kế hoạch" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Mẹ bầu" })).toHaveAttribute("href", "/me-bau");
     expect(screen.getByRole("link", { name: "Lịch" })).toHaveAttribute("href", "/lich");
     expect(screen.getByRole("link", { name: "Đồ dùng" })).toHaveAttribute("href", "/do-dung");

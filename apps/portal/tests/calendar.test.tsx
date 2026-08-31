@@ -22,12 +22,13 @@ describe("Vietnamese family calendar", () => {
         year={2026}
         selectedDate={selected}
         memoryCounts={{ [dateKey(selected)]: 2 }}
+        taskCounts={{ [dateKey(selected)]: { completed: 1, total: 3 } }}
       />
     );
 
     expect(screen.getAllByRole("link", { name: /Xem ngày/ })).toHaveLength(42);
-    expect(screen.getByRole("link", { name: /Xem ngày 30 tháng 8 năm 2026.*2 kỷ niệm/ }))
-      .toHaveAttribute("href", "/ky-niem?date=2026-08-30");
+    expect(screen.getByRole("link", { name: /Xem ngày 30 tháng 8 năm 2026.*2 kỷ niệm.*1 trên 3 việc/ }))
+      .toHaveAttribute("href", "/ke-hoach?date=2026-08-30");
     expect(screen.getByText("18/7")).toBeInTheDocument();
   });
 });

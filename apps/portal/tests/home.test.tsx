@@ -23,10 +23,7 @@ describe("family portal home", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nhật ký" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mở album kỷ niệm" })).toHaveAttribute("href", "/ky-niem");
-    expect(screen.getByRole("link", { name: "Mở trang Mẹ bầu hôm nay" })).toHaveAttribute(
-      "href",
-      "/me-bau"
-    );
+    expect(screen.getByRole("link", { name: "Mở kế hoạch hôm nay" })).toHaveAttribute("href", "/ke-hoach");
     expect(screen.getByRole("link", { name: "Xem cách sử dụng đơn giản" })).toHaveAttribute(
       "href",
       "/huong-dan"

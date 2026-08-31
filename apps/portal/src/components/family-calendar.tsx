@@ -8,15 +8,21 @@ function memoryLabel(count: number): string {
   return count > 0 ? `, ${count} kỷ niệm` : ", chưa có kỷ niệm";
 }
 
+function taskLabel(count: { completed: number; total: number }): string {
+  return count.total > 0 ? `, ${count.completed} trên ${count.total} việc đã xong` : ", chưa có việc";
+}
+
 export default function FamilyCalendar({
   memoryCounts,
   month,
   selectedDate,
+  taskCounts,
   year
 }: {
   memoryCounts: Record<string, number>;
   month: number;
   selectedDate?: Date | null;
+  taskCounts: Record<string, { completed: number; total: number }>;
   year: number;
 }) {
   const cells = getCalendarGrid(month, year, selectedDate, 1);
@@ -47,32 +53,36 @@ export default function FamilyCalendar({
         {cells.map((cell) => {
           const key = dateKey(cell.solar);
           const count = memoryCounts[key] ?? 0;
+          const taskCount = taskCounts[key] ?? { completed: 0, total: 0 };
           const classes = [
             "calendar-day",
             !cell.isCurrentMonth && "is-outside",
             cell.isToday && "is-today",
             cell.isSelected && "is-selected",
-            count > 0 && "has-memory"
+            count > 0 && "has-memory",
+            taskCount.total > 0 && "has-task"
           ].filter(Boolean).join(" ");
-          const label = `Xem ngày ${cell.solar.getDate()} tháng ${cell.solar.getMonth() + 1} năm ${cell.solar.getFullYear()}, âm lịch ${cell.lunar.day} tháng ${cell.lunar.month}${memoryLabel(count)}`;
+          const label = `Xem ngày ${cell.solar.getDate()} tháng ${cell.solar.getMonth() + 1} năm ${cell.solar.getFullYear()}, âm lịch ${cell.lunar.day} tháng ${cell.lunar.month}${memoryLabel(count)}${taskLabel(taskCount)}`;
 
           return (
             <a
               aria-label={label}
               className={classes}
-              href={`/ky-niem?date=${key}`}
+              href={`/ke-hoach?date=${key}`}
               id={cell.isSelected ? `date-${key}` : undefined}
               key={key}
             >
               <span className="solar-day">{cell.solar.getDate()}</span>
               <span className="lunar-day">{lunarDateLabel(cell.solar)}</span>
               {count > 0 ? <span className="memory-dot" aria-hidden="true" /> : null}
+              {taskCount.total > 0 ? <span className="task-dot" aria-hidden="true" /> : null}
             </a>
           );
         })}
       </div>
       <div className="calendar-legend">
         <span><i className="memory-dot" aria-hidden="true" /> Có kỷ niệm</span>
+        <span><i className="task-dot" aria-hidden="true" /> Có việc</span>
         <span>Chữ nhỏ là ngày âm</span>
       </div>
     </section>

@@ -10,6 +10,7 @@ const actions: Array<{
   title: string;
   detail: string;
 }> = [
+  { href: "/ke-hoach?them=1#them-viec", icon: "check", title: "Thêm việc cần làm", detail: "Giao cho mẹ, ba hoặc cả nhà" },
   { href: "/ghi-lai#viet-nhat-ky", icon: "write", title: "Ghi một dòng", detail: "Lưu điều vừa xảy ra" },
   { href: "/ky-niem#gui-anh", icon: "memory", title: "Chụp hoặc chọn ảnh", detail: "Gửi vào album gia đình" },
   { href: "/me-bau#health-title", icon: "care", title: "Lưu sức khỏe", detail: "Cân nặng, ngủ, nước, vận động" },

@@ -4,14 +4,10 @@ import { Suspense } from "react";
 import AppHeader from "../components/app-header";
 import { Icon } from "../components/embe-icon";
 import { getTimeline, getTimelineFreshness } from "../lib/timeline";
+import { dateInVietnam, LINK_DETAILS } from "../lib/family-task-contract";
+import { getFamilyTasks } from "../lib/family-tasks-server";
 
 export const dynamic = "force-dynamic";
-
-const dayBeats = [
-  { when: "Sáng", title: "Mẹ Ngân xem việc hôm nay", href: "/me-bau" },
-  { when: "Trong ngày", title: "Ghi điều muốn hỏi trong lần khám tới", href: "/ghi-lai" },
-  { when: "Tối", title: "Ba Hiếu cùng Mẹ Ngân xem lại một ngày", href: "/lich" }
-];
 
 const shortcuts = [
   {
@@ -110,6 +106,36 @@ function TimelineLoading() {
   );
 }
 
+async function TodayPlanPanel() {
+  const today = dateInVietnam();
+  const tasks = await getFamilyTasks(today, today).catch(() => []);
+  const completed = tasks.filter((task) => task.completed).length;
+
+  return (
+    <section className="section day-thread" aria-labelledby="day-thread-title">
+      <div className="section-head">
+        <p className="panel-kicker">VIỆC NHÀ MÌNH HÔM NAY</p>
+        <h2 id="day-thread-title">{tasks.length ? `${completed}/${tasks.length} việc đã xong` : "Một ngày đang thật nhẹ"}</h2>
+      </div>
+      {tasks.length ? <div className="thread">
+        {tasks.slice(0, 4).map((task) => {
+          const target = LINK_DETAILS[task.linkTarget];
+          return <div className={`thread-item${task.completed ? " is-complete" : ""}`} key={task.id}>
+            <span className="thread-node" aria-hidden="true" />
+            <div className="thread-body">
+              <p className="thread-when">{task.dueTime ?? "Cả ngày"}</p>
+              <a href={target.href || "/ke-hoach"}>{task.title}</a>
+            </div>
+          </div>;
+        })}
+      </div> : <div className="empty-state compact-empty">
+        <strong>Chưa có việc nào</strong><p>Thêm việc đầu tiên để Mẹ Ngân và Ba Hiếu cùng theo dõi.</p>
+      </div>}
+      <a className="btn btn-quiet btn-block" href="/ke-hoach">Mở toàn bộ kế hoạch</a>
+    </section>
+  );
+}
+
 export default function Home() {
   return (
     <main className="page">
@@ -125,7 +151,7 @@ export default function Home() {
           cùng dõi theo em bé lớn lên.
         </p>
 
-        <a className="action-primary" href="/me-bau" aria-label="Mở trang Mẹ bầu hôm nay">
+        <a className="action-primary" href="/ke-hoach" aria-label="Mở kế hoạch hôm nay">
           Xem việc hôm nay
           <Icon name="arrow" className="icon" />
         </a>
@@ -156,23 +182,9 @@ export default function Home() {
         />
       </div>
 
-      <section className="section day-thread" aria-labelledby="day-thread-title">
-        <div className="section-head">
-          <p className="panel-kicker">MỖI NGÀY BA NHỊP</p>
-          <h2 id="day-thread-title">Ba nhịp nhẹ nhàng</h2>
-        </div>
-        <div className="thread">
-          {dayBeats.map((beat) => (
-            <div className="thread-item" key={beat.when}>
-              <span className="thread-node" aria-hidden="true" />
-              <div className="thread-body">
-                <p className="thread-when">{beat.when}</p>
-                {beat.href ? <a href={beat.href}>{beat.title}</a> : <strong>{beat.title}</strong>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <Suspense fallback={<section className="section day-thread skeleton" aria-label="Đang mở kế hoạch hôm nay"><span className="skeleton-line" /><span className="skeleton-line" /></section>}>
+        <TodayPlanPanel />
+      </Suspense>
 
       <Suspense fallback={<TimelineLoading />}>
         <TimelinePanel />

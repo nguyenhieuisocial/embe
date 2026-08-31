@@ -6,7 +6,7 @@ import { Icon, type IconName } from "./embe-icon";
 
 const destinations: Array<{ href: string; icon: IconName; label: string }> = [
   { href: "/", icon: "home", label: "Hôm nay" },
-  { href: "/ghi-lai", icon: "write", label: "Ghi lại" },
+  { href: "/ke-hoach", icon: "check", label: "Kế hoạch" },
   { href: "/me-bau", icon: "care", label: "Mẹ bầu" },
   { href: "/lich", icon: "calendar", label: "Lịch" },
   { href: "/do-dung", icon: "supply", label: "Đồ dùng" }

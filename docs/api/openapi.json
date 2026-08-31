@@ -19,6 +19,7 @@
     { "name": "Authentication", "description": "Family password session" },
     { "name": "Operations", "description": "Content-free service health" },
     { "name": "Journal", "description": "Private idempotent journal inbox" },
+    { "name": "Planner", "description": "Private linked family tasks and plans" },
     { "name": "Pregnancy", "description": "Pregnancy profile and daily checklist state" },
     { "name": "Inventory", "description": "Grocy-backed household supplies" },
     { "name": "Assistant", "description": "Bounded local analytics questions" },
@@ -174,6 +175,58 @@
           "413": { "$ref": "#/components/responses/RequestTooLarge" },
           "503": { "$ref": "#/components/responses/TemporarilyUnavailable" },
           "500": { "$ref": "#/components/responses/Unexpected" }
+        }
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "operationId": "listFamilyTasks",
+        "summary": "List family task occurrences in a bounded date range",
+        "tags": ["Planner"],
+        "parameters": [
+          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "Linked family task occurrences" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" }
+        }
+      },
+      "post": {
+        "operationId": "createFamilyTask",
+        "summary": "Create an idempotent linked family task",
+        "tags": ["Planner"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "201": { "description": "Family task created" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" }
+        }
+      },
+      "patch": {
+        "operationId": "updateFamilyTask",
+        "summary": "Update a family task or one occurrence completion",
+        "tags": ["Planner"],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": {
+          "200": { "description": "Family task updated" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteFamilyTask",
+        "summary": "Soft-delete a family task",
+        "tags": ["Planner"],
+        "responses": {
+          "200": { "description": "Family task soft-deleted" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/TemporarilyUnavailable" }
         }
       }
     },
