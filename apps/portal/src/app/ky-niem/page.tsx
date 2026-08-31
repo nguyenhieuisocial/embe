@@ -17,7 +17,14 @@ export async function MemoryGallery({ album, date, view = "album" }: { album?: s
   const memories = await getMediaMemories({ album: selectedAlbum, limit: 24, ...range });
 
   return memories.length || albums.length ? (
-    <MemoryGrid album={selectedAlbum} albums={albums} initial={memories} date={date} initialView={view} />
+    <MemoryGrid
+      album={selectedAlbum}
+      albums={albums}
+      date={date}
+      initial={memories}
+      initialView={view}
+      key={`${selectedAlbum ?? "all"}:${date ?? "all"}:${view}`}
+    />
   ) : (
     <section className="memory-empty" role="status">
       <Image
