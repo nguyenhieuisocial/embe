@@ -14,6 +14,26 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 if (-not $OutputPath) { $OutputPath = Join-Path $ProjectRoot "data\status\system-health.json" }
+$healthStage = "collect_inputs"
+trap {
+    if (-not $FixturePath) {
+        $errorPath = Join-Path $ProjectRoot "data\status\health-audit-error.json"
+        $errorReport = [ordered]@{
+            schema_version = 1
+            generated_at = [DateTimeOffset]::UtcNow.ToString("o")
+            status = "error"
+            stage = $healthStage
+            error_type = $_.Exception.GetType().Name
+            privacy = "No exception message, path, URL, token, or family content is included."
+        }
+        try {
+            [IO.File]::WriteAllText($errorPath, ($errorReport | ConvertTo-Json -Depth 3), [Text.UTF8Encoding]::new($false))
+        } catch {
+            # The Scheduled Task exit code remains the final fail-closed signal.
+        }
+    }
+    exit 1
+}
 $now = [DateTimeOffset]::UtcNow
 $checks = [Collections.Generic.List[object]]::new()
 
@@ -189,8 +209,27 @@ if ($FixturePath) {
         memos_status_code = 0
         babybuddy_status_code = 0
     }
+    $tailscaleProbePath = Join-Path $ProjectRoot "data\health\tailscale-private.json"
+    if (Test-Path -LiteralPath $tailscaleProbePath -PathType Leaf) {
+        try {
+            $tailscaleProbe = Get-Content -LiteralPath $tailscaleProbePath -Raw | ConvertFrom-Json
+            $tailscaleProbeAge = Get-AgeHours $tailscaleProbe.generated_at
+            if ($tailscaleProbe.status -eq "pass" -and $tailscaleProbeAge -le (10 / 60)) {
+                $tailscalePrivate = [pscustomobject]@{
+                    immich_status_code = [int]$tailscaleProbe.immich_status_code
+                    memos_status_code = [int]$tailscaleProbe.memos_status_code
+                    babybuddy_status_code = [int]$tailscaleProbe.babybuddy_status_code
+                }
+            }
+        } catch {
+            # A malformed or stale probe fails closed and the live check below gets one chance.
+        }
+    }
     $tailscalePath = "C:\Program Files\Tailscale\tailscale.exe"
-    if (Test-Path -LiteralPath $tailscalePath -PathType Leaf) {
+    $tailscaleProbePassed = [int]$tailscalePrivate.immich_status_code -eq 200 -and
+        [int]$tailscalePrivate.memos_status_code -eq 200 -and
+        [int]$tailscalePrivate.babybuddy_status_code -eq 200
+    if (-not $tailscaleProbePassed -and (Test-Path -LiteralPath $tailscalePath -PathType Leaf)) {
         try {
             $tailscaleStatus = (& $tailscalePath status --json 2>$null) | ConvertFrom-Json
             $dnsName = ([string]$tailscaleStatus.Self.DNSName).TrimEnd('.')
@@ -364,12 +403,14 @@ $report = [ordered]@{
 }
 
 $outputDirectory = Split-Path $OutputPath -Parent
+$healthStage = "write_report"
 New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 $temporary = "$OutputPath.tmp"
 [IO.File]::WriteAllText($temporary, ($report | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 Move-Item $temporary $OutputPath -Force
 
 if (-not $FixturePath) {
+    $healthStage = "record_soak"
     $soakRecorder = Join-Path $PSScriptRoot "record-soak.ps1"
     if (-not (Test-Path -LiteralPath $soakRecorder -PathType Leaf)) {
         throw "Soak recorder is missing"
