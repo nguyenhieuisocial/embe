@@ -33,7 +33,7 @@
 | Immich iPhone account | Tài khoản `family@hieu.asia` không-quản-trị đã tạo; đăng nhập thật đạt; mật khẩu lưu bằng DPAPI ngoài GitHub |
 | Telegram secondary | Album Immich chọn lọc tự đồng bộ ảnh/video gốc qua mã hóa chunk; canary 1 MB đã upload thật, tải toàn bộ, đọc Range, khớp checksum và xóa; phiên standard cùng cả hai shard đều được xác minh |
 | Mua sắm an toàn | Runtime SQLite và bridge server-only đã có; đề xuất idempotent, tính landed cost, khóa duyệt bằng SHA-256 và không có khả năng tự đặt hàng |
-| Sức khỏe phần mềm | 28 cổng kiểm tra; toàn bộ dịch vụ đạt, cổng dung lượng hiện cảnh báo khi ổ hệ thống dưới 25% để ngăn Docker mất ổn định |
+| Sức khỏe phần mềm | 29 cổng kiểm tra; toàn bộ dịch vụ đạt, gồm guard thu hồi PowerShell trống do Claude để lại; cổng dung lượng cảnh báo khi ổ hệ thống dưới 25% để ngăn Docker mất ổn định |
 
 ## Go/no-go
 

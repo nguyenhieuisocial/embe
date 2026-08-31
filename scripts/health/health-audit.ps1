@@ -101,6 +101,8 @@ if ($FixturePath) {
     $procurementWorkerTaskReady = [bool]$fixture.procurement_task_ready
     $assistantWorkerStatus = $fixture.assistant_worker
     $assistantWorkerTaskReady = [bool]$fixture.assistant_task_ready
+    $shellLeakGuardTaskReady = [bool]$fixture.shell_leak_guard_task_ready
+    $shellLeakGuardLastResult = [int]$fixture.shell_leak_guard_last_result
     $backupCreated = $fixture.backup_created_utc
     $restoreStatus = [string]$fixture.restore.status
     $restoreVerified = $fixture.restore.verified_at
@@ -203,6 +205,11 @@ if ($FixturePath) {
         Start-Sleep -Milliseconds 200
     }
     $assistantWorkerTaskReady = $null -ne $assistantWorkerTask -and [string]$assistantWorkerTask.State -ne "Disabled"
+
+    $shellLeakGuardTask = Get-ScheduledTask -TaskName "EmBe Shell Leak Guard" -ErrorAction SilentlyContinue
+    $shellLeakGuardInfo = if ($null -ne $shellLeakGuardTask) { Get-ScheduledTaskInfo -TaskName "EmBe Shell Leak Guard" -ErrorAction SilentlyContinue } else { $null }
+    $shellLeakGuardTaskReady = $null -ne $shellLeakGuardTask -and [string]$shellLeakGuardTask.State -ne "Disabled"
+    $shellLeakGuardLastResult = if ($null -ne $shellLeakGuardInfo) { [int]$shellLeakGuardInfo.LastTaskResult } else { -1 }
 
     $latestManifest = Get-ChildItem (Join-Path $ProjectRoot "exports\backup-manifests") -Filter "*.json" -File -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
@@ -531,6 +538,12 @@ Add-Check "local_assistant" $(if ($assistantWorkerPass) { "pass" } else { "criti
     age_minutes = if ([double]::IsInfinity($assistantWorkerAge)) { $null } else { [math]::Round($assistantWorkerAge * 60, 1) }
     maximum_minutes = 10
     dead_letters = $assistantDeadletters
+}
+
+$shellLeakGuardPass = $shellLeakGuardTaskReady -and $shellLeakGuardLastResult -eq 0
+Add-Check "shell_leak_guard" $(if ($shellLeakGuardPass) { "pass" } else { "critical" }) "Tiến trình PowerShell trống do Claude để lại được thu hồi tự động" @{
+    task_ready = [bool]$shellLeakGuardTaskReady
+    last_result = $shellLeakGuardLastResult
 }
 
 $backupAge = if ($backupCreated) { Get-AgeHours $backupCreated } else { [double]::PositiveInfinity }

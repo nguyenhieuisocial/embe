@@ -9,6 +9,7 @@ $directFiles = @(
     "services/analytics-ingest/install-scheduled.ps1",
     "scripts/health/install-uptime-monitor-probe.ps1",
     "scripts/health/install-tailscale-private-probe.ps1"
+    "scripts/health/install-shell-leak-guard.ps1"
 )
 foreach ($relative in $directFiles) {
     $source = Get-Content -LiteralPath (Join-Path $projectRoot $relative) -Raw
