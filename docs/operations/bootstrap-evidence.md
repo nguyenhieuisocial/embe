@@ -30,8 +30,9 @@
 | Sách tháng có provenance | Job production chỉ lấy Memos `PRIVATE` đã gắn `#portal`, ghi số nguồn đã chọn và health từ chối PDF fixture; vòng thật tháng 2026-07 đạt với 0 ghi chú được duyệt, không dùng dữ liệu giả |
 | Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
 | Immich media publisher | Onboarding đã hoàn tất; album chọn lọc `Em Bé` đang trống; API key riêng chỉ có `asset.read` + `asset.view` + `asset.download`; vòng đồng bộ trống đạt 0 upload/0 lỗi và health gate fail-closed |
-| Telegram secondary | Album Immich chọn lọc tự đồng bộ ảnh/video gốc qua mã hóa chunk; vòng thật album trống đạt 0 lỗi, phiên standard và cả hai shard được xác minh thay vì chỉ kiểm tra worker rỗng |
-| Sức khỏe phần mềm | 23/23 kiểm tra đạt; gồm kho phân tích, phiên/shard Telegram thật, 7 monitor, CI `main`, Vercel production và smoke test công khai |
+| Immich iPhone account | Tài khoản `family@hieu.asia` không-quản-trị đã tạo; đăng nhập thật đạt; mật khẩu lưu bằng DPAPI ngoài GitHub |
+| Telegram secondary | Album Immich chọn lọc tự đồng bộ ảnh/video gốc qua mã hóa chunk; canary 1 MB đã upload thật, tải toàn bộ, đọc Range, khớp checksum và xóa; phiên standard cùng cả hai shard đều được xác minh |
+| Sức khỏe phần mềm | 25/25 kiểm tra đạt; gồm tài khoản Immich gia đình, kho phân tích, upload/Range Telegram thật, 7 monitor, CI `main`, Vercel production và smoke test công khai |
 
 ## Go/no-go
 

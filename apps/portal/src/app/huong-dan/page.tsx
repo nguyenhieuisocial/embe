@@ -129,7 +129,7 @@ export default function GuidePage() {
             <span>3</span>
             <div>
               <strong>Đăng nhập tài khoản gia đình</strong>
-              <p>Đăng nhập bằng tài khoản gia đình đã được chuẩn bị, rồi bật Sao lưu trong Immich. Ảnh gốc sẽ về máy nhà qua kết nối riêng.</p>
+              <p>Đăng nhập bằng tài khoản <strong>family@hieu.asia</strong> đã được chuẩn bị riêng, rồi bật Sao lưu trong Immich. Đây không phải tài khoản quản trị và ảnh gốc sẽ về máy nhà qua kết nối riêng.</p>
             </div>
           </li>
         </ol>

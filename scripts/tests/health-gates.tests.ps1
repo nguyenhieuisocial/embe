@@ -44,6 +44,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         smart_healthy = $true
         service_install_ready = $true
         service_tasks_ready = $true
+        immich_family_account_ready = $true
         endpoints = @{
             portal_public = @{ reachable = $true; status_code = 200 }
             node_red = @{ reachable = $true; status_code = 200 }
@@ -59,6 +60,16 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
             generated_at = $now.AddMinutes(-5).ToString("o")
             archive = @{ status = "ok"; seen = 0; archived = 0; reused = 0; rejected = 0 }
             worker = @{ status = "ok"; provider_ready = $true; shard_count = 2; account_tier = "standard"; completed = 0; retried = 0; failed = 0 }
+        }
+        telegram_live_smoke = @{
+            status = "pass"
+            generated_at = $now.AddDays(-1).ToString("o")
+            provider_ready = $true
+            shard_count = 2
+            checksum_matches = $true
+            range_matches = $true
+            stat_matches = $true
+            deleted = $true
         }
         pdf_report = @{
             status = "ok"
@@ -85,7 +96,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "monthly_pdf")) {
+    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "immich_family_account", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "telegram_live_smoke", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -164,6 +175,17 @@ try {
     $telegramSessionHealth = Get-Content $telegramSessionReport -Raw | ConvertFrom-Json
     if (@($telegramSessionHealth.checks | Where-Object id -eq "telegram_secondary")[0].status -ne "critical") { throw "Telegram session health did not block" }
 
+    $telegramSmokeFixture = Join-Path $testRoot "telegram-smoke-stale.json"
+    Write-Fixture $telegramSmokeFixture 40 2
+    $telegramSmoke = Get-Content $telegramSmokeFixture -Raw | ConvertFrom-Json
+    $telegramSmoke.telegram_live_smoke.generated_at = ([DateTimeOffset]::Parse("2026-08-30T12:00:00Z")).AddDays(-36).ToString("o")
+    $telegramSmoke | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $telegramSmokeFixture -Encoding utf8
+    $telegramSmokeReport = Join-Path $testRoot "telegram-smoke-stale-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $telegramSmokeFixture -OutputPath $telegramSmokeReport
+    if ($LASTEXITCODE -ne 2) { throw "A stale Telegram live smoke must block health" }
+    $telegramSmokeHealth = Get-Content $telegramSmokeReport -Raw | ConvertFrom-Json
+    if (@($telegramSmokeHealth.checks | Where-Object id -eq "telegram_live_smoke")[0].status -ne "critical") { throw "Telegram live smoke health did not block" }
+
     $missingServiceTaskFixture = Join-Path $testRoot "missing-service-task.json"
     Write-Fixture $missingServiceTaskFixture 40 2
     $missingServiceTask = Get-Content $missingServiceTaskFixture -Raw | ConvertFrom-Json
@@ -174,6 +196,17 @@ try {
     if ($LASTEXITCODE -ne 2) { throw "A missing service task must block health" }
     $missingServiceTaskHealth = Get-Content $missingServiceTaskReport -Raw | ConvertFrom-Json
     if (@($missingServiceTaskHealth.checks | Where-Object id -eq "service_accounts")[0].status -ne "critical") { throw "Missing service task gate did not block" }
+
+    $missingFamilyAccountFixture = Join-Path $testRoot "missing-family-account.json"
+    Write-Fixture $missingFamilyAccountFixture 40 2
+    $missingFamilyAccount = Get-Content $missingFamilyAccountFixture -Raw | ConvertFrom-Json
+    $missingFamilyAccount.immich_family_account_ready = $false
+    $missingFamilyAccount | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $missingFamilyAccountFixture -Encoding utf8
+    $missingFamilyAccountReport = Join-Path $testRoot "missing-family-account-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $missingFamilyAccountFixture -OutputPath $missingFamilyAccountReport
+    if ($LASTEXITCODE -ne 2) { throw "A missing Immich family account must block health" }
+    $missingFamilyAccountHealth = Get-Content $missingFamilyAccountReport -Raw | ConvertFrom-Json
+    if (@($missingFamilyAccountHealth.checks | Where-Object id -eq "immich_family_account")[0].status -ne "critical") { throw "Immich family account gate did not block" }
 
     $journalFixture = Join-Path $testRoot "journal-deadletter.json"
     Write-Fixture $journalFixture 40 2

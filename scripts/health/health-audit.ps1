@@ -104,6 +104,7 @@ if ($FixturePath) {
     $smartHealthy = [bool]$fixture.smart_healthy
     $serviceInstallReady = [bool]$fixture.service_install_ready
     $serviceTasksReady = [bool]$fixture.service_tasks_ready
+    $immichFamilyAccountReady = [bool]$fixture.immich_family_account_ready
     $serviceTaskExpected = 6
     $serviceTaskReadyCount = if ($serviceTasksReady) { $serviceTaskExpected } else { 0 }
     $portalPublic = $fixture.endpoints.portal_public
@@ -115,6 +116,7 @@ if ($FixturePath) {
     $mcpRuntimeReady = [bool]$fixture.mcp_runtime_ready
     $telegramPocDisabled = [bool]$fixture.telegram_poc_disabled
     $telegramSecondaryStatus = $fixture.telegram_secondary
+    $telegramLiveSmoke = $fixture.telegram_live_smoke
     $pdfReport = $fixture.pdf_report
 } else {
     $driveName = ([IO.Path]::GetPathRoot($ProjectRoot)).TrimEnd(':', '\')
@@ -199,6 +201,24 @@ if ($FixturePath) {
         if ($installReady) { $serviceTaskReadyCount += [int]$install.tasks_verified }
     }
     $serviceTasksReady = $serviceTaskReadyCount -eq $serviceTaskExpected
+
+    $immichFamilyAccountReady = $false
+    $immichFamilyCredentialPath = Join-Path $ProjectRoot "secrets\immich-family.credential.xml"
+    if (Test-Path -LiteralPath $immichFamilyCredentialPath -PathType Leaf) {
+        try {
+            $immichFamilyCredential = Import-Clixml -LiteralPath $immichFamilyCredentialPath
+            $immichFamilyLogin = Invoke-RestMethod -Uri "http://127.0.0.1:2283/api/auth/login" -Method Post -ContentType "application/json" -TimeoutSec 8 -Body (@{
+                email = $immichFamilyCredential.UserName
+                password = $immichFamilyCredential.GetNetworkCredential().Password
+            } | ConvertTo-Json)
+            $immichFamilyAccountReady = [bool]$immichFamilyLogin.accessToken -and -not [bool]$immichFamilyLogin.isAdmin -and -not [bool]$immichFamilyLogin.shouldChangePassword
+            if ($immichFamilyAccountReady) {
+                try { Invoke-RestMethod -Uri "http://127.0.0.1:2283/api/auth/logout" -Headers @{ Authorization = "Bearer $($immichFamilyLogin.accessToken)" } -Method Post -TimeoutSec 8 | Out-Null } catch { }
+            }
+        } catch {
+            $immichFamilyAccountReady = $false
+        }
+    }
 
     $portalPublic = Test-HttpEndpoint $PortalUrl
     $nodeRed = Test-HttpEndpoint "http://127.0.0.1:1880/"
@@ -304,6 +324,10 @@ if ($FixturePath) {
 
     $telegramPocDisabled = $false
     $telegramSecondaryStatus = [pscustomobject]@{ status = "missing"; generated_at = "" }
+    $telegramLiveSmoke = [pscustomobject]@{
+        status = "missing"; generated_at = ""; provider_ready = $false; shard_count = 0
+        checksum_matches = $false; range_matches = $false; stat_matches = $false; deleted = $false
+    }
     $storagePocEnvPath = Join-Path $ProjectRoot "infra\compose\storage-poc.env"
     if (Test-Path -LiteralPath $storagePocEnvPath -PathType Leaf) {
         $telegramSetting = Get-Content -LiteralPath $storagePocEnvPath |
@@ -321,6 +345,18 @@ if ($FixturePath) {
             $telegramSecondaryStatus = Get-Content -LiteralPath $telegramSecondaryPath -Raw | ConvertFrom-Json
         } catch {
             $telegramSecondaryStatus = [pscustomobject]@{ status = "invalid"; generated_at = "" }
+        }
+    }
+
+    $telegramLiveSmokePath = Join-Path $ProjectRoot "data\status\telegram-live-smoke.json"
+    if (Test-Path -LiteralPath $telegramLiveSmokePath -PathType Leaf) {
+        try {
+            $telegramLiveSmoke = Get-Content -LiteralPath $telegramLiveSmokePath -Raw | ConvertFrom-Json
+        } catch {
+            $telegramLiveSmoke = [pscustomobject]@{
+                status = "invalid"; generated_at = ""; provider_ready = $false; shard_count = 0
+                checksum_matches = $false; range_matches = $false; stat_matches = $false; deleted = $false
+            }
         }
     }
 
@@ -430,6 +466,7 @@ $allDeadletters = $deadletters + $journalDeadletters
 Add-Check "sync_deadletters" $(if ($allDeadletters -eq 0) { "pass" } else { "critical" }) "Sự kiện đồng bộ cần xử lý" @{ count = $allDeadletters }
 $serviceAccountPass = $serviceInstallReady -and $serviceTasksReady
 Add-Check "service_accounts" $(if ($serviceAccountPass) { "pass" } else { "critical" }) "Các tác vụ nền đã được cài và kiểm chứng" @{ expected = $serviceTaskExpected; ready = $serviceTaskReadyCount }
+Add-Check "immich_family_account" $(if ($immichFamilyAccountReady) { "pass" } else { "critical" }) "Tài khoản Immich gia đình không-quản-trị đã sẵn sàng" @{ ready = [bool]$immichFamilyAccountReady; admin = $false }
 
 $portalPublicPass = [bool]$portalPublic.reachable -and [int]$portalPublic.status_code -ge 200 -and [int]$portalPublic.status_code -lt 400
 Add-Check "portal_public" $(if ($portalPublicPass) { "pass" } else { "critical" }) "Cổng gia đình truy cập được từ Internet" @{ reachable = [bool]$portalPublic.reachable; status_code = [int]$portalPublic.status_code }
@@ -485,6 +522,22 @@ Add-Check "telegram_secondary" $(if ($telegramSecondaryPass) { "pass" } else { "
     assets_seen = if ($null -ne $telegramArchive) { [int]$telegramArchive.seen } else { 0 }
     assets_archived = if ($null -ne $telegramArchive) { [int]$telegramArchive.archived } else { 0 }
     assets_reused = if ($null -ne $telegramArchive) { [int]$telegramArchive.reused } else { 0 }
+}
+
+$telegramLiveSmokeAge = if ($telegramLiveSmoke.generated_at) { (Get-AgeHours $telegramLiveSmoke.generated_at) / 24 } else { [double]::PositiveInfinity }
+$telegramLiveSmokePass = [string]$telegramLiveSmoke.status -eq "pass" -and
+    $telegramLiveSmokeAge -le 35 -and
+    [bool]$telegramLiveSmoke.provider_ready -and [int]$telegramLiveSmoke.shard_count -ge 1 -and
+    [bool]$telegramLiveSmoke.checksum_matches -and [bool]$telegramLiveSmoke.range_matches -and
+    [bool]$telegramLiveSmoke.stat_matches -and [bool]$telegramLiveSmoke.deleted
+Add-Check "telegram_live_smoke" $(if ($telegramLiveSmokePass) { "pass" } else { "critical" }) "Telegram mã hóa đã upload, đọc Range và xóa canary thành công" @{
+    age_days = if ([double]::IsInfinity($telegramLiveSmokeAge)) { $null } else { [math]::Round($telegramLiveSmokeAge, 2) }
+    maximum_days = 35
+    provider_ready = [bool]$telegramLiveSmoke.provider_ready
+    shard_count = if ($telegramLiveSmoke.PSObject.Properties["shard_count"]) { [int]$telegramLiveSmoke.shard_count } else { 0 }
+    checksum_matches = [bool]$telegramLiveSmoke.checksum_matches
+    range_matches = [bool]$telegramLiveSmoke.range_matches
+    deleted = [bool]$telegramLiveSmoke.deleted
 }
 
 $pdfAge = if ($pdfReport.generated_at_utc) { Get-AgeHours $pdfReport.generated_at_utc } else { [double]::PositiveInfinity }
