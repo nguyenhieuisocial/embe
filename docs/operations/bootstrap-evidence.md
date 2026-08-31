@@ -15,7 +15,7 @@
 | Restore drill | 41/41 file đúng checksum; bản phục hồi tạm đã chuyển Recycle Bin |
 | Immich | Các container đang healthy; media không nằm trong R2 backup nhỏ |
 | Lịch sao lưu | Ba tác vụ backup, kiểm tra toàn vẹn và health audit đã cài bằng `EmBeBackupSvc`; lần chạy xác minh đạt |
-| Tự phục hồi sau đăng nhập Windows | Tác vụ quyền giới hạn chờ 30 giây rồi phục hồi socket Docker bằng cách chuyển cả thư mục sang vùng cách ly, sau đó khởi động Docker và Ollama; lần chạy thật đạt, không xóa dữ liệu và không cần UAC |
+| Tự phục hồi sau đăng nhập Windows | Tác vụ quyền giới hạn chờ 30 giây, kiểm tra cả trạng thái Docker Desktop lẫn engine thật, rồi mới phục hồi socket bằng cách chuyển thư mục tạm sang vùng cách ly; không còn nhận nhầm API proxy rỗng là sẵn sàng, không xóa dữ liệu và không cần UAC |
 | Uptime Kuma | Bảy monitor EmBe đều đang cập nhật và báo UP; health gate đọc SQLite ở chế độ chỉ đọc và chỉ ghi số lượng tổng hợp, không lưu URL hoặc nội dung gia đình |
 | Grocy | Khóa tích hợp riêng đã kiểm tra; 10 danh mục nền tảng đã có, không tạo tồn kho giả |
 | Home Assistant + MQTT | Tích hợp MQTT chính thức đã tạo và ở trạng thái `loaded`; chưa tạo cảm biến hoặc dữ liệu giả |
@@ -25,9 +25,10 @@
 | Chống dò mật khẩu Portal | Cloudflare Free WAF giới hạn `POST /api/auth/login` theo IP; production probe trả `303` rồi `429` cho hai lần thử sai liên tiếp |
 | Mobile production audit | Khung iPhone 390×844 qua toàn bộ 5 màn hình chính: không tràn ngang, không lỗi console, form dùng cỡ chữ 16px; App Store links đạt vùng chạm 44px và Cloudflare beacon tải qua CSP |
 | Mobile streaming | Trang chủ và album trả khung giao diện trước khi chờ dữ liệu riêng tư; ba lượt đo production sau warm-up ghi nhận trang chủ FCP 376–464 ms, album tốt nhất 368 ms, không tràn ngang và nội dung động vẫn tải đủ |
+| Nhật ký chịu lỗi mạng | Bản nháp tự lưu tối đa 7 ngày trên thiết bị, khôi phục sau Safari reload và giữ nguyên mã idempotency qua retry; chỉ xóa nháp sau khi server nhận, nên mất phản hồi không tạo bản ghi trùng |
 | Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
 | Immich media publisher | Đã nối vào tác vụ Portal bằng tài khoản dịch vụ, lỗi được cô lập và health gate fail-closed; vẫn tắt cho tới khi có album chọn lọc + API key chỉ đọc |
-| Sức khỏe phần mềm | 20/20 kiểm tra đạt; gồm cổng freshness cho kho phân tích và trạng thái thật của 7 monitor; CI `main`, Vercel production và smoke test sau đăng nhập đạt |
+| Sức khỏe phần mềm | 21/21 kiểm tra đạt; gồm cổng freshness cho kho phân tích, Telegram PoC kill switch và trạng thái thật của 7 monitor; CI `main`, Vercel production và smoke test công khai đạt |
 
 ## Go/no-go
 
