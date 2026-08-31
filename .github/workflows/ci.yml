@@ -49,6 +49,7 @@ jobs:
       - run: cd services/mcp-readonly && python -m unittest discover -s tests -v
       - run: cd services/reporting && python -m unittest tests.test_monthly_export -v
       - run: cd services/media-ingest && python -m unittest discover -s tests -v
+      - run: pytest services/media-ingest/tests/test_meal_analysis_worker.py -q
       - run: cd services/media-publisher && PYTHONPATH=. python -m unittest discover -s tests -v
       - run: python -m unittest discover -s services/procurement/tests -v
       - run: python -m unittest discover -s services/inventory-worker/tests -v

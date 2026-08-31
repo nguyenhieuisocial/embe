@@ -2003,6 +2003,87 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .help-rule { display: grid; gap: 8px; }
 .logout-form { margin-top: 8px; }
 
+/* ── Nhật ký bữa ăn: camera-first, review-first ─────────────── */
+
+.meal-tracker { display: grid; gap: 16px; scroll-margin-top: 16px; }
+.meal-capture-card,
+.meal-review,
+.meal-history-summary {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+.meal-type-picker { display: grid; gap: 6px; grid-template-columns: repeat(4, 1fr); }
+.meal-type-picker button {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: .8125rem;
+  min-height: 44px;
+  padding: 6px;
+}
+.meal-type-picker button[aria-pressed="true"] {
+  background: var(--jade-soft);
+  border-color: var(--jade);
+  color: var(--jade);
+  font-weight: 700;
+}
+.meal-camera {
+  align-items: center;
+  background: color-mix(in srgb, var(--jade-soft) 65%, var(--paper));
+  border: 1px dashed var(--jade);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  min-height: 150px;
+  padding: 20px;
+  text-align: center;
+}
+.meal-camera input { height: 1px; overflow: hidden; position: absolute; width: 1px; }
+.meal-camera > span { color: var(--jade); font-size: 2.5rem; line-height: 1; }
+.meal-camera small, .meal-state, .meal-review small, .meal-history-summary small { color: var(--ink-soft); }
+.meal-note { display: grid; font-size: .875rem; font-weight: 600; gap: 6px; }
+.meal-note textarea { min-height: 72px; resize: vertical; }
+.meal-state { font-size: .8125rem; margin: 0; }
+.meal-state.is-error, .meal-risk { color: var(--coral); }
+.meal-review h3 { margin: 0; }
+.meal-food-row {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 108px;
+  padding-top: 14px;
+}
+.meal-food-row label { display: grid; font-size: .75rem; font-weight: 600; gap: 4px; }
+.meal-food-row small { grid-column: 1 / -1; }
+.meal-questions, .meal-history-summary ul { display: grid; gap: 8px; margin: 0; padding-left: 20px; }
+.meal-risk { background: var(--coral-soft); border-radius: var(--radius-sm); margin: 0; padding: 12px; }
+.meal-history-summary > div { align-items: baseline; display: flex; gap: 10px; }
+.meal-history-summary strong { color: var(--jade); font-size: 2rem; }
+.meal-history-summary span { color: var(--ink-soft); }
+.meal-history-summary .meal-nutrients {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.meal-nutrients span { background: var(--jade-soft); border-radius: var(--radius-sm); display: grid; gap: 2px; padding: 10px; }
+.meal-nutrients b { color: var(--ink); font-size: .9375rem; }
+.meal-nutrients small { font-size: .75rem; }
+
+@media (min-width: 600px) {
+  .meal-capture-card { grid-template-columns: 1fr 1fr; }
+  .meal-type-picker, .meal-camera, .meal-state { grid-column: 1 / -1; }
+  .meal-note { align-self: stretch; }
+  .meal-capture-card > .health-save { align-self: end; }
+}
+
 /* ── Đăng nhập, ngoại tuyến, lỗi ─────────────────────────────── */
 
 .bare-page {

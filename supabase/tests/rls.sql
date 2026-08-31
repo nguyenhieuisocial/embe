@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(60);
+SELECT plan(68);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -315,6 +315,39 @@ SELECT ok(
 SELECT ok(
   has_function_privilege('service_role', 'public.embe_sync_procurement(jsonb)', 'EXECUTE'),
   'The local worker can publish bounded procurement state'
+);
+
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.meal_analysis', 'SELECT'),
+  'Anonymous clients cannot read private meal photos or results'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.meal_analysis', 'INSERT'),
+  'Authenticated clients cannot bypass the meal analysis API'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_create_meal_analysis(uuid,text,text,timestamptz,text,text,text,bigint)', 'EXECUTE'),
+  'Anonymous clients cannot create meal analysis jobs'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_create_meal_analysis(uuid,text,text,timestamptz,text,text,text,bigint)', 'EXECUTE'),
+  'The portal server can create bounded meal analysis jobs'
+);
+SELECT ok(
+  NOT has_function_privilege('authenticated', 'public.embe_claim_meal_analysis()', 'EXECUTE'),
+  'Authenticated clients cannot claim local vision work'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_claim_meal_analysis()', 'EXECUTE'),
+  'The local worker can claim meal analysis jobs'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_confirm_meal_analysis(uuid,jsonb,text)', 'EXECUTE'),
+  'Anonymous clients cannot confirm model output'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_confirm_meal_analysis(uuid,jsonb,text)', 'EXECUTE'),
+  'The portal server can store user-confirmed meal results'
 );
 
 SELECT finish();
