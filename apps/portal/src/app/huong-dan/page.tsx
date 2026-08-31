@@ -92,14 +92,14 @@ export default function GuidePage() {
           <li>
             <span>1</span>
             <div>
-              <strong><a href="https://apps.apple.com/us/app/tailscale/id1470499037">Cài Tailscale từ App Store</a></strong>
+              <strong><a className="app-store-link" href="https://apps.apple.com/us/app/tailscale/id1470499037">Cài Tailscale từ App Store</a></strong>
               <p>Đăng nhập cùng tài khoản gia đình và bật kết nối riêng.</p>
             </div>
           </li>
           <li>
             <span>2</span>
             <div>
-              <strong><a href="https://apps.apple.com/us/app/immich/id1613945652">Cài Immich từ App Store</a></strong>
+              <strong><a className="app-store-link" href="https://apps.apple.com/us/app/immich/id1613945652">Cài Immich từ App Store</a></strong>
               <p>Dùng địa chỉ riêng của gia đình; có thể kết nối an toàn cả khi không ở nhà.</p>
             </div>
           </li>

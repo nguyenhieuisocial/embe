@@ -32,6 +32,7 @@ describe("simple family guide", () => {
     render(<GuidePage />);
 
     expect(screen.getByRole("heading", { name: "Đưa ảnh từ iPhone vào EmBe" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Cài Tailscale/ })).toHaveClass("app-store-link");
     expect(screen.getByRole("link", { name: /Cài Tailscale/ })).toHaveAttribute(
       "href",
       "https://apps.apple.com/us/app/tailscale/id1470499037"

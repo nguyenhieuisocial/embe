@@ -236,6 +236,7 @@ footer p { margin:0; }
 .iphone-steps li { align-items:start; background:var(--paper); border:1px solid var(--line); border-radius:12px; display:grid; gap:12px; grid-template-columns:30px 1fr; padding:15px; }
 .iphone-steps li>span { color:var(--coral); font-family:var(--font-display),serif; font-size:1.45rem; }
 .iphone-steps strong { display:block; font-family:var(--font-display),serif; font-size:1.05rem; }
+.app-store-link { align-items:center; display:inline-flex; min-height:44px; }
 .iphone-steps p { color:var(--ink-soft); font-size:.72rem; line-height:1.5; margin:4px 0 0; }
 .iphone-setup>small { border-left:3px solid var(--sun); color:var(--ink-soft); line-height:1.55; padding-left:10px; }
 .no-touch { display:grid; gap:24px; padding:52px 0 42px; }
