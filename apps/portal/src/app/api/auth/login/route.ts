@@ -42,7 +42,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   const form = await request.formData();
   const password = form.get("password");
   const destination = safeDestination(form.get("next"));
-  const origin = new URL(request.url).origin;
+  const requestUrl = new URL(request.url);
+  const origin = requestUrl.origin;
+  const loopbackHost = new Set(["localhost", "127.0.0.1", "[::1]"]).has(requestUrl.hostname);
 
   if (typeof password !== "string" || !verifyPassword(password, passwordHash)) {
     const loginUrl = new URL("/login", origin);
@@ -57,7 +59,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     maxAge: SESSION_LIFETIME_SECONDS,
     path: "/",
     sameSite: "lax",
-    secure: true
+    secure: requestUrl.protocol === "https:" || !loopbackHost
   });
 
   return privateResponse(response);

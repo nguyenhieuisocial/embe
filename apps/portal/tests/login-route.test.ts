@@ -50,6 +50,20 @@ describe("password login endpoint", () => {
     expect(cookie).toContain("Path=/");
   });
 
+  it("allows the same private session on loopback HTTP for local visual verification", async () => {
+    const request = new Request("http://127.0.0.1:3010/api/auth/login", {
+      body: new URLSearchParams({ password: "family-secret", next: "/huong-dan" }),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      method: "POST"
+    });
+    const response = await POST(request);
+    const cookie = response.headers.get("set-cookie") ?? "";
+
+    expect(response.headers.get("location")).toBe("http://127.0.0.1:3010/huong-dan");
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).not.toContain("Secure");
+  });
+
   it("does not allow an external redirect after login", async () => {
     const response = await POST(requestWith("family-secret", "https://evil.example"));
 
