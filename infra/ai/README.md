@@ -18,6 +18,11 @@ OLLAMA_MODELS=C:\EmBe\data\models\ollama
 OLLAMA_HOST=127.0.0.1:11434
 ```
 
+Shortcut Startup của Windows gọi `C:\EmBe\scripts\start-ollama.ps1` để tiến
+trình `ollama serve` luôn nhận hai biến trên sau khi đăng nhập. Không khởi động
+`ollama app.exe` song song vì ứng dụng đó có thể tạo thêm một server dùng sai
+thư mục model.
+
 ## Kiểm tra vận hành
 
 ```powershell
