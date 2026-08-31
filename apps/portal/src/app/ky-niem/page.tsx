@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import AppHeader from "../../components/app-header";
 import MemoryGrid, { type MemoryView } from "../../components/memory-grid";
 import MemoryTabs from "../../components/memory-tabs";
+import PhotoComposer from "../../components/photo-composer";
 import { dayRange, lunarDateLong, parseDateKey } from "../../lib/calendar";
 import { getMediaMemories } from "../../lib/media";
 
@@ -66,6 +67,7 @@ export default async function MemoriesPage({
         <h1>Những ngày<br /><em>mình muốn nhớ</em></h1>
         <p className="intro">{dateHeading ? `Những điều mình đã lưu trong ${dateHeading}.` : "Ảnh gốc vẫn ở máy nhà. EmBe chỉ hiện bản xem nhẹ đã được bố mẹ duyệt."}</p>
       </section>
+      <PhotoComposer />
       <MemoryTabs current="album" />
       {selectedDate ? (
         <section className="selected-date-card" aria-label="Ngày đang xem">

@@ -15,7 +15,8 @@ function memory(index: number): MediaMemory {
     height: 900,
     placeCity: "Đà Lạt",
     placeRegion: "Lâm Đồng",
-    placeCountry: "Việt Nam"
+    placeCountry: "Việt Nam",
+    reactions: {}
   };
 }
 

@@ -14,7 +14,8 @@ function memory(id: string, eventAt: string, city: string | null, region: string
     height: 900,
     placeCity: city,
     placeRegion: region,
-    placeCountry: city ? "Việt Nam" : null
+    placeCountry: city ? "Việt Nam" : null,
+    reactions: {}
   };
 }
 

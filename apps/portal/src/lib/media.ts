@@ -9,6 +9,7 @@ export type MediaMemory = {
   placeCity: string | null;
   placeRegion: string | null;
   placeCountry: string | null;
+  reactions: Partial<Record<"heart" | "love" | "laugh" | "moved", number>>;
 };
 
 export type MediaLocator = {
@@ -50,7 +51,7 @@ export async function getMediaMemories(
     ? options.offset!
     : 0;
   const query = new URLSearchParams({
-    select: "id,event_at,title,caption,mime_type,width,height,place_city,place_region,place_country",
+    select: "id,event_at,title,caption,mime_type,width,height,place_city,place_region,place_country,reactions",
     order: "event_at.desc",
     limit: String(limit),
     offset: String(offset)
@@ -79,8 +80,13 @@ export async function getMediaMemories(
       const placeCity = value.place_city == null ? null : safeText(value.place_city, 80);
       const placeRegion = value.place_region == null ? null : safeText(value.place_region, 80);
       const placeCountry = value.place_country == null ? null : safeText(value.place_country, 80);
+      const reactions = value.reactions && typeof value.reactions === "object" && !Array.isArray(value.reactions)
+        ? Object.fromEntries(Object.entries(value.reactions as Record<string, unknown>).filter(([key, count]) =>
+          ["heart", "love", "laugh", "moved"].includes(key) && Number.isInteger(count) && Number(count) >= 1 && Number(count) <= 2
+        )) as MediaMemory["reactions"]
+        : {};
       if ((value.place_city != null && !placeCity) || (value.place_region != null && !placeRegion) || (value.place_country != null && !placeCountry)) return [];
-      return [{ id, eventAt, title, caption, mimeType: mimeType as MediaMemory["mimeType"], width, height, placeCity, placeRegion, placeCountry }];
+      return [{ id, eventAt, title, caption, mimeType: mimeType as MediaMemory["mimeType"], width, height, placeCity, placeRegion, placeCountry, reactions }];
     });
   } catch {
     return [];

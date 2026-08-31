@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(38);
+SELECT plan(52);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -132,6 +132,64 @@ SELECT ok(
 SELECT ok(
   (SELECT NOT public FROM storage.buckets WHERE id = 'embe-portal-previews'),
   'The preview bucket remains private'
+);
+
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.photo_upload', 'SELECT'),
+  'Anonymous clients cannot inspect staged family uploads'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.photo_upload', 'INSERT'),
+  'Authenticated clients cannot bypass the portal upload API'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_create_photo_upload(uuid,text,text,text,bigint,text,timestamptz)', 'EXECUTE'),
+  'Anonymous clients cannot create photo upload sessions'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_create_photo_upload(uuid,text,text,text,bigint,text,timestamptz)', 'EXECUTE'),
+  'The portal server can create photo upload sessions'
+);
+SELECT ok(
+  NOT has_function_privilege('authenticated', 'public.embe_claim_photo_upload()', 'EXECUTE'),
+  'Browser users cannot claim local import work'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_claim_photo_upload()', 'EXECUTE'),
+  'The local worker can claim photo imports'
+);
+SELECT ok(
+  (SELECT NOT public FROM storage.buckets WHERE id = 'embe-photo-inbox'),
+  'The original photo inbox remains private'
+);
+SELECT is(
+  (SELECT file_size_limit FROM storage.buckets WHERE id = 'embe-photo-inbox'),
+  25000000::bigint,
+  'The original photo inbox enforces the 25 MB camera limit'
+);
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.media_reaction', 'SELECT'),
+  'Anonymous clients cannot inspect family reactions'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.media_reaction', 'INSERT'),
+  'Authenticated clients cannot bypass the reaction API'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_react_media(uuid,text,text)', 'EXECUTE'),
+  'Anonymous clients cannot react to private memories'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_react_media(uuid,text,text)', 'EXECUTE'),
+  'The portal server can store a family reaction'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_get_photo_upload(uuid)', 'EXECUTE'),
+  'Anonymous clients cannot resolve staged photo metadata'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_get_photo_upload(uuid)', 'EXECUTE'),
+  'The portal server can verify one staged photo'
 );
 
 SELECT ok(

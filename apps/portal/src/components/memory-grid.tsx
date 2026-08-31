@@ -7,6 +7,10 @@ import { groupByDay, groupIntoTrips } from "../lib/memory-groups";
 import type { MediaMemory } from "../lib/media";
 
 const PAGE_SIZE = 24;
+const REACTIONS = [
+  ["heart", "♥", "Thương"], ["love", "😍", "Yêu quá"],
+  ["laugh", "😄", "Vui quá"], ["moved", "🥹", "Xúc động"]
+] as const;
 const MemoryMap = dynamic(() => import("./memory-map"), {
   loading: () => <section className="memory-map-loading" role="status">Đang mở bản đồ kỷ niệm…</section>
 });
@@ -41,11 +45,43 @@ function calendarLink(memory: MediaMemory) {
 }
 
 function MemoryPhoto({ memory, featured = false }: { memory: MediaMemory; featured?: boolean }) {
+  const [reactions, setReactions] = useState(memory.reactions);
+  const [pending, setPending] = useState<string | null>(null);
+
+  async function react(emoji: typeof REACTIONS[number][0]) {
+    if (pending) return;
+    const saved = window.localStorage.getItem("embe-photo-author");
+    const authorRole = saved === "father" ? "father" : "mother";
+    setPending(emoji);
+    try {
+      const response = await fetch(`/api/memories/${memory.id}/reactions`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ authorRole, emoji })
+      });
+      if (!response.ok) throw new Error("reaction failed");
+      const payload = await response.json() as { reactions?: MediaMemory["reactions"] };
+      if (payload.reactions) setReactions(payload.reactions);
+    } catch {
+      // Keep the current counts; the same button remains available for retry.
+    } finally {
+      setPending(null);
+    }
+  }
+
   return (
     <article className={featured ? "memory-photo is-featured" : "memory-photo"}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
       <div>{calendarLink(memory)}<h3>{memory.title}</h3></div>
+      <div className="memory-reactions" aria-label="Phản hồi riêng của gia đình">
+        {REACTIONS.map(([key, glyph, label]) => (
+          <button aria-label={label} disabled={pending !== null} key={key} onClick={() => react(key)} type="button">
+            <span aria-hidden="true">{glyph}</span>{reactions[key] ? <small>{reactions[key]}</small> : null}
+          </button>
+        ))}
+      </div>
     </article>
   );
 }
