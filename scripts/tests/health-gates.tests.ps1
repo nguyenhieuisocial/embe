@@ -19,7 +19,7 @@ foreach ($evidence in @('backup-service-install.json', 'portal-service-install.j
 }
 foreach ($taskName in @(
     'EmBe Critical R2 Backup',
-    'EmBe Restic Integrity',
+    'EmBe Restic Integrity Check',
     'EmBe Infrastructure Health Audit',
     'EmBe Portal Timeline Sync',
     'EmBe Integration Credential Rotation',
@@ -28,6 +28,9 @@ foreach ($taskName in @(
     if (-not $healthSource.Contains($taskName)) {
         throw "Service-account health must verify the live scheduled task: $taskName"
     }
+}
+if (-not $healthSource.Contains('System32\Tasks') -or -not $healthSource.Contains('UnauthorizedAccessException')) {
+    throw "Service-account health must distinguish an ACL-hidden task from a deleted task"
 }
 $testRoot = Join-Path $env:TEMP ("embe-health-gates-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory $testRoot | Out-Null

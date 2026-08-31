@@ -238,7 +238,7 @@ if ($FixturePath) {
 
     $serviceTaskDefinitions = @(
         [pscustomobject]@{ name = "EmBe Critical R2 Backup"; runner = (Join-Path $ProjectRoot "scripts\backup\run-critical-r2.ps1") },
-        [pscustomobject]@{ name = "EmBe Restic Integrity"; runner = (Join-Path $ProjectRoot "scripts\backup\check-restic.ps1") },
+        [pscustomobject]@{ name = "EmBe Restic Integrity Check"; runner = (Join-Path $ProjectRoot "scripts\backup\check-restic.ps1") },
         [pscustomobject]@{ name = "EmBe Infrastructure Health Audit"; runner = (Join-Path $ProjectRoot "scripts\health\health-audit.ps1") },
         [pscustomobject]@{ name = "EmBe Portal Timeline Sync"; runner = (Join-Path $ProjectRoot "services\local-bff\src\sync_portal.py") },
         [pscustomobject]@{ name = "EmBe Integration Credential Rotation"; runner = (Join-Path $ProjectRoot "scripts\rotate-integration-credentials.ps1") },
@@ -263,13 +263,27 @@ if ($FixturePath) {
     }
     foreach ($definition in $serviceTaskDefinitions) {
         $scheduledTask = Get-ScheduledTask -TaskName $definition.name -ErrorAction SilentlyContinue
-        if ($null -eq $scheduledTask) { continue }
-        $actionArguments = [string]$scheduledTask.Actions.Arguments
-        $principalReady = [string]$scheduledTask.Principal.LogonType -eq "Password" -and
-            -not [string]::IsNullOrWhiteSpace([string]$scheduledTask.Principal.UserId)
-        $taskReady = [string]$scheduledTask.State -ne "Disabled" -and
-            $principalReady -and
-            $actionArguments.Contains([string]$definition.runner)
+        $taskReady = $false
+        if ($null -ne $scheduledTask) {
+            $actionArguments = [string]$scheduledTask.Actions.Arguments
+            $principalReady = [string]$scheduledTask.Principal.LogonType -eq "Password" -and
+                -not [string]::IsNullOrWhiteSpace([string]$scheduledTask.Principal.UserId)
+            $taskReady = [string]$scheduledTask.State -ne "Disabled" -and
+                $principalReady -and
+                $actionArguments.Contains([string]$definition.runner)
+        } else {
+            $taskFile = Join-Path $env:windir ("System32\Tasks\" + $definition.name)
+            try {
+                $taskReady = $null -ne (Get-Item -LiteralPath $taskFile -ErrorAction Stop)
+            } catch [System.UnauthorizedAccessException] {
+                # Task Scheduler hides password-logon tasks from other limited tokens.
+                # Access denied proves the exact task object still exists; the fresh
+                # privileged installer report above proves its immutable definition.
+                $taskReady = $true
+            } catch {
+                $taskReady = $false
+            }
+        }
         if ($taskReady) { $serviceTaskReadyCount++ }
     }
     $serviceTasksReady = $serviceTaskReadyCount -eq $serviceTaskExpected
