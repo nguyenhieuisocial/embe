@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(30);
+SELECT plan(38);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -185,6 +185,39 @@ SELECT is(
   ) -> 'completed',
   '["notes", "water-rest"]'::jsonb,
   'An atomic checklist save returns the normalized private state'
+);
+
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.procurement_proposal', 'SELECT'),
+  'Anonymous clients cannot read procurement proposals'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.procurement_action', 'INSERT'),
+  'Authenticated clients cannot bypass the procurement action API'
+);
+SELECT ok(
+  NOT has_table_privilege('anon', 'public.embe_procurement_proposal', 'SELECT'),
+  'Anonymous clients cannot query the procurement projection'
+);
+SELECT ok(
+  has_table_privilege('service_role', 'public.embe_procurement_proposal', 'SELECT'),
+  'The portal server can read the bounded procurement projection'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_submit_procurement_action(uuid,uuid,text,text)', 'EXECUTE'),
+  'Anonymous clients cannot submit procurement transitions'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_submit_procurement_action(uuid,uuid,text,text)', 'EXECUTE'),
+  'The portal server can submit procurement transitions'
+);
+SELECT ok(
+  NOT has_function_privilege('authenticated', 'public.embe_sync_procurement(jsonb)', 'EXECUTE'),
+  'Authenticated clients cannot publish procurement state'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_sync_procurement(jsonb)', 'EXECUTE'),
+  'The local worker can publish bounded procurement state'
 );
 
 SELECT finish();
