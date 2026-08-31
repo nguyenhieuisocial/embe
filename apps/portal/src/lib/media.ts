@@ -1,19 +1,97 @@
-import { getTimeline, type TimelineEvent } from "./timeline";
+export type MediaMemory = {
+  id: string;
+  eventAt: string;
+  title: string;
+  caption: string;
+  mimeType: "image/jpeg" | "image/webp";
+  width: number | null;
+  height: number | null;
+};
 
-export type MediaMemory = Pick<TimelineEvent, "id" | "eventAt" | "title" | "caption">;
+export type MediaLocator = {
+  objectPath: string;
+  mimeType: "image/jpeg" | "image/webp";
+  checksum: string;
+};
 
-export async function getMediaMemories(): Promise<MediaMemory[]> {
-  return (await getTimeline())
-    .filter((event) => event.albumCoverUrl !== null)
-    .map(({ id, eventAt, title, caption }) => ({ id, eventAt, title, caption }));
+const MEDIA_MIME = new Set(["image/jpeg", "image/webp"]);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const OBJECT_PATH = /^assets\/[0-9a-f-]{36}\/[0-9a-f]{64}\.(jpg|webp)$/;
+
+function credentials(): { baseUrl: string; secretKey: string } | null {
+  const baseUrl = process.env.SUPABASE_URL;
+  const secretKey = process.env.SUPABASE_SECRET_KEY;
+  if (!baseUrl || !secretKey) return null;
+  try {
+    const parsed = new URL(baseUrl);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) return null;
+    return { baseUrl: parsed.origin, secretKey };
+  } catch {
+    return null;
+  }
 }
 
-export function isAllowedMediaUrl(value: string, configuredHosts: string): boolean {
+function safeText(value: unknown, maximum: number): string | null {
+  return typeof value === "string" && value.length > 0 && value.length <= maximum ? value : null;
+}
+
+export async function getMediaMemories(): Promise<MediaMemory[]> {
+  const config = credentials();
+  if (!config) return [];
+  const query = new URLSearchParams({
+    select: "id,event_at,title,caption,mime_type,width,height",
+    order: "event_at.desc",
+    limit: "60"
+  });
   try {
-    const url = new URL(value);
-    const hosts = new Set(configuredHosts.split(",").map((host) => host.trim().toLowerCase()).filter(Boolean));
-    return url.protocol === "https:" && hosts.has(url.hostname.toLowerCase()) && !url.username && !url.password;
+    const response = await fetch(`${config.baseUrl}/rest/v1/embe_media_item?${query}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json", apikey: config.secretKey }
+    });
+    if (!response.ok) return [];
+    const payload: unknown = await response.json();
+    if (!Array.isArray(payload)) return [];
+    return payload.flatMap((raw): MediaMemory[] => {
+      if (!raw || typeof raw !== "object") return [];
+      const value = raw as Record<string, unknown>;
+      const id = safeText(value.id, 36);
+      const eventAt = safeText(value.event_at, 40);
+      const title = safeText(value.title, 120);
+      const caption = safeText(value.caption, 500);
+      const mimeType = value.mime_type;
+      if (!id || !UUID.test(id) || !eventAt || Number.isNaN(new Date(eventAt).getTime()) || !title || !caption || typeof mimeType !== "string" || !MEDIA_MIME.has(mimeType)) return [];
+      const width = typeof value.width === "number" && value.width > 0 ? value.width : null;
+      const height = typeof value.height === "number" && value.height > 0 ? value.height : null;
+      return [{ id, eventAt, title, caption, mimeType: mimeType as MediaMemory["mimeType"], width, height }];
+    });
   } catch {
-    return false;
+    return [];
+  }
+}
+
+export async function getMediaLocator(id: string): Promise<MediaLocator | null> {
+  const config = credentials();
+  if (!config || !UUID.test(id)) return null;
+  const query = new URLSearchParams({
+    select: "object_path,mime_type,checksum_sha256",
+    id: `eq.${id}`,
+    limit: "1"
+  });
+  try {
+    const response = await fetch(`${config.baseUrl}/rest/v1/embe_media_locator?${query}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json", apikey: config.secretKey }
+    });
+    if (!response.ok) return null;
+    const payload: unknown = await response.json();
+    if (!Array.isArray(payload) || !payload[0] || typeof payload[0] !== "object") return null;
+    const value = payload[0] as Record<string, unknown>;
+    const objectPath = safeText(value.object_path, 180);
+    const mimeType = value.mime_type;
+    const checksum = safeText(value.checksum_sha256, 64);
+    if (!objectPath || !OBJECT_PATH.test(objectPath) || typeof mimeType !== "string" || !MEDIA_MIME.has(mimeType) || !checksum || !/^[0-9a-f]{64}$/.test(checksum)) return null;
+    return { objectPath, mimeType: mimeType as MediaLocator["mimeType"], checksum };
+  } catch {
+    return null;
   }
 }

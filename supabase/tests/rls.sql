@@ -4,7 +4,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(13);
+SELECT plan(21);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -97,6 +97,39 @@ SELECT ok(
 SELECT ok(
   has_function_privilege('service_role', 'public.embe_journal_queue_status()', 'EXECUTE'),
   'The server role can read PII-free journal queue health'
+);
+
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.media_item', 'SELECT'),
+  'Anonymous clients cannot read private media metadata'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.media_item', 'SELECT'),
+  'Authenticated clients cannot bypass the portal media proxy'
+);
+SELECT ok(
+  NOT has_table_privilege('anon', 'public.embe_media_item', 'SELECT'),
+  'Anonymous clients cannot query the curated media view'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'public.embe_media_locator', 'SELECT'),
+  'Authenticated clients cannot read private storage locators'
+);
+SELECT ok(
+  has_table_privilege('service_role', 'public.embe_media_locator', 'SELECT'),
+  'The server role can resolve a curated preview locator'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_stage_media_batch(uuid,jsonb)', 'EXECUTE'),
+  'Anonymous clients cannot stage media publication'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_stage_media_batch(uuid,jsonb)', 'EXECUTE'),
+  'The publisher can stage bounded media batches'
+);
+SELECT ok(
+  (SELECT NOT public FROM storage.buckets WHERE id = 'embe-portal-previews'),
+  'The preview bucket remains private'
 );
 
 SELECT finish();

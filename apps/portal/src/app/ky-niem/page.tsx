@@ -24,7 +24,13 @@ export default async function MemoriesPage() {
           {memories.map((memory) => (
             <article className="memory-card" key={memory.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/api/media/${memory.id}`} alt={memory.title} loading="lazy" />
+              <img
+                src={`/api/media/${memory.id}`}
+                alt={memory.title}
+                loading="lazy"
+                width={memory.width ?? 1200}
+                height={memory.height ?? 900}
+              />
               <div><time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time><h2>{memory.title}</h2><p>{memory.caption}</p></div>
             </article>
           ))}

@@ -19,4 +19,3 @@ GRANT EXECUTE ON FUNCTION public.embe_journal_queue_status() TO service_role;
 
 COMMENT ON FUNCTION public.embe_journal_queue_status() IS
   'Server-only PII-free journal queue counts for the local health gate.';
-

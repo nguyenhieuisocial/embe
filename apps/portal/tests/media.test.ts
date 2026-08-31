@@ -1,12 +1,40 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { isAllowedMediaUrl } from "../src/lib/media";
+import { getMediaLocator, getMediaMemories } from "../src/lib/media";
 
-describe("private media proxy policy", () => {
-  it("allows only configured HTTPS hosts without embedded credentials", () => {
-    expect(isAllowedMediaUrl("https://cache.example.test/a.webp", "cache.example.test")).toBe(true);
-    expect(isAllowedMediaUrl("http://cache.example.test/a.webp", "cache.example.test")).toBe(false);
-    expect(isAllowedMediaUrl("https://other.example.test/a.webp", "cache.example.test")).toBe(false);
-    expect(isAllowedMediaUrl("https://user:secret@cache.example.test/a.webp", "cache.example.test")).toBe(false);
+const ID = "11111111-1111-4111-8111-111111111111";
+
+describe("private media read model", () => {
+  beforeEach(() => {
+    process.env.SUPABASE_URL = "https://project.supabase.co";
+    process.env.SUPABASE_SECRET_KEY = "server-only-secret";
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("returns only valid curated memories without storage locators", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify([
+      { id: ID, event_at: "2026-08-30T10:00:00Z", title: "Một ngày vui", caption: "Cả nhà bên nhau", mime_type: "image/webp", width: 1200, height: 900 },
+      { id: "invalid", event_at: "bad", title: "bad", caption: "bad", mime_type: "text/html" }
+    ]), { status: 200 }));
+    const result = await getMediaMemories();
+    expect(result).toEqual([{ id: ID, eventAt: "2026-08-30T10:00:00Z", title: "Một ngày vui", caption: "Cả nhà bên nhau", mimeType: "image/webp", width: 1200, height: 900 }]);
+    expect(fetchMock.mock.calls[0][0].toString()).toContain("embe_media_item");
+    expect(fetchMock.mock.calls[0][0].toString()).not.toContain("object_path");
+  });
+
+  it("validates the server-only locator contract", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify([{
+      object_path: `assets/${ID}/${"a".repeat(64)}.webp`,
+      mime_type: "image/webp",
+      checksum_sha256: "a".repeat(64)
+    }]), { status: 200 }));
+    expect(await getMediaLocator(ID)).toEqual({ objectPath: `assets/${ID}/${"a".repeat(64)}.webp`, mimeType: "image/webp", checksum: "a".repeat(64) });
+  });
+
+  it("fails closed when server credentials are missing", async () => {
+    delete process.env.SUPABASE_SECRET_KEY;
+    expect(await getMediaMemories()).toEqual([]);
+    expect(await getMediaLocator(ID)).toBeNull();
   });
 });
