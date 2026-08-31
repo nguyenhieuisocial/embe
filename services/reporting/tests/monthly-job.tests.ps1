@@ -26,6 +26,9 @@ try {
     if ($result.status -ne "ok" -or $result.book_status -ne "DRAFT" -or $result.month -ne "2026-08") {
         throw "Monthly job status is invalid"
     }
+    if ($result.source_mode -ne "provided_snapshot" -or $null -ne $result.source_event_count) {
+        throw "A layout fixture must never be reported as curated production content"
+    }
     Write-Output "monthly job tests passed"
 } finally {
     if ($null -ne $savedPath) { $env:PATH = $savedPath }

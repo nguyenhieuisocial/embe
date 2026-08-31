@@ -27,6 +27,7 @@
 | Mobile streaming | Trang chủ và album trả khung giao diện trước khi chờ dữ liệu riêng tư; ba lượt đo production sau warm-up ghi nhận trang chủ FCP 376–464 ms, album tốt nhất 368 ms, không tràn ngang và nội dung động vẫn tải đủ |
 | Nhật ký chịu lỗi mạng | Bản nháp tự lưu tối đa 7 ngày trên thiết bị, khôi phục sau Safari reload và giữ nguyên mã idempotency qua retry; chỉ xóa nháp sau khi server nhận, nên mất phản hồi không tạo bản ghi trùng |
 | Mẹ bầu đa thiết bị | Ngày dự sinh và checklist có API riêng tư, giao dịch lưu nguyên tử và bản cục bộ chịu mất mạng; 30 kiểm thử quyền Supabase cùng 82 kiểm thử Portal đạt, client không có khóa Supabase |
+| Sách tháng có provenance | Job production chỉ lấy Memos `PRIVATE` đã gắn `#portal`, ghi số nguồn đã chọn và health từ chối PDF fixture; vòng thật tháng 2026-07 đạt với 0 ghi chú được duyệt, không dùng dữ liệu giả |
 | Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
 | Immich media publisher | Đã nối vào tác vụ Portal bằng tài khoản dịch vụ, lỗi được cô lập và health gate fail-closed; vẫn tắt cho tới khi có album chọn lọc + API key chỉ đọc |
 | Sức khỏe phần mềm | 21/21 kiểm tra đạt; gồm cổng freshness cho kho phân tích, Telegram PoC kill switch và trạng thái thật của 7 monitor; CI `main`, Vercel production và smoke test công khai đạt |

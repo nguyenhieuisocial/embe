@@ -19,6 +19,9 @@ Job production chạy ngày 1 hằng tháng lúc 06:15, lấy tháng trước th
 Việt Nam. Chỉ Memos `PRIVATE` đã gắn `#portal` và không có tag nhạy cảm mới
 được đưa vào snapshot; mỗi nguồn có ID và SHA-256 để tái tạo. PDF, manifest và
 QA được lưu local, luôn ở trạng thái `DRAFT` cho đến khi bố mẹ duyệt.
+Health chỉ công nhận `source_mode=curated_memos`; PDF tạo từ fixture hoặc snapshot
+được truyền thủ công vẫn dùng được để kiểm tra bố cục nhưng không thể làm xanh
+gate production.
 
 ```powershell
 pwsh -NoProfile -File scripts\install-monthly-report-current-user.ps1

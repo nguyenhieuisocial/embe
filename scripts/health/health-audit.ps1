@@ -300,6 +300,8 @@ if ($FixturePath) {
         generated_at_utc = ""
         output_exists = $false
         checksum_matches = $false
+        source_mode = "unknown"
+        source_event_count = $null
     }
     $pdfStatusPath = Join-Path $ProjectRoot "data\status\monthly-report.json"
     if (Test-Path -LiteralPath $pdfStatusPath -PathType Leaf) {
@@ -314,9 +316,11 @@ if ($FixturePath) {
         }
         $pdfReport = [pscustomobject]@{
             status = [string]$status.status
-            generated_at_utc = [string]$status.generated_at_utc
+            generated_at_utc = $status.generated_at_utc
             output_exists = [bool]$outputExists
             checksum_matches = [bool]$checksumMatches
+            source_mode = $(if ($status.PSObject.Properties.Name -contains "source_mode") { [string]$status.source_mode } else { "unknown" })
+            source_event_count = $(if ($status.PSObject.Properties.Name -contains "source_event_count" -and $null -ne $status.source_event_count) { [int]$status.source_event_count } else { $null })
         }
     }
 }
@@ -424,8 +428,8 @@ Add-Check "mcp_runtime" $(if ($mcpRuntimeReady) { "pass" } else { "critical" }) 
 Add-Check "telegram_poc_disabled" $(if ($telegramPocDisabled) { "pass" } else { "critical" }) "Kho Telegram thử nghiệm bị khóa khỏi dữ liệu production" @{ disabled = [bool]$telegramPocDisabled }
 
 $pdfAge = if ($pdfReport.generated_at_utc) { Get-AgeHours $pdfReport.generated_at_utc } else { [double]::PositiveInfinity }
-$pdfPass = [string]$pdfReport.status -eq "ok" -and [bool]$pdfReport.output_exists -and [bool]$pdfReport.checksum_matches -and $pdfAge -le ($PdfMaxAgeDays * 24)
-Add-Check "monthly_pdf" $(if ($pdfPass) { "pass" } else { "critical" }) "Sách gia đình tháng gần nhất đã tạo và còn nguyên vẹn" @{ age_days = if ([double]::IsInfinity($pdfAge)) { $null } else { [math]::Round($pdfAge / 24, 2) }; maximum_days = $PdfMaxAgeDays; output_exists = [bool]$pdfReport.output_exists; checksum_matches = [bool]$pdfReport.checksum_matches }
+$pdfPass = [string]$pdfReport.status -eq "ok" -and [bool]$pdfReport.output_exists -and [bool]$pdfReport.checksum_matches -and [string]$pdfReport.source_mode -eq "curated_memos" -and $pdfAge -le ($PdfMaxAgeDays * 24)
+Add-Check "monthly_pdf" $(if ($pdfPass) { "pass" } else { "critical" }) "Sách gia đình tháng gần nhất dùng nguồn đã duyệt và còn nguyên vẹn" @{ age_days = if ([double]::IsInfinity($pdfAge)) { $null } else { [math]::Round($pdfAge / 24, 2) }; maximum_days = $PdfMaxAgeDays; output_exists = [bool]$pdfReport.output_exists; checksum_matches = [bool]$pdfReport.checksum_matches; source_mode = [string]$pdfReport.source_mode; source_event_count = $pdfReport.source_event_count }
 
 $overall = if (@($checks | Where-Object status -eq "critical").Count) { "critical" } elseif (@($checks | Where-Object status -eq "warning").Count) { "warning" } else { "pass" }
 $report = [ordered]@{

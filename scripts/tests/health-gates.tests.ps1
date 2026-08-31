@@ -57,6 +57,8 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
             generated_at_utc = $now.AddDays(-1).ToString("o")
             output_exists = $true
             checksum_matches = $true
+            source_mode = "curated_memos"
+            source_event_count = 0
         }
     }
     $fixture | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $Path -Encoding utf8
@@ -79,6 +81,8 @@ try {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
+    $monthlyCheck = @($healthy.checks | Where-Object id -eq "monthly_pdf")[0]
+    if ([double]$monthlyCheck.evidence.age_days -ne 1.0) { throw "UTC monthly report age must not drift by the local timezone offset" }
     $serialized = Get-Content $healthyReport -Raw
     foreach ($sensitiveKey in @("token", "password", "family_content", "response_body")) {
         if ($serialized -match ('"' + [regex]::Escape($sensitiveKey) + '"\s*:')) { throw "Health report exposes forbidden field: $sensitiveKey" }
@@ -190,6 +194,15 @@ try {
     foreach ($id in @("portal_public", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
         if (@($dependencyHealth.checks | Where-Object id -eq $id)[0].status -ne "critical") { throw "Dependency gate did not block: $id" }
     }
+
+    $samplePdfFixture = Join-Path $testRoot "sample-pdf.json"
+    Write-Fixture $samplePdfFixture 40 2
+    $samplePdf = Get-Content $samplePdfFixture -Raw | ConvertFrom-Json
+    $samplePdf.pdf_report.source_mode = "provided_snapshot"
+    $samplePdf | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $samplePdfFixture -Encoding utf8
+    $samplePdfReport = Join-Path $testRoot "sample-pdf-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $samplePdfFixture -OutputPath $samplePdfReport
+    if ($LASTEXITCODE -ne 2) { throw "A layout fixture must not satisfy production monthly PDF health" }
 
     $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\update\preflight-update.ps1") -ProjectRoot $projectRoot -HealthFixture $healthyFixture -HealthOutputPath (Join-Path $testRoot "preflight-health-pass.json") -OutputPath (Join-Path $testRoot "preflight-pass.json") -SkipContractTests
     if ($LASTEXITCODE -ne 0) { throw "Healthy update preflight must pass" }
