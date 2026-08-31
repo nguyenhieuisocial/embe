@@ -105,7 +105,7 @@ export default function PhotoComposer() {
             <button className="photo-shutter" type="button" onClick={() => camera.current?.click()}>
               <CameraGlyph /><span>Chụp ngay</span>
             </button>
-            <button className="photo-library" type="button" onClick={() => library.current?.click()}>Chọn từ Ảnh</button>
+            <button className="photo-library" type="button" onClick={() => library.current?.click()}>Thư viện</button>
           </div>
           {message ? <p className="photo-message is-error" role="alert">{message}</p> : null}
         </div>
