@@ -203,9 +203,10 @@ if ($FixturePath) {
     $mcpRuntimeReady = $false
     $mcpPython = Join-Path $ProjectRoot "services\mcp-readonly\.venv\Scripts\python.exe"
     $mcpSource = Join-Path $ProjectRoot "services\mcp-readonly\src"
-    if ((Test-Path -LiteralPath $mcpPython -PathType Leaf) -and (Test-Path -LiteralPath $mcpSource -PathType Container)) {
-        $mcpProbe = "import sys; sys.path.insert(0, sys.argv[1]); from embe_mcp.server import mcp; assert mcp is not None"
-        $null = & $mcpPython -c $mcpProbe $mcpSource 2>$null
+    $mcpDatabase = Join-Path $ProjectRoot "data\analytics\family-analytics.sqlite3"
+    if ((Test-Path -LiteralPath $mcpPython -PathType Leaf) -and (Test-Path -LiteralPath $mcpSource -PathType Container) -and (Test-Path -LiteralPath $mcpDatabase -PathType Leaf)) {
+        $mcpProbe = "import sys; from datetime import datetime,timezone; from pathlib import Path; sys.path.insert(0,sys.argv[1]); from embe_mcp.sqlite_repository import SQLiteReadOnlyRepository; r=SQLiteReadOnlyRepository(Path(sys.argv[2])); r.read_sleep('child-primary',datetime(1970,1,1,tzinfo=timezone.utc),datetime(1970,1,2,tzinfo=timezone.utc),1); r.close()"
+        $null = & $mcpPython -c $mcpProbe $mcpSource $mcpDatabase 2>$null
         $mcpRuntimeReady = $LASTEXITCODE -eq 0
     }
 

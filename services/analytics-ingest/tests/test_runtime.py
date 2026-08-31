@@ -52,6 +52,26 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(built, [])
         self.assertEqual(json.loads(self.status.read_text(encoding="utf-8"))["status"], "skipped")
 
+    def test_disabled_sources_initialize_an_empty_read_only_warehouse(self):
+        database = self.root / "family-analytics.sqlite3"
+        self.config.write_text(
+            json.dumps(
+                {
+                    "database_path": database.name,
+                    "babybuddy": {"enabled": False},
+                    "grocy": {"enabled": False},
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        with redirect_stdout(io.StringIO()):
+            result = run(self.config, self.secrets, self.status)
+
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["reason"], "all_sources_disabled")
+        self.assertTrue(database.is_file())
+
     def test_runtime_rejects_inline_secrets_before_any_network_client_exists(self):
         self.config.write_text(
             json.dumps(

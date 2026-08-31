@@ -1,5 +1,5 @@
 {
-  "database_path": "../../data/analytics/family.sqlite3",
+  "database_path": "../../data/analytics/family-analytics.sqlite3",
   "babybuddy": {
     "enabled": false,
     "base_url": "http://127.0.0.1:8000",

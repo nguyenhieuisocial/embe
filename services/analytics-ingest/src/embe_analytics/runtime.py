@@ -32,7 +32,9 @@ def run(config_path: Path, secrets_path: Path, status_path: Path, *, client_fact
 
     config = _load_config(config_path)
     enabled = [name for name in ("babybuddy", "grocy") if _enabled(config, name)]
+    database_path = _resolve_database_path(config_path, config)
     if not enabled:
+        Warehouse(database_path).close()
         result = _status("skipped", reason="all_sources_disabled")
         _write_json(status_path, result)
         _print_summary(result)
@@ -40,7 +42,6 @@ def run(config_path: Path, secrets_path: Path, status_path: Path, *, client_fact
 
     secrets = _load_secrets(Path(secrets_path))
     factories = {**DEFAULT_FACTORIES, **(client_factories or {})}
-    database_path = _resolve_database_path(config_path, config)
     warehouse = Warehouse(database_path)
     try:
         result = _status("ok")
