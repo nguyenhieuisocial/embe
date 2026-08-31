@@ -459,8 +459,24 @@ Add-Check "telegram_poc_disabled" $(if ($telegramPocDisabled) { "pass" } else { 
 }
 
 $telegramSecondaryAge = if ($telegramSecondaryStatus.generated_at) { 60 * (Get-AgeHours $telegramSecondaryStatus.generated_at) } else { [double]::PositiveInfinity }
-$telegramSecondaryPass = [string]$telegramSecondaryStatus.status -eq "pass" -and $telegramSecondaryAge -le 30
-Add-Check "telegram_secondary" $(if ($telegramSecondaryPass) { "pass" } else { "critical" }) "Bản sao Telegram mã hóa gần nhất" @{ age_minutes = if ([double]::IsInfinity($telegramSecondaryAge)) { $null } else { [math]::Round($telegramSecondaryAge, 1) }; maximum_minutes = 30 }
+$telegramArchive = $telegramSecondaryStatus.archive
+$telegramWorker = $telegramSecondaryStatus.worker
+$telegramSecondaryPass = [string]$telegramSecondaryStatus.status -eq "pass" -and
+    $telegramSecondaryAge -le 30 -and
+    $null -ne $telegramArchive -and [string]$telegramArchive.status -eq "ok" -and
+    $null -ne $telegramWorker -and [string]$telegramWorker.status -eq "ok" -and
+    [bool]$telegramWorker.provider_ready -and [int]$telegramWorker.shard_count -ge 1 -and
+    [int]$telegramWorker.failed -eq 0
+Add-Check "telegram_secondary" $(if ($telegramSecondaryPass) { "pass" } else { "critical" }) "Bản sao Immich sang Telegram mã hóa gần nhất" @{
+    age_minutes = if ([double]::IsInfinity($telegramSecondaryAge)) { $null } else { [math]::Round($telegramSecondaryAge, 1) }
+    maximum_minutes = 30
+    provider_ready = [bool]$telegramWorker.provider_ready
+    shard_count = if ($null -ne $telegramWorker) { [int]$telegramWorker.shard_count } else { 0 }
+    account_tier = if ($null -ne $telegramWorker) { [string]$telegramWorker.account_tier } else { "unknown" }
+    assets_seen = if ($null -ne $telegramArchive) { [int]$telegramArchive.seen } else { 0 }
+    assets_archived = if ($null -ne $telegramArchive) { [int]$telegramArchive.archived } else { 0 }
+    assets_reused = if ($null -ne $telegramArchive) { [int]$telegramArchive.reused } else { 0 }
+}
 
 $pdfAge = if ($pdfReport.generated_at_utc) { Get-AgeHours $pdfReport.generated_at_utc } else { [double]::PositiveInfinity }
 $pdfPass = [string]$pdfReport.status -eq "ok" -and [bool]$pdfReport.output_exists -and [bool]$pdfReport.checksum_matches -and [string]$pdfReport.source_mode -eq "curated_memos" -and $pdfAge -le ($PdfMaxAgeDays * 24)

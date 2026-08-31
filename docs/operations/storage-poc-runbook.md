@@ -75,6 +75,12 @@ Windows identity sở hữu session DPAPI. API key tối thiểu 24 ký tự; re
 `X-Embe-Poc-Key`, `X-Tenant-Id`, `X-Owner-Id`. Không đưa service qua Cloudflare
 Tunnel/Vercel hoặc DNS public.
 
+Runner hiện quét thêm đúng album Immich nằm trong allowlist của media publisher.
+Ảnh/video mới được tải tạm, kiểm checksum, đổi sang tên opaque, mã hóa rồi gửi đến
+shard; file tạm luôn bị xóa. Mapping nguồn chống gửi trùng nằm trong SQLite local.
+Ảnh/video ngoài album không được đọc. Với tài khoản thường, file chạm trần 2 GB
+phải báo lỗi và giữ nguyên trong Immich; không tự chunk để lách giới hạn.
+
 ## Thứ tự benchmark live
 
 1. Health + Premium + quyền shard.

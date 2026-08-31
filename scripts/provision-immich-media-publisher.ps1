@@ -16,7 +16,7 @@ if ($uri.Scheme -notin @("http", "https") -or $uri.Host -notin @("127.0.0.1", "l
 $BaseUrl = $BaseUrl.TrimEnd('/')
 $runtimeDirectory = Join-Path $ProjectRoot "secrets\runtime"
 $runtimeSecret = Join-Path $runtimeDirectory "media-publisher.env"
-$requiredPermissions = @("asset.read", "asset.view")
+$requiredPermissions = @("asset.download", "asset.read", "asset.view")
 
 function Read-EnvFile([string]$Path) {
     $values = @{}
@@ -126,9 +126,10 @@ try {
     } | ConvertTo-Json
     $search = Invoke-RestMethod -Uri "$BaseUrl/api/search/metadata" -Headers $keyHeaders -Method Post -ContentType "application/json" -Body $searchBody
     $sampleAssets = @($search.assets.items)
-    if ($sampleAssets.Count -gt 0) {
-        Invoke-WebRequest -Uri "$BaseUrl/api/assets/$($sampleAssets[0].id)/thumbnail?size=preview" -Headers $keyHeaders -Method Get -UseBasicParsing | Out-Null
-    }
+        if ($sampleAssets.Count -gt 0) {
+            Invoke-WebRequest -Uri "$BaseUrl/api/assets/$($sampleAssets[0].id)/thumbnail?size=preview" -Headers $keyHeaders -Method Get -UseBasicParsing | Out-Null
+            Invoke-WebRequest -Uri "$BaseUrl/api/assets/$($sampleAssets[0].id)/original" -Headers $keyHeaders -Method Get -UseBasicParsing | Out-Null
+        }
 
     New-Item -ItemType Directory -Path $runtimeDirectory -Force | Out-Null
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name

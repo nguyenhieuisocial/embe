@@ -7,6 +7,7 @@ $provisioner = Get-Content -LiteralPath (Join-Path $projectRoot "scripts\provisi
 foreach ($required in @(
     'asset.read',
     'asset.view',
+    'asset.download',
     'EmBe Portal Publisher',
     'albumName = "Em Bé"',
     '/api/system-metadata/admin-onboarding',

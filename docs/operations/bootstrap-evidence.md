@@ -29,8 +29,9 @@
 | Mẹ bầu đa thiết bị | Ngày dự sinh và checklist có API riêng tư, giao dịch lưu nguyên tử và bản cục bộ chịu mất mạng; 30 kiểm thử quyền Supabase cùng 82 kiểm thử Portal đạt, client không có khóa Supabase |
 | Sách tháng có provenance | Job production chỉ lấy Memos `PRIVATE` đã gắn `#portal`, ghi số nguồn đã chọn và health từ chối PDF fixture; vòng thật tháng 2026-07 đạt với 0 ghi chú được duyệt, không dùng dữ liệu giả |
 | Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
-| Immich media publisher | Onboarding đã hoàn tất; album chọn lọc `Em Bé` đang trống; API key riêng chỉ có `asset.read` + `asset.view`; vòng đồng bộ trống đạt 0 upload/0 lỗi và health gate fail-closed |
-| Sức khỏe phần mềm | 21/21 kiểm tra đạt; gồm cổng freshness cho kho phân tích, Telegram PoC kill switch và trạng thái thật của 7 monitor; CI `main`, Vercel production và smoke test công khai đạt |
+| Immich media publisher | Onboarding đã hoàn tất; album chọn lọc `Em Bé` đang trống; API key riêng chỉ có `asset.read` + `asset.view` + `asset.download`; vòng đồng bộ trống đạt 0 upload/0 lỗi và health gate fail-closed |
+| Telegram secondary | Album Immich chọn lọc tự đồng bộ ảnh/video gốc qua mã hóa chunk; vòng thật album trống đạt 0 lỗi, phiên standard và cả hai shard được xác minh thay vì chỉ kiểm tra worker rỗng |
+| Sức khỏe phần mềm | 23/23 kiểm tra đạt; gồm kho phân tích, phiên/shard Telegram thật, 7 monitor, CI `main`, Vercel production và smoke test công khai |
 
 ## Go/no-go
 

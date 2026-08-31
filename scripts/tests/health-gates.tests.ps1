@@ -54,7 +54,12 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         uptime_monitoring = @{ active = 7; healthy = 7; stale = 0 }
         mcp_runtime_ready = $true
         telegram_poc_disabled = $true
-        telegram_secondary = @{ status = "pass"; generated_at = $now.AddMinutes(-5).ToString("o") }
+        telegram_secondary = @{
+            status = "pass"
+            generated_at = $now.AddMinutes(-5).ToString("o")
+            archive = @{ status = "ok"; seen = 0; archived = 0; reused = 0; rejected = 0 }
+            worker = @{ status = "ok"; provider_ready = $true; shard_count = 2; account_tier = "standard"; completed = 0; retried = 0; failed = 0 }
+        }
         pdf_report = @{
             status = "ok"
             generated_at_utc = $now.AddDays(-1).ToString("o")
@@ -147,6 +152,17 @@ try {
     $telegramDirectCheck = @($healthy.checks | Where-Object id -eq "telegram_poc_disabled")[0]
     if ($telegramDirectCheck.summary -ne "Kết nối Telegram trực tiếp từ Linux bị khóa đúng thiết kế") { throw "Telegram direct-provider health label is misleading" }
     if (-not [bool]$telegramDirectCheck.evidence.direct_provider_disabled) { throw "Telegram direct-provider evidence is missing" }
+
+    $telegramSessionFixture = Join-Path $testRoot "telegram-session-unavailable.json"
+    Write-Fixture $telegramSessionFixture 40 2
+    $telegramSession = Get-Content $telegramSessionFixture -Raw | ConvertFrom-Json
+    $telegramSession.telegram_secondary.worker.provider_ready = $false
+    $telegramSession | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $telegramSessionFixture -Encoding utf8
+    $telegramSessionReport = Join-Path $testRoot "telegram-session-unavailable-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $telegramSessionFixture -OutputPath $telegramSessionReport
+    if ($LASTEXITCODE -ne 2) { throw "An unavailable Telegram session must block health" }
+    $telegramSessionHealth = Get-Content $telegramSessionReport -Raw | ConvertFrom-Json
+    if (@($telegramSessionHealth.checks | Where-Object id -eq "telegram_secondary")[0].status -ne "critical") { throw "Telegram session health did not block" }
 
     $missingServiceTaskFixture = Join-Path $testRoot "missing-service-task.json"
     Write-Fixture $missingServiceTaskFixture 40 2
