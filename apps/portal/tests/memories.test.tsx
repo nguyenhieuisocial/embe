@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../src/lib/media", () => ({ getMediaMemories: vi.fn(async () => []) }));
+vi.mock("../src/lib/media", () => ({ getMediaAlbums: vi.fn(async () => []), getMediaMemories: vi.fn(async () => []) }));
 
 import MemoriesPage, { MemoryGallery } from "../src/app/ky-niem/page";
 

@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import { groupByDay, groupIntoTrips } from "../lib/memory-groups";
-import type { MediaMemory } from "../lib/media";
+import type { MediaAlbum, MediaMemory } from "../lib/media";
 
 const PAGE_SIZE = 24;
 const REACTIONS = [
@@ -15,7 +16,7 @@ const MemoryMap = dynamic(() => import("./memory-map"), {
   loading: () => <section className="memory-map-loading" role="status">Đang mở bản đồ kỷ niệm…</section>
 });
 
-export type MemoryView = "ngay-thang" | "chuyen-di" | "ban-do";
+export type MemoryView = "album" | "ngay-thang" | "chuyen-di" | "ban-do";
 
 function dateLabel(value: string): string {
   return new Intl.DateTimeFormat("vi-VN", {
@@ -44,7 +45,7 @@ function calendarLink(memory: MediaMemory) {
   );
 }
 
-function MemoryPhoto({ memory, featured = false }: { memory: MediaMemory; featured?: boolean }) {
+function MemoryPhoto({ memory, featured = false, onOpen }: { memory: MediaMemory; featured?: boolean; onOpen: () => void }) {
   const [reactions, setReactions] = useState(memory.reactions);
   const [pending, setPending] = useState<string | null>(null);
 
@@ -72,8 +73,10 @@ function MemoryPhoto({ memory, featured = false }: { memory: MediaMemory; featur
 
   return (
     <article className={featured ? "memory-photo is-featured" : "memory-photo"}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+      <button aria-label={`Mở ảnh ${memory.title}`} className="memory-photo-open" onClick={onOpen} type="button">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+      </button>
       <div>{calendarLink(memory)}<h3>{memory.title}</h3></div>
       <div className="memory-reactions" aria-label="Phản hồi riêng của gia đình">
         {REACTIONS.map(([key, glyph, label]) => (
@@ -86,11 +89,88 @@ function MemoryPhoto({ memory, featured = false }: { memory: MediaMemory; featur
   );
 }
 
-export default function MemoryGrid({ initial, date, initialView = "ngay-thang" }: { initial: MediaMemory[]; date?: string; initialView?: MemoryView }) {
+function AlbumOverview({ albums }: { albums: MediaAlbum[] }) {
+  return (
+    <section className="memory-albums" aria-label="Các album theo folder gia đình">
+      {albums.map((album) => (
+        <Link className="memory-album" href={`/ky-niem?view=album&album=${encodeURIComponent(album.key)}`} key={album.key}>
+          <span className="memory-album-covers" aria-hidden="true">
+            {album.covers.slice(0, 3).map((cover) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img alt="" height={cover.height ?? 900} key={cover.id} loading="lazy" src={`/api/media/${cover.id}`} width={cover.width ?? 1200} />
+            ))}
+          </span>
+          <span className="memory-album-copy"><strong>{album.title}</strong><small>{album.count.toLocaleString("vi-VN")} ảnh đã chọn</small></span>
+          <span className="memory-album-arrow" aria-hidden="true">›</span>
+        </Link>
+      ))}
+    </section>
+  );
+}
+
+function PhotoViewer({ memory, index, total, onClose, onMove }: {
+  memory: MediaMemory;
+  index: number;
+  total: number;
+  onClose: () => void;
+  onMove: (direction: -1 | 1) => void;
+}) {
+  const touchStart = useRef<number | null>(null);
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key === "ArrowLeft") onMove(-1);
+      if (event.key === "ArrowRight") onMove(1);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose, onMove]);
+
+  return (
+    <div aria-label={memory.title} aria-modal="true" className="photo-viewer" role="dialog"
+      onTouchEnd={(event) => {
+        if (touchStart.current == null) return;
+        const distance = event.changedTouches[0].clientX - touchStart.current;
+        if (Math.abs(distance) > 48) onMove(distance > 0 ? -1 : 1);
+        touchStart.current = null;
+      }}
+      onTouchStart={(event) => { touchStart.current = event.touches[0].clientX; }}>
+      <header>
+        <span>{index + 1} / {total}</span>
+        <button aria-label="Đóng ảnh" onClick={onClose} type="button">×</button>
+      </header>
+      <div className="photo-viewer-stage">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img alt={memory.title} height={memory.height ?? 900} src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+        {total > 1 ? <>
+          <button aria-label="Ảnh trước" className="photo-viewer-prev" onClick={() => onMove(-1)} type="button">‹</button>
+          <button aria-label="Ảnh sau" className="photo-viewer-next" onClick={() => onMove(1)} type="button">›</button>
+        </> : null}
+      </div>
+      <footer><time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time><strong>{memory.title}</strong><p>{memory.caption}</p></footer>
+    </div>
+  );
+}
+
+export default function MemoryGrid({ initial, albums = [], album, date, initialView = "ngay-thang" }: {
+  initial: MediaMemory[];
+  albums?: MediaAlbum[];
+  album?: string;
+  date?: string;
+  initialView?: MemoryView;
+}) {
   const [memories, setMemories] = useState(initial);
   const [view, setView] = useState<MemoryView>(initialView);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(initial.length === PAGE_SIZE);
   const [state, setState] = useState<"ready" | "loading" | "error">("ready");
+  const selectedAlbumCount = albums.find((item) => item.key === album)?.count;
 
   async function loadMore() {
     if (state === "loading") return;
@@ -98,6 +178,7 @@ export default function MemoryGrid({ initial, date, initialView = "ngay-thang" }
     try {
       const params = new URLSearchParams({ offset: String(memories.length), limit: String(PAGE_SIZE) });
       if (date) params.set("date", date);
+      if (album) params.set("album", album);
       const response = await fetch(`/api/memories?${params}`, {
         credentials: "same-origin",
         headers: { Accept: "application/json" }
@@ -117,23 +198,45 @@ export default function MemoryGrid({ initial, date, initialView = "ngay-thang" }
     setView(nextView);
     const url = new URL(window.location.href);
     url.searchParams.set("view", nextView);
+    if (nextView !== "album") url.searchParams.delete("album");
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  function moveViewer(direction: -1 | 1) {
+    setActiveIndex((current) => current == null ? null : (current + direction + memories.length) % memories.length);
   }
 
   return (
     <>
       <nav className="memory-view-switcher" aria-label="Cách xem kỷ niệm">
+        <button aria-pressed={view === "album"} onClick={() => selectView("album")} type="button">Album</button>
         <button aria-pressed={view === "ngay-thang"} onClick={() => selectView("ngay-thang")} type="button">Ngày tháng</button>
         <button aria-pressed={view === "chuyen-di"} onClick={() => selectView("chuyen-di")} type="button">Chuyến đi</button>
         <button aria-pressed={view === "ban-do"} onClick={() => selectView("ban-do")} type="button">Bản đồ</button>
       </nav>
+
+      {view === "album" && !album ? <AlbumOverview albums={albums} /> : null}
+
+      {view === "album" && album ? (
+        <section className="memory-album-detail" aria-label={initial[0]?.albumTitle ?? "Album gia đình"}>
+          <header><Link href="/ky-niem?view=album">‹ Tất cả album</Link><div><h2>{initial[0]?.albumTitle ?? "Album gia đình"}</h2><p>{(selectedAlbumCount ?? memories.length).toLocaleString("vi-VN")} ảnh đã chọn</p></div></header>
+          <div className="memory-album-grid">
+            {memories.map((memory, index) => (
+              <button aria-label={`Mở ảnh ${memory.title}`} key={memory.id} onClick={() => setActiveIndex(index)} type="button">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {view === "ngay-thang" ? (
         <section className="memory-timeline" aria-label="Kỷ niệm theo ngày tháng">
           {groupByDay(memories).map((group) => (
             <article className="memory-day" key={group.key}>
               <header><span aria-hidden="true" /><div><h2>{group.title}</h2><p>{group.subtitle}</p></div></header>
-              <div className="memory-day-photos">{group.memories.map((memory, index) => <MemoryPhoto featured={index === 0} key={memory.id} memory={memory} />)}</div>
+              <div className="memory-day-photos">{group.memories.map((memory, index) => <MemoryPhoto featured={index === 0} key={memory.id} memory={memory} onOpen={() => setActiveIndex(memories.findIndex((item) => item.id === memory.id))} />)}</div>
             </article>
           ))}
         </section>
@@ -149,14 +252,14 @@ export default function MemoryGrid({ initial, date, initialView = "ngay-thang" }
                 <span>{trip.subtitle}</span>
               </div>
               <div className="memory-trip-copy"><p>CHUYẾN ĐI CỦA NHÀ MÌNH</p><h2>{trip.title}</h2><small>{dateLabel(trip.memories.at(-1)!.eventAt)} — {dateLabel(trip.memories[0].eventAt)}</small></div>
-              {trip.memories.length > 1 ? <div className="memory-trip-strip">{trip.memories.slice(1, 5).map((memory) => <MemoryPhoto key={memory.id} memory={memory} />)}</div> : null}
+              {trip.memories.length > 1 ? <div className="memory-trip-strip">{trip.memories.slice(1, 5).map((memory) => <MemoryPhoto key={memory.id} memory={memory} onOpen={() => setActiveIndex(memories.findIndex((item) => item.id === memory.id))} />)}</div> : null}
             </article>
           ))}
         </section>
       ) : null}
 
       {view === "ban-do" ? <MemoryMap memories={memories} /> : null}
-      {hasMore ? (
+      {hasMore && !(view === "album" && !album) ? (
         <button className="memory-more" disabled={state === "loading"} onClick={loadMore} type="button">
           {state === "loading" ? "Đang mở thêm…" : state === "error" ? "Thử mở lại" : "Xem thêm kỷ niệm"}
         </button>
@@ -164,6 +267,9 @@ export default function MemoryGrid({ initial, date, initialView = "ngay-thang" }
       <p className="sr-only" aria-live="polite">
         {state === "error" ? "Chưa mở được ảnh mới. Chạm Thử mở lại." : `${memories.length} ảnh đang hiển thị.`}
       </p>
+      {activeIndex != null && memories[activeIndex] ? (
+        <PhotoViewer index={activeIndex} memory={memories[activeIndex]} onClose={() => setActiveIndex(null)} onMove={moveViewer} total={memories.length} />
+      ) : null}
     </>
   );
 }

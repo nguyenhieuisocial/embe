@@ -7,6 +7,7 @@ import json
 import os
 import re
 import time
+import unicodedata
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -107,6 +108,29 @@ def _mime_from_preview(body: bytes, content_type: str) -> str:
     if sniffed not in ALLOWED_MIME or (declared in ALLOWED_MIME and declared != sniffed):
         raise ValueError("unsupported preview content")
     return sniffed
+
+
+def _searchable_path(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    normalized = unicodedata.normalize("NFD", value.replace("\\", "/"))
+    return "".join(character for character in normalized if unicodedata.category(character) != "Mn").lower().replace("đ", "d")
+
+
+def _album_for_asset(asset: Mapping[str, Any]) -> tuple[str, str, int]:
+    """Map private source folders to stable family-facing chapters without publishing paths."""
+    path = _searchable_path(asset.get("originalPath"))
+    if "/sg 13.07.2025 _ nha gai/" in path:
+        return "le-cuoi-nha-gai-2025", "Lễ cưới · Nhà gái · 13.07.2025", 10
+    if "/anh pre-wedding/sg/" in path:
+        return "pre-wedding-sai-gon", "Pre-wedding · Sài Gòn", 20
+    if "/anh pre-wedding/nha trang/" in path:
+        return "pre-wedding-nha-trang", "Pre-wedding · Nha Trang", 30
+    if "/thailand 28.07.2025/" in path:
+        return "thai-lan-2025", "Thái Lan · 28.07.2025", 40
+    if "/da lat 23.12.2025/" in path:
+        return "da-lat-2025", "Đà Lạt · 23.12.2025", 50
+    return "gia-dinh", "Khoảnh khắc gia đình", 90
 
 
 @dataclass(frozen=True)
@@ -303,14 +327,24 @@ class SupabaseMediaStore:
         return json.loads(response.body) if response.body else None
 
     def existing(self) -> dict[str, dict[str, Any]]:
-        query = urlencode({
-            "select": "source_asset_id,source_updated_at,object_path,mime_type,checksum_sha256,width,height",
-            "limit": str(MAX_ASSETS),
-        })
-        rows = self._json("GET", f"{self.config.supabase_url}/rest/v1/embe_media_source_state?{query}")
-        if not isinstance(rows, list):
-            raise ValueError("invalid media source state")
-        return {row["source_asset_id"]: row for row in rows if isinstance(row, dict) and isinstance(row.get("source_asset_id"), str)}
+        result: dict[str, dict[str, Any]] = {}
+        page_size = 1000
+        for offset in range(0, MAX_ASSETS, page_size):
+            query = urlencode({
+                "select": "source_asset_id,source_updated_at,object_path,mime_type,checksum_sha256,width,height",
+                "order": "source_asset_id.asc",
+                "limit": str(page_size),
+                "offset": str(offset),
+            })
+            rows = self._json("GET", f"{self.config.supabase_url}/rest/v1/embe_media_source_state?{query}")
+            if not isinstance(rows, list):
+                raise ValueError("invalid media source state")
+            for row in rows:
+                if isinstance(row, dict) and isinstance(row.get("source_asset_id"), str):
+                    result[row["source_asset_id"]] = row
+            if len(rows) < page_size:
+                return result
+        raise ValueError("media source state exceeds the safe asset limit")
 
     def upload(self, object_path: str, body: bytes, mime_type: str) -> None:
         path = "/".join(quote(part, safe="") for part in object_path.split("/"))
@@ -354,6 +388,7 @@ def _publication_item(asset: dict[str, Any], preview: dict[str, Any]) -> dict[st
     title = _safe_text(description.split(".", 1)[0], 120) if description else "Khoảnh khắc gia đình"
     caption = description or "Một khoảnh khắc được gia đình chọn để lưu lại."
     exif = asset.get("exifInfo") if isinstance(asset.get("exifInfo"), dict) else {}
+    album_key, album_title, album_order = _album_for_asset(asset)
     return {
         "source_asset_id": asset_id,
         "source_updated_at": source_updated_at,
@@ -368,6 +403,9 @@ def _publication_item(asset: dict[str, Any], preview: dict[str, Any]) -> dict[st
         "place_city": _safe_text(exif.get("city"), 80) or None,
         "place_region": _safe_text(exif.get("state"), 80) or None,
         "place_country": _safe_text(exif.get("country"), 80) or None,
+        "album_key": album_key,
+        "album_title": album_title,
+        "album_order": album_order,
     }
 
 

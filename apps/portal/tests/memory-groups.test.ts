@@ -15,6 +15,9 @@ function memory(id: string, eventAt: string, city: string | null, region: string
     placeCity: city,
     placeRegion: region,
     placeCountry: city ? "Việt Nam" : null,
+    albumKey: "gia-dinh",
+    albumTitle: "Khoảnh khắc gia đình",
+    albumOrder: 90,
     reactions: {}
   };
 }

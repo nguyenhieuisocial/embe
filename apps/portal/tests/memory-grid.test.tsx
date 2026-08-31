@@ -16,6 +16,9 @@ function memory(index: number): MediaMemory {
     placeCity: "Đà Lạt",
     placeRegion: "Lâm Đồng",
     placeCountry: "Việt Nam",
+    albumKey: "da-lat-2025",
+    albumTitle: "Đà Lạt · 23.12.2025",
+    albumOrder: 50,
     reactions: {}
   };
 }
@@ -46,11 +49,21 @@ describe("mobile memory grid", () => {
   });
 
   it("switches between chronology and journeys without a page reload", () => {
-    render(<MemoryGrid initial={[memory(1), memory(2)]} />);
+    render(<MemoryGrid initial={[memory(1), memory(2)]} initialView="ngay-thang" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Chuyến đi" }));
 
     expect(screen.getByRole("heading", { name: "Đà Lạt · tháng 8 năm 2026" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chuyến đi" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("opens an album photo in a full-screen one-hand viewer", () => {
+    render(<MemoryGrid album="da-lat-2025" initial={[memory(1), memory(2)]} initialView="album" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" }));
+    expect(screen.getByRole("dialog", { name: "Kỷ niệm 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Đóng ảnh" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Đóng ảnh" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

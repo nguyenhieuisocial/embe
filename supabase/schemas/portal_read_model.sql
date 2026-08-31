@@ -680,6 +680,11 @@ CREATE TABLE portal_read_model.media_item (
   place_city text CHECK (place_city IS NULL OR char_length(place_city) BETWEEN 1 AND 80),
   place_region text CHECK (place_region IS NULL OR char_length(place_region) BETWEEN 1 AND 80),
   place_country text CHECK (place_country IS NULL OR char_length(place_country) BETWEEN 1 AND 80),
+  album_key text NOT NULL DEFAULT 'gia-dinh'
+    CHECK (album_key ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$' AND char_length(album_key) <= 64),
+  album_title text NOT NULL DEFAULT 'Khoảnh khắc gia đình'
+    CHECK (char_length(album_title) BETWEEN 1 AND 120),
+  album_order integer NOT NULL DEFAULT 90 CHECK (album_order BETWEEN 0 AND 999),
   approved boolean NOT NULL DEFAULT false,
   approved_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
@@ -697,6 +702,10 @@ COMMENT ON TABLE portal_read_model.media_item IS
 
 CREATE INDEX media_item_approved_event_idx
   ON portal_read_model.media_item (event_at DESC)
+  WHERE approved = true;
+
+CREATE INDEX media_item_album_event_idx
+  ON portal_read_model.media_item (album_order, album_key, event_at DESC)
   WHERE approved = true;
 
 CREATE TRIGGER media_item_set_updated_at
@@ -719,6 +728,9 @@ CREATE TABLE portal_read_model.media_sync_stage (
   place_city text,
   place_region text,
   place_country text,
+  album_key text NOT NULL DEFAULT 'gia-dinh',
+  album_title text NOT NULL DEFAULT 'Khoảnh khắc gia đình',
+  album_order integer NOT NULL DEFAULT 90,
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
   PRIMARY KEY (sync_run_id, source_asset_id)
 );
@@ -815,6 +827,10 @@ BEGIN
        OR COALESCE(char_length(item->>'place_city'), 0) > 80
        OR COALESCE(char_length(item->>'place_region'), 0) > 80
        OR COALESCE(char_length(item->>'place_country'), 0) > 80
+       OR COALESCE(item->>'album_key', '') !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+       OR COALESCE(char_length(item->>'album_key'), 0) > 64
+       OR COALESCE(char_length(item->>'album_title'), 0) NOT BETWEEN 1 AND 120
+       OR COALESCE((item->>'album_order')::integer, -1) NOT BETWEEN 0 AND 999
   ) THEN
     RAISE EXCEPTION 'media item failed the publication contract';
   END IF;
@@ -824,7 +840,8 @@ BEGIN
 
   INSERT INTO portal_read_model.media_sync_stage (
     sync_run_id, source_asset_id, source_updated_at, event_at, title, caption, object_path,
-    mime_type, checksum_sha256, width, height, place_city, place_region, place_country
+    mime_type, checksum_sha256, width, height, place_city, place_region, place_country,
+    album_key, album_title, album_order
   )
   SELECT
     p_sync_run_id,
@@ -840,7 +857,10 @@ BEGIN
     NULLIF(item->>'height', '')::integer,
     NULLIF(item->>'place_city', ''),
     NULLIF(item->>'place_region', ''),
-    NULLIF(item->>'place_country', '')
+    NULLIF(item->>'place_country', ''),
+    item->>'album_key',
+    item->>'album_title',
+    (item->>'album_order')::integer
   FROM jsonb_array_elements(p_items) AS item
   ON CONFLICT (sync_run_id, source_asset_id) DO UPDATE SET
     source_updated_at = EXCLUDED.source_updated_at,
@@ -854,7 +874,10 @@ BEGIN
     height = EXCLUDED.height,
     place_city = EXCLUDED.place_city,
     place_region = EXCLUDED.place_region,
-    place_country = EXCLUDED.place_country;
+    place_country = EXCLUDED.place_country,
+    album_key = EXCLUDED.album_key,
+    album_title = EXCLUDED.album_title,
+    album_order = EXCLUDED.album_order;
 
   GET DIAGNOSTICS staged_count = ROW_COUNT;
   RETURN jsonb_build_object('staged', staged_count);
@@ -889,12 +912,12 @@ BEGIN
   INSERT INTO portal_read_model.media_item (
     source_asset_id, source_updated_at, event_at, title, caption, object_path,
     mime_type, checksum_sha256, width, height, place_city, place_region, place_country,
-    approved, approved_at
+    album_key, album_title, album_order, approved, approved_at
   )
   SELECT
     source_asset_id, source_updated_at, event_at, title, caption, object_path,
     mime_type, checksum_sha256, width, height, place_city, place_region, place_country,
-    true, timezone('utc', now())
+    album_key, album_title, album_order, true, timezone('utc', now())
   FROM portal_read_model.media_sync_stage
   WHERE sync_run_id = p_sync_run_id
   ON CONFLICT (source_asset_id) DO UPDATE SET
@@ -910,6 +933,9 @@ BEGIN
     place_city = EXCLUDED.place_city,
     place_region = EXCLUDED.place_region,
     place_country = EXCLUDED.place_country,
+    album_key = EXCLUDED.album_key,
+    album_title = EXCLUDED.album_title,
+    album_order = EXCLUDED.album_order,
     approved = true,
     approved_at = EXCLUDED.approved_at;
 
@@ -1592,7 +1618,8 @@ SELECT item.id, item.event_at, item.title, item.caption, item.mime_type,
            WHERE media_reaction.media_item_id = item.id
            GROUP BY media_reaction.emoji
          ) AS reaction
-       ), '{}'::jsonb) AS reactions
+       ), '{}'::jsonb) AS reactions,
+       item.album_key, item.album_title, item.album_order
 FROM portal_read_model.media_item AS item
 WHERE item.approved = true;
 

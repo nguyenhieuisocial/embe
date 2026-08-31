@@ -54,4 +54,13 @@ describe("private paginated memories", () => {
     }));
     expect(invalid.status).toBe(400);
   });
+
+  it("passes a validated folder album filter", async () => {
+    process.env.EMBE_PORTAL_SESSION_SECRET = SECRET;
+    const cookie = `embe_session=${createSessionCookie(SECRET)}`;
+    const response = await GET(new Request("https://embe.hieu.asia/api/memories?album=da-lat-2025", { headers: { cookie } }));
+
+    expect(response.status).toBe(200);
+    expect(getMediaMemories).toHaveBeenCalledWith({ album: "da-lat-2025", limit: 24, offset: 0 });
+  });
 });

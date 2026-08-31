@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from publisher import Config, HttpResponse, publish, request_with_retry, write_status
+from publisher import Config, HttpResponse, SupabaseMediaStore, publish, request_with_retry, write_status
 
 
 ASSET_ID = "11111111-1111-4111-8111-111111111111"
@@ -62,6 +62,7 @@ def asset():
         "updatedAt": "2026-08-30T11:00:00.000Z",
         "description": "Nụ cười đầu ngày\x00 ấm áp.",
         "originalFileName": "GPS-home-address.jpg",
+        "originalPath": "/external-library/family/Đà Lạt 23.12.2025/Chọn/GPS-home-address.jpg",
         "exifInfo": {
             "city": "Đà Lạt",
             "state": "Lâm Đồng",
@@ -108,6 +109,16 @@ class PublisherTests(unittest.TestCase):
             self.assertEqual(json.loads(path.read_text())["status"], "disabled")
             self.assertFalse(path.with_suffix(".json.tmp").exists())
 
+    def test_existing_preview_index_paginates_past_supabase_row_limit(self):
+        first_page = [{"source_asset_id": f"asset-{index}"} for index in range(1000)]
+        final_item = {"source_asset_id": "asset-1000"}
+        fake = FakeTransport([response(payload=first_page), response(payload=[final_item])])
+
+        existing = SupabaseMediaStore(config(), fake, sleep=lambda _: None).existing()
+
+        self.assertEqual(len(existing), 1001)
+        self.assertIn("offset=1000", fake.calls[1][1])
+
     def test_publishes_only_sanitized_preview_metadata(self):
         checksum = hashlib.sha256(JPEG).hexdigest()
         fake = FakeTransport([
@@ -130,7 +141,11 @@ class PublisherTests(unittest.TestCase):
         self.assertEqual(item["place_city"], "Đà Lạt")
         self.assertEqual(item["place_region"], "Lâm Đồng")
         self.assertEqual(item["place_country"], "Việt Nam")
+        self.assertEqual(item["album_key"], "da-lat-2025")
+        self.assertEqual(item["album_title"], "Đà Lạt · 23.12.2025")
+        self.assertEqual(item["album_order"], 50)
         self.assertEqual(item["title"], "Nụ cười đầu ngày ấm áp")
+        self.assertNotIn("external-library", serialized)
         self.assertNotIn("immich-secret", json.dumps(result))
         search_body = json.loads(fake.calls[1][3])
         self.assertTrue(search_body["withExif"])
