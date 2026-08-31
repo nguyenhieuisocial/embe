@@ -15,6 +15,7 @@
 | Restore drill | 41/41 file đúng checksum; bản phục hồi tạm đã chuyển Recycle Bin |
 | Immich | Các container đang healthy; media không nằm trong R2 backup nhỏ |
 | Lịch sao lưu | Ba tác vụ backup, kiểm tra toàn vẹn và health audit đã cài bằng `EmBeBackupSvc`; lần chạy xác minh đạt |
+| Tự phục hồi sau đăng nhập Windows | Tác vụ quyền giới hạn chờ 30 giây rồi phục hồi socket Docker bằng cách chuyển cả thư mục sang vùng cách ly, sau đó khởi động Docker và Ollama; lần chạy thật đạt, không xóa dữ liệu và không cần UAC |
 | Grocy | Khóa tích hợp riêng đã kiểm tra; 10 danh mục nền tảng đã có, không tạo tồn kho giả |
 | Home Assistant + MQTT | Tích hợp MQTT chính thức đã tạo và ở trạng thái `loaded`; chưa tạo cảm biến hoặc dữ liệu giả |
 | Tailscale | Immich, Memos và BabyBuddy Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và Funnel tắt |

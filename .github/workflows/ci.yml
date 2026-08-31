@@ -60,3 +60,6 @@ jobs:
       - name: Verify health, soak, and go-live gates
         shell: pwsh
         run: .\scripts\tests\health-gates.tests.ps1
+      - name: Verify recoverable Windows runtime startup
+        shell: pwsh
+        run: .\scripts\tests\local-runtime-startup.tests.ps1
