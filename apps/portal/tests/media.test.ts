@@ -14,13 +14,14 @@ describe("private media read model", () => {
 
   it("returns only valid curated memories without storage locators", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify([
-      { id: ID, event_at: "2026-08-30T10:00:00Z", title: "Một ngày vui", caption: "Cả nhà bên nhau", mime_type: "image/webp", width: 1200, height: 900 },
+      { id: ID, event_at: "2026-08-30T10:00:00Z", title: "Một ngày vui", caption: "Cả nhà bên nhau", mime_type: "image/webp", width: 1200, height: 900, place_city: "Đà Lạt", place_region: "Lâm Đồng", place_country: "Việt Nam" },
       { id: "invalid", event_at: "bad", title: "bad", caption: "bad", mime_type: "text/html" }
     ]), { status: 200 }));
     const result = await getMediaMemories();
-    expect(result).toEqual([{ id: ID, eventAt: "2026-08-30T10:00:00Z", title: "Một ngày vui", caption: "Cả nhà bên nhau", mimeType: "image/webp", width: 1200, height: 900 }]);
+    expect(result).toEqual([{ id: ID, eventAt: "2026-08-30T10:00:00Z", title: "Một ngày vui", caption: "Cả nhà bên nhau", mimeType: "image/webp", width: 1200, height: 900, placeCity: "Đà Lạt", placeRegion: "Lâm Đồng", placeCountry: "Việt Nam" }]);
     expect(fetchMock.mock.calls[0][0].toString()).toContain("embe_media_item");
     expect(fetchMock.mock.calls[0][0].toString()).not.toContain("object_path");
+    expect(fetchMock.mock.calls[0][0].toString()).not.toContain("latitude");
   });
 
   it("supports bounded gallery pagination", async () => {

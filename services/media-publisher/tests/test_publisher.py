@@ -62,7 +62,13 @@ def asset():
         "updatedAt": "2026-08-30T11:00:00.000Z",
         "description": "Nụ cười đầu ngày\x00 ấm áp.",
         "originalFileName": "GPS-home-address.jpg",
-        "exifInfo": {"latitude": 10.0, "longitude": 106.0},
+        "exifInfo": {
+            "city": "Đà Lạt",
+            "state": "Lâm Đồng",
+            "country": "Việt Nam",
+            "latitude": 10.0,
+            "longitude": 106.0,
+        },
     }
 
 
@@ -120,8 +126,14 @@ class PublisherTests(unittest.TestCase):
         serialized = json.dumps(item)
         self.assertNotIn("GPS-home-address", serialized)
         self.assertNotIn("latitude", serialized)
+        self.assertNotIn("longitude", serialized)
+        self.assertEqual(item["place_city"], "Đà Lạt")
+        self.assertEqual(item["place_region"], "Lâm Đồng")
+        self.assertEqual(item["place_country"], "Việt Nam")
         self.assertEqual(item["title"], "Nụ cười đầu ngày ấm áp")
         self.assertNotIn("immich-secret", json.dumps(result))
+        search_body = json.loads(fake.calls[1][3])
+        self.assertTrue(search_body["withExif"])
 
     def test_reuses_unchanged_preview(self):
         state = {

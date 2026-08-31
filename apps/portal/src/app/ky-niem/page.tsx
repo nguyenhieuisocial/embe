@@ -2,19 +2,19 @@ import Image from "next/image";
 import { Suspense } from "react";
 
 import AppHeader from "../../components/app-header";
-import MemoryGrid from "../../components/memory-grid";
+import MemoryGrid, { type MemoryView } from "../../components/memory-grid";
 import MemoryTabs from "../../components/memory-tabs";
 import { dayRange, lunarDateLong, parseDateKey } from "../../lib/calendar";
 import { getMediaMemories } from "../../lib/media";
 
 export const dynamic = "force-dynamic";
 
-export async function MemoryGallery({ date }: { date?: string } = {}) {
+export async function MemoryGallery({ date, view }: { date?: string; view?: MemoryView } = {}) {
   const range = date ? dayRange(date) : null;
   const memories = await getMediaMemories({ limit: 24, ...range });
 
   return memories.length ? (
-    <MemoryGrid initial={memories} date={date} />
+    <MemoryGrid initial={memories} date={date} initialView={view} />
   ) : (
     <section className="memory-empty" role="status">
       <Image
@@ -50,6 +50,8 @@ export default async function MemoriesPage({
   const query = await searchParams;
   const dateValue = typeof query.date === "string" ? query.date : undefined;
   const selectedDate = parseDateKey(dateValue);
+  const viewValue = typeof query.view === "string" ? query.view : undefined;
+  const view: MemoryView = viewValue === "chuyen-di" || viewValue === "ban-do" ? viewValue : "ngay-thang";
   const date = selectedDate && dateValue ? dateValue : undefined;
   const dateHeading = selectedDate ? new Intl.DateTimeFormat("vi-VN", {
     dateStyle: "full",
@@ -76,7 +78,7 @@ export default async function MemoriesPage({
         </section>
       ) : null}
       <Suspense fallback={<MemoryLoading />}>
-        <MemoryGallery date={date} />
+        <MemoryGallery date={date} view={view} />
       </Suspense>
     </main>
   );

@@ -677,6 +677,9 @@ CREATE TABLE portal_read_model.media_item (
   checksum_sha256 text NOT NULL CHECK (checksum_sha256 ~ '^[0-9a-f]{64}$'),
   width integer CHECK (width IS NULL OR width BETWEEN 1 AND 10000),
   height integer CHECK (height IS NULL OR height BETWEEN 1 AND 10000),
+  place_city text CHECK (place_city IS NULL OR char_length(place_city) BETWEEN 1 AND 80),
+  place_region text CHECK (place_region IS NULL OR char_length(place_region) BETWEEN 1 AND 80),
+  place_country text CHECK (place_country IS NULL OR char_length(place_country) BETWEEN 1 AND 80),
   approved boolean NOT NULL DEFAULT false,
   approved_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
@@ -713,6 +716,9 @@ CREATE TABLE portal_read_model.media_sync_stage (
   checksum_sha256 text NOT NULL,
   width integer,
   height integer,
+  place_city text,
+  place_region text,
+  place_country text,
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
   PRIMARY KEY (sync_run_id, source_asset_id)
 );
@@ -747,7 +753,8 @@ WITH CHECK (false);
 CREATE OR REPLACE VIEW public.embe_media_item
 WITH (security_invoker = true)
 AS
-SELECT id, event_at, title, caption, mime_type, width, height, updated_at
+SELECT id, event_at, title, caption, mime_type, width, height, updated_at,
+       place_city, place_region, place_country
 FROM portal_read_model.media_item
 WHERE approved = true;
 
@@ -805,6 +812,9 @@ BEGIN
        OR COALESCE(item->>'checksum_sha256', '') !~ '^[0-9a-f]{64}$'
        OR COALESCE((item->>'width')::integer, 1) NOT BETWEEN 1 AND 10000
        OR COALESCE((item->>'height')::integer, 1) NOT BETWEEN 1 AND 10000
+       OR COALESCE(char_length(item->>'place_city'), 0) > 80
+       OR COALESCE(char_length(item->>'place_region'), 0) > 80
+       OR COALESCE(char_length(item->>'place_country'), 0) > 80
   ) THEN
     RAISE EXCEPTION 'media item failed the publication contract';
   END IF;
@@ -814,7 +824,7 @@ BEGIN
 
   INSERT INTO portal_read_model.media_sync_stage (
     sync_run_id, source_asset_id, source_updated_at, event_at, title, caption, object_path,
-    mime_type, checksum_sha256, width, height
+    mime_type, checksum_sha256, width, height, place_city, place_region, place_country
   )
   SELECT
     p_sync_run_id,
@@ -827,7 +837,10 @@ BEGIN
     item->>'mime_type',
     item->>'checksum_sha256',
     NULLIF(item->>'width', '')::integer,
-    NULLIF(item->>'height', '')::integer
+    NULLIF(item->>'height', '')::integer,
+    NULLIF(item->>'place_city', ''),
+    NULLIF(item->>'place_region', ''),
+    NULLIF(item->>'place_country', '')
   FROM jsonb_array_elements(p_items) AS item
   ON CONFLICT (sync_run_id, source_asset_id) DO UPDATE SET
     source_updated_at = EXCLUDED.source_updated_at,
@@ -838,7 +851,10 @@ BEGIN
     mime_type = EXCLUDED.mime_type,
     checksum_sha256 = EXCLUDED.checksum_sha256,
     width = EXCLUDED.width,
-    height = EXCLUDED.height;
+    height = EXCLUDED.height,
+    place_city = EXCLUDED.place_city,
+    place_region = EXCLUDED.place_region,
+    place_country = EXCLUDED.place_country;
 
   GET DIAGNOSTICS staged_count = ROW_COUNT;
   RETURN jsonb_build_object('staged', staged_count);
@@ -872,11 +888,13 @@ BEGIN
 
   INSERT INTO portal_read_model.media_item (
     source_asset_id, source_updated_at, event_at, title, caption, object_path,
-    mime_type, checksum_sha256, width, height, approved, approved_at
+    mime_type, checksum_sha256, width, height, place_city, place_region, place_country,
+    approved, approved_at
   )
   SELECT
     source_asset_id, source_updated_at, event_at, title, caption, object_path,
-    mime_type, checksum_sha256, width, height, true, timezone('utc', now())
+    mime_type, checksum_sha256, width, height, place_city, place_region, place_country,
+    true, timezone('utc', now())
   FROM portal_read_model.media_sync_stage
   WHERE sync_run_id = p_sync_run_id
   ON CONFLICT (source_asset_id) DO UPDATE SET
@@ -889,6 +907,9 @@ BEGIN
     checksum_sha256 = EXCLUDED.checksum_sha256,
     width = EXCLUDED.width,
     height = EXCLUDED.height,
+    place_city = EXCLUDED.place_city,
+    place_region = EXCLUDED.place_region,
+    place_country = EXCLUDED.place_country,
     approved = true,
     approved_at = EXCLUDED.approved_at;
 

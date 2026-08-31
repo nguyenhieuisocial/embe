@@ -12,9 +12,19 @@
 
 ## Thành phần tuyệt đối KHÔNG cho phép vào Supabase
 
-- Dữ liệu y tế dạng raw, GPS/location, token API, credentials.
+- Dữ liệu y tế dạng raw, tọa độ GPS chính xác, token API, credentials.
 - Tên file media gốc, SHA thông tin định danh media nhạy cảm, raw note private.
 - Thông tin vận hành server/source secrets.
+
+## Ngoại lệ địa danh an toàn cho Kỷ niệm
+
+- `media_item` chỉ được nhận `place_city`, `place_region`, `place_country` do
+  Immich reverse-geocode ngay trên máy nhà.
+- Không đồng bộ `latitude`, `longitude`, địa chỉ, tên file gốc hoặc toàn bộ
+  EXIF. Frontend chỉ nhận địa danh cấp thành phố/tỉnh để gom Chuyến đi và tô
+  Bản đồ ký ức.
+- Ba trường địa danh đều không bắt buộc, giới hạn 80 ký tự và có thể rebuild
+  từ album Immich đã duyệt.
 
 ## Bảo vệ truy cập
 

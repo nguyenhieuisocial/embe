@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@lichta/core": "^2.2.1",
+    "@svg-maps/vietnam": "^2.0.0",
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8"

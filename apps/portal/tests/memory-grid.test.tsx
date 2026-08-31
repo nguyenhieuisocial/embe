@@ -12,7 +12,10 @@ function memory(index: number): MediaMemory {
     caption: "Gia đình bên nhau",
     mimeType: "image/webp",
     width: 1200,
-    height: 900
+    height: 900,
+    placeCity: "Đà Lạt",
+    placeRegion: "Lâm Đồng",
+    placeCountry: "Việt Nam"
   };
 }
 
@@ -39,5 +42,14 @@ describe("mobile memory grid", () => {
 
     expect(screen.getByRole("link", { name: /30 thg 8, 2026/ }))
       .toHaveAttribute("href", "/lich?month=2026-08&date=2026-08-30#date-2026-08-30");
+  });
+
+  it("switches between chronology and journeys without a page reload", () => {
+    render(<MemoryGrid initial={[memory(1), memory(2)]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Chuyến đi" }));
+
+    expect(screen.getByRole("heading", { name: "Đà Lạt · tháng 8 năm 2026" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Chuyến đi" })).toHaveAttribute("aria-pressed", "true");
   });
 });

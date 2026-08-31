@@ -170,7 +170,7 @@ class ImmichClient:
                 payload: dict[str, Any] = {
                     "albumIds": [album_id],
                     "size": 250,
-                    "withExif": False,
+                    "withExif": True,
                     "withPeople": False,
                     "withStacked": False,
                 }
@@ -353,6 +353,7 @@ def _publication_item(asset: dict[str, Any], preview: dict[str, Any]) -> dict[st
     description = _safe_text(asset.get("description"), 500)
     title = _safe_text(description.split(".", 1)[0], 120) if description else "Khoảnh khắc gia đình"
     caption = description or "Một khoảnh khắc được gia đình chọn để lưu lại."
+    exif = asset.get("exifInfo") if isinstance(asset.get("exifInfo"), dict) else {}
     return {
         "source_asset_id": asset_id,
         "source_updated_at": source_updated_at,
@@ -364,6 +365,9 @@ def _publication_item(asset: dict[str, Any], preview: dict[str, Any]) -> dict[st
         "checksum_sha256": preview["checksum_sha256"],
         "width": preview.get("width"),
         "height": preview.get("height"),
+        "place_city": _safe_text(exif.get("city"), 80) or None,
+        "place_region": _safe_text(exif.get("state"), 80) or None,
+        "place_country": _safe_text(exif.get("country"), 80) or None,
     }
 
 

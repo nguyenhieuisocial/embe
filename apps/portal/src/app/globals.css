@@ -950,6 +950,102 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .memory-date-link { color: var(--ink-soft); text-decoration: none; }
 .memory-date-link time { border-bottom: 1px solid var(--line-strong); }
 
+.memory-view-switcher {
+  background: color-mix(in srgb, var(--jade-soft) 72%, var(--surface));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  display: grid;
+  gap: 3px;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 20px;
+  padding: 4px;
+  position: sticky;
+  top: calc(8px + env(safe-area-inset-top));
+  z-index: 5;
+}
+.memory-view-switcher button {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 8px 6px;
+}
+.memory-view-switcher button[aria-pressed="true"] {
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(24, 38, 33, .09);
+  color: var(--jade);
+}
+
+.memory-timeline { display: grid; gap: 28px; margin-top: 24px; }
+.memory-day { display: grid; gap: 12px; padding-left: 22px; position: relative; }
+.memory-day::before { background: var(--line-strong); bottom: -28px; content: ""; left: 5px; position: absolute; top: 9px; width: 1px; }
+.memory-day:last-child::before { bottom: 0; }
+.memory-day > header { align-items: start; display: flex; gap: 12px; }
+.memory-day > header > span {
+  background: var(--coral);
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--coral);
+  height: 11px;
+  left: 0;
+  position: absolute;
+  top: 5px;
+  width: 11px;
+}
+.memory-day header div { display: grid; gap: 2px; }
+.memory-day header h2 { font-family: var(--font-display), Georgia, serif; font-size: 1.05rem; text-transform: capitalize; }
+.memory-day header p { color: var(--ink-soft); font-size: .8125rem; }
+.memory-day-photos { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.memory-photo { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; overflow: hidden; }
+.memory-photo.is-featured { grid-column: 1 / -1; }
+.memory-photo img { aspect-ratio: 1 / 1; display: block; object-fit: cover; width: 100%; }
+.memory-photo.is-featured img { aspect-ratio: 4 / 3; }
+.memory-photo > div { display: grid; gap: 3px; padding: 10px; }
+.memory-photo time { color: var(--ink-soft); font-size: .6875rem; }
+.memory-photo h3 { font-size: .8125rem; line-height: 1.35; }
+
+.memory-trips { display: grid; gap: 24px; margin-top: 24px; }
+.memory-trip { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-card); overflow: hidden; }
+.memory-trip-cover { overflow: hidden; position: relative; }
+.memory-trip-cover > img { aspect-ratio: 4 / 3; display: block; object-fit: cover; width: 100%; }
+.memory-trip-cover > span { backdrop-filter: blur(8px); background: rgba(24, 38, 33, .65); border-radius: var(--radius-pill); bottom: 12px; color: white; font-size: .75rem; left: 12px; padding: 7px 11px; position: absolute; }
+.memory-trip-copy { display: grid; gap: 6px; padding: 18px; }
+.memory-trip-copy > p { color: var(--coral); font-size: .625rem; font-weight: 700; letter-spacing: .13em; }
+.memory-trip-copy h2 { font-family: var(--font-display), Georgia, serif; font-size: 1.35rem; line-height: 1.2; }
+.memory-trip-copy small { color: var(--ink-soft); font-size: .75rem; text-transform: capitalize; }
+.memory-trip-strip { display: grid; gap: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0 12px 12px; }
+.memory-trip-strip .memory-photo:nth-child(n + 4) { display: none; }
+.memory-trip-strip .memory-photo > div { display: none; }
+
+.memory-map-view { display: grid; gap: 16px; margin-top: 24px; }
+.memory-map-card { background: linear-gradient(150deg, var(--jade) 0%, #173b32 100%); border-radius: 28px; color: white; display: grid; grid-template-columns: minmax(0, 1fr) minmax(112px, .72fr); min-height: 390px; overflow: hidden; padding: 22px 14px 18px 20px; }
+.memory-map-copy { align-content: start; display: grid; gap: 10px; padding-top: 10px; position: relative; z-index: 1; }
+.memory-map-copy > span { color: rgba(255,255,255,.66); font-size: .625rem; font-weight: 700; letter-spacing: .12em; }
+.memory-map-copy h2 { font-family: var(--font-display), Georgia, serif; font-size: clamp(1.45rem, 7vw, 2rem); font-weight: 500; line-height: 1.12; }
+.memory-map-copy h2 em { color: #f3d99b; font-weight: 400; }
+.memory-map-copy p { color: rgba(255,255,255,.72); font-size: .8125rem; line-height: 1.55; max-width: 24ch; }
+.vietnam-memory-map { align-self: center; filter: drop-shadow(0 10px 24px rgba(0,0,0,.24)); height: 330px; justify-self: end; max-width: 100%; overflow: visible; }
+.vietnam-memory-map path { fill: rgba(255,255,255,.13); stroke: rgba(255,255,255,.28); stroke-width: .8; }
+.vietnam-memory-map path.has-memory { fill: #f3d99b; stroke: white; stroke-width: 1.7; }
+.memory-place-list { display: grid; gap: 10px; }
+.memory-place-card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; display: grid; gap: 12px; padding: 14px; }
+.memory-place-card > div:first-child { align-items: center; display: flex; gap: 10px; }
+.memory-place-card > div:first-child > span { align-items: center; background: var(--coral-soft); border-radius: 50%; color: var(--coral); display: flex; font-size: 1.2rem; height: 42px; justify-content: center; width: 42px; }
+.memory-place-card h2 { font-family: var(--font-display), Georgia, serif; font-size: 1.05rem; }
+.memory-place-card p { color: var(--ink-soft); font-size: .75rem; }
+.memory-place-strip { display: grid; gap: 5px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.memory-place-strip img { aspect-ratio: 1; border-radius: 9px; object-fit: cover; width: 100%; }
+.map-attribution { color: var(--ink-soft); font-size: .6875rem; text-align: center; }
+.map-attribution a { color: inherit; }
+.memory-map-loading, .memory-map-empty { background: var(--jade-soft); border: 1px solid var(--line); border-radius: 24px; color: var(--ink-soft); margin-top: 24px; padding: 32px 20px; text-align: center; }
+.memory-map-empty { display: grid; gap: 8px; }
+.memory-map-empty > span { color: var(--coral); font-size: 2rem; }
+.memory-map-empty h2 { color: var(--ink); font-family: var(--font-display), Georgia, serif; }
+
 .memory-grid {
   display: grid;
   gap: 8px;

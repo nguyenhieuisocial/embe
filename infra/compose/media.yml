@@ -29,12 +29,20 @@ services:
         condition: service_healthy
     healthcheck:
       disable: false
+    cpus: 1.25
+    mem_limit: 3g
 
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:v3.1.0
     restart: unless-stopped
     profiles: ["media"]
-    environment: *immich-environment
+    environment:
+      <<: *immich-environment
+      MACHINE_LEARNING_REQUEST_THREADS: 2
+      MACHINE_LEARNING_MODEL_INTRA_OP_THREADS: 1
+      MACHINE_LEARNING_MODEL_INTER_OP_THREADS: 1
+      MACHINE_LEARNING_WORKERS: 1
+      MACHINE_LEARNING_MODEL_TTL: 120
     volumes:
       - type: volume
         source: immich-model-cache
@@ -43,6 +51,8 @@ services:
       - embe-media
     healthcheck:
       disable: false
+    cpus: 0.5
+    mem_limit: 1536m
 
   immich-redis:
     image: docker.io/valkey/valkey:9@sha256:8e8d64b405ce18f41b8e5ee20aa4687a8ed0022d1298f2ce31cdcf3a76e09411
@@ -55,6 +65,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+    cpus: 0.25
+    mem_limit: 256m
 
   immich-postgres:
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
@@ -78,6 +90,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    cpus: 1.0
+    mem_limit: 1536m
 
 networks:
   embe-media:

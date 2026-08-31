@@ -6,6 +6,9 @@ export type MediaMemory = {
   mimeType: "image/jpeg" | "image/webp";
   width: number | null;
   height: number | null;
+  placeCity: string | null;
+  placeRegion: string | null;
+  placeCountry: string | null;
 };
 
 export type MediaLocator = {
@@ -47,7 +50,7 @@ export async function getMediaMemories(
     ? options.offset!
     : 0;
   const query = new URLSearchParams({
-    select: "id,event_at,title,caption,mime_type,width,height",
+    select: "id,event_at,title,caption,mime_type,width,height,place_city,place_region,place_country",
     order: "event_at.desc",
     limit: String(limit),
     offset: String(offset)
@@ -73,7 +76,11 @@ export async function getMediaMemories(
       if (!id || !UUID.test(id) || !eventAt || Number.isNaN(new Date(eventAt).getTime()) || !title || !caption || typeof mimeType !== "string" || !MEDIA_MIME.has(mimeType)) return [];
       const width = typeof value.width === "number" && value.width > 0 ? value.width : null;
       const height = typeof value.height === "number" && value.height > 0 ? value.height : null;
-      return [{ id, eventAt, title, caption, mimeType: mimeType as MediaMemory["mimeType"], width, height }];
+      const placeCity = value.place_city == null ? null : safeText(value.place_city, 80);
+      const placeRegion = value.place_region == null ? null : safeText(value.place_region, 80);
+      const placeCountry = value.place_country == null ? null : safeText(value.place_country, 80);
+      if ((value.place_city != null && !placeCity) || (value.place_region != null && !placeRegion) || (value.place_country != null && !placeCountry)) return [];
+      return [{ id, eventAt, title, caption, mimeType: mimeType as MediaMemory["mimeType"], width, height, placeCity, placeRegion, placeCountry }];
     });
   } catch {
     return [];
