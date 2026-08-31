@@ -27,6 +27,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         disk_free_percent = $DiskPercent
         containers = $containers
         portal_sync = @{ status = "ok"; last_success_at = $now.AddMinutes(-5).ToString("o"); journal_inbox = @{ dead_letters = 0 } }
+        media_publisher = @{ status = "disabled"; last_attempt_at = $now.AddMinutes(-5).ToString("o") }
         babybuddy_sync = @{ healthy = $true; time = $now.AddMinutes(-2).ToString("o") }
         backup_created_utc = $now.AddHours(-$BackupAgeHours).ToString("o")
         restore = @{ status = "pass"; verified_at = $now.AddDays(-1).ToString("o") }
@@ -66,7 +67,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("portal_public", "node_red", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
+    foreach ($id in @("media_publisher", "portal_public", "node_red", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -106,6 +107,31 @@ try {
     $journalReport = Join-Path $testRoot "journal-deadletter-report.json"
     $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $journalFixture -OutputPath $journalReport
     if ($LASTEXITCODE -ne 2) { throw "A stuck portal journal must block health" }
+
+    $mediaFixture = Join-Path $testRoot "media-publisher-error.json"
+    Write-Fixture $mediaFixture 40 2
+    $mediaBlocked = Get-Content $mediaFixture -Raw | ConvertFrom-Json
+    $mediaBlocked.media_publisher.status = "error"
+    $mediaBlocked | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $mediaFixture -Encoding utf8
+    $mediaReport = Join-Path $testRoot "media-publisher-error-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $mediaFixture -OutputPath $mediaReport
+    if ($LASTEXITCODE -ne 2) { throw "A failed media publisher must block health" }
+    $mediaHealth = Get-Content $mediaReport -Raw | ConvertFrom-Json
+    if (@($mediaHealth.checks | Where-Object id -eq "media_publisher")[0].status -ne "critical") { throw "Media publisher gate did not block" }
+
+    $enabledMediaFixture = Join-Path $testRoot "media-publisher-enabled.json"
+    Write-Fixture $enabledMediaFixture 40 2
+    $enabledMedia = Get-Content $enabledMediaFixture -Raw | ConvertFrom-Json
+    $enabledMedia.media_publisher.status = "ok"
+    $enabledMedia | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $enabledMediaFixture -Encoding utf8
+    $enabledMediaReport = Join-Path $testRoot "media-publisher-enabled-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $enabledMediaFixture -OutputPath $enabledMediaReport
+    if ($LASTEXITCODE -ne 0) { throw "A fresh enabled media publisher must pass health" }
+
+    $enabledMedia.media_publisher.last_attempt_at = ([DateTimeOffset]::Parse("2026-08-30T12:00:00Z")).AddMinutes(-30).ToString("o")
+    $enabledMedia | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $enabledMediaFixture -Encoding utf8
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $enabledMediaFixture -OutputPath $enabledMediaReport
+    if ($LASTEXITCODE -ne 2) { throw "A stale enabled media publisher must block health" }
 
     $dependencyFixture = Join-Path $testRoot "dependency-critical.json"
     Write-Fixture $dependencyFixture 40 2

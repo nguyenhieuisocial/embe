@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 import time
 import uuid
@@ -354,6 +355,45 @@ def _append_log(path: Path, payload: dict[str, Any]) -> None:
         handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def run_media_publisher(
+    project_root: Path,
+    shared_env: Path,
+    runner: Any = subprocess.run,
+) -> dict[str, Any]:
+    script = project_root / "services" / "media-publisher" / "publisher.py"
+    media_env = project_root / "secrets" / "runtime" / "media-publisher.env"
+    status_file = project_root / "data" / "status" / "media-publisher.json"
+    allowed_fields = {"status", "published", "uploaded", "reused", "upserted", "unapproved", "error_type"}
+    try:
+        completed = runner(
+            [
+                sys.executable,
+                str(script),
+                "--env",
+                str(media_env),
+                "--shared-env",
+                str(shared_env),
+                "--status",
+                str(status_file),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        payload = json.loads(completed.stdout) if completed.stdout else {}
+        if not isinstance(payload, dict) or payload.get("status") not in {"ok", "disabled", "error"}:
+            raise ValueError("invalid media publisher status")
+        result = {key: value for key, value in payload.items() if key in allowed_fields}
+        if completed.returncode != 0:
+            return {"status": "error", "error_type": str(result.get("error_type", "PublisherFailure"))[:80]}
+        return result
+    except subprocess.TimeoutExpired:
+        return {"status": "error", "error_type": "Timeout"}
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {"status": "error", "error_type": "PublisherFailure"}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync approved Memos to the EmBe family portal.")
     parser.add_argument("--env", type=Path, default=Path(r"C:\EmBe\secrets\runtime\portal-sync.env"))
@@ -365,6 +405,7 @@ def main() -> int:
     previous = _read_status(args.status)
     try:
         result = run_sync(args.env, args.vault)
+        result["media_publisher"] = run_media_publisher(Path(__file__).resolve().parents[3], args.env)
         status = {
             **result,
             "last_attempt_at": attempted_at,

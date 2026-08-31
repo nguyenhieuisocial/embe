@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from subprocess import CompletedProcess, TimeoutExpired
 from unittest.mock import Mock, patch
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
@@ -13,11 +14,37 @@ from sync_portal import (
     SupabaseReadModel,
     import_journal_inbox,
     list_portal_memos,
+    run_media_publisher,
     sanitize_memo,
 )
 
 
 class TestPortalSyncPolicy(unittest.TestCase):
+    def test_existing_portal_schedule_runs_disabled_media_publisher_safely(self) -> None:
+        runner = Mock(return_value=CompletedProcess([], 0, '{"status":"disabled","published":0,"secret":"must-not-pass"}', ""))
+        project_root = Path("project")
+
+        result = run_media_publisher(project_root, Path("shared.env"), runner)
+
+        self.assertEqual(result, {"status": "disabled", "published": 0})
+        command = runner.call_args.args[0]
+        self.assertIn(str(project_root / "services" / "media-publisher" / "publisher.py"), command)
+        self.assertEqual(runner.call_args.kwargs["timeout"], 120)
+
+    def test_media_failure_is_sanitized_and_does_not_raise_into_timeline_sync(self) -> None:
+        runner = Mock(return_value=CompletedProcess([], 1, '{"status":"error","error_type":"RuntimeError"}', "token=secret"))
+        self.assertEqual(
+            run_media_publisher(Path(r"C:\EmBe"), Path("shared.env"), runner),
+            {"status": "error", "error_type": "RuntimeError"},
+        )
+
+    def test_media_timeout_is_isolated(self) -> None:
+        runner = Mock(side_effect=TimeoutExpired("publisher", 120))
+        self.assertEqual(
+            run_media_publisher(Path(r"C:\EmBe"), Path("shared.env"), runner),
+            {"status": "error", "error_type": "Timeout"},
+        )
+
     def test_only_explicit_private_portal_memos_are_published(self) -> None:
         memo = {
             "name": "memos/family-day",

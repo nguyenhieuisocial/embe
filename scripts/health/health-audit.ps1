@@ -70,6 +70,7 @@ if ($FixturePath) {
     $diskFreePercent = [double]$fixture.disk_free_percent
     $containers = @($fixture.containers)
     $portalStatus = $fixture.portal_sync
+    $mediaPublisherStatus = $fixture.media_publisher
     $bridgeStatus = $fixture.babybuddy_sync
     $backupCreated = $fixture.backup_created_utc
     $restoreStatus = [string]$fixture.restore.status
@@ -104,8 +105,10 @@ if ($FixturePath) {
     }
 
     $portalPath = Join-Path $ProjectRoot "data\status\portal-sync.json"
+    $mediaPublisherPath = Join-Path $ProjectRoot "data\status\media-publisher.json"
     $bridgePath = Join-Path $ProjectRoot "data\status\babybuddy-memos-sync.json"
     $portalStatus = if (Test-Path $portalPath) { Get-Content $portalPath -Raw | ConvertFrom-Json } else { $null }
+    $mediaPublisherStatus = if (Test-Path $mediaPublisherPath) { Get-Content $mediaPublisherPath -Raw | ConvertFrom-Json } else { $null }
     $bridgeStatus = if (Test-Path $bridgePath) { Get-Content $bridgePath -Raw | ConvertFrom-Json } else { $null }
 
     $latestManifest = Get-ChildItem (Join-Path $ProjectRoot "exports\backup-manifests") -Filter "*.json" -File -ErrorAction SilentlyContinue |
@@ -248,6 +251,17 @@ Add-Check "disk_health" $(if ($smartHealthy) { "pass" } else { "critical" }) "T�
 $portalHealthy = $null -ne $portalStatus -and $portalStatus.status -eq "ok" -and $portalStatus.last_success_at
 $portalAge = if ($portalHealthy) { Get-AgeHours $portalStatus.last_success_at } else { [double]::PositiveInfinity }
 Add-Check "portal_sync" $(if ($portalHealthy -and $portalAge -le 0.25) { "pass" } else { "critical" }) "Đồng bộ Portal gần nhất" @{ age_minutes = if ([double]::IsInfinity($portalAge)) { $null } else { [math]::Round($portalAge * 60, 1) }; maximum_minutes = 15 }
+
+$mediaPublisherMode = if ($null -ne $mediaPublisherStatus -and $mediaPublisherStatus.PSObject.Properties["status"]) { [string]$mediaPublisherStatus.status } else { "missing" }
+$mediaPublisherAge = if ($null -ne $mediaPublisherStatus -and $mediaPublisherStatus.PSObject.Properties["last_attempt_at"] -and $mediaPublisherStatus.last_attempt_at) {
+    Get-AgeHours $mediaPublisherStatus.last_attempt_at
+} else { [double]::PositiveInfinity }
+$mediaPublisherPass = $mediaPublisherMode -eq "disabled" -or ($mediaPublisherMode -eq "ok" -and $mediaPublisherAge -le 0.25)
+Add-Check "media_publisher" $(if ($mediaPublisherPass) { "pass" } else { "critical" }) "Xuất bản ảnh riêng tư đang tắt an toàn hoặc vừa chạy thành công" @{
+    mode = $mediaPublisherMode
+    age_minutes = if ([double]::IsInfinity($mediaPublisherAge)) { $null } else { [math]::Round($mediaPublisherAge * 60, 1) }
+    maximum_minutes_when_enabled = 15
+}
 
 $bridgeHealthy = $null -ne $bridgeStatus -and $bridgeStatus.healthy -eq $true -and $bridgeStatus.time
 $bridgeAge = if ($bridgeHealthy) { Get-AgeHours $bridgeStatus.time } else { [double]::PositiveInfinity }
