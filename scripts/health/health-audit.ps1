@@ -15,9 +15,9 @@ Set-StrictMode -Version Latest
 
 if (-not $OutputPath) { $OutputPath = Join-Path $ProjectRoot "data\status\system-health.json" }
 $healthStage = "collect_inputs"
+$runtimeErrorPath = Join-Path $ProjectRoot "data\status\health-audit-error.json"
 trap {
     if (-not $FixturePath) {
-        $errorPath = Join-Path $ProjectRoot "data\status\health-audit-error.json"
         $errorReport = [ordered]@{
             schema_version = 1
             generated_at = [DateTimeOffset]::UtcNow.ToString("o")
@@ -27,7 +27,7 @@ trap {
             privacy = "No exception message, path, URL, token, or family content is included."
         }
         try {
-            [IO.File]::WriteAllText($errorPath, ($errorReport | ConvertTo-Json -Depth 3), [Text.UTF8Encoding]::new($false))
+            [IO.File]::WriteAllText($runtimeErrorPath, ($errorReport | ConvertTo-Json -Depth 3), [Text.UTF8Encoding]::new($false))
         } catch {
             # The Scheduled Task exit code remains the final fail-closed signal.
         }
@@ -419,6 +419,7 @@ if (-not $FixturePath) {
         -ProjectRoot $ProjectRoot `
         -HealthReport $OutputPath
     if ($LASTEXITCODE -ne 0) { throw "Unable to record soak evidence" }
+    Remove-Item -LiteralPath $runtimeErrorPath -Force -ErrorAction SilentlyContinue
 }
 
 $report | ConvertTo-Json -Depth 8 -Compress
