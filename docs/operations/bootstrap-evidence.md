@@ -33,12 +33,13 @@
 
 ## Go/no-go
 
-**Chưa Go** cho nhập ảnh iPhone: máy hiện chỉ có ổ hệ thống. Dung lượng tạm thời
-đã qua ngưỡng tối thiểu nhưng vẫn cần ổ media riêng, album Immich chọn lọc,
-API key chỉ đọc và một lần nhập synthetic đạt trước khi dùng 10 ảnh thử.
+**Chưa Go** cho nhập ảnh iPhone: cần album Immich chọn lọc, API key chỉ đọc và
+một lần nhập synthetic đạt trước khi dùng 10 ảnh thử. Ổ vật lý riêng không còn
+là điều kiện; health vẫn chặn nhập khối lượng lớn nếu dung lượng hệ thống xuống thấp.
 
-**Chưa go-live đầy đủ** cho media thật cho đến khi có USB HDD/NAS làm bản sao
-thứ ba và chạy restore drill trên chính thiết bị đó.
+**Backup off-site đã đạt:** R2 mã hóa, kiểm tra toàn vẹn và restore drill là gate
+backup được chấp nhận; không còn yêu cầu USB HDD/NAS. Go-live đầy đủ vẫn chờ
+soak liên tục đủ 7 ngày.
 
 **Đã đạt gate vận hành nền:** backup, kiểm tra toàn vẹn và health audit chạy bằng
 service account riêng; health gate hiện đạt toàn bộ và vẫn fail closed nếu một

@@ -10,7 +10,7 @@ Ngày rà soát: 2026-08-30. Nguyên tắc: một công cụ cho một trách nh
 | Nhật ký và số liệu | Memos, BabyBuddy, Grocy | Giữ mỗi loại dữ liệu đúng một nguồn chính. |
 | IoT | [Home Assistant](https://github.com/home-assistant/core), [Mosquitto](https://github.com/eclipse-mosquitto/mosquitto), [Node-RED](https://github.com/node-red/node-red) | HA giữ trạng thái/cảm biến; Node-RED chỉ nối các dịch vụ và gửi cảnh báo. |
 | Sách gia đình | Playwright/Chromium + pypdf | Giữ pipeline hiện tại; không thêm renderer thứ hai. |
-| Backup | [restic](https://github.com/restic/restic) + R2 + ổ cứng rời | R2 chỉ chứa dữ liệu quan trọng đã mã hóa; media gốc cần ổ vật lý thứ hai. |
+| Backup | [restic](https://github.com/restic/restic) + R2 | R2 chứa bản off-site đã mã hóa; freshness, integrity và restore drill là gate bắt buộc. |
 | Theo dõi | [Uptime Kuma](https://github.com/louislam/uptime-kuma) + [Healthchecks.io](https://healthchecks.io/pricing/) | Kuma theo dõi nội bộ; heartbeat bên ngoài chỉ gửi trạng thái, không gửi dữ liệu gia đình. |
 | Sức khỏe ổ đĩa | [smartmontools](https://github.com/smartmontools/smartmontools) | Chạy native trên Windows và chỉ gửi trạng thái tối giản vào Node-RED/Kuma; bật sau khi có ổ media/backup thật và xác nhận USB bridge đọc được SMART. |
 | Sơ đồ | [Archify](https://github.com/tt-a1i/archify) | Giữ một công cụ sơ đồ duy nhất. |
@@ -44,4 +44,4 @@ Nội dung hiển thị phải lưu URL nguồn và ngày rà soát. Không sao 
 - Telegram hoặc Supabase làm kho duy nhất cho ảnh/video gốc.
 - Public tunnel tới Immich, Home Assistant hoặc Node-RED.
 
-Không có kho miễn phí và không giới hạn đủ tin cậy. [R2 Free](https://developers.cloudflare.com/r2/pricing/) và Supabase Free là lớp bổ trợ, không thay thế bản gốc trên ổ riêng và bản sao vật lý thứ hai.
+Không có kho miễn phí và không giới hạn đủ tin cậy. [R2 Free](https://developers.cloudflare.com/r2/pricing/) và Supabase Free là lớp bổ trợ; R2 mã hóa được chấp nhận làm bản off-site khi integrity và restore drill đều đạt. Ổ media riêng vẫn là khuyến nghị capacity khi khối lượng RAW/video tăng lớn.

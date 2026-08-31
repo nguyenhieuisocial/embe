@@ -55,8 +55,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\tests\\restore-d
 - Các tác vụ nền cô lập đã được cài và health gate xác nhận: backup chạy mỗi 6
   giờ, kiểm tra toàn vẹn hằng tuần và tự chạy bù khi máy ngủ đúng lịch.
 
-## Giới hạn 3-2-1 còn lại
+## Mức bảo vệ được chấp nhận
 
-Local source + R2 đã tạo hai bản trên hai loại lưu trữ và có một bản offsite.
-Vẫn cần thêm USB HDD hoặc NAS riêng để đủ ba bản sao. RAID hoặc cùng một ổ C
-không được tính là bản sao thứ ba.
+Nguồn ứng dụng, snapshot cục bộ và repository R2 mã hóa là ba bản logic; R2 là
+bản off-site. Theo quyết định vận hành ngày 2026-08-31, không bắt buộc thêm USB
+HDD/NAS. Rủi ro còn lại là nguồn và snapshot cùng chung một máy, vì vậy freshness,
+`restic check --read-data` và restore drill R2 luôn là gate bắt buộc.

@@ -2,7 +2,6 @@
 param(
     [string]$ProjectRoot = "C:\EmBe",
     [string]$HealthReport = "",
-    [string]$ExternalBackupEvidence = "",
     [string]$SoakEvidence = "",
     [string]$OutputPath = ""
 )
@@ -20,12 +19,11 @@ function Add-Gate([string]$Id, [bool]$Passed, [string]$Reason) {
 $health = if (Test-Path $HealthReport) { Get-Content $HealthReport -Raw | ConvertFrom-Json } else { $null }
 Add-Gate "software_health" ($null -ne $health -and $health.status -eq "pass") "Health audit phải đạt toàn bộ."
 
-$externalPass = $false
-if ($ExternalBackupEvidence -and (Test-Path $ExternalBackupEvidence)) {
-    $external = Get-Content $ExternalBackupEvidence -Raw | ConvertFrom-Json
-    $externalPass = $external.status -eq "pass" -and $external.device_is_separate -eq $true -and $external.restore_verified -eq $true
-}
-Add-Gate "third_copy_separate_device" $externalPass "Cần USB HDD hoặc NAS riêng và restore đạt từ bản sao đó."
+$backupChecks = if ($health) {
+    @($health.checks | Where-Object { $_.id -in @("backup_freshness", "restore_drill", "restic_integrity") })
+} else { @() }
+$offsiteBackupPass = $backupChecks.Count -eq 3 -and @($backupChecks | Where-Object status -ne "pass").Count -eq 0
+Add-Gate "encrypted_offsite_backup" $offsiteBackupPass "R2 mã hóa phải còn mới, kiểm tra toàn vẹn và restore drill đều đạt."
 
 $soakPass = $false
 if ($SoakEvidence -and (Test-Path $SoakEvidence)) {

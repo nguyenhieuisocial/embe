@@ -8,6 +8,8 @@
 
 > **Security decision update (2026-08-30):** Cloudflare Access/OTP trong sơ đồ gốc đã được thay bằng shared-password auth ở ứng dụng theo yêu cầu vận hành. Admin apps và MCP vẫn tuyệt đối không public.
 
+> **Backup decision update (2026-08-31):** USB HDD/NAS không còn là gate bắt buộc. Các mục cũ yêu cầu thiết bị backup vật lý chỉ còn là khuyến nghị capacity cho media lớn; gate hiện hành là R2 mã hóa còn mới + integrity + restore drill và được định nghĩa trong `docs/operations/go-live.md`.
+
 **Tech Stack:** Linux, Docker Engine + Compose, Caddy, Cloudflare Tunnel/Access, BabyBuddy, Memos, Immich, Grocy, Home Assistant, Python/FastAPI/httpx/SQLAlchemy/Alembic, PostgreSQL cho analytics, Next.js TypeScript cho Portal/BFF, FastMCP, Typst, Restic.
 
 **Spec:** `../../../report-source.md`

@@ -15,8 +15,9 @@ Không nhập ảnh thật khi `verify-media-storage.ps1` chưa trả `ready: tr
 5. Mount archive vào Immich bằng
    `media.external.example.yml` ở chế độ read-only và tạo External Library từ
    `/external-library`.
-6. Chỉ sau khi có bản sao thứ ba và restore drill đạt mới được xóa ảnh khỏi
-   iPhone hoặc thẻ nhớ máy ảnh.
+6. Chỉ xóa ảnh khỏi iPhone/thẻ nhớ sau khi chính media đó có một bản off-site
+   đã phục hồi kiểm chứng. Repository R2 critical hiện không nhận media gốc, nên
+   việc chưa có bản sao media không chặn Portal nhưng vẫn chặn thao tác xóa nguồn.
 
 ```powershell
 C:\EmBe\.venv\Scripts\python.exe services\media-ingest\ingest_media.py `
