@@ -61,6 +61,55 @@ class Repository:
                 (asset_id,),
             )
 
+    def find_active_asset_by_checksum(self, tenant_id: str, sha256: str) -> str | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """select id from assets where tenant_id=? and plaintext_sha256=?
+                   and status not in ('rejected','tombstoned') order by created_at limit 1""",
+                (tenant_id, sha256),
+            ).fetchone()
+        return str(row["id"]) if row else None
+
+    def has_active_provider(self, asset_id: str, provider: str) -> bool:
+        with self.connect() as connection:
+            row = connection.execute(
+                """select 1 from storage_objects where asset_id=? and provider=?
+                   and state='available' and deleted_at is null limit 1""",
+                (asset_id, provider),
+            ).fetchone()
+        return row is not None
+
+    def link_source(self, source: str, source_object_id: str, source_version: str, asset_id: str) -> None:
+        if not source or not source_object_id or not source_version:
+            raise ValueError("source link fields are required")
+        with self.connect() as connection:
+            connection.execute(
+                """insert into storage_source_links(source,source_object_id,source_version,storage_asset_id)
+                   values (?,?,?,?) on conflict(source,source_object_id) do update set
+                   source_version=excluded.source_version,
+                   storage_asset_id=excluded.storage_asset_id,
+                   updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')""",
+                (source, source_object_id, source_version, asset_id),
+            )
+
+    def get_source_link(self, source: str, source_object_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """select sl.storage_asset_id, sl.source_version,
+                   exists(select 1 from storage_objects so where so.asset_id=sl.storage_asset_id
+                     and so.provider='telegram_mtproto_lab' and so.state='available'
+                     and so.deleted_at is null) as telegram_ready
+                   from storage_source_links sl where sl.source=? and sl.source_object_id=?""",
+                (source, source_object_id),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "storage_asset_id": str(row["storage_asset_id"]),
+            "source_version": str(row["source_version"]),
+            "telegram_ready": bool(row["telegram_ready"]),
+        }
+
     def add_object(
         self,
         asset_id: str,

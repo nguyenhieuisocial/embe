@@ -55,6 +55,16 @@ create unique index if not exists one_active_replica_per_provider
   on storage_objects(asset_id, provider, provider_account_id) where state <> 'deleted';
 create index if not exists storage_objects_reconcile_idx on storage_objects(provider, state);
 
+create table if not exists storage_source_links (
+  source text not null,
+  source_object_id text not null,
+  source_version text not null,
+  storage_asset_id text not null references assets(id) on delete cascade,
+  updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  primary key(source, source_object_id)
+);
+create index if not exists storage_source_links_asset_idx on storage_source_links(storage_asset_id);
+
 create table if not exists encryption_envelopes (
   storage_object_id text primary key references storage_objects(id) on delete cascade,
   algorithm text not null check (algorithm = 'AES-256-GCM-CHUNKED-V1'),
