@@ -39,6 +39,8 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         analytics_ingest = @{ status = "skipped"; reason = "all_sources_disabled"; updated_at = $now.AddMinutes(-5).ToString("o") }
         inventory_worker = @{ status = "ok"; last_success_at = $now.AddMinutes(-2).ToString("o"); queue = @{ pending = 0; processing = 0; dead_letters = 0 } }
         inventory_task_ready = $true
+        assistant_worker = @{ status = "ok"; last_success_at = $now.AddMinutes(-2).ToString("o"); queue = @{ pending = 0; processing = 0; dead_letters = 0 } }
+        assistant_task_ready = $true
         backup_created_utc = $now.AddHours(-$BackupAgeHours).ToString("o")
         restore = @{ status = "pass"; verified_at = $now.AddDays(-1).ToString("o") }
         integrity = @{ status = "pass"; checked_at = $now.AddDays(-1).ToString("o") }
@@ -98,7 +100,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "inventory_worker", "immich_family_account", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "telegram_live_smoke", "monthly_pdf")) {
+    foreach ($id in @("disk_maintenance", "media_publisher", "analytics_ingest", "inventory_worker", "local_assistant", "immich_family_account", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "telegram_live_smoke", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -160,6 +162,15 @@ try {
     $staleInventoryReport = Join-Path $testRoot "stale-inventory-report.json"
     $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $staleInventoryFixture -OutputPath $staleInventoryReport
     if ($LASTEXITCODE -ne 2) { throw "A stale inventory worker must block health" }
+
+    $staleAssistantFixture = Join-Path $testRoot "stale-assistant.json"
+    Write-Fixture $staleAssistantFixture 40 2
+    $staleAssistant = Get-Content $staleAssistantFixture -Raw | ConvertFrom-Json
+    $staleAssistant.assistant_worker.last_success_at = ([DateTimeOffset]::Parse("2026-08-30T12:00:00Z")).AddMinutes(-11).ToString("o")
+    $staleAssistant | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $staleAssistantFixture -Encoding utf8
+    $staleAssistantReport = Join-Path $testRoot "stale-assistant-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $staleAssistantFixture -OutputPath $staleAssistantReport
+    if ($LASTEXITCODE -ne 2) { throw "A stale local assistant worker must block health" }
 
     $telegramFixture = Join-Path $testRoot "telegram-poc-enabled.json"
     Write-Fixture $telegramFixture 40 2

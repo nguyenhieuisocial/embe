@@ -8,10 +8,11 @@ import math
 import os
 import re
 import time
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
@@ -307,10 +308,32 @@ def _write_status(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def run(env_path: Path) -> dict[str, Any]:
+def read_dpapi_clixml(path: Path, *, decryptor: Callable[[bytes], bytes] | None = None) -> str:
+    """Read a current-user DPAPI SecureString export without launching PowerShell."""
+    root = ET.parse(path).getroot()
+    node = next((item for item in root.iter() if item.tag.endswith("SS")), None)
+    if node is None or not node.text:
+        raise ValueError("DPAPI credential is malformed")
+    try:
+        encrypted = bytes.fromhex(node.text.strip())
+    except ValueError as error:
+        raise ValueError("DPAPI credential is malformed") from error
+    if decryptor is None:
+        if os.name != "nt":
+            raise RuntimeError("Windows DPAPI is required")
+        import win32crypt
+
+        decryptor = lambda value: win32crypt.CryptUnprotectData(value, None, None, None, 0)[1]
+    secret = decryptor(encrypted).decode("utf-16-le")
+    if not secret or not secret.isprintable():
+        raise ValueError("DPAPI credential is invalid")
+    return secret
+
+
+def run(env_path: Path, api_key: str | None = None) -> dict[str, Any]:
     env = _read_env(env_path)
     queue = SupabaseInventory(env["SUPABASE_URL"], env["SUPABASE_SECRET_KEY"])
-    grocy = GrocyInventory("http://127.0.0.1:9283", os.environ.get("GROCY_API_KEY", ""))
+    grocy = GrocyInventory("http://127.0.0.1:9283", api_key or os.environ.get("GROCY_API_KEY", ""))
     actions = process_actions(queue, grocy)
     snapshot = grocy.snapshot()
     synced = queue.sync(snapshot)
@@ -321,10 +344,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Process EmBe inventory actions and publish a safe Grocy snapshot.")
     parser.add_argument("--env", type=Path, default=Path(r"C:\EmBe\secrets\runtime\portal-sync.env"))
     parser.add_argument("--status", type=Path, default=Path(r"C:\EmBe\data\status\inventory-worker.json"))
+    parser.add_argument("--grocy-credential", type=Path)
     args = parser.parse_args()
     attempted_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     try:
-        result = run(args.env)
+        api_key = read_dpapi_clixml(args.grocy_credential) if args.grocy_credential else None
+        result = run(args.env, api_key)
         _write_status(args.status, {**result, "last_attempt_at": attempted_at, "last_success_at": attempted_at})
         print(json.dumps(result, ensure_ascii=False))
         return 0

@@ -11,6 +11,30 @@ from pathlib import Path
 
 
 class UptimeKumaStateTests(unittest.TestCase):
+    def test_writes_atomic_health_report_for_direct_background_execution(self) -> None:
+        script = Path(__file__).resolve().parents[1] / "uptime-kuma-state.py"
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "kuma.db"
+            output = Path(directory) / "health.json"
+            connection = sqlite3.connect(database)
+            connection.executescript("""
+                CREATE TABLE monitor (id INTEGER PRIMARY KEY, active INTEGER);
+                CREATE TABLE heartbeat (id INTEGER PRIMARY KEY, monitor_id INTEGER, status INTEGER, time TEXT);
+            """)
+            observed_at = datetime.now(timezone.utc).replace(tzinfo=None).isoformat(sep=" ")
+            for monitor_id in range(1, 8):
+                connection.execute("INSERT INTO monitor VALUES (?, 1)", (monitor_id,))
+                connection.execute("INSERT INTO heartbeat (monitor_id,status,time) VALUES (?,1,?)", (monitor_id, observed_at))
+            connection.commit(); connection.close()
+
+            completed = subprocess.run(
+                [sys.executable, str(script), "--database", str(database), "--output", str(output), "--expected", "7"],
+                check=True, capture_output=True, text=True,
+            )
+            report = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(report["status"], "pass")
+            self.assertEqual((report["active"], report["healthy"], report["stale"]), (7, 7, 0))
+
     def test_reports_only_privacy_safe_monitor_counts(self) -> None:
         script = Path(__file__).resolve().parents[1] / "uptime-kuma-state.py"
         with tempfile.TemporaryDirectory() as directory:

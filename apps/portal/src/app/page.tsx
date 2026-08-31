@@ -124,6 +124,11 @@ export default function Home() {
         <span aria-hidden="true">→</span>
       </a>
 
+      <a className="assistant-entry" href="/tro-ly" aria-label="Hỏi trợ lý riêng của gia đình">
+        <span><small>AI CỤC BỘ · RIÊNG TƯ</small><strong>Hỏi về giấc ngủ và dinh dưỡng</strong></span>
+        <span aria-hidden="true">→</span>
+      </a>
+
       <section className="portal-grid" aria-label="Nội dung gia đình">
         <Suspense fallback={<TimelineLoading />}>
           <TimelinePanel />

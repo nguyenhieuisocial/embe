@@ -6,15 +6,17 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$runner = Join-Path $ProjectRoot "scripts\run-inventory-worker.ps1"
-if (-not (Test-Path -LiteralPath $runner -PathType Leaf)) {
-    throw "Inventory worker runner is missing"
+$python = Join-Path $ProjectRoot ".venv\Scripts\pythonw.exe"
+$worker = Join-Path $ProjectRoot "services\inventory-worker\src\inventory_worker.py"
+$portalEnv = Join-Path $ProjectRoot "secrets\runtime\portal-sync.env"
+$credential = Join-Path $ProjectRoot "secrets\runtime\grocy-analytics-api.credential.clixml"
+$status = Join-Path $ProjectRoot "data\status\inventory-worker.json"
+foreach ($path in @($python, $worker, $portalEnv, $credential)) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Inventory worker dependency is missing" }
 }
 
-$action = New-ScheduledTaskAction `
-    -Execute "powershell.exe" `
-    -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$runner`" -ProjectRoot `"$ProjectRoot`"" `
-    -WorkingDirectory $ProjectRoot
+$arguments = "`"$worker`" --env `"$portalEnv`" --status `"$status`" --grocy-credential `"$credential`""
+$action = New-ScheduledTaskAction -Execute $python -Argument $arguments -WorkingDirectory $ProjectRoot
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
     -RepetitionInterval (New-TimeSpan -Minutes 1) `
     -RepetitionDuration (New-TimeSpan -Days 3650)

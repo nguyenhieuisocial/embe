@@ -29,7 +29,17 @@ def answer_question(
         summary = service.environment_sleep_correlation(start_date, end_date, child_id=child_id)
     else:
         raise ValueError("chủ đề chỉ có thể là ngu, bu hoặc moi-truong")
-    return assistant.generate(question, asdict(summary))
+    aggregate = asdict(summary)
+    sample_count = int(
+        aggregate.get("session_count", aggregate.get("feeding_count", aggregate.get("sample_count", 0)))
+    )
+    if sample_count == 0:
+        labels = {"ngu": "giấc ngủ", "bu": "bú sữa", "moi-truong": "môi trường và giấc ngủ"}
+        return (
+            f"Chưa có dữ liệu {labels[topic]} từ {start_date.strftime('%d/%m/%Y')} "
+            f"đến {end_date.strftime('%d/%m/%Y')}. Khi gia đình bắt đầu ghi lại, EmBe sẽ phân tích tại đây."
+        )
+    return assistant.generate(question, aggregate)
 
 
 def parse_args(argv=None):

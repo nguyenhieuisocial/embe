@@ -11,6 +11,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Return privacy-safe Uptime Kuma monitor counts")
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--maximum-age-minutes", type=int, default=5)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--expected", type=int)
     args = parser.parse_args()
 
     if not args.database.is_file():
@@ -37,7 +39,23 @@ def main() -> None:
                 stale += 1
             elif int(latest[0]) == 1:
                 healthy += 1
-        print(json.dumps({"active": len(monitor_ids), "healthy": healthy, "stale": stale}, separators=(",", ":")))
+        counts = {"active": len(monitor_ids), "healthy": healthy, "stale": stale}
+        print(json.dumps(counts, separators=(",", ":")))
+        if args.output:
+            passed = args.expected is None or (counts["active"] == args.expected and counts["healthy"] == args.expected and counts["stale"] == 0)
+            report = {
+                "schema_version": 1,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "status": "pass" if passed else "critical",
+                **counts,
+                "privacy": "Only aggregate monitor counts are stored; no name, URL, token, response body, or family content is included.",
+            }
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            temporary = args.output.with_suffix(args.output.suffix + ".tmp")
+            temporary.write_text(json.dumps(report, separators=(",", ":")), encoding="utf-8")
+            temporary.replace(args.output)
+            if not passed:
+                raise SystemExit(2)
     finally:
         connection.close()
 

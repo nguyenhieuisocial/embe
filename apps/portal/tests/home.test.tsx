@@ -32,6 +32,10 @@ describe("family portal home", () => {
       "href",
       "/huong-dan"
     );
+    expect(screen.getByRole("link", { name: "Hỏi trợ lý riêng của gia đình" })).toHaveAttribute(
+      "href",
+      "/tro-ly"
+    );
   });
 
   it("explains that the portal is private and contains only family-approved content", async () => {

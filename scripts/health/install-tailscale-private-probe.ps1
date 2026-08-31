@@ -6,12 +6,15 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$runner = Join-Path $ProjectRoot "scripts\health\check-tailscale-private.ps1"
-if (-not (Test-Path -LiteralPath $runner -PathType Leaf)) { throw "Tailscale health runner not found" }
+$python = Join-Path $ProjectRoot ".venv\Scripts\pythonw.exe"
+$probe = Join-Path $ProjectRoot "scripts\health\tailscale-private-probe.py"
+$tailscale = "C:\Program Files\Tailscale\tailscale.exe"
+$output = Join-Path $ProjectRoot "data\health\tailscale-private.json"
+foreach ($path in @($python, $probe, $tailscale)) { if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Tailscale health dependency not found" } }
 
 $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-$arguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$runner`" -ProjectRoot `"$ProjectRoot`""
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $arguments
+$arguments = "`"$probe`" --tailscale `"$tailscale`" --output `"$output`""
+$action = New-ScheduledTaskAction -Execute $python -Argument $arguments -WorkingDirectory $ProjectRoot
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -MultipleInstances IgnoreNew -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 1)
 $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Limited

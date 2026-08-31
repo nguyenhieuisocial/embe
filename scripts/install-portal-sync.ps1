@@ -215,7 +215,7 @@ $syncTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -Repe
 $syncSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 3) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName $TaskName -Action $syncAction -Trigger $syncTrigger -Settings $syncSettings -User $syncIdentity -Password $syncPassword -RunLevel Limited -Description "Publishes only approved private Memos into the EmBe family read-model." -Force | Out-Null
 
-$rotationAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$rotationScript`" -ProjectRoot `"$ProjectRoot`"" -WorkingDirectory $ProjectRoot
+$rotationAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$rotationScript`" -ProjectRoot `"$ProjectRoot`"" -WorkingDirectory $ProjectRoot
 $rotationTrigger = New-ScheduledTaskTrigger -Daily -At 2am
 $rotationSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName $RotationTaskName -Action $rotationAction -Trigger $rotationTrigger -Settings $rotationSettings -User $credentialIdentity -Password $credentialPassword -RunLevel Limited -Description "Checks and safely rotates EmBe integration credentials before expiry." -Force | Out-Null

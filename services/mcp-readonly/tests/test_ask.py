@@ -19,6 +19,22 @@ class RecordingAssistant:
 
 
 class AskTests(unittest.TestCase):
+    def test_empty_summary_never_calls_the_model_or_invents_an_answer(self):
+        assistant = RecordingAssistant()
+
+        answer = answer_question(
+            repository=InMemoryRepository(),
+            assistant=assistant,
+            topic="ngu",
+            child_id="embe",
+            start_date=date(2026, 8, 1),
+            end_date=date(2026, 8, 7),
+            question="Tuần này bé ngủ thế nào?",
+        )
+
+        self.assertIn("chưa có dữ liệu giấc ngủ", answer.lower())
+        self.assertEqual(assistant.calls, [])
+
     def test_sleep_question_sends_only_summary_to_assistant(self):
         repository = InMemoryRepository(
             sleeps=(

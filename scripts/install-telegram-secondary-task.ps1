@@ -4,7 +4,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$runner = Join-Path $ProjectRoot "scripts\run-telegram-secondary.ps1"
+$python = Join-Path $ProjectRoot ".venv\Scripts\pythonw.exe"
+$runner = Join-Path $ProjectRoot "services\storage-poc\scripts\run_secondary_once.py"
 $telegramEnv = Join-Path $ProjectRoot "secrets\telegram-poc.env"
 $sessionLine = Get-Content -LiteralPath $telegramEnv | Where-Object {
     $_ -match '^EMBE_TELEGRAM_DPAPI_SESSION_PATH='
@@ -14,7 +15,7 @@ if (-not (Test-Path -LiteralPath $runner -PathType Leaf)) { throw "Telegram seco
 if (-not $session -or -not (Test-Path -LiteralPath $session -PathType Leaf)) { throw "Encrypted Telegram session is missing" }
 
 $identity = "$env:USERDOMAIN\$env:USERNAME"
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$runner`""
+$action = New-ScheduledTaskAction -Execute $python -Argument "`"$runner`" --project-root `"$ProjectRoot`"" -WorkingDirectory $ProjectRoot
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) `
     -RepetitionInterval (New-TimeSpan -Minutes 10) `
     -RepetitionDuration (New-TimeSpan -Days 3650)

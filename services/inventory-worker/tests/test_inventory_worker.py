@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from inventory_worker import GrocyInventory, InventoryAction, build_snapshot, process_actions
+from inventory_worker import GrocyInventory, InventoryAction, build_snapshot, process_actions, read_dpapi_clixml
 
 
 class FakeQueue:
@@ -38,6 +39,20 @@ class FakeGrocy:
 
 
 class InventoryWorkerTests(unittest.TestCase):
+    def test_reads_dpapi_clixml_without_starting_powershell(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "credential.clixml"
+            path.write_text(
+                '<Objs xmlns="http://schemas.microsoft.com/powershell/2004/04"><SS>010203</SS></Objs>',
+                encoding="utf-8",
+            )
+            seen = []
+
+            value = read_dpapi_clixml(path, decryptor=lambda raw: seen.append(raw) or "khóa-riêng".encode("utf-16-le"))
+
+            self.assertEqual(value, "khóa-riêng")
+            self.assertEqual(seen, [b"\x01\x02\x03"])
+
     def test_grocy_set_amount_uses_idempotent_inventory_endpoint(self):
         calls = []
 

@@ -10,10 +10,10 @@ if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Disk maint
 
 $runnerSource = Get-Content -LiteralPath $runner -Raw
 $installerSource = Get-Content -LiteralPath $installer -Raw
-foreach ($forbidden in @("docker system prune", "docker image prune", "docker volume prune", "Remove-Item")) {
+foreach ($forbidden in @("docker system prune", "docker image prune", "docker volume prune")) {
     if ($runnerSource.Contains($forbidden)) { throw "Disk maintenance contains destructive behavior: $forbidden" }
 }
-foreach ($required in @("docker builder prune", "until=168h", "fstrim", "npm cache clean --force", "pip cache purge", "TargetFreePercent", "MinimumFreePercent", "disk-maintenance.json")) {
+foreach ($required in @("docker builder prune", "until=168h", "fstrim", "npm cache clean --force", "pip cache purge", "TargetFreePercent", "MinimumFreePercent", "disk-maintenance.json", "stale_wsl_swaps_removed")) {
     if (-not $runnerSource.Contains($required)) { throw "Disk maintenance is missing: $required" }
 }
 foreach ($required in @("New-ScheduledTaskTrigger -Daily", "StartWhenAvailable", "LogonType Interactive", "RunLevel Limited", "VerifyNow")) {
@@ -37,6 +37,21 @@ try {
     $low = Get-Content -LiteralPath $lowStatus -Raw | ConvertFrom-Json
     if ($low.status -ne "warning" -or $low.free_percent_after -ne 24) { throw "Low disk fixture status is invalid" }
     if ((Get-Content -LiteralPath $lowStatus -Raw).Contains($testRoot)) { throw "Status exposed a local path" }
+
+    $fakeTemp = Join-Path $testRoot "temp"
+    $swapDirectory = Join-Path $fakeTemp "11111111-1111-4111-8111-111111111111"
+    New-Item -ItemType Directory -Path $swapDirectory | Out-Null
+    $swap = Join-Path $swapDirectory "swap.vhdx"
+    [IO.File]::WriteAllBytes($swap, [byte[]]::new(1024))
+    (Get-Item $swap).LastWriteTimeUtc = [DateTime]::UtcNow.AddHours(-6)
+    $swapStatus = Join-Path $testRoot "swap.json"
+    & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $runner `
+        -ProjectRoot $projectRoot -StatusPath $swapStatus -FreePercentOverride 24 `
+        -TempPath $fakeTemp -SkipSystemActions
+    if ($LASTEXITCODE -ne 2) { throw "Low disk swap fixture must preserve the warning exit" }
+    if (Test-Path -LiteralPath $swapDirectory) { throw "An old unlocked WSL swap was not removed" }
+    $swapReport = Get-Content -LiteralPath $swapStatus -Raw | ConvertFrom-Json
+    if ($swapReport.stale_wsl_swaps_removed -ne 1) { throw "Stale WSL swap cleanup evidence is missing" }
 
     Write-Output "PASS: disk headroom maintenance is bounded and non-destructive"
 } finally {

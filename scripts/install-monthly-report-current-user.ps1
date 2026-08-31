@@ -14,7 +14,7 @@ foreach ($path in @($runner, $runtimeSecret)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Monthly report dependency is missing: $path" }
 }
 
-$taskCommand = 'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -ProjectRoot "{1}"' -f $runner, $ProjectRoot
+$taskCommand = 'powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}" -ProjectRoot "{1}"' -f $runner, $ProjectRoot
 & schtasks.exe /Create /TN $TaskName /TR $taskCommand /SC MONTHLY /D 1 /ST 06:15 /RL LIMITED /F | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Unable to register the monthly report task" }
 

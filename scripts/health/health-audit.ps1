@@ -97,6 +97,8 @@ if ($FixturePath) {
     $analyticsIngestStatus = $fixture.analytics_ingest
     $inventoryWorkerStatus = $fixture.inventory_worker
     $inventoryWorkerTaskReady = [bool]$fixture.inventory_task_ready
+    $assistantWorkerStatus = $fixture.assistant_worker
+    $assistantWorkerTaskReady = [bool]$fixture.assistant_task_ready
     $backupCreated = $fixture.backup_created_utc
     $restoreStatus = [string]$fixture.restore.status
     $restoreVerified = $fixture.restore.verified_at
@@ -171,6 +173,20 @@ if ($FixturePath) {
         Start-Sleep -Milliseconds 200
     }
     $inventoryWorkerTaskReady = $null -ne $inventoryWorkerTask -and [string]$inventoryWorkerTask.State -ne "Disabled"
+
+    $assistantWorkerPath = Join-Path $ProjectRoot "data\status\assistant-worker.json"
+    $assistantWorkerStatus = if (Test-Path $assistantWorkerPath) { Get-Content $assistantWorkerPath -Raw | ConvertFrom-Json } else { $null }
+    $assistantWorkerTask = $null
+    foreach ($attempt in 1..3) {
+        try {
+            $assistantWorkerTask = Get-ScheduledTask -TaskName "EmBe Local Assistant" -ErrorAction Stop
+        } catch {
+            $assistantWorkerTask = $null
+        }
+        if ($null -ne $assistantWorkerTask) { break }
+        Start-Sleep -Milliseconds 200
+    }
+    $assistantWorkerTaskReady = $null -ne $assistantWorkerTask -and [string]$assistantWorkerTask.State -ne "Disabled"
 
     $latestManifest = Get-ChildItem (Join-Path $ProjectRoot "exports\backup-manifests") -Filter "*.json" -File -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
@@ -473,6 +489,19 @@ Add-Check "inventory_worker" $(if ($inventoryWorkerPass) { "pass" } else { "crit
     age_minutes = if ([double]::IsInfinity($inventoryWorkerAge)) { $null } else { [math]::Round($inventoryWorkerAge * 60, 1) }
     maximum_minutes = 10
     dead_letters = $inventoryDeadletters
+}
+
+$assistantWorkerHealthy = $null -ne $assistantWorkerStatus -and [string]$assistantWorkerStatus.status -eq "ok" -and $assistantWorkerStatus.last_success_at
+$assistantWorkerAge = if ($assistantWorkerHealthy) { Get-AgeHours $assistantWorkerStatus.last_success_at } else { [double]::PositiveInfinity }
+$assistantDeadletters = if ($null -ne $assistantWorkerStatus -and $assistantWorkerStatus.PSObject.Properties["queue"] -and $assistantWorkerStatus.queue.PSObject.Properties["dead_letters"]) {
+    [int]$assistantWorkerStatus.queue.dead_letters
+} else { 0 }
+$assistantWorkerPass = $assistantWorkerTaskReady -and $assistantWorkerHealthy -and $assistantWorkerAge -le (10 / 60) -and $assistantDeadletters -eq 0
+Add-Check "local_assistant" $(if ($assistantWorkerPass) { "pass" } else { "critical" }) "Trợ lý gia đình vừa kiểm tra hàng đợi và AI cục bộ" @{
+    task_ready = [bool]$assistantWorkerTaskReady
+    age_minutes = if ([double]::IsInfinity($assistantWorkerAge)) { $null } else { [math]::Round($assistantWorkerAge * 60, 1) }
+    maximum_minutes = 10
+    dead_letters = $assistantDeadletters
 }
 
 $backupAge = if ($backupCreated) { Get-AgeHours $backupCreated } else { [double]::PositiveInfinity }
