@@ -13,6 +13,9 @@ foreach ($forbidden in @("Remove-Item", "factory reset", "wsl --unregister")) {
 foreach ($required in @("Move-StaleRuntimeDirectory", "Test-DockerDesktopReady", "docker desktop status", "docker info", "-WindowStyle Hidden", "qwen3:8b")) {
     if (-not $source.Contains($required)) { throw "Runtime recovery is missing safety behavior: $required" }
 }
+foreach ($required in @("StartupGraceSeconds", 'Wait-Until -Condition { Test-DockerDesktopReady } -TimeoutSeconds $StartupGraceSeconds')) {
+    if (-not $source.Contains($required)) { throw "Runtime recovery can interrupt a Docker startup that is still making progress: $required" }
+}
 if ($source.Contains("Wait-Until -Condition { Test-DockerPipe }")) {
     throw "Runtime recovery still treats the Docker pipe as a complete readiness signal"
 }

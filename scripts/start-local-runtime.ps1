@@ -5,6 +5,8 @@ param(
     [string]$SecretsEnginePath = (Join-Path $env:LOCALAPPDATA "docker-secrets-engine"),
     [string]$DockerDesktopPath = "C:\Program Files\Docker\Docker\Docker Desktop.exe",
     [string]$StatusPath = "",
+    [ValidateRange(0, 300)]
+    [int]$StartupGraceSeconds = 90,
     [switch]$SkipStart
 )
 
@@ -89,6 +91,13 @@ function Wait-Until([scriptblock]$Condition, [int]$TimeoutSeconds, [int]$Interva
 
 $quarantined = 0
 try {
+    if (-not $SkipStart -and -not (Test-DockerDesktopReady)) {
+        $dockerProcesses = @(Get-Process -Name "Docker Desktop", "com.docker.backend", "docker-desktop" -ErrorAction SilentlyContinue)
+        if ($dockerProcesses.Count -gt 0 -and $StartupGraceSeconds -gt 0) {
+            $null = Wait-Until -Condition { Test-DockerDesktopReady } -TimeoutSeconds $StartupGraceSeconds -IntervalSeconds 3
+        }
+    }
+
     if (-not $SkipStart -and -not (Test-DockerDesktopReady)) {
         Get-Process -Name "Docker Desktop", "com.docker.backend", "docker-desktop" -ErrorAction SilentlyContinue |
             Stop-Process -ErrorAction SilentlyContinue
