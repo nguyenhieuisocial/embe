@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 
+import AppHeader from "../../components/app-header";
+import { Icon, type IconName } from "../../components/embe-icon";
+
 type Topic = "ngu" | "bu" | "moi-truong";
 type State = "ready" | "waiting" | "done" | "error";
 
-const topics: Array<{ id: Topic; icon: string; title: string; detail: string }> = [
-  { id: "ngu", icon: "☾", title: "Giấc ngủ", detail: "Nhịp ngủ và thời lượng" },
-  { id: "bu", icon: "◡", title: "Bú sữa", detail: "Số lần và lượng sữa" },
-  { id: "moi-truong", icon: "⌁", title: "Môi trường", detail: "Nhiệt độ, độ ẩm và giấc ngủ" }
+const topics: Array<{ id: Topic; icon: IconName; title: string; detail: string }> = [
+  { id: "ngu", icon: "sleep", title: "Giấc ngủ", detail: "Nhịp ngủ và thời lượng" },
+  { id: "bu", icon: "milk", title: "Bú sữa", detail: "Số lần và lượng sữa" },
+  { id: "moi-truong", icon: "room", title: "Môi trường", detail: "Nhiệt độ, độ ẩm và giấc ngủ" }
 ];
 
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -48,10 +51,7 @@ export default function AssistantPage() {
 
   return (
     <main className="assistant-main">
-      <header className="masthead">
-        <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">EmBe</a>
-        <p className="privacy-note"><span aria-hidden="true">●</span> AI chạy tại máy nhà</p>
-      </header>
+      <AppHeader note="Trợ lý riêng của gia đình" />
       <section className="assistant-hero">
         <p className="eyebrow">TRỢ LÝ RIÊNG CỦA GIA ĐÌNH</p>
         <h1>EmBe hiểu<br /><em>số liệu của nhà mình</em></h1>
@@ -65,7 +65,7 @@ export default function AssistantPage() {
       <section className="assistant-topics" aria-label="Chọn nội dung cần phân tích">
         {topics.map((topic) => (
           <button key={topic.id} type="button" disabled={state === "waiting"} onClick={() => void ask(topic.id)} aria-label={`Hỏi về ${topic.title}`}>
-            <span aria-hidden="true">{topic.icon}</span><span><strong>{topic.title}</strong><small>{topic.detail}</small></span><b aria-hidden="true">→</b>
+            <span className="shortcut-mark" aria-hidden="true"><Icon name={topic.icon} /></span><span><strong>{topic.title}</strong><small>{topic.detail}</small></span><Icon name="arrow" className="icon icon-chevron" />
           </button>
         ))}
       </section>

@@ -97,5 +97,35 @@ export const pregnancySources = [
   {
     label: "Viện Dinh dưỡng Quốc gia — VNeNUTRITION",
     href: "https://viendinhduong.vn/landing-page"
+  },
+  {
+    label: "NHS — triệu chứng thai kỳ cần được hỗ trợ",
+    href: "https://www.nhs.uk/pregnancy/common-symptoms/pregnancy-symptoms-you-need-to-get-help-for/"
+  },
+  {
+    label: "ACOG — dấu hiệu cảnh báo khẩn cấp trong thai kỳ",
+    href: "https://www.acog.org/giving/programs/quality-and-safety/resources"
   }
+] as const;
+
+export const trimesterGuides = [
+  {
+    title: "Ba tháng đầu",
+    detail: "Xác nhận lịch chăm sóc trước sinh, ghi đầy đủ thuốc và vi chất đang dùng, hỏi bác sĩ trước khi tự bổ sung hoặc ngừng bất kỳ loại nào."
+  },
+  {
+    title: "Ba tháng giữa",
+    detail: "Duy trì lịch khám, ăn đa dạng và vận động ở mức đã được nhân viên y tế đồng ý; ghi lại câu hỏi thay vì tự diễn giải triệu chứng."
+  },
+  {
+    title: "Ba tháng cuối",
+    detail: "Chuẩn bị kế hoạch đi sinh, số liên hệ và túi cần mang; trao đổi cách theo dõi cử động thai phù hợp với hướng dẫn của nơi đang khám."
+  }
+] as const;
+
+export const urgentCareReminders = [
+  "Ra máu âm đạo, đau bụng dữ dội, ngất hoặc cảm giác tình trạng đang nguy hiểm.",
+  "Đau đầu dữ dội không giảm, nhìn mờ hoặc sưng xuất hiện đột ngột.",
+  "Khó thở xuất hiện đột ngột, đau ngực hoặc chóng mặt rõ rệt.",
+  "Cử động thai giảm rõ rệt sau khi đã được hướng dẫn theo dõi, hoặc nghi chuyển dạ nhưng không chắc phải làm gì."
 ] as const;

@@ -1,10 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import AppHeader from "../../components/app-header";
 import {
   dailyChecklist,
   pregnancySources,
+  trimesterGuides,
+  urgentCareReminders,
   weeklyMenu
 } from "../../lib/pregnancy-content";
 import { calculatePregnancyWeek, localDateKey } from "../../lib/pregnancy";
@@ -183,19 +187,14 @@ export default function PregnancyPage() {
 
   return (
     <main className="pregnancy-main">
-      <header className="masthead">
-        <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">
-          EmBe
-        </a>
-        <p className="privacy-note">
-          <span aria-hidden="true">●</span>{" "}
-          {syncStatus === "synced"
-            ? "Đã đồng bộ riêng tư"
-            : syncStatus === "saving" || syncStatus === "loading"
-              ? "Đang đồng bộ…"
-              : "Đã lưu trên máy · sẽ đồng bộ khi có mạng"}
-        </p>
-      </header>
+      <AppHeader
+        note={syncStatus === "synced"
+          ? "Đã đồng bộ riêng tư"
+          : syncStatus === "saving" || syncStatus === "loading"
+            ? "Đang đồng bộ…"
+            : "Đã lưu trên máy · sẽ đồng bộ khi có mạng"}
+        tone={syncStatus === "synced" ? "calm" : "wait"}
+      />
 
       <section className="pregnancy-hero">
         <div>
@@ -205,6 +204,15 @@ export default function PregnancyPage() {
             Chỉ những điều cần nhớ hôm nay — nhẹ nhàng, rõ ràng và không tạo áp lực.
           </p>
         </div>
+        <Image
+          className="pregnancy-care-art"
+          src="/illustrations/pregnancy-care.webp"
+          alt="Minh họa nước uống, bữa ăn chín, vận động nhẹ, nghỉ ngơi và ghi câu hỏi"
+          width={900}
+          height={675}
+          sizes="(max-width: 720px) 100vw, 340px"
+          priority
+        />
         <div className="week-card">
           <label htmlFor="due-date">Ngày dự sinh do bác sĩ xác nhận</label>
           <input
@@ -218,6 +226,24 @@ export default function PregnancyPage() {
             {week ? `Tuần ${week}` : "Chưa chọn tuần thai"}
           </p>
           <p>Dữ liệu được giữ riêng tư và đồng bộ giữa các thiết bị đã đăng nhập.</p>
+        </div>
+      </section>
+
+      <section className="trimester-section" aria-labelledby="trimester-title">
+        <div className="section-heading-row">
+          <div>
+            <p className="panel-kicker">NHẮC ĐÚNG VIỆC · KHÔNG TỰ CHẨN ĐOÁN</p>
+            <h2 id="trimester-title">Điều nên ưu tiên theo giai đoạn</h2>
+          </div>
+          <p>Ngày dự sinh chỉ giúp hiển thị tuần thai. Mọi lịch khám, xét nghiệm và thuốc vẫn theo nơi Mẹ Ngân đang được chăm sóc.</p>
+        </div>
+        <div className="trimester-grid">
+          {trimesterGuides.map((guide) => (
+            <article key={guide.title}>
+              <h3>{guide.title}</h3>
+              <p>{guide.detail}</p>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -289,6 +315,15 @@ export default function PregnancyPage() {
           chờ hoàn thành checklist.
         </p>
       </aside>
+
+      <section className="urgent-care" aria-labelledby="urgent-title">
+        <p className="panel-kicker">KHÔNG CHỜ CHECKLIST</p>
+        <h2 id="urgent-title">Khi nào cần liên hệ ngay</h2>
+        <p>Nếu có một trong các dấu hiệu dưới đây, liên hệ cơ sở sản khoa đang theo dõi hoặc cấp cứu địa phương; không chờ EmBe trả lời.</p>
+        <ul>
+          {urgentCareReminders.map((item) => <li key={item}>{item}</li>)}
+        </ul>
+      </section>
 
       <section className="source-section" aria-labelledby="source-title">
         <h2 id="source-title">Nguồn đã đối chiếu</h2>

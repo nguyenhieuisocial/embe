@@ -1,5 +1,7 @@
+import Image from "next/image";
 import { Suspense } from "react";
 
+import AppHeader from "../../components/app-header";
 import { getMediaMemories } from "../../lib/media";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +31,14 @@ export async function MemoryGallery() {
     </section>
   ) : (
     <section className="memory-empty" role="status">
-      <span aria-hidden="true">◎</span>
+      <Image
+        src="/illustrations/memory-album-empty.webp"
+        alt=""
+        aria-hidden="true"
+        width={900}
+        height={675}
+        sizes="(max-width: 720px) 84vw, 420px"
+      />
       <h2>Chưa có ảnh được chọn</h2>
       <p>Mẹ Ngân hoặc Ba Hiếu chọn ảnh trong album gia đình trước. EmBe sẽ tự đưa bản xem nhẹ vào đây sau khi đồng bộ.</p>
       <a href="/huong-dan#iphone-title">Xem cách đưa ảnh từ iPhone</a>
@@ -50,10 +59,7 @@ function MemoryLoading() {
 export default function MemoriesPage() {
   return (
     <main className="memories-main">
-      <header className="masthead">
-        <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">EmBe</a>
-        <p className="privacy-note"><span aria-hidden="true">●</span> Chỉ ảnh bố mẹ đã chọn</p>
-      </header>
+      <AppHeader note="Chỉ ảnh bố mẹ đã chọn" />
       <section className="memories-hero">
         <p className="eyebrow">ALBUM CỦA GIA ĐÌNH</p>
         <h1>Những ngày<br /><em>mình muốn nhớ</em></h1>

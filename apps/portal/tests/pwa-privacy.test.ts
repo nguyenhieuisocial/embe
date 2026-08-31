@@ -29,9 +29,10 @@ describe("private installable portal", () => {
 
   it("adds browser security and no-index headers to every route", async () => {
     const rules = await nextConfig.headers?.();
-    const headers = Object.fromEntries((rules?.[0].headers ?? []).map(({ key, value }) => [key, value]));
+    const everyRoute = rules?.find((rule) => rule.source === "/(.*)");
+    const headers = Object.fromEntries((everyRoute?.headers ?? []).map(({ key, value }) => [key, value]));
 
-    expect(rules?.[0].source).toBe("/(.*)");
+    expect(everyRoute).toBeDefined();
     expect(headers["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
     expect(headers["Content-Security-Policy"]).toContain("object-src 'none'");
     expect(headers["Content-Security-Policy"]).toContain("https://static.cloudflareinsights.com");
@@ -40,5 +41,15 @@ describe("private installable portal", () => {
     expect(headers["Referrer-Policy"]).toBe("no-referrer");
     expect(headers["Permissions-Policy"]).toContain("camera=()");
     expect(headers["X-Robots-Tag"]).toContain("noindex");
+  });
+
+  it("lets the browser revalidate the service worker on every launch", async () => {
+    const rules = await nextConfig.headers?.();
+    const worker = rules?.find((rule) => rule.source === "/sw.js");
+    const headers = Object.fromEntries((worker?.headers ?? []).map(({ key, value }) => [key, value]));
+
+    expect(worker).toBeDefined();
+    expect(headers["Cache-Control"]).toContain("max-age=0");
+    expect(headers["Service-Worker-Allowed"]).toBe("/");
   });
 });

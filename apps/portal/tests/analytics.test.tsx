@@ -24,7 +24,10 @@ describe("Google Analytics", () => {
 
     expect(loader).not.toBeNull();
     expect(loader?.hasAttribute("async")).toBe(true);
-    expect(initializer?.textContent).toContain("gtag('config', 'G-PTX99GX5F9')");
+    expect(initializer?.textContent).toContain("gtag('config', 'G-PTX99GX5F9', {");
+    expect(initializer?.textContent).toContain("allow_google_signals: false");
+    expect(initializer?.textContent).toContain("allow_ad_personalization_signals: false");
+    expect(initializer?.textContent).toContain("anonymize_ip: true");
   });
 
   it("keeps legacy iPhone standalone mode explicit", () => {

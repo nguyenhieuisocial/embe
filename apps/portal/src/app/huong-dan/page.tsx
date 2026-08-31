@@ -1,6 +1,5 @@
+import AppHeader from "../../components/app-header";
 import CopyServerAddress from "../../components/copy-server-address";
-
-const IMMICH_PRIVATE_URL = "https://henrynguyen.tail36cb4d.ts.net/";
 
 const dailyRhythm = [
   {
@@ -35,16 +34,12 @@ const plainRoles = [
 ];
 
 export default function GuidePage() {
+  const photoServerUrl = process.env.EMBE_PHOTO_SERVER_URL;
+  const photoAccount = process.env.EMBE_PHOTO_ACCOUNT;
+
   return (
     <main className="guide-main">
-      <header className="masthead">
-        <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">
-          EmBe
-        </a>
-        <p className="privacy-note">
-          <span aria-hidden="true">●</span> Một nơi để dùng mọi thứ
-        </p>
-      </header>
+      <AppHeader note="Một nơi để dùng mọi thứ" />
 
       <section className="guide-hero">
         <div>
@@ -121,15 +116,22 @@ export default function GuidePage() {
             <span>2</span>
             <div>
               <strong><a className="app-store-link" href="https://apps.apple.com/us/app/immich/id1613945652">Cài Immich từ App Store</a></strong>
-              <p>Bật Tailscale, rồi dùng đúng địa chỉ riêng dưới đây trong ô Server Endpoint URL.</p>
-              <CopyServerAddress address={IMMICH_PRIVATE_URL} />
+              <p>Bật Tailscale, rồi dùng địa chỉ riêng hiện trong EmBe ở ô Server Endpoint URL.</p>
+              {photoServerUrl ? (
+                <CopyServerAddress address={photoServerUrl} />
+              ) : (
+                <p className="setup-pending" role="status">Địa chỉ sẽ hiện khi thư viện ảnh gia đình sẵn sàng.</p>
+              )}
             </div>
           </li>
           <li>
             <span>3</span>
             <div>
               <strong>Đăng nhập tài khoản gia đình</strong>
-              <p>Đăng nhập bằng tài khoản <strong>family@hieu.asia</strong> đã được chuẩn bị riêng, rồi bật Sao lưu trong Immich. Đây không phải tài khoản quản trị và ảnh gốc sẽ về máy nhà qua kết nối riêng.</p>
+              <p>
+                {photoAccount ? <>Đăng nhập bằng tài khoản <strong>{photoAccount}</strong> đã được chuẩn bị riêng, rồi bật Sao lưu trong Immich. </> : <>Dùng tài khoản ảnh gia đình đã được chuẩn bị riêng, rồi bật Sao lưu trong Immich. </>}
+                Đây không phải tài khoản quản trị và ảnh gốc sẽ về máy nhà qua kết nối riêng.
+              </p>
             </div>
           </li>
         </ol>
@@ -141,9 +143,8 @@ export default function GuidePage() {
           <p className="panel-kicker">CỨ ĐỂ HỆ THỐNG LO</p>
           <h2 id="no-touch-title">Bạn không phải mở sáu công cụ riêng</h2>
           <p>
-            Các tên như BabyBuddy, Memos, Grocy, Node-RED, Uptime Kuma hay
-            Ollama chỉ dành cho lúc bảo trì. Trên điện thoại, chúng được gọi bằng
-            những việc quen thuộc dưới đây.
+            Các phần kỹ thuật chỉ dành cho lúc bảo trì. Trên điện thoại, mọi thứ
+            được gọi bằng những việc quen thuộc dưới đây.
           </p>
         </div>
         <dl className="plain-role-grid">

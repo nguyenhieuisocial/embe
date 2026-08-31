@@ -1,9 +1,14 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import GuidePage from "../src/app/huong-dan/page";
 
 describe("simple family guide", () => {
+  beforeEach(() => {
+    vi.stubEnv("EMBE_PHOTO_SERVER_URL", "https://photos.private.example/");
+    vi.stubEnv("EMBE_PHOTO_ACCOUNT", "family@example.test");
+  });
+
   it("gives non-technical family members one door and three daily steps", () => {
     render(<GuidePage />);
 
@@ -41,7 +46,7 @@ describe("simple family guide", () => {
       "href",
       "https://apps.apple.com/us/app/immich/id1613945652"
     );
-    expect(screen.getByText("family@hieu.asia")).toBeInTheDocument();
+    expect(screen.getByText("family@example.test")).toBeInTheDocument();
     expect(screen.getByText(/Đây không phải tài khoản quản trị/)).toBeInTheDocument();
     expect(screen.queryByText(/!8a/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Tạo tài khoản đầu tiên/)).not.toBeInTheDocument();
@@ -66,7 +71,7 @@ describe("simple family guide", () => {
     });
     render(<GuidePage />);
 
-    const address = "https://henrynguyen.tail36cb4d.ts.net/";
+    const address = "https://photos.private.example/";
     expect(screen.getByRole("link", { name: "Mở Immich gia đình" })).toHaveAttribute("href", address);
     fireEvent.click(screen.getByRole("button", { name: "Sao chép địa chỉ Immich" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(address));

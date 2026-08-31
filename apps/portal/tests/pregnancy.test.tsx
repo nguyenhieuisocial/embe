@@ -50,8 +50,11 @@ describe("pregnancy daily page", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Mẹ bầu hôm nay" })).toBeInTheDocument();
     expect(screen.getAllByRole("checkbox").length).toBeGreaterThanOrEqual(6);
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Điều nên ưu tiên theo giai đoạn" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Khi nào cần liên hệ ngay" })).toBeInTheDocument();
     expect(screen.getByText(/không thay thế tư vấn/iu)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /WHO/ })).toHaveAttribute("href", expect.stringContaining("who.int"));
+    expect(screen.getByRole("link", { name: /ACOG/ })).toHaveAttribute("href", expect.stringContaining("acog.org"));
   });
 
   it("keeps today's completion state on the device", () => {

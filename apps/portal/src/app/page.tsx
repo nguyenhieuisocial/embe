@@ -1,150 +1,183 @@
+import Image from "next/image";
 import { Suspense } from "react";
 
+import AppHeader from "../components/app-header";
+import { Icon } from "../components/embe-icon";
 import { getTimeline, getTimelineFreshness } from "../lib/timeline";
 
 export const dynamic = "force-dynamic";
 
-const emptyTimeline = [
-  { id: "empty", eventAt: "", title: "Những câu chuyện mới sẽ xuất hiện ở đây.", caption: "Bố mẹ chỉ cần thêm #portal vào ghi chú muốn chia sẻ." }
+const dayBeats = [
+  { when: "Sáng", title: "Mẹ Ngân xem việc hôm nay", href: "/me-bau" },
+  { when: "Trong ngày", title: "Ba Hiếu ghi một điều đáng nhớ", href: "/ghi-lai" },
+  { when: "Tối", title: "Cả nhà thảnh thơi nghỉ ngơi", href: null }
 ];
 
+const shortcuts = [
+  {
+    href: "/ky-niem",
+    icon: "album" as const,
+    kicker: "ALBUM GIA ĐÌNH",
+    title: "Khoảnh khắc",
+    label: "Mở album kỷ niệm"
+  },
+  {
+    href: "/do-dung",
+    icon: "supply" as const,
+    kicker: "BỈM · SỮA · VẬT TƯ",
+    title: "Biết món nào sắp hết",
+    label: "Xem đồ dùng trong nhà"
+  },
+  {
+    href: "/tro-ly",
+    icon: "assistant" as const,
+    kicker: "CHẠY TẠI MÁY NHÀ",
+    title: "Hỏi về giấc ngủ và bú sữa",
+    label: "Hỏi trợ lý riêng của gia đình"
+  },
+  {
+    href: "/huong-dan",
+    icon: "guide" as const,
+    kicker: "DÀNH CHO CẢ NHÀ",
+    title: "Dùng EmBe thật đơn giản",
+    label: "Xem cách sử dụng đơn giản"
+  }
+];
+
+const freshnessNote = {
+  fresh: "Nhật ký vừa được cập nhật.",
+  stale: "Nhật ký đang tạm cập nhật. Những nội dung cũ vẫn an toàn.",
+  unavailable: "Chưa kết nối được với máy nhà. Những nội dung cũ vẫn an toàn."
+} as const;
+
 function vietnameseDate(value: string): string {
-  if (!value) return "Sẵn sàng";
   return new Intl.DateTimeFormat("vi-VN", { dateStyle: "long", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(value));
 }
 
 async function TimelinePanel() {
-  const [liveTimeline, timelineFreshness] = await Promise.all([getTimeline(), getTimelineFreshness()]);
-  const timeline = liveTimeline.length > 0 ? liveTimeline : emptyTimeline;
+  const [timeline, freshness] = await Promise.all([getTimeline(), getTimelineFreshness()]);
 
   return (
-    <article className="panel timeline-panel">
-      <div className="panel-heading">
+    <section className="section timeline-panel" aria-labelledby="timeline-title">
+      <div className="section-head">
         <p className="panel-kicker">THEO DÒNG THỜI GIAN</p>
-        <h2>Nhật ký</h2>
+        <h2 id="timeline-title">Nhật ký</h2>
       </div>
-      <div className="timeline-list">
-        {timeline.map((item) => (
-          <div className="timeline-item" key={item.id}>
-            <span className="timeline-dot" aria-hidden="true" />
-            <div>
-              <p className="timeline-date">{vietnameseDate(item.eventAt)}</p>
-              <strong>{item.title}</strong>
-              <p>{item.caption}</p>
+
+      {timeline.length > 0 ? (
+        <div className="thread">
+          {timeline.map((item) => (
+            <div className="thread-item" key={item.id}>
+              <span className="thread-node" aria-hidden="true" />
+              <div className="thread-body">
+                <p className="timeline-date">
+                  <time dateTime={item.eventAt}>{vietnameseDate(item.eventAt)}</time>
+                </p>
+                <strong>{item.title}</strong>
+                <p>{item.caption}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      {timelineFreshness !== "fresh" ? (
-        <p className="privacy-note" role="status">Nhật ký đang tạm cập nhật. Những nội dung cũ vẫn an toàn.</p>
-      ) : null}
-    </article>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <span className="empty-mark" aria-hidden="true"><Icon name="write" /></span>
+          <strong>Chưa có ghi chép nào</strong>
+          <p>Điều đầu tiên cả nhà ghi lại sẽ xuất hiện ở đây.</p>
+          <a className="btn btn-quiet" href="/ghi-lai">Ghi điều đầu tiên</a>
+        </div>
+      )}
+
+      <p className="freshness" role="status">{freshnessNote[freshness]}</p>
+    </section>
   );
 }
 
 function TimelineLoading() {
   return (
-    <article className="panel timeline-panel timeline-loading" aria-busy="true">
-      <div className="panel-heading">
+    <section className="section timeline-panel" aria-busy="true">
+      <div className="section-head">
         <p className="panel-kicker">THEO DÒNG THỜI GIAN</p>
         <h2>Nhật ký</h2>
       </div>
-      <div className="timeline-loading-lines" role="status">
-        <span aria-hidden="true" />
-        <span aria-hidden="true" />
-        <p>Đang cập nhật nhật ký…</p>
+      <div className="skeleton" role="status">
+        <span className="skeleton-line is-short" />
+        <span className="skeleton-line" />
+        <span className="skeleton-line" />
+        <p className="freshness">Đang mở nhật ký của gia đình…</p>
       </div>
-    </article>
+    </section>
   );
 }
 
 export default function Home() {
   return (
-    <main>
-      <header className="masthead">
-        <a className="wordmark" href="#top" aria-label="EmBe — về đầu trang">
-          EmBe
-        </a>
-        <span className="family-chip" aria-label="Gia đình Ngân và Hiếu">N · H</span>
-      </header>
+    <main className="page">
+      <AppHeader note="Chỉ gia đình nhìn thấy" />
 
-      <section className="hero home-hero" id="top">
-        <div className="hero-copy">
-          <p className="eyebrow">SỔ NHÀ NGÂN & HIẾU</p>
-          <h1 aria-label="Hôm nay, mình cần làm gì?">Hôm nay,<br /><em>mình cần làm gì?</em></h1>
-          <p className="intro">
-            Một nơi duy nhất để mẹ xem việc cần làm, cả nhà lưu điều đáng nhớ
-            và cùng dõi theo em bé lớn lên.
-          </p>
-          <a className="primary-link" href="/me-bau">
-            Xem việc hôm nay <span aria-hidden="true">→</span>
+      <section className="today-hero">
+        <p className="eyebrow">SỔ NHÀ NGÂN &amp; HIẾU</p>
+        <h1 aria-label="Hôm nay, mình cần làm gì?">
+          Hôm nay,<br /><em>mình cần làm gì?</em>
+        </h1>
+        <p className="intro">
+          Một nơi duy nhất để mẹ xem việc cần làm, cả nhà lưu điều đáng nhớ và
+          cùng dõi theo em bé lớn lên.
+        </p>
+
+        <a className="action-primary" href="/me-bau" aria-label="Mở trang Mẹ bầu hôm nay">
+          Xem việc hôm nay
+          <Icon name="arrow" className="icon" />
+        </a>
+
+        <div className="family-hero-art">
+          <Image
+            src="/illustrations/family-thread-hero.webp"
+            alt=""
+            width={1280}
+            height={853}
+            sizes="(max-width: 767px) 100vw, 560px"
+            priority
+          />
+        </div>
+      </section>
+
+      <section className="section day-thread" aria-labelledby="day-thread-title">
+        <div className="section-head">
+          <p className="panel-kicker">MỖI NGÀY BA NHỊP</p>
+          <h2 id="day-thread-title">Ba nhịp nhẹ nhàng</h2>
+        </div>
+        <div className="thread">
+          {dayBeats.map((beat) => (
+            <div className="thread-item" key={beat.when}>
+              <span className="thread-node" aria-hidden="true" />
+              <div className="thread-body">
+                <p className="thread-when">{beat.when}</p>
+                {beat.href ? <a href={beat.href}>{beat.title}</a> : <strong>{beat.title}</strong>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Suspense fallback={<TimelineLoading />}>
+        <TimelinePanel />
+      </Suspense>
+
+      <nav className="section shortcut-list" aria-label="Lối tắt của gia đình">
+        {shortcuts.map((shortcut) => (
+          <a className="shortcut" href={shortcut.href} key={shortcut.href} aria-label={shortcut.label}>
+            <span className="shortcut-mark" aria-hidden="true"><Icon name={shortcut.icon} /></span>
+            <span className="shortcut-text">
+              <small>{shortcut.kicker}</small>
+              <strong>{shortcut.title}</strong>
+            </span>
+            <Icon name="arrow" className="icon icon-chevron" />
           </a>
-        </div>
+        ))}
+      </nav>
 
-        <div className="day-ribbon" aria-label="Ba nhịp đơn giản trong ngày">
-          <p className="day-ribbon-title">Ba nhịp nhẹ nhàng</p>
-          <ol>
-            <li><span>Sáng</span><strong>Mẹ Ngân xem việc hôm nay</strong></li>
-            <li><span>Trong ngày</span><strong><a href="/ghi-lai">Ba Hiếu ghi một điều đáng nhớ</a></strong></li>
-            <li><span>Tối</span><strong>Thảnh thơi nghỉ ngơi</strong></li>
-          </ol>
-          <p className="day-ribbon-note">Cả nhà chỉ cần dùng EmBe. Phần còn lại hệ thống tự lo.</p>
-        </div>
-      </section>
-
-      <p className="approval-message">
-        Chỉ những điều bố mẹ đã chọn mới xuất hiện tại đây.
-      </p>
-
-      <a className="guide-entry" href="/huong-dan" aria-label="Xem cách sử dụng đơn giản">
-        <span className="guide-entry-mark" aria-hidden="true">?</span>
-        <span>
-          <small>DÀNH CHO CẢ NHÀ</small>
-          <strong>Dùng EmBe thật đơn giản</strong>
-          <p>Chỉ một trang, mỗi ngày ba việc.</p>
-        </span>
-        <span aria-hidden="true">→</span>
-      </a>
-
-      <a className="pregnancy-entry" href="/me-bau" aria-label="Mở trang Mẹ bầu hôm nay">
-        <span>
-          <small>VIỆC QUAN TRỌNG NHẤT</small>
-          <strong>Checklist và thực đơn của mẹ</strong>
-        </span>
-        <span aria-hidden="true">→</span>
-      </a>
-
-      <a className="journal-entry" href="/ghi-lai" aria-label="Ghi một điều đáng nhớ">
-        <span><small>NHẬT KÝ GIA ĐÌNH</small><strong>Ghi lại khoảnh khắc hôm nay</strong></span>
-        <span aria-hidden="true">→</span>
-      </a>
-
-      <a className="inventory-entry" href="/do-dung" aria-label="Xem đồ dùng trong nhà">
-        <span><small>BỈM · SỮA · VẬT TƯ</small><strong>Biết món nào sắp hết</strong></span>
-        <span aria-hidden="true">→</span>
-      </a>
-
-      <a className="assistant-entry" href="/tro-ly" aria-label="Hỏi trợ lý riêng của gia đình">
-        <span><small>AI CỤC BỘ · RIÊNG TƯ</small><strong>Hỏi về giấc ngủ và dinh dưỡng</strong></span>
-        <span aria-hidden="true">→</span>
-      </a>
-
-      <section className="portal-grid" aria-label="Nội dung gia đình">
-        <Suspense fallback={<TimelineLoading />}>
-          <TimelinePanel />
-        </Suspense>
-
-        <a className="panel gallery-panel" href="/ky-niem" aria-label="Mở album kỷ niệm">
-          <div className="panel-heading">
-            <p className="panel-kicker">ALBUM GIA ĐÌNH</p>
-            <h2>Khoảnh khắc</h2>
-          </div>
-          <div className="photo-placeholder" aria-label="Album sẽ xuất hiện sau khi bố mẹ chọn ảnh">
-            <span className="photo-mark" aria-hidden="true">◎</span>
-            <p>Ảnh đã chọn sẽ được đặt ở đây</p>
-          </div>
-        </a>
-      </section>
+      <p className="privacy-line">Chỉ những điều bố mẹ đã chọn mới xuất hiện tại đây.</p>
 
       <footer>
         <p>Được lưu giữ riêng tư cho gia đình.</p>

@@ -2,6 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import AppHeader from "../../components/app-header";
+
 type InventoryItem = {
   productId: number;
   name: string;
@@ -69,10 +71,7 @@ export default function InventoryPage() {
   const busy = screenState === "saving";
   return (
     <main className="inventory-main">
-      <header className="masthead">
-        <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">EmBe</a>
-        <p className="privacy-note"><span aria-hidden="true">●</span> Tồn kho riêng của gia đình</p>
-      </header>
+      <AppHeader note="Tồn kho riêng của gia đình" />
 
       <section className="inventory-hero">
         <div>
@@ -101,14 +100,23 @@ export default function InventoryPage() {
       ) : null}
 
       {screenState === "loading" ? <div className="inventory-loading" role="status">Đang xem lại đồ dùng…</div> : null}
-      {snapshot.items.length === 0 && screenState !== "loading" ? (
+      {snapshot.items.length === 0 && screenState === "error" ? (
+        <section className="inventory-error" role="alert">
+          <span aria-hidden="true">↺</span>
+          <h2>Chưa cập nhật được đồ dùng</h2>
+          <p>Có thể điện thoại đang mất mạng. Danh sách của gia đình vẫn an toàn.</p>
+          <button type="button" onClick={() => { setScreenState("loading"); void load(); }}>Thử lại</button>
+        </section>
+      ) : null}
+      {snapshot.items.length === 0 && screenState !== "loading" && screenState !== "error" ? (
         <section className="inventory-empty">
           <span aria-hidden="true">◌</span>
           <h2>Chưa có đồ dùng nào</h2>
           <p>Thêm món đầu tiên để EmBe bắt đầu nhắc khi sắp hết.</p>
           <button type="button" onClick={() => setShowForm(true)}>Thêm đồ dùng đầu tiên</button>
         </section>
-      ) : (
+      ) : null}
+      {snapshot.items.length > 0 ? (
         <section className="inventory-list" aria-label="Danh sách đồ dùng">
           {snapshot.items.map((item) => (
             <article className={`inventory-card${item.needsRestock ? " is-low" : ""}`} key={item.productId}>
@@ -124,11 +132,11 @@ export default function InventoryPage() {
             </article>
           ))}
         </section>
-      )}
+      ) : null}
 
       {screenState === "saved" ? <p className="inventory-status is-success" role="status">Đã ghi nhận · hệ thống đang cập nhật</p> : null}
       {snapshot.pending > 0 ? <p className="inventory-status" role="status">Có {snapshot.pending} thay đổi đang được xử lý.</p> : null}
-      {screenState === "error" ? <p className="inventory-status is-error" role="alert">Chưa cập nhật được. Hãy chạm thử lại khi có mạng.</p> : null}
+      {screenState === "error" && snapshot.items.length > 0 ? <p className="inventory-status is-error" role="alert">Chưa cập nhật được. Hãy chạm thử lại khi có mạng.</p> : null}
       <aside className="inventory-boundary"><strong>EmBe chỉ nhắc, không tự mua</strong><p>Mọi quyết định mua hàng vẫn do gia đình xác nhận.</p></aside>
     </main>
   );

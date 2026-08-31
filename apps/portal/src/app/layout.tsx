@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
 
-import FamilyNav from "../components/family-nav";
+import AppShell from "../components/app-shell";
+import PwaRuntime from "../components/pwa-runtime";
+import WebVitals from "../components/web-vitals";
 import "./globals.css";
 
 const body = Be_Vietnam_Pro({
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#173f49",
+  themeColor: "#0F4A44",
   viewportFit: "cover",
   width: "device-width",
   initialScale: 1,
@@ -44,8 +46,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${body.variable} ${display.variable}`}>
-        {children}
-        <FamilyNav />
+        <AppShell>{children}</AppShell>
+        <PwaRuntime />
+        <WebVitals />
         <script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-PTX99GX5F9"
@@ -56,7 +59,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             __html: `window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', 'G-PTX99GX5F9');`
+gtag('config', 'G-PTX99GX5F9', {
+  anonymize_ip: true,
+  allow_google_signals: false,
+  allow_ad_personalization_signals: false,
+  cookie_flags: 'SameSite=Lax;Secure'
+});`
           }}
         />
       </body>

@@ -6,6 +6,8 @@ const PUBLIC_PATHS = new Set([
   "/login",
   "/api/auth/login",
   "/api/health",
+  "/offline",
+  "/sw.js",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",

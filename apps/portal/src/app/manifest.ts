@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Không gian riêng của gia đình Mẹ Ngân, Ba Hiếu và em bé.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f4f2e9",
-    theme_color: "#173f49",
+    background_color: "#FBF8F1",
+    theme_color: "#0F4A44",
     lang: "vi",
     orientation: "portrait-primary",
     icons: [
