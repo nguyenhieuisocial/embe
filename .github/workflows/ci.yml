@@ -61,6 +61,25 @@ jobs:
       - name: Verify health, soak, and go-live gates
         shell: pwsh
         run: .\scripts\tests\health-gates.tests.ps1
+      - name: Verify private networking and scheduled automation contracts
+        shell: pwsh
+        run: |
+          $tests = @(
+            '.\scripts\health\tests\tailscale-private-probe.tests.ps1',
+            '.\scripts\tests\install-scheduled-backup.tests.ps1',
+            '.\scripts\tests\babybuddy-memos-sync-scheduler.tests.ps1',
+            '.\scripts\tests\portal-sync.tests.ps1',
+            '.\scripts\tests\provision-babybuddy-sync.tests.ps1',
+            '.\scripts\tests\rotate-integration-credentials.tests.ps1',
+            '.\scripts\tests\tailscale-care-apps.tests.ps1',
+            '.\scripts\tests\tailscale-immich.tests.ps1',
+            '.\scripts\tests\install-toolchain.tests.ps1',
+            '.\scripts\tests\provision-iot.tests.ps1'
+          )
+          foreach ($test in $tests) {
+            & pwsh -NoProfile -NonInteractive -File $test
+            if ($LASTEXITCODE -ne 0) { throw "Failed: $test" }
+          }
       - name: Verify recoverable Windows runtime startup
         shell: pwsh
         run: .\scripts\tests\local-runtime-startup.tests.ps1
