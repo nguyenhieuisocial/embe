@@ -236,7 +236,15 @@ if ($FixturePath) {
     $physicalDisks = @(Get-PhysicalDisk -ErrorAction SilentlyContinue)
     $smartHealthy = $physicalDisks.Count -gt 0 -and @($physicalDisks | Where-Object HealthStatus -ne "Healthy").Count -eq 0
 
-    $serviceTaskExpected = 6
+    $serviceTaskDefinitions = @(
+        [pscustomobject]@{ name = "EmBe Critical R2 Backup"; runner = (Join-Path $ProjectRoot "scripts\backup\run-critical-r2.ps1") },
+        [pscustomobject]@{ name = "EmBe Restic Integrity"; runner = (Join-Path $ProjectRoot "scripts\backup\check-restic.ps1") },
+        [pscustomobject]@{ name = "EmBe Infrastructure Health Audit"; runner = (Join-Path $ProjectRoot "scripts\health\health-audit.ps1") },
+        [pscustomobject]@{ name = "EmBe Portal Timeline Sync"; runner = (Join-Path $ProjectRoot "services\local-bff\src\sync_portal.py") },
+        [pscustomobject]@{ name = "EmBe Integration Credential Rotation"; runner = (Join-Path $ProjectRoot "scripts\rotate-integration-credentials.ps1") },
+        [pscustomobject]@{ name = "EmBe BabyBuddy Memos Sync"; runner = (Join-Path $ProjectRoot "services\babybuddy-memos-sync\src\embe_sync\main.py") }
+    )
+    $serviceTaskExpected = $serviceTaskDefinitions.Count
     $serviceTaskReadyCount = 0
     $serviceInstallReady = $true
     foreach ($installName in @("backup-service-install.json", "portal-service-install.json")) {
@@ -252,7 +260,17 @@ if ($FixturePath) {
             $install.verified_now -eq $true -and
             $installAge -le 168
         if (-not $installReady) { $serviceInstallReady = $false }
-        if ($installReady) { $serviceTaskReadyCount += [int]$install.tasks_verified }
+    }
+    foreach ($definition in $serviceTaskDefinitions) {
+        $scheduledTask = Get-ScheduledTask -TaskName $definition.name -ErrorAction SilentlyContinue
+        if ($null -eq $scheduledTask) { continue }
+        $actionArguments = [string]$scheduledTask.Actions.Arguments
+        $principalReady = [string]$scheduledTask.Principal.LogonType -eq "Password" -and
+            -not [string]::IsNullOrWhiteSpace([string]$scheduledTask.Principal.UserId)
+        $taskReady = [string]$scheduledTask.State -ne "Disabled" -and
+            $principalReady -and
+            $actionArguments.Contains([string]$definition.runner)
+        if ($taskReady) { $serviceTaskReadyCount++ }
     }
     $serviceTasksReady = $serviceTaskReadyCount -eq $serviceTaskExpected
 

@@ -17,6 +17,18 @@ foreach ($evidence in @('backup-service-install.json', 'portal-service-install.j
         throw "Service-account health must use privileged installer evidence: $evidence"
     }
 }
+foreach ($taskName in @(
+    'EmBe Critical R2 Backup',
+    'EmBe Restic Integrity',
+    'EmBe Infrastructure Health Audit',
+    'EmBe Portal Timeline Sync',
+    'EmBe Integration Credential Rotation',
+    'EmBe BabyBuddy Memos Sync'
+)) {
+    if (-not $healthSource.Contains($taskName)) {
+        throw "Service-account health must verify the live scheduled task: $taskName"
+    }
+}
 $testRoot = Join-Path $env:TEMP ("embe-health-gates-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory $testRoot | Out-Null
 
