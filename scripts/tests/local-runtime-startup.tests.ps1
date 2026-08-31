@@ -10,8 +10,11 @@ $installerSource = Get-Content -LiteralPath $installer -Raw
 foreach ($forbidden in @("Remove-Item", "factory reset", "wsl --unregister")) {
     if ($source -match [regex]::Escape($forbidden)) { throw "Runtime recovery contains forbidden destructive action: $forbidden" }
 }
-foreach ($required in @("Move-StaleRuntimeDirectory", "-WindowStyle Hidden", "qwen3:8b")) {
+foreach ($required in @("Move-StaleRuntimeDirectory", "Test-DockerDesktopReady", "docker desktop status", "docker info", "-WindowStyle Hidden", "qwen3:8b")) {
     if (-not $source.Contains($required)) { throw "Runtime recovery is missing safety behavior: $required" }
+}
+if ($source.Contains("Wait-Until -Condition { Test-DockerPipe }")) {
+    throw "Runtime recovery still treats the Docker pipe as a complete readiness signal"
 }
 foreach ($required in @("-AtLogOn", 'Delay = "PT30S"', "-LogonType Interactive", "-RunLevel Limited")) {
     if (-not $installerSource.Contains($required)) { throw "Runtime startup task is missing: $required" }

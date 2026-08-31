@@ -64,6 +64,20 @@ function Test-DockerPipe {
     return Test-Path -LiteralPath "\\.\pipe\dockerDesktopLinuxEngine"
 }
 
+function Test-DockerDesktopReady {
+    if (-not (Test-DockerPipe)) { return $false }
+    try {
+        $desktopStatus = (& docker desktop status 2>$null | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $desktopStatus -notmatch '(?m)^Status\s+running\s*$') {
+            return $false
+        }
+        $serverVersion = (& docker info --format '{{.ServerVersion}}' 2>$null | Out-String).Trim()
+        return $LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($serverVersion)
+    } catch {
+        return $false
+    }
+}
+
 function Wait-Until([scriptblock]$Condition, [int]$TimeoutSeconds, [int]$IntervalSeconds = 2) {
     $deadline = [DateTimeOffset]::UtcNow.AddSeconds($TimeoutSeconds)
     do {
@@ -75,7 +89,7 @@ function Wait-Until([scriptblock]$Condition, [int]$TimeoutSeconds, [int]$Interva
 
 $quarantined = 0
 try {
-    if (-not $SkipStart -and -not (Test-DockerPipe)) {
+    if (-not $SkipStart -and -not (Test-DockerDesktopReady)) {
         Get-Process -Name "Docker Desktop", "com.docker.backend", "docker-desktop" -ErrorAction SilentlyContinue |
             Stop-Process -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
@@ -84,7 +98,7 @@ try {
         }
     }
 
-    if ($SkipStart -or -not (Test-DockerPipe)) {
+    if ($SkipStart -or -not (Test-DockerDesktopReady)) {
         if (Move-StaleRuntimeDirectory -SourcePath (Join-Path $DockerBasePath "run") -ExpectedParentPath $DockerBasePath -BackupPrefix "run-stale-embe") { $quarantined++ }
         $secretsParent = Split-Path -Parent ([IO.Path]::GetFullPath($SecretsEnginePath))
         if (Move-StaleRuntimeDirectory -SourcePath $SecretsEnginePath -ExpectedParentPath $secretsParent -BackupPrefix "docker-secrets-engine-stale-embe") { $quarantined++ }
@@ -96,10 +110,10 @@ try {
     }
 
     if (-not (Test-Path -LiteralPath $DockerDesktopPath -PathType Leaf)) { throw "Docker Desktop executable is unavailable" }
-    if (-not (Test-DockerPipe)) {
+    if (-not (Test-DockerDesktopReady)) {
         Start-Process -FilePath $DockerDesktopPath -WindowStyle Hidden
     }
-    if (-not (Wait-Until -Condition { Test-DockerPipe } -TimeoutSeconds 180 -IntervalSeconds 3)) {
+    if (-not (Wait-Until -Condition { Test-DockerDesktopReady } -TimeoutSeconds 180 -IntervalSeconds 3)) {
         throw "Docker engine did not become ready"
     }
 
@@ -119,7 +133,7 @@ try {
     [ordered]@{ status = "ready"; docker_ready = $true; ollama_ready = $true; runtime_directories_quarantined = $quarantined } | ConvertTo-Json -Compress
     exit 0
 } catch {
-    Write-RuntimeStatus "error" @{ docker_ready = (Test-DockerPipe); ollama_ready = $false; runtime_directories_quarantined = $quarantined; error_type = $_.Exception.GetType().Name }
+    Write-RuntimeStatus "error" @{ docker_ready = (Test-DockerDesktopReady); ollama_ready = $false; runtime_directories_quarantined = $quarantined; error_type = $_.Exception.GetType().Name }
     Write-Error "Local runtime startup failed. See the sanitized status file."
     exit 1
 }
