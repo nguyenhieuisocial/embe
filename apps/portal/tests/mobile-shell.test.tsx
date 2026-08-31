@@ -51,6 +51,8 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/a, button, input, select, textarea\s*\{[^}]*touch-action:\s*manipulation/s);
     expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\)[\s\S]*\.action-primary:hover/);
     expect(css).toMatch(/\.family-nav a\s*\{[^}]*min-height:\s*(?:52|5[3-9]|[6-9]\d)px/s);
+    expect(css).toMatch(/\.quick-trigger\s*\{[^}]*min-height:\s*(?:4[4-9]|[5-9]\d)px/s);
+    expect(css).toMatch(/\.quick-trigger\s*\{[^}]*env\(safe-area-inset-bottom\)/s);
   });
 
   it("gives compact text links a full iPhone touch target", () => {

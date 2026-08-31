@@ -36,6 +36,10 @@ export default function InventoryPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("them") === "1") setShowForm(true);
+  }, []);
+
   async function submitAction(body: Record<string, unknown>) {
     setScreenState("saving");
     try {
@@ -85,7 +89,7 @@ export default function InventoryPage() {
       </section>
 
       {showForm ? (
-        <form className="inventory-form" onSubmit={createItem}>
+        <form className="inventory-form" id="them-do-dung" onSubmit={createItem}>
           <label>Tên đồ dùng<input name="name" maxLength={80} required placeholder="Ví dụ: Bỉm sơ sinh" /></label>
           <div className="inventory-form-row">
             <label>Nhóm<select name="category" defaultValue="baby"><option value="baby">Bỉm & vệ sinh</option><option value="nutrition">Sữa & dinh dưỡng</option><option value="mother">Đồ của mẹ</option><option value="other">Khác</option></select></label>

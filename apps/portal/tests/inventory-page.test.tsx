@@ -1,10 +1,26 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import InventoryPage from "../src/app/do-dung/page";
 
 describe("mobile inventory page", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  beforeEach(() => window.history.replaceState({}, "", "/do-dung"));
+  afterEach(() => {
+    window.history.replaceState({}, "", "/do-dung");
+    vi.unstubAllGlobals();
+  });
+
+  it("opens the add form directly from the global quick action", async () => {
+    window.history.replaceState({}, "", "/do-dung?them=1#them-do-dung");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ items: [], pending: 0 }), { status: 200 })
+    ));
+
+    render(<InventoryPage />);
+
+    expect(await screen.findByRole("button", { name: "Lưu đồ dùng" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Tên đồ dùng")).toBeInTheDocument();
+  });
 
   it("guides the family when the private inventory is empty", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(

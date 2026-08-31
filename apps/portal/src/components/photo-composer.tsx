@@ -90,7 +90,7 @@ export default function PhotoComposer() {
   }
 
   return (
-    <section className="photo-composer" aria-label="Gửi khoảnh khắc mới">
+    <section className="photo-composer" id="gui-anh" aria-label="Gửi khoảnh khắc mới">
       <input ref={camera} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={choose} />
       <input ref={library} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={choose} />
 

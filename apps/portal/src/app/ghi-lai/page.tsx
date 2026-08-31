@@ -154,7 +154,7 @@ export default function JournalPage() {
         <p className="eyebrow">MỘT DÒNG CHO MAI SAU</p>
         <h1>Hôm nay có gì đáng nhớ?</h1>
         <p className="intro">Một câu ngắn cũng đủ. EmBe sẽ tự đưa vào dòng thời gian gia đình.</p>
-        <form className="journal-form" onSubmit={submit}>
+        <form className="journal-form" id="viet-nhat-ky" onSubmit={submit}>
           <fieldset>
             <legend>Người ghi</legend>
             <div className="author-choice">
