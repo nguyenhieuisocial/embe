@@ -23,12 +23,25 @@ describe("pregnancy week calculation", () => {
 describe("pregnancy daily page", () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "PATCH") {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return Response.json({
+          dueDate: body.dueDate ?? null,
+          completed: body.completed ?? [],
+          hasProfile: Object.hasOwn(body, "dueDate"),
+          hasDayState: Object.hasOwn(body, "completed")
+        });
+      }
+      return Response.json({ dueDate: null, completed: [], hasProfile: false, hasDayState: false });
+    }));
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-30T08:00:00+07:00"));
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it("shows sourced daily actions, a seven-day menu and medical boundary", () => {
@@ -59,6 +72,39 @@ describe("pregnancy daily page", () => {
 
     expect(screen.getByText("Tuần 34")).toBeInTheDocument();
     expect(localStorage.getItem("embe:pregnancy:due-date")).toBe("2026-10-08");
+  });
+
+  it("hydrates private state saved by another signed-in device", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({
+      dueDate: "2026-10-08",
+      completed: ["supplements"],
+      hasProfile: true,
+      hasDayState: true
+    }));
+
+    render(<PregnancyPage />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByLabelText("Ngày dự sinh do bác sĩ xác nhận")).toHaveValue("2026-10-08");
+    expect(screen.getAllByRole("checkbox")[0]).toBeChecked();
+    expect(screen.getByText("Đã đồng bộ riêng tư")).toBeInTheDocument();
+  });
+
+  it("keeps a local dirty copy when the backend is temporarily unavailable", async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error("offline"));
+    render(<PregnancyPage />);
+
+    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(localStorage.getItem("embe:pregnancy:checklist:2026-08-30:dirty")).toBe("1");
+    expect(screen.getByText(/sẽ đồng bộ khi có mạng/i)).toBeInTheDocument();
   });
 
   it("hydrates without a date mismatch when midnight passes between server and iPhone", async () => {

@@ -11,8 +11,9 @@ phẩm và lựa chọn phần mềm miễn phí/mã nguồn mở.
 - Thực đơn chỉ là gợi ý đa dạng thực phẩm, không đặt calorie hoặc mục tiêu tăng
   cân. Đái tháo đường thai kỳ, tăng huyết áp, thiếu máu, đa thai, dị ứng và các
   tình trạng khác cần thực đơn riêng từ nhân viên y tế.
-- Ngày dự sinh và trạng thái checklist bản đầu lưu bằng `localStorage` trên từng
-  thiết bị. GA4 không nhận các giá trị này.
+- Ngày dự sinh và trạng thái checklist được lưu qua API riêng tư, chỉ server có
+  quyền gọi Supabase. Trình duyệt vẫn giữ một bản cục bộ để dùng khi mất mạng và
+  tự đồng bộ lại; GA4 không nhận các giá trị này.
 - Giữ Grocy làm nguồn sự thật cho recipe, meal plan, tồn kho và shopping list.
   Không cài thêm Mealie, Yuvomi/Oikos hay OpenFamily vì trùng vai trò.
 - Grocy đã có plugin tra barcode Open Food Facts. Dữ liệu Open Food Facts là dữ

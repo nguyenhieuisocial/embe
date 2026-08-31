@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   dailyChecklist,
@@ -10,12 +10,36 @@ import {
 import { calculatePregnancyWeek, localDateKey } from "../../lib/pregnancy";
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
+const DUE_DATE_DIRTY_KEY = `${DUE_DATE_KEY}:dirty`;
+
+type PregnancyState = {
+  dueDate: string | null;
+  completed: string[];
+  hasProfile: boolean;
+  hasDayState: boolean;
+};
+
+type SyncStatus = "loading" | "saving" | "synced" | "offline";
+
+function validCompleted(value: unknown): string[] {
+  const validIds = new Set<string>(dailyChecklist.map((task) => task.id));
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && validIds.has(item))
+    : [];
+}
+
+function checklistDirtyKey(day: string): string {
+  return `embe:pregnancy:checklist:${day}:dirty`;
+}
 
 export default function PregnancyPage() {
   const [dueDate, setDueDate] = useState("");
   const [completed, setCompleted] = useState<string[]>([]);
   const [todayKey, setTodayKey] = useState("");
   const [ready, setReady] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("loading");
+  const revisionRef = useRef(0);
+  const writeQueueRef = useRef<Promise<void>>(Promise.resolve());
   const checklistKey = todayKey ? `embe:pregnancy:checklist:${todayKey}` : "";
 
   useEffect(() => {
@@ -24,44 +48,137 @@ export default function PregnancyPage() {
     setTodayKey(currentDay);
     try {
       setDueDate(localStorage.getItem(DUE_DATE_KEY) ?? "");
-      const stored = JSON.parse(localStorage.getItem(currentChecklistKey) ?? "[]");
-      const validIds = new Set<string>(dailyChecklist.map((task) => task.id));
-      setCompleted(
-        Array.isArray(stored)
-          ? stored.filter((item): item is string => typeof item === "string" && validIds.has(item))
-          : []
-      );
+      setCompleted(validCompleted(JSON.parse(localStorage.getItem(currentChecklistKey) ?? "[]")));
     } catch {
       setCompleted([]);
     }
     setReady(true);
+
+    let active = true;
+    async function synchronize() {
+      const revision = revisionRef.current;
+      setSyncStatus("loading");
+      try {
+        const localDueDate = localStorage.getItem(DUE_DATE_KEY) ?? "";
+        const hasLocalDueDate = localStorage.getItem(DUE_DATE_KEY) !== null;
+        const hasLocalChecklist = localStorage.getItem(currentChecklistKey) !== null;
+        const localCompleted = validCompleted(
+          JSON.parse(localStorage.getItem(currentChecklistKey) ?? "[]")
+        );
+        const dueDateDirty = localStorage.getItem(DUE_DATE_DIRTY_KEY) === "1";
+        const checklistDirty = localStorage.getItem(checklistDirtyKey(currentDay)) === "1";
+
+        const response = await fetch(`/api/pregnancy?day=${currentDay}`, { cache: "no-store" });
+        if (!response.ok) throw new Error("pregnancy state unavailable");
+        let remote = (await response.json()) as PregnancyState;
+        if (!active || revision !== revisionRef.current) return;
+
+        const update: Record<string, unknown> = { day: currentDay };
+        if (dueDateDirty || (!remote.hasProfile && hasLocalDueDate)) update.dueDate = localDueDate || null;
+        if (checklistDirty || (!remote.hasDayState && hasLocalChecklist)) update.completed = localCompleted;
+
+        if (Object.keys(update).length > 1) {
+          const saveResponse = await fetch("/api/pregnancy", {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(update)
+          });
+          if (!saveResponse.ok) throw new Error("pregnancy state save unavailable");
+          remote = (await saveResponse.json()) as PregnancyState;
+        }
+        if (!active || revision !== revisionRef.current) return;
+
+        if (remote.hasProfile) {
+          setDueDate(remote.dueDate ?? "");
+          if (remote.dueDate) localStorage.setItem(DUE_DATE_KEY, remote.dueDate);
+          else localStorage.removeItem(DUE_DATE_KEY);
+        }
+        if (remote.hasDayState) {
+          setCompleted(validCompleted(remote.completed));
+          localStorage.setItem(currentChecklistKey, JSON.stringify(validCompleted(remote.completed)));
+        }
+        localStorage.removeItem(DUE_DATE_DIRTY_KEY);
+        localStorage.removeItem(checklistDirtyKey(currentDay));
+        setSyncStatus("synced");
+      } catch {
+        if (active) setSyncStatus("offline");
+      }
+    }
+
+    void synchronize();
+    window.addEventListener("online", synchronize);
+    return () => {
+      active = false;
+      window.removeEventListener("online", synchronize);
+    };
   }, []);
 
   const week = useMemo(() => calculatePregnancyWeek(dueDate), [dueDate]);
   const progress = Math.round((completed.length / dailyChecklist.length) * 100);
 
+  function queueSave(
+    body: Record<string, unknown>,
+    dirtyKey: string,
+    stillCurrent: () => boolean
+  ) {
+    setSyncStatus("saving");
+    writeQueueRef.current = writeQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          const response = await fetch("/api/pregnancy", {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(body)
+          });
+          if (!response.ok) throw new Error("pregnancy state save unavailable");
+          if (stillCurrent()) {
+            localStorage.removeItem(dirtyKey);
+            const hasPendingWrite = localStorage.getItem(DUE_DATE_DIRTY_KEY) === "1"
+              || localStorage.getItem(checklistDirtyKey(todayKey)) === "1";
+            setSyncStatus(hasPendingWrite ? "saving" : "synced");
+          }
+        } catch {
+          if (stillCurrent()) setSyncStatus("offline");
+        }
+      });
+  }
+
   function updateDueDate(value: string) {
     setDueDate(value);
+    revisionRef.current += 1;
     try {
       if (value) localStorage.setItem(DUE_DATE_KEY, value);
       else localStorage.removeItem(DUE_DATE_KEY);
+      localStorage.setItem(DUE_DATE_DIRTY_KEY, "1");
     } catch {
       // The page remains usable when private browsing blocks persistent storage.
     }
+    queueSave(
+      { day: todayKey, dueDate: value || null },
+      DUE_DATE_DIRTY_KEY,
+      () => (localStorage.getItem(DUE_DATE_KEY) ?? "") === value
+    );
   }
 
   function toggleTask(taskId: string) {
-    setCompleted((current) => {
-      const next = current.includes(taskId)
-        ? current.filter((id) => id !== taskId)
-        : [...current, taskId];
-      try {
-        localStorage.setItem(checklistKey, JSON.stringify(next));
-      } catch {
-        // Keep the in-memory checklist usable when storage is unavailable.
-      }
-      return next;
-    });
+    const next = completed.includes(taskId)
+      ? completed.filter((id) => id !== taskId)
+      : [...completed, taskId];
+    setCompleted(next);
+    try {
+      localStorage.setItem(checklistKey, JSON.stringify(next));
+      localStorage.setItem(checklistDirtyKey(todayKey), "1");
+    } catch {
+      // Keep the in-memory checklist usable when storage is unavailable.
+    }
+    revisionRef.current += 1;
+    const submittedChecklist = JSON.stringify(next);
+    queueSave(
+      { day: todayKey, completed: next },
+      checklistDirtyKey(todayKey),
+      () => localStorage.getItem(checklistKey) === submittedChecklist
+    );
   }
 
   return (
@@ -71,7 +188,12 @@ export default function PregnancyPage() {
           EmBe
         </a>
         <p className="privacy-note">
-          <span aria-hidden="true">●</span> Chỉ lưu dấu tích trên thiết bị này
+          <span aria-hidden="true">●</span>{" "}
+          {syncStatus === "synced"
+            ? "Đã đồng bộ riêng tư"
+            : syncStatus === "saving" || syncStatus === "loading"
+              ? "Đang đồng bộ…"
+              : "Đã lưu trên máy · sẽ đồng bộ khi có mạng"}
         </p>
       </header>
 
@@ -89,12 +211,13 @@ export default function PregnancyPage() {
             id="due-date"
             type="date"
             value={dueDate}
+            disabled={!ready}
             onChange={(event) => updateDueDate(event.target.value)}
           />
           <p className="week-number" aria-live="polite">
             {week ? `Tuần ${week}` : "Chưa chọn tuần thai"}
           </p>
-          <p>Ngày dự sinh chỉ được lưu trong trình duyệt hiện tại.</p>
+          <p>Dữ liệu được giữ riêng tư và đồng bộ giữa các thiết bị đã đăng nhập.</p>
         </div>
       </section>
 
@@ -179,7 +302,7 @@ export default function PregnancyPage() {
       </section>
 
       <footer>
-        <p>Phiên bản đầu lưu tiến độ riêng trên từng điện thoại.</p>
+        <p>EmBe ưu tiên lưu tức thì trên điện thoại và tự đồng bộ an toàn.</p>
       </footer>
     </main>
   );

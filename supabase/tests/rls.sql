@@ -3,8 +3,10 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
+SET ROLE postgres;
+SET search_path = public, extensions, pg_temp;
 
-SELECT plan(21);
+SELECT plan(30);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -130,6 +132,59 @@ SELECT ok(
 SELECT ok(
   (SELECT NOT public FROM storage.buckets WHERE id = 'embe-portal-previews'),
   'The preview bucket remains private'
+);
+
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.pregnancy_profile', 'SELECT'),
+  'Anonymous clients cannot read the pregnancy profile'
+);
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.pregnancy_day', 'SELECT'),
+  'Anonymous clients cannot read pregnancy day state'
+);
+SELECT ok(
+  NOT has_table_privilege('anon', 'portal_read_model.pregnancy_check', 'SELECT'),
+  'Anonymous clients cannot read pregnancy checklist state'
+);
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'portal_read_model.pregnancy_check', 'INSERT'),
+  'Authenticated clients cannot write pregnancy checklist state'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_get_pregnancy_state(date)', 'EXECUTE'),
+  'Anonymous clients cannot read pregnancy state through the RPC'
+);
+SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_save_pregnancy_state(date,date,text[],boolean,boolean)', 'EXECUTE'),
+  'Anonymous clients cannot write pregnancy state through the RPC'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_get_pregnancy_state(date)', 'EXECUTE'),
+  'The portal server can read pregnancy state'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_save_pregnancy_state(date,date,text[],boolean,boolean)', 'EXECUTE'),
+  'The portal server can write pregnancy state'
+);
+SET ROLE service_role;
+DO $service_role_round_trip$
+BEGIN
+  PERFORM public.embe_save_pregnancy_state(
+    DATE '2099-12-30', NULL, ARRAY['water-rest', 'notes']::text[], false, true
+  );
+END
+$service_role_round_trip$;
+SET ROLE postgres;
+SELECT is(
+  public.embe_save_pregnancy_state(
+    DATE '2099-12-30',
+    NULL,
+    ARRAY['water-rest', 'notes']::text[],
+    false,
+    true
+  ) -> 'completed',
+  '["notes", "water-rest"]'::jsonb,
+  'An atomic checklist save returns the normalized private state'
 );
 
 SELECT finish();
