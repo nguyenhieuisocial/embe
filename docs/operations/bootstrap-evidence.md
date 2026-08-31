@@ -19,8 +19,8 @@
 | Home Assistant + MQTT | Tích hợp MQTT chính thức đã tạo và ở trạng thái `loaded`; chưa tạo cảm biến hoặc dữ liệu giả |
 | Tailscale | Immich, Memos và BabyBuddy Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và Funnel tắt |
 | Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
-| Immich media publisher | Code, retry, checksum, dedupe và kiểm thử đạt; vẫn tắt cho tới khi có album chọn lọc + API key chỉ đọc |
-| Sức khỏe phần mềm | 17/17 kiểm tra đạt; CI `main` và Vercel production đạt |
+| Immich media publisher | Đã nối vào tác vụ Portal bằng tài khoản dịch vụ, lỗi được cô lập và health gate fail-closed; vẫn tắt cho tới khi có album chọn lọc + API key chỉ đọc |
+| Sức khỏe phần mềm | 18/18 kiểm tra đạt; CI `main`, Vercel production và smoke test sau đăng nhập đạt |
 
 ## Go/no-go
 
@@ -32,4 +32,5 @@ API key chỉ đọc và một lần nhập synthetic đạt trước khi dùng 
 thứ ba và chạy restore drill trên chính thiết bị đó.
 
 **Đã đạt gate vận hành nền:** backup, kiểm tra toàn vẹn và health audit chạy bằng
-service account riêng; health gate vẫn fail closed vì dung lượng ổ hệ thống.
+service account riêng; health gate hiện đạt toàn bộ và vẫn fail closed nếu một
+dịch vụ, lịch đồng bộ hoặc bằng chứng an toàn bị thiếu.
