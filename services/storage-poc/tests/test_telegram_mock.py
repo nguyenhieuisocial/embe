@@ -81,6 +81,35 @@ class ExpiringDownloadClient(FakeClient):
         yield message.payload[offset:]
 
 
+class StandardAccountClient(FakeClient):
+    async def get_me(self):
+        return SimpleNamespace(premium=False, id=777)
+
+
+@pytest.mark.asyncio
+async def test_standard_account_is_supported_with_two_gb_ceiling(settings, tmp_path: Path):
+    configured = replace(
+        settings,
+        telegram_enabled=True,
+        telegram_api_id=123,
+        telegram_api_hash="hash",
+        telegram_session=tmp_path / "session",
+        telegram_shards=(-1001,),
+        dedicated_assertion="dedicated-telegram-account",
+        telegram_expected_user_id=777,
+        session_storage_assertion="bitlocker-and-restricted-acl",
+        telegram_account_tier="standard",
+    )
+    provider = TelegramMTProtoStorage(configured, b"s" * 32, StandardAccountClient())
+
+    health = await provider.health()
+
+    assert health["status"] == "ok"
+    assert health["premium"] is False
+    assert provider.max_object_bytes == 2_000_000_000
+    assert provider.capabilities.max_object_bytes == 2_000_000_000
+
+
 @pytest.mark.asyncio
 async def test_mtproto_mock_upload_range_rebuild_and_delete(settings, tmp_path: Path):
     configured = replace(

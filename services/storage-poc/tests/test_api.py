@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from fastapi.testclient import TestClient
 
 from embe_storage.api import create_app
@@ -103,3 +105,27 @@ def test_telegram_request_commits_local_then_enqueues_worker(settings, auth_head
     assert response.json()["status"] == "replication_pending"
     jobs = app.state.repository.due_outbox()
     assert [job["operation"] for job in jobs] == ["replicate_telegram"]
+
+
+def test_api_can_queue_telegram_for_windows_worker_without_linux_session(settings, auth_headers):
+    queued_settings = replace(
+        settings,
+        telegram_replication_enabled=True,
+        telegram_account_tier="standard",
+    )
+    app = create_app(
+        queued_settings,
+        {"local": LocalStorage(settings.data_dir / "objects")},
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/v1/files",
+        headers=auth_headers,
+        files={"file": ("preview.bin", b"secondary-copy", "application/octet-stream")},
+        data={"provider_name": "telegram_mtproto_lab", "sensitivity": "family"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "replication_pending"
+    assert [job["operation"] for job in app.state.repository.due_outbox()] == ["replicate_telegram"]

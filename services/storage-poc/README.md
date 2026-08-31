@@ -15,10 +15,13 @@ $env:EMBE_STORAGE_POC_API_KEY='<random-lab-key>'
 C:\EmBe\.venv\Scripts\python -m uvicorn embe_storage.api:app --host 127.0.0.1 --port 8099
 ```
 
-Live Telegram mode additionally requires a dedicated Premium lab account,
+Live Telegram mode additionally requires a dedicated standard or Premium account,
 private shard allowlist and an already-authorized session. The API never asks
 for phone, password or OTP, and it refuses to use a session unless
-`EMBE_TELEGRAM_DEDICATED_ACCOUNT_ASSERTION=dedicated-premium-lab`.
+the dedicated-account assertion, pinned user ID and shard allowlist all match.
+On Windows, the MTProto session is protected with DPAPI and the Linux API only
+queues secondary copies; `scripts/run-telegram-secondary.ps1` performs the
+encrypted replication under the Windows identity that owns the session.
 
 See `docs/operations/storage-poc-runbook.md` before enabling any live provider.
 

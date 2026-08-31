@@ -155,24 +155,33 @@ def create_app(settings: Settings | None = None, providers: dict[str, object] | 
         identity: tuple[str, str] = Depends(authorize),
     ):
         tenant_id, owner_id = identity
+        telegram_requested = provider_name == "telegram_mtproto_lab"
         requested_provider = app.state.providers.get(provider_name)
-        if requested_provider is None:
+        telegram_queue_only = (
+            telegram_requested
+            and settings.telegram_replication_enabled
+            and requested_provider is None
+        )
+        if requested_provider is None and not telegram_queue_only:
             raise HTTPException(400, "provider is not enabled")
         if sensitivity not in {"public", "family", "important", "restricted"}:
             raise HTTPException(400, "invalid sensitivity")
-        if provider_name == "telegram_mtproto_lab" and sensitivity in {"important", "restricted"}:
+        if telegram_requested and sensitivity in {"important", "restricted"}:
             raise HTTPException(400, "important or restricted data cannot be Telegram-only")
         provider = (
             app.state.providers.get("local")
-            if provider_name == "telegram_mtproto_lab"
+            if telegram_requested
             else requested_provider
         )
         if provider is None:
             raise HTTPException(503, "local canonical provider is unavailable")
-        max_bytes = min(
-            4_194_304_000,
-            requested_provider.capabilities.max_object_bytes or 4_194_304_000,
+        telegram_ceiling = 4_000_000_000 if settings.telegram_account_tier == "premium" else 2_000_000_000
+        provider_ceiling = (
+            telegram_ceiling
+            if telegram_queue_only
+            else requested_provider.capabilities.max_object_bytes or 4_194_304_000
         )
+        max_bytes = min(4_194_304_000, provider_ceiling)
         settings.data_dir.joinpath("staging").mkdir(parents=True, exist_ok=True)
         handle, temporary_name = tempfile.mkstemp(dir=settings.data_dir / "staging", suffix=".upload")
         os.close(handle)
@@ -217,7 +226,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, object] | 
                 object_id = repository.add_object(
                     asset_id, provider.name, "lab", stored.locator, stored.size, True
                 )
-                if provider_name == "telegram_mtproto_lab":
+                if telegram_requested:
                     repository.enqueue(
                         "replicate_telegram",
                         object_id,
@@ -237,7 +246,7 @@ def create_app(settings: Settings | None = None, providers: dict[str, object] | 
                 "size": size,
                 "sha256": sha256,
                 "status": "replication_pending"
-                if provider_name == "telegram_mtproto_lab"
+                if telegram_requested
                 else "available",
             }
         finally:

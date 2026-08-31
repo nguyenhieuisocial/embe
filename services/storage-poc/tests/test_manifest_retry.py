@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import base64
+import json
 
 import pytest
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from embe_storage.manifest import decode_manifest, encode_manifest
 from embe_storage.provider import ProviderError
@@ -18,6 +20,45 @@ def test_manifest_is_signed_and_tamper_evident():
     tampered = base64.urlsafe_b64encode(raw).decode().rstrip("=")
     with pytest.raises(ValueError, match="signature"):
         decode_manifest(f"{prefix}.{tampered}", b"k" * 32)
+
+
+def test_encrypted_recovery_manifest_fits_telegram_caption():
+    payload = {
+        "asset_id": "00000000-0000-4000-8000-000000000000",
+        "tenant_hash": "a" * 16,
+        "name_hash": "b" * 16,
+        "size": 1_048_576,
+        "sha256": "c" * 64,
+        "encrypted": True,
+        "tenant_id": "storage-poc-lab",
+        "logical_name": "telegram-pipeline-smoke.bin",
+        "media_type": "application/octet-stream",
+        "metadata": {
+            "owner_id": "storage-poc-operator",
+            "sensitivity": "family",
+            "encrypted": "true",
+            "encryption_envelope": '{"chunk_size":1048576,"key_version":"poc-v1","nonce_prefix":"xxxxxxxxxxxx","wrap_nonce":"xxxxxxxxxxxxxxxx","wrapped_dek":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}',
+            "original_size": "1048576",
+            "plaintext_sha256": "d" * 64,
+        },
+        "version": 1,
+    }
+
+    value = encode_manifest(payload, b"k" * 32)
+
+    assert len(value) <= 1024
+    assert decode_manifest(value, b"k" * 32) == payload
+
+
+def test_decoder_keeps_v2_recovery_compatibility():
+    payload = {"asset_id": "legacy", "size": 3}
+    prefix = "EMBE-POC-MANIFEST-V2"
+    nonce = b"n" * 12
+    body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    encrypted = AESGCM(b"k" * 32).encrypt(nonce, body, prefix.encode())
+    encoded = base64.urlsafe_b64encode(nonce + encrypted).decode().rstrip("=")
+
+    assert decode_manifest(f"{prefix}.{encoded}", b"k" * 32) == payload
 
 
 @pytest.mark.asyncio

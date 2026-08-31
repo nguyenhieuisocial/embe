@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, AsyncIterator
 
 from embe_storage.config import Settings
-from embe_storage.manifest import PREFIX, decode_manifest, encode_manifest
+from embe_storage.manifest import PREFIXES, decode_manifest, encode_manifest
 from embe_storage.provider import ByteRange, Capabilities, ObjectStat, ProviderError, PutOptions, StoredObject
 from embe_storage.retry import with_backoff
 
@@ -27,26 +27,35 @@ class TelegramMTProtoStorage:
         self.settings = settings
         self.signing_key = signing_key
         self._client = client
+        self.max_object_bytes = 4_000_000_000 if settings.telegram_account_tier == "premium" else 2_000_000_000
+        self.capabilities = Capabilities(True, True, False, False, self.max_object_bytes)
 
     async def _client_instance(self):
         if self._client is None:
             from telethon import TelegramClient
+            from telethon.sessions import StringSession
 
-            self._client = TelegramClient(
-                str(self.settings.telegram_session),
-                self.settings.telegram_api_id,
-                self.settings.telegram_api_hash,
-            )
+            session: object = str(self.settings.telegram_session)
+            if self.settings.telegram_dpapi_session:
+                from embe_storage.dpapi_session import unprotect
+
+                encrypted = self.settings.telegram_dpapi_session.read_bytes()
+                plaintext = unprotect(encrypted)
+                try:
+                    session = StringSession(plaintext.decode("ascii"))
+                finally:
+                    plaintext = b""
+            self._client = TelegramClient(session, self.settings.telegram_api_id, self.settings.telegram_api_hash)
         if not self._client.is_connected():
             await self._client.connect()
         if not await self._client.is_user_authorized():
             raise ProviderError("session_revoked", "dedicated Telegram session is not authorized")
         return self._client
 
-    async def _premium_identity(self):
+    async def _verified_identity(self):
         client = await self._client_instance()
         me = await client.get_me()
-        if not getattr(me, "premium", False):
+        if self.settings.telegram_account_tier == "premium" and not getattr(me, "premium", False):
             raise ProviderError("account_not_premium", "configured Telegram account is not Premium")
         if int(getattr(me, "id", 0)) != self.settings.telegram_expected_user_id:
             raise ProviderError("identity_mismatch", "Telegram session does not match the pinned lab account")
@@ -71,9 +80,9 @@ class TelegramMTProtoStorage:
         return ProviderError("telegram_error", f"{name}: {error}")
 
     async def put(self, source: Path, options: PutOptions) -> StoredObject:
-        if source.stat().st_size > self.capabilities.max_object_bytes:
-            raise ProviderError("object_too_large", "object exceeds the Premium MTProto part ceiling")
-        client, _ = await self._premium_identity()
+        if source.stat().st_size > self.max_object_bytes:
+            raise ProviderError("object_too_large", "object exceeds the configured Telegram account ceiling")
+        client, _ = await self._verified_identity()
         shard = self._shard_for(options.asset_id)
         manifest = encode_manifest(
             {
@@ -182,7 +191,7 @@ class TelegramMTProtoStorage:
             raise self._map_error(error) from error
 
     async def health(self) -> dict[str, object]:
-        client, me = await self._premium_identity()
+        client, me = await self._verified_identity()
         shard_health = []
         for shard in self.settings.telegram_shards:
             try:
@@ -203,7 +212,7 @@ class TelegramMTProtoStorage:
             try:
                 async for message in client.iter_messages(shard, reverse=True):
                     caption = getattr(message, "message", "") or ""
-                    if not caption.startswith(f"{PREFIX}.") or not message.document:
+                    if not any(caption.startswith(f"{prefix}.") for prefix in PREFIXES) or not message.document:
                         continue
                     try:
                         manifest = decode_manifest(caption, self.signing_key)

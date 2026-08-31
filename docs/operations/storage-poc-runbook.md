@@ -2,10 +2,11 @@
 
 ## Safety boundary
 
-- Lab only; không kết nối Portal, Immich, Local BFF hoặc Supabase production.
-- Chỉ dùng file synthetic. Không dùng ảnh gia đình, hồ sơ sức khỏe hay vault.
-- Không dùng tài khoản Telegram cá nhân. Dedicated account phải bật 2FA và có
-  Premium nếu test file trên 2 GB.
+- Telegram chỉ là bản sao phụ; bản chính vẫn ở local/R2/Immich và lỗi Telegram
+  không được chặn Portal hay quá trình upload chính.
+- Không lưu hồ sơ sức khỏe, vault, credential hoặc dữ liệu `restricted` lên Telegram.
+- Tài khoản chuyên dụng phải bật 2FA. Tài khoản thường giới hạn 2 GB/file;
+  Premium mới được thử nghiệm đến 4 GB/file.
 - Không dùng nhiều account/session/proxy để né `FLOOD_WAIT`.
 - Hai feature flag mặc định `false`; Compose profile không tự chạy.
 
@@ -24,26 +25,19 @@ python -m venv .venv
 thoại, OTP và có thể yêu cầu mật khẩu 2FA. Không gửi các giá trị đó vào chat,
 Git, command line hoặc file env cleartext.
 
-1. Tạo một tài khoản chỉ dành cho lab, bật 2FA và Premium.
+1. Tạo một tài khoản chuyên dụng, bật 2FA; Premium là tùy chọn.
 2. Tạo `api_id`/`api_hash` riêng tại `my.telegram.org`.
-3. Tạo 2–3 private channel lab; không thêm dữ liệu hoặc thành viên khác.
-4. Trong local console, đặt API ID/hash và session path
-   `C:\EmBe\data\storage-poc\telegram-lab`, rồi chạy
-   `C:\EmBe\.venv\Scripts\python.exe C:\EmBe\services\storage-poc\scripts\create_dedicated_session.py`.
-   Script nhận OTP/2FA bằng prompt, kiểm tra Premium và tự xóa session nếu sai
-   account. Không gửi OTP/2FA vào chat. Khi chạy Compose, session path tương ứng
-   là `/data/storage-poc/telegram-lab`.
+3. Tạo 2 private channel; không thêm thành viên và không chia sẻ liên kết.
+4. Chạy `scripts/start-telegram-storage-login.ps1`. Phiên chỉ được lưu sau khi
+   ghim user ID và được Windows DPAPI mã hóa.
 5. Pin numeric user ID của account lab bằng `EMBE_TELEGRAM_EXPECTED_USER_ID`,
    đặt allowlist shard IDs và xác nhận account chuyên dụng bằng biến chính xác
-   `dedicated-premium-lab`. Service từ chối session Premium khác user ID đã pin.
+   `dedicated-telegram-account`. Service từ chối mọi session khác user ID đã pin.
    Nếu chưa biết numeric ID, để biến này trống và chạy script một lần; script chỉ
    in ID rồi xóa discovery session. Đặt ID đó và chạy lại để tạo session chính thức.
-6. Session Telethon là credential toàn quyền và không được app-layer encrypt khi
-   đang sử dụng. Chỉ đặt trên volume có BitLocker/NTFS ACL giới hạn cho tài khoản
-   vận hành; backup session phải được SOPS/age encrypt. Không copy sang cloud drive.
-   Sau khi tự kiểm tra hai điều kiện này, đặt assertion chính xác
-   `EMBE_TELEGRAM_SESSION_STORAGE_ASSERTION=bitlocker-and-restricted-acl`; thiếu
-   assertion thì cả script login và provider đều fail-closed.
+6. Session Telethon là credential toàn quyền. Chỉ Windows identity đã tạo phiên,
+   SYSTEM và Administrators được đọc file DPAPI; không mount file này vào Linux,
+   không copy sang cloud drive và không đưa vào Git.
 
 ## Chuẩn bị R2 lab bucket
 
@@ -63,18 +57,21 @@ Chạy smoke test sau khi service local đã lên:
 Smoke test chỉ tạo file ngẫu nhiên 1 MiB, kiểm full download/Range/checksum rồi
 xóa ngay. Không dùng dữ liệu gia đình. S3 dùng cùng nguyên tắc scoped credential.
 
-## Cổng bật live test
+## Chế độ secondary hiện hành
 
 Chỉ sau khi kiểm tra session và channel:
 
 ```text
 EMBE_STORAGE_POC_ENABLED=true
-EMBE_TELEGRAM_POC_ENABLED=true
-EMBE_TELEGRAM_DEDICATED_ACCOUNT_ASSERTION=dedicated-premium-lab
-EMBE_TELEGRAM_LIVE_BENCHMARK=I_UNDERSTAND_LAB_ONLY
+EMBE_TELEGRAM_REPLICATION_ENABLED=true
+EMBE_TELEGRAM_POC_ENABLED=false  # Linux API không được đọc session DPAPI
 ```
 
-Service bind `127.0.0.1:8099`. API key tối thiểu 24 ký tự; request phải có
+Service bind `127.0.0.1:8099`. Linux API giữ bản chính local và xếp hàng.
+`scripts/run-telegram-secondary.ps1` chạy trên Windows, bật provider chỉ trong
+tiến trình đó, mã hóa AES-256-GCM theo chunk rồi sao chép sang Telegram.
+`scripts/install-telegram-secondary-task.ps1` cài task chạy mỗi 10 phút bằng
+Windows identity sở hữu session DPAPI. API key tối thiểu 24 ký tự; request phải có
 `X-Embe-Poc-Key`, `X-Tenant-Id`, `X-Owner-Id`. Không đưa service qua Cloudflare
 Tunnel/Vercel hoặc DNS public.
 
@@ -83,8 +80,7 @@ Tunnel/Vercel hoặc DNS public.
 1. Health + Premium + quyền shard.
 2. 1 MB, 20 MB, 100 MB.
 3. 500 MB, 1 GB.
-4. 2 GB.
-5. Chỉ khi tất cả ổn và không có warning/flood bất thường: 3.0 GB rồi 3.9 GB.
+4. Tài khoản thường dừng dưới 2 GB. Chỉ Premium mới thử 2–3.9 GB.
 6. Concurrency tăng 1 → 2 → 4; dừng ngay khi Telegram trả wait hoặc warning.
 
 Ghi `FLOOD_WAIT_X`/`FLOOD_PREMIUM_WAIT_X` nguyên giá trị X và chờ đúng thời

@@ -26,6 +26,9 @@ class Settings:
     lab_tenant_id: str = "storage-poc-lab"
     lab_owner_id: str = "storage-poc-operator"
     session_storage_assertion: str = ""
+    telegram_dpapi_session: Path | None = None
+    telegram_account_tier: str = "premium"
+    telegram_replication_enabled: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -39,6 +42,7 @@ class Settings:
             if value.strip()
         )
         session_raw = os.getenv("EMBE_TELEGRAM_SESSION_PATH", "")
+        dpapi_session_raw = os.getenv("EMBE_TELEGRAM_DPAPI_SESSION_PATH", "")
         api_id_raw = os.getenv("EMBE_TELEGRAM_API_ID", "")
         return cls(
             enabled=_enabled("EMBE_STORAGE_POC_ENABLED"),
@@ -61,6 +65,9 @@ class Settings:
             session_storage_assertion=os.getenv(
                 "EMBE_TELEGRAM_SESSION_STORAGE_ASSERTION", ""
             ),
+            telegram_dpapi_session=Path(dpapi_session_raw) if dpapi_session_raw else None,
+            telegram_account_tier=os.getenv("EMBE_TELEGRAM_ACCOUNT_TIER", "premium").strip().lower(),
+            telegram_replication_enabled=_enabled("EMBE_TELEGRAM_REPLICATION_ENABLED"),
         )
 
     def require_lab(self) -> None:
@@ -73,19 +80,28 @@ class Settings:
         self.require_lab()
         if not self.telegram_enabled:
             raise RuntimeError("Telegram PoC is disabled")
-        if self.dedicated_assertion != "dedicated-premium-lab":
-            raise RuntimeError("dedicated Premium lab account assertion is missing")
-        if self.session_storage_assertion != "bitlocker-and-restricted-acl":
+        if self.dedicated_assertion not in {"dedicated-premium-lab", "dedicated-telegram-account"}:
+            raise RuntimeError("dedicated Telegram account assertion is missing")
+        if self.telegram_account_tier not in {"standard", "premium"}:
+            raise RuntimeError("Telegram account tier is invalid")
+        accepted_storage = {
+            "bitlocker-and-restricted-acl",
+            "windows-dpapi-and-restricted-acl",
+        }
+        if self.session_storage_assertion not in accepted_storage:
             raise RuntimeError("encrypted-volume and restricted-ACL assertion is missing")
+        session = self.telegram_dpapi_session or self.telegram_session
         if not all(
             (
                 self.telegram_api_id,
                 self.telegram_api_hash,
-                self.telegram_session,
+                session,
                 self.telegram_shards,
                 self.telegram_expected_user_id,
             )
         ):
             raise RuntimeError("Telegram lab credentials, session or shard allowlist are incomplete")
-        if self.telegram_session and not self.telegram_session.resolve().is_relative_to(self.data_dir.resolve()):
+        if session and not session.resolve().is_relative_to(self.data_dir.resolve()):
             raise RuntimeError("Telegram session must stay below the PoC data directory")
+        if self.telegram_dpapi_session and self.session_storage_assertion != "windows-dpapi-and-restricted-acl":
+            raise RuntimeError("DPAPI session assertion is missing")

@@ -37,6 +37,26 @@ def test_telegram_session_must_stay_in_lab_data_dir(settings, tmp_path):
         configured.require_telegram()
 
 
+def test_telegram_accepts_dpapi_session_on_windows_host(settings, tmp_path):
+    data_dir = tmp_path / "storage-poc"
+    configured = replace(
+        settings,
+        enabled=True,
+        telegram_enabled=True,
+        telegram_api_id=123,
+        telegram_api_hash="hash",
+        telegram_session=None,
+        telegram_dpapi_session=data_dir / "telegram.session.dpapi",
+        telegram_shards=(-1001,),
+        telegram_expected_user_id=777,
+        dedicated_assertion="dedicated-premium-lab",
+        session_storage_assertion="windows-dpapi-and-restricted-acl",
+        data_dir=data_dir,
+    )
+
+    configured.require_telegram()
+
+
 def test_r2_is_always_wrapped_with_client_side_encryption(settings, monkeypatch):
     monkeypatch.setenv("EMBE_R2_ACCOUNT_ID", "account")
     monkeypatch.setenv("EMBE_R2_POC_BUCKET", "bucket")

@@ -112,6 +112,7 @@ if ($FixturePath) {
     $tailscalePrivate = $fixture.endpoints.tailscale_private
     $mcpRuntimeReady = [bool]$fixture.mcp_runtime_ready
     $telegramPocDisabled = [bool]$fixture.telegram_poc_disabled
+    $telegramSecondaryStatus = $fixture.telegram_secondary
     $pdfReport = $fixture.pdf_report
 } else {
     $driveName = ([IO.Path]::GetPathRoot($ProjectRoot)).TrimEnd(':', '\')
@@ -284,6 +285,7 @@ if ($FixturePath) {
     }
 
     $telegramPocDisabled = $false
+    $telegramSecondaryStatus = [pscustomobject]@{ status = "missing"; generated_at = "" }
     $storagePocEnvPath = Join-Path $ProjectRoot "infra\compose\storage-poc.env"
     if (Test-Path -LiteralPath $storagePocEnvPath -PathType Leaf) {
         $telegramSetting = Get-Content -LiteralPath $storagePocEnvPath |
@@ -292,6 +294,15 @@ if ($FixturePath) {
         if ($telegramSetting) {
             $telegramValue = (($telegramSetting -split '=', 2)[1]).Trim().Trim('"').Trim("'")
             $telegramPocDisabled = $telegramValue -ieq "false"
+        }
+    }
+
+    $telegramSecondaryPath = Join-Path $ProjectRoot "data\status\telegram-secondary.json"
+    if (Test-Path -LiteralPath $telegramSecondaryPath -PathType Leaf) {
+        try {
+            $telegramSecondaryStatus = Get-Content -LiteralPath $telegramSecondaryPath -Raw | ConvertFrom-Json
+        } catch {
+            $telegramSecondaryStatus = [pscustomobject]@{ status = "invalid"; generated_at = "" }
         }
     }
 
@@ -426,6 +437,10 @@ Add-Check "tailscale_private" $(if ($tailscalePass) { "pass" } else { "critical"
 Add-Check "mcp_runtime" $(if ($mcpRuntimeReady) { "pass" } else { "critical" }) "Lớp truy vấn AI chỉ đọc khởi tạo được" @{ runtime_ready = [bool]$mcpRuntimeReady }
 
 Add-Check "telegram_poc_disabled" $(if ($telegramPocDisabled) { "pass" } else { "critical" }) "Kho Telegram thử nghiệm bị khóa khỏi dữ liệu production" @{ disabled = [bool]$telegramPocDisabled }
+
+$telegramSecondaryAge = if ($telegramSecondaryStatus.generated_at) { 60 * (Get-AgeHours $telegramSecondaryStatus.generated_at) } else { [double]::PositiveInfinity }
+$telegramSecondaryPass = [string]$telegramSecondaryStatus.status -eq "pass" -and $telegramSecondaryAge -le 30
+Add-Check "telegram_secondary" $(if ($telegramSecondaryPass) { "pass" } else { "critical" }) "Bản sao Telegram mã hóa gần nhất" @{ age_minutes = if ([double]::IsInfinity($telegramSecondaryAge)) { $null } else { [math]::Round($telegramSecondaryAge, 1) }; maximum_minutes = 30 }
 
 $pdfAge = if ($pdfReport.generated_at_utc) { Get-AgeHours $pdfReport.generated_at_utc } else { [double]::PositiveInfinity }
 $pdfPass = [string]$pdfReport.status -eq "ok" -and [bool]$pdfReport.output_exists -and [bool]$pdfReport.checksum_matches -and [string]$pdfReport.source_mode -eq "curated_memos" -and $pdfAge -le ($PdfMaxAgeDays * 24)

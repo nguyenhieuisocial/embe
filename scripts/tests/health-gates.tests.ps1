@@ -52,6 +52,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         uptime_monitoring = @{ active = 7; healthy = 7; stale = 0 }
         mcp_runtime_ready = $true
         telegram_poc_disabled = $true
+        telegram_secondary = @{ status = "pass"; generated_at = $now.AddMinutes(-5).ToString("o") }
         pdf_report = @{
             status = "ok"
             generated_at_utc = $now.AddDays(-1).ToString("o")
@@ -77,7 +78,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "monthly_pdf")) {
+    foreach ($id in @("media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "telegram_secondary", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
