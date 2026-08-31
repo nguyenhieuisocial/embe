@@ -37,8 +37,14 @@ class FamilyContentTests(unittest.TestCase):
         markdown = render_markdown(content)
         self.assertEqual(len(content["checklist"]), 13)
         self.assertEqual(len(content["weekly_menu"]), 7)
+        self.assertGreaterEqual(len(content["guidance"]), 12)
+        self.assertEqual({item["level"] for item in content["guidance"]}, {"do", "limit", "avoid"})
         self.assertEqual(markdown.count("- [ ] **"), 13)
         self.assertIn("Ranh giới an toàn", markdown)
+        self.assertIn("## Nên ưu tiên", markdown)
+        self.assertIn("## Nên hạn chế", markdown)
+        self.assertIn("## Nên tránh", markdown)
+        self.assertIn("Caffeine không quá 200 mg mỗi ngày", markdown)
         self.assertIn("Viện Dinh dưỡng Quốc gia", markdown)
 
         with tempfile.TemporaryDirectory() as directory:
@@ -56,6 +62,9 @@ class FamilyContentTests(unittest.TestCase):
             self.assertIn(day["breakfast"], portal)
             self.assertIn(day["lunch"], portal)
             self.assertIn(day["dinner"], portal)
+        for item in content["guidance"]:
+            self.assertIn(f'id: "{item["id"]}"', portal)
+            self.assertIn(item["title"], portal)
 
     def test_grocy_master_data_is_idempotent_and_has_no_stock(self):
         path = ROOT / "content" / "grocy-master-data.vi.json"

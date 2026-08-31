@@ -65,6 +65,15 @@ describe("pregnancy daily page", () => {
     expect(screen.getByRole("heading", { level: 3, name: "Ăn uống" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nên ăn gì, hạn chế gì, kiêng gì?" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nên ưu tiên" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nên hạn chế" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nên tránh" })).toBeInTheDocument();
+    expect(screen.getByText("Ăn chín, tách sống – chín")).toBeInTheDocument();
+    expect(screen.getByText("Caffeine không quá 200 mg mỗi ngày")).toBeInTheDocument();
+    expect(screen.getByText("Không rượu bia")).toBeInTheDocument();
+    expect(screen.getByText("Không tự dùng thuốc, thảo dược hoặc vi chất")).toBeInTheDocument();
+    expect(screen.getByText(/Không cần “kiêng” mọi món theo truyền miệng/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Điều nên ưu tiên theo giai đoạn" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nhật ký sức khỏe" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Biểu đồ 28 ngày" })).toBeInTheDocument();

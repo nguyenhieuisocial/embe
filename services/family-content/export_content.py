@@ -10,6 +10,7 @@ def load_content(path: Path) -> dict:
     if content.get("schema_version") != 1:
         raise ValueError("unsupported content schema")
     checklist = content.get("checklist")
+    guidance = content.get("guidance")
     menu = content.get("weekly_menu")
     sources = content.get("sources")
     if not isinstance(checklist, list) or not checklist:
@@ -17,6 +18,13 @@ def load_content(path: Path) -> dict:
     ids = [item.get("id") for item in checklist]
     if any(not item for item in ids) or len(ids) != len(set(ids)):
         raise ValueError("checklist ids must be unique")
+    if not isinstance(guidance, list) or not guidance:
+        raise ValueError("guidance is empty")
+    guidance_ids = [item.get("id") for item in guidance]
+    if any(not item for item in guidance_ids) or len(guidance_ids) != len(set(guidance_ids)):
+        raise ValueError("guidance ids must be unique")
+    if {item.get("level") for item in guidance} != {"do", "limit", "avoid"}:
+        raise ValueError("guidance needs do, limit and avoid levels")
     if not isinstance(menu, list) or len(menu) != 7:
         raise ValueError("weekly menu must contain seven days")
     for day in menu:
@@ -46,6 +54,10 @@ def render_markdown(content: dict) -> str:
     ]
     for item in content["checklist"]:
         lines.extend((f"- [ ] **{item['title']}**", f"  - {item['detail']}"))
+    level_titles = {"do": "Nên ưu tiên", "limit": "Nên hạn chế", "avoid": "Nên tránh"}
+    for level, title in level_titles.items():
+        lines.extend(("", f"## {title}", ""))
+        lines.extend(f"- {item['title']}" for item in content["guidance"] if item["level"] == level)
     lines.extend(("", "## Thực đơn 7 ngày tham khảo", "", content["menu_note"], ""))
     lines.extend(("| Ngày | Sáng | Trưa | Tối |", "|---|---|---|---|"))
     for day in content["weekly_menu"]:

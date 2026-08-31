@@ -920,6 +920,90 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 .trimester-grid p { color: var(--ink-soft); font-size: .9375rem; }
 
+.guidance-levels { display: grid; gap: 16px; }
+.guidance-level {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 4px);
+  overflow: hidden;
+}
+.guidance-level > header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px 10px;
+}
+.guidance-level > header > span {
+  align-items: center;
+  background: var(--jade-soft);
+  border-radius: 50%;
+  color: var(--jade);
+  display: flex;
+  flex: none;
+  font-size: 1rem;
+  font-weight: 700;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+.guidance-level > header h3 { font-size: 1.0625rem; }
+.guidance-level.is-limit > header > span { background: var(--sun-soft); color: var(--sun-ink); }
+.guidance-level.is-avoid > header > span { background: var(--coral-soft); color: var(--coral); }
+.guidance-list { display: grid; }
+.guidance-item { border-top: 1px solid var(--line); }
+.guidance-item summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  list-style: none;
+  min-height: 64px;
+  padding: 12px 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+.guidance-item summary::-webkit-details-marker { display: none; }
+.guidance-item summary > span { display: grid; gap: 2px; }
+.guidance-item summary small {
+  color: var(--ink-soft);
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.guidance-item summary strong { font-size: .9375rem; font-weight: 600; }
+.guidance-item summary i {
+  color: var(--ink-soft);
+  flex: none;
+  font-size: 1.25rem;
+  font-style: normal;
+  transform: rotate(0deg);
+  transition: transform 160ms ease;
+}
+.guidance-item[open] summary { background: var(--paper); }
+.guidance-item[open] summary i { transform: rotate(180deg); }
+.guidance-item > div { display: grid; gap: 10px; padding: 0 16px 16px; }
+.guidance-item > div p { color: var(--ink-soft); font-size: .875rem; }
+.guidance-item > div p b { color: var(--ink); }
+.guidance-item > div a {
+  align-items: center;
+  color: var(--jade);
+  display: inline-flex;
+  font-size: .8125rem;
+  font-weight: 600;
+  min-height: 44px;
+  text-decoration: none;
+}
+.guidance-myth {
+  background: var(--jade-soft);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 16px 18px;
+}
+.guidance-myth p { color: var(--ink-soft); font-size: .875rem; }
+
 .menu-scroll {
   display: grid;
   gap: 8px;

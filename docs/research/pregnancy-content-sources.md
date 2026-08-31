@@ -1,8 +1,9 @@
 # Nguồn nội dung “Mẹ bầu hôm nay”
 
 **Ngày rà soát:** 2026-09-01
-**Phạm vi:** Checklist hằng ngày, thực đơn Việt Nam tham khảo, an toàn thực
-phẩm và lựa chọn phần mềm miễn phí/mã nguồn mở.
+**Phạm vi:** Checklist hằng ngày, thực đơn Việt Nam tham khảo, cẩm nang nên làm
+– nên hạn chế – nên tránh, an toàn thực phẩm và lựa chọn phần mềm miễn phí/mã
+nguồn mở.
 
 ## Quyết định
 
@@ -11,6 +12,9 @@ phẩm và lựa chọn phần mềm miễn phí/mã nguồn mở.
 - Thực đơn chỉ là gợi ý đa dạng thực phẩm, không đặt calorie hoặc mục tiêu tăng
   cân. Đái tháo đường thai kỳ, tăng huyết áp, thiếu máu, đa thai, dị ứng và các
   tình trạng khác cần thực đơn riêng từ nhân viên y tế.
+- Cẩm nang phân biệt điều cần tránh có bằng chứng với kiêng khem truyền miệng.
+  Không mặc định cấm đồ cay, chua hay các loại hạt; chỉ giảm khi gây khó chịu,
+  có dị ứng hoặc nhân viên y tế yêu cầu. Không cổ vũ “ăn cho hai”.
 - Ngày dự sinh và trạng thái checklist được lưu qua API riêng tư, chỉ server có
   quyền gọi Supabase. Trình duyệt vẫn giữ một bản cục bộ để dùng khi mất mạng và
   tự đồng bộ lại; GA4 không nhận các giá trị này.
@@ -37,6 +41,21 @@ phẩm và lựa chọn phần mềm miễn phí/mã nguồn mở.
 - [About Alcohol Use During Pregnancy](https://www.cdc.gov/alcohol-pregnancy/about/index.html),
   CDC, cập nhật 02-04-2026: không có lượng hoặc thời điểm uống rượu bia nào đã
   biết là an toàn trong thai kỳ.
+- [Foods to avoid in pregnancy](https://www.nhs.uk/pregnancy/keeping-well/foods-to-avoid/),
+  NHS, rà soát 2026: tổng caffeine không quá 200 mg/ngày; phân biệt thực phẩm
+  an toàn, cần thận trọng và cần tránh; các loại hạt dùng được nếu không dị ứng.
+- [Medicines in pregnancy](https://www.nhs.uk/pregnancy/keeping-well/medicines/)
+  và [Pregnancy vitamins and supplements](https://www.nhs.uk/pregnancy/keeping-well/pregnancy-vitamins-and-supplements/),
+  NHS: kiểm tra trước khi dùng thuốc, thảo dược và vi chất; không tự dừng thuốc
+  kê toa; tránh dầu gan cá và sản phẩm chứa vitamin A dạng retinol.
+- [Health Effects of Cigarettes: Reproductive Health](https://www.cdc.gov/tobacco/about/cigarettes-and-reproductive-health.html),
+  CDC, 31-01-2025: thuốc lá và khói thụ động đều gây hại trong thai kỳ.
+- [Preventing Toxoplasmosis](https://www.cdc.gov/toxoplasmosis/prevention/index.html),
+  CDC, 30-01-2024: đeo găng khi làm vườn/tiếp xúc đất và tránh trực tiếp dọn
+  phân mèo; rửa tay kỹ sau tiếp xúc.
+- [Exercise During Pregnancy](https://www.acog.org/womens-health/faqs/exercise-during-pregnancy),
+  ACOG: thai kỳ bình thường có thể hướng tới 150 phút vận động aerobic mức vừa
+  mỗi tuần sau khi trao đổi với nơi chăm sóc.
 - [Exercising in pregnancy](https://www.nhs.uk/best-start-in-life/pregnancy/exercising-in-pregnancy/),
   NHS: vận động nhẹ, tăng dần nếu trước đó ít vận động và lắng nghe cơ thể.
 - [VNeNUTRITION](https://viendinhduong.vn/landing-page), Viện Dinh dưỡng Quốc

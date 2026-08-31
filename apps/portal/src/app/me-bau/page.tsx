@@ -7,6 +7,8 @@ import AppHeader from "../../components/app-header";
 import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
 import {
   dailyChecklist,
+  pregnancyGuidance,
+  pregnancyGuidanceLevels,
   pregnancySources,
   trimesterGuides,
   urgentCareReminders,
@@ -289,6 +291,59 @@ export default function PregnancyPage() {
       </section>
 
       <PregnancyHealthTracker />
+
+      <section className="guidance-section" aria-labelledby="guidance-title">
+        <div className="section-heading-row">
+          <div>
+            <p className="panel-kicker">CẨM NANG THỰC HÀNH · CHẠM ĐỂ XEM CHI TIẾT</p>
+            <h2 id="guidance-title">Nên ăn gì, hạn chế gì, kiêng gì?</h2>
+          </div>
+          <p>
+            Phân biệt điều cần tránh thật sự với lời truyền miệng. Chỉ dẫn riêng
+            của nơi đang khám luôn được ưu tiên.
+          </p>
+        </div>
+
+        <div className="guidance-levels">
+          {pregnancyGuidanceLevels.map((level) => (
+            <article className={`guidance-level is-${level.id}`} key={level.id}>
+              <header>
+                <span aria-hidden="true">{level.mark}</span>
+                <h3>{level.title}</h3>
+              </header>
+              <div className="guidance-list">
+                {pregnancyGuidance.filter((item) => item.level === level.id).map((item) => (
+                  <details className="guidance-item" key={item.id}>
+                    <summary>
+                      <span>
+                        <small>{item.category}</small>
+                        <strong>{item.title}</strong>
+                      </span>
+                      <i aria-hidden="true">⌄</i>
+                    </summary>
+                    <div>
+                      <p>{item.detail}</p>
+                      <p><b>Làm ngay:</b> {item.action}</p>
+                      <a href={item.sourceHref} rel="noreferrer" target="_blank">
+                        {item.sourceLabel} ↗
+                      </a>
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <aside className="guidance-myth">
+          <strong>Không cần “kiêng” mọi món theo truyền miệng</strong>
+          <p>
+            Đồ cay hoặc chua chỉ cần giảm nếu làm Mẹ Ngân khó chịu. Các loại hạt
+            vẫn dùng được nếu không dị ứng và bác sĩ không dặn tránh. Cũng không
+            cần “ăn cho hai”.
+          </p>
+        </aside>
+      </section>
 
       <section className="menu-section" aria-labelledby="menu-title">
         <div className="section-heading-row">
