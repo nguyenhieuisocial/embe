@@ -10,6 +10,23 @@ from embe_storage.provider import ProviderError, PutOptions
 from embe_storage.repository import Repository
 
 
+def summarize_telegram_health(provider_health: dict[str, object]) -> dict[str, object]:
+    raw_shards = provider_health.get("shards", [])
+    shards = raw_shards if isinstance(raw_shards, list) else []
+    shard_results = [item for item in shards if isinstance(item, dict)]
+    ready = (
+        provider_health.get("status") == "ok"
+        and len(shard_results) == len(shards)
+        and bool(shard_results)
+        and all(item.get("ok") is True for item in shard_results)
+    )
+    return {
+        "provider_ready": ready,
+        "shard_count": len(shard_results),
+        "account_tier": "premium" if provider_health.get("premium") is True else "standard",
+    }
+
+
 class StorageWorker:
     def __init__(
         self,

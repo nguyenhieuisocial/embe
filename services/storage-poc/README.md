@@ -1,8 +1,10 @@
 # EmBe Storage PoC
 
-Lab-only service for comparing `LocalStorage`, S3-compatible storage and a
-dedicated Telegram Premium account over MTProto. It is not connected to the
-Portal, Local BFF, Immich or production Supabase schema.
+The HTTP API remains an isolated lab for comparing `LocalStorage`, S3-compatible
+storage and Telegram over MTProto. The Windows-only secondary worker also has a
+production adapter for one narrow use: originals from allowlisted curated Immich
+albums are encrypted locally and copied to private Telegram shards. Telegram is
+never the only authoritative copy and is not connected to Portal or Supabase.
 
 Both feature gates default to off. Runtime files, SQLite, cache and Telegram
 session must stay under ignored `C:\EmBe\data\storage-poc`.
@@ -30,3 +32,10 @@ Network providers are constructed only from scoped lab environment variables;
 missing credentials fail closed instead of silently falling back to local.
 API requests targeting Telegram first commit a local canonical object
 and enqueue replication; the worker performs MTProto upload out of request scope.
+
+The scheduled Windows runner first scans only configured Immich albums. It
+archives images and videos, records an idempotent source link, strips the source
+filename from the recovery manifest, and then verifies the Telegram session and
+every shard even when the album is empty. A standard account is capped below
+2 GB per original; oversized media fails closed instead of being split to evade
+Telegram limits.

@@ -9,7 +9,7 @@ from pathlib import Path
 from embe_storage.api import _build_providers
 from embe_storage.config import Settings
 from embe_storage.repository import Repository
-from embe_storage.worker import MaintenanceWorker, TelegramReplicationWorker
+from embe_storage.worker import MaintenanceWorker, TelegramReplicationWorker, summarize_telegram_health
 
 
 async def main() -> int:
@@ -33,13 +33,35 @@ async def main() -> int:
 
     totals = {"completed": 0, "retried": 0, "failed": 0}
     try:
+        provider_health = await telegram.health()
+        safe_health = summarize_telegram_health(provider_health)
+        if not safe_health["provider_ready"]:
+            print(
+                json.dumps(
+                    {
+                        "status": "provider_unavailable",
+                        **safe_health,
+                    },
+                    separators=(",", ":"),
+                )
+            )
+            return 2
         for _ in range(100):
             result = await worker.run_once(limit=20)
             for key in totals:
                 totals[key] += result[key]
             if not any(result.values()):
                 break
-        print(json.dumps({"status": "ok", **totals}, separators=(",", ":")))
+        print(
+            json.dumps(
+                {
+                    "status": "ok",
+                    **safe_health,
+                    **totals,
+                },
+                separators=(",", ":"),
+            )
+        )
         return 0 if totals["failed"] == 0 else 2
     finally:
         inner = getattr(telegram, "inner", telegram)

@@ -6,7 +6,28 @@ import pytest
 
 from embe_storage.repository import Repository
 from embe_storage.provider import ProviderError
-from embe_storage.worker import MaintenanceWorker, StorageWorker
+from embe_storage.worker import MaintenanceWorker, StorageWorker, summarize_telegram_health
+
+
+def test_telegram_health_summary_is_fail_closed_and_removes_channel_identifiers():
+    result = summarize_telegram_health(
+        {
+            "status": "ok",
+            "premium": False,
+            "shards": [
+                {"shard_hash": "private-one", "ok": True, "title": True},
+                {"shard_hash": "private-two", "ok": True, "title": True},
+            ],
+        }
+    )
+    assert result == {
+        "provider_ready": True,
+        "shard_count": 2,
+        "account_tier": "standard",
+    }
+    assert "private" not in str(result)
+    assert summarize_telegram_health({"status": "ok", "shards": []})["provider_ready"] is False
+    assert summarize_telegram_health({"status": "degraded", "shards": [{"ok": True}]})["provider_ready"] is False
 
 
 @pytest.mark.asyncio
