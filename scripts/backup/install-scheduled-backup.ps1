@@ -215,7 +215,7 @@ if ($LASTEXITCODE -ne 0) { throw "Unable to grant health status access" }
 $evidencePath = Join-Path $ProjectRoot "data\evidence"
 New-Item -ItemType Directory -Path $evidencePath -Force | Out-Null
 & icacls.exe $evidencePath /grant:r "${serviceIdentity}:(OI)(CI)M" /T /C | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Unable to grant soak evidence access" }
+if ($LASTEXITCODE -ne 0) { throw "Unable to grant operational evidence access" }
 
 $installStep = "scheduled_tasks"
 function Assert-InstalledTask {

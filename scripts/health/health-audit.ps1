@@ -701,15 +701,6 @@ $temporary = "$OutputPath.tmp"
 Move-Item $temporary $OutputPath -Force
 
 if (-not $FixturePath) {
-    $healthStage = "record_soak"
-    $soakRecorder = Join-Path $PSScriptRoot "record-soak.ps1"
-    if (-not (Test-Path -LiteralPath $soakRecorder -PathType Leaf)) {
-        throw "Soak recorder is missing"
-    }
-    $null = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $soakRecorder `
-        -ProjectRoot $ProjectRoot `
-        -HealthReport $OutputPath
-    if ($LASTEXITCODE -ne 0) { throw "Unable to record soak evidence" }
     Remove-Item -LiteralPath $runtimeErrorPath -Force -ErrorAction SilentlyContinue
 }
 

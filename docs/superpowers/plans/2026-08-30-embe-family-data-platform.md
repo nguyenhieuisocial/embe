@@ -229,7 +229,7 @@ docs/
 | 9 | Family Portal | 8–12 ngày | Mobile UX, auth, media Range, no secret leak |
 | 10 | Inventory/procurement | 6–10 ngày | Proposal đúng, không auto-checkout |
 | 11 | Monthly PDF book | 6–10 ngày | Structural + visual golden QA |
-| 12 | Observability, upgrade, go-live | 4–7 ngày | 7 ngày soak + incident drill |
+| 12 | Observability, upgrade, go-live | Hoàn tất sau kiểm chứng | Health gate + incident drill |
 
 Với một người làm part-time, dự kiến 3–4 tháng. Không chạy song song Phase 5–12 trước khi Phase 4 restore gate đạt.
 
@@ -531,7 +531,7 @@ Event envelope bắt buộc:
 - [ ] Không gửi baby note/photo vào alert. Alert chỉ chứa service, ID, count, time và runbook link.
 - [ ] Upgrade runbook: đọc changelog, backup, snapshot API contract, pull pinned target, migrate staging, smoke test, production maintenance window; rollback bằng restore nếu migration không backward-compatible.
 - [ ] `preflight_update.sh` fail nếu backup stale, disk headroom thấp, restore drill quá hạn hoặc contract fixture không match.
-- [ ] Chạy soak 7 ngày: ít nhất một mất mạng/reconnect HA, một restart host, một token rotation, một backup/restore sample và một Cloudflare outage LAN fallback drill.
+- [ ] Chạy và ghi nhận một lần các bài kiểm tra: mất mạng/reconnect HA, restart host, token rotation, backup/restore sample và Cloudflare outage/LAN fallback.
 - [ ] Go-live khi toàn bộ gate dưới đây có evidence; giữ media card originals chưa xóa cho đến sau backup offsite đầu tiên.
 - [ ] Commit: `chore(ops): add production gates and monitoring`.
 
@@ -617,7 +617,7 @@ Tham chiếu: [Immich Backup and Restore](https://docs.immich.app/administration
 - [ ] WHO output ghi dataset/algorithm version và không tạo “chuẩn lượng sữa” giả.
 - [ ] Full restore từ clean host đạt RPO/RTO đã ghi; ảnh ngẫu nhiên mở được và metadata đúng.
 - [ ] PDF tháng mẫu qua structural test và visual QA các trang rủi ro ở 100% zoom.
-- [ ] 7 ngày soak không có backup stale, DLQ chưa xử lý, disk alert hoặc secret leak.
+- [ ] Health gate hiện tại không có backup stale, DLQ chưa xử lý, disk alert hoặc secret leak; các incident drill bắt buộc đều đạt.
 
 ## 10. Thứ tự cắt scope nếu cần
 

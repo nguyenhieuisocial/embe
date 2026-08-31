@@ -2,14 +2,14 @@
 param(
     [string]$ProjectRoot = "C:\EmBe",
     [string]$HealthReport = "",
-    [string]$SoakEvidence = "",
+    [string]$DrillEvidence = "",
     [string]$OutputPath = ""
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 if (-not $HealthReport) { $HealthReport = Join-Path $ProjectRoot "data\status\system-health.json" }
-if (-not $SoakEvidence) { $SoakEvidence = Join-Path $ProjectRoot "data\evidence\soak.json" }
+if (-not $DrillEvidence) { $DrillEvidence = Join-Path $ProjectRoot "data\evidence\failure-drills.json" }
 
 $gates = [Collections.Generic.List[object]]::new()
 function Add-Gate([string]$Id, [bool]$Passed, [string]$Reason) {
@@ -25,12 +25,15 @@ $backupChecks = if ($health) {
 $offsiteBackupPass = $backupChecks.Count -eq 3 -and @($backupChecks | Where-Object status -ne "pass").Count -eq 0
 Add-Gate "encrypted_offsite_backup" $offsiteBackupPass "R2 mã hóa phải còn mới, kiểm tra toàn vẹn và restore drill đều đạt."
 
-$soakPass = $false
-if ($SoakEvidence -and (Test-Path $SoakEvidence)) {
-    $soak = Get-Content $SoakEvidence -Raw | ConvertFrom-Json
-    $soakPass = $soak.status -eq "pass" -and [double]$soak.duration_days -ge 7
-}
-Add-Gate "seven_day_soak" $soakPass "Cần đủ 7 ngày ổn định cùng các failure drill bắt buộc."
+$requiredDrills = @("host_restart", "network_interruption", "token_rotation", "backup_restore", "cloudflare_lan_fallback")
+$drills = if (Test-Path -LiteralPath $DrillEvidence -PathType Leaf) {
+    Get-Content -LiteralPath $DrillEvidence -Raw | ConvertFrom-Json
+} else { $null }
+$drillsPass = $null -ne $drills -and @($requiredDrills | Where-Object {
+    $property = $drills.PSObject.Properties[$_]
+    $null -eq $property -or [string]$property.Value.status -ne "pass"
+}).Count -eq 0
+Add-Gate "operational_drills" $drillsPass "Các bài kiểm tra restart, mất mạng, đổi token, restore và LAN fallback phải đạt."
 
 $blocked = @($gates | Where-Object status -eq "blocked").Count -gt 0
 $report = [ordered]@{

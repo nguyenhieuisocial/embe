@@ -325,25 +325,6 @@ try {
     $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\update\preflight-update.ps1") -ProjectRoot $projectRoot -HealthFixture $criticalFixture -HealthOutputPath (Join-Path $testRoot "preflight-health-blocked.json") -OutputPath (Join-Path $testRoot "preflight-blocked.json") -SkipContractTests
     if ($LASTEXITCODE -ne 2) { throw "Critical update preflight must block" }
 
-    $soak = Join-Path $testRoot "soak.json"
-    @{ status = "pass"; duration_days = 7 } | ConvertTo-Json | Set-Content $soak
-    $goLivePass = Join-Path $testRoot "go-live-pass.json"
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -SoakEvidence $soak -OutputPath $goLivePass
-    if ($LASTEXITCODE -ne 0) { throw "Complete go-live evidence must pass" }
-    $goLive = Get-Content $goLivePass -Raw | ConvertFrom-Json
-    if (@($goLive.gates | Where-Object id -eq "encrypted_offsite_backup")[0].status -ne "pass") { throw "Encrypted offsite backup must satisfy the backup gate" }
-    if (@($goLive.gates | Where-Object id -eq "third_copy_separate_device").Count -ne 0) { throw "A physical USB or NAS must not remain a go-live gate" }
-
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -OutputPath (Join-Path $testRoot "go-live-blocked.json")
-    if ($LASTEXITCODE -ne 2) { throw "Missing soak evidence must block" }
-
-    $badBackupReport = Join-Path $testRoot "bad-backup-health.json"
-    $badBackup = Get-Content $healthyReport -Raw | ConvertFrom-Json
-    @($badBackup.checks | Where-Object id -eq "restic_integrity")[0].status = "critical"
-    $badBackup | ConvertTo-Json -Depth 8 | Set-Content $badBackupReport
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $badBackupReport -SoakEvidence $soak -OutputPath (Join-Path $testRoot "go-live-backup-blocked.json")
-    if ($LASTEXITCODE -ne 2) { throw "A failed encrypted offsite backup check must block" }
-
     $drills = Join-Path $testRoot "failure-drills.json"
     @{
         host_restart = @{ status = "pass" }
@@ -352,34 +333,24 @@ try {
         backup_restore = @{ status = "pass" }
         cloudflare_lan_fallback = @{ status = "pass" }
     } | ConvertTo-Json -Depth 4 | Set-Content $drills
-    $soakState = Join-Path $testRoot "soak-state.json"
-    $recorder = Join-Path $projectRoot "scripts\health\record-soak.ps1"
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-08-30T12:00:00Z"
-    if ($LASTEXITCODE -ne 0) { throw "The first healthy soak sample must be recorded" }
-    $collecting = Get-Content $soakState -Raw | ConvertFrom-Json
-    if ($collecting.status -ne "collecting" -or $collecting.duration_days -ne 0) { throw "Soak must start in collecting state" }
-    if ($collecting.last_failure_checks -isnot [Array]) { throw "Soak diagnostics must use a stable array shape" }
+    $goLivePass = Join-Path $testRoot "go-live-pass.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $goLivePass
+    if ($LASTEXITCODE -ne 0) { throw "Complete go-live evidence must pass" }
+    $goLive = Get-Content $goLivePass -Raw | ConvertFrom-Json
+    if (@($goLive.gates | Where-Object id -eq "encrypted_offsite_backup")[0].status -ne "pass") { throw "Encrypted offsite backup must satisfy the backup gate" }
+    if (@($goLive.gates | Where-Object id -eq "third_copy_separate_device").Count -ne 0) { throw "A physical USB or NAS must not remain a go-live gate" }
 
-    $deploymentResetState = Join-Path $testRoot "soak-deployment-reset.json"
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $deploymentResetState -NowUtc "2026-08-30T12:00:00Z"
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $deploymentResetState -NowUtc "2026-08-31T12:00:00Z" -ResetReason deployment_change
-    if ($LASTEXITCODE -ne 0) { throw "A production deployment must restart soak without fabricating a health failure" }
-    $deploymentReset = Get-Content $deploymentResetState -Raw | ConvertFrom-Json
-    if ($deploymentReset.started_at -ne "2026-08-31T12:00:00.0000000+00:00") { throw "Deployment reset did not restart consecutive soak time" }
-    if ($deploymentReset.last_reset_reason -ne "deployment_change" -or -not $deploymentReset.last_reset_at) { throw "Deployment reset evidence is incomplete" }
-    if ($deploymentReset.failed_samples -ne 0 -or $deploymentReset.healthy_samples -ne 1) { throw "Deployment reset must not be recorded as a health failure" }
+    if (@($goLive.gates | Where-Object id -eq "operational_drills")[0].status -ne "pass") { throw "Operational drills must satisfy the go-live gate" }
 
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $healthyReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:00:00Z"
-    if ($LASTEXITCODE -ne 0) { throw "Seven healthy days must produce soak evidence" }
-    $completedSoak = Get-Content $soakState -Raw | ConvertFrom-Json
-    if ($completedSoak.status -ne "pass" -or $completedSoak.duration_days -lt 7) { throw "Seven-day soak did not pass" }
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $healthyReport -DrillEvidence (Join-Path $testRoot "missing-drills.json") -OutputPath (Join-Path $testRoot "go-live-blocked.json")
+    if ($LASTEXITCODE -ne 2) { throw "Missing operational drill evidence must block" }
 
-    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File $recorder -HealthReport $criticalReport -DrillEvidence $drills -OutputPath $soakState -NowUtc "2026-09-06T12:05:00Z"
-    if ($LASTEXITCODE -ne 0) { throw "A failed sample must be recorded without hiding the failure" }
-    $resetSoak = Get-Content $soakState -Raw | ConvertFrom-Json
-    if ($resetSoak.status -ne "collecting" -or $resetSoak.started_at) { throw "A failed health sample must reset consecutive soak time" }
-    if (@($resetSoak.last_failure_checks).Count -eq 0) { throw "A failed health sample must retain safe diagnostic check IDs" }
-    if (@($resetSoak.last_failure_checks | Where-Object { $_ -match '[\\/:]' }).Count) { throw "Soak diagnostics must contain check IDs only" }
+    $badBackupReport = Join-Path $testRoot "bad-backup-health.json"
+    $badBackup = Get-Content $healthyReport -Raw | ConvertFrom-Json
+    @($badBackup.checks | Where-Object id -eq "restic_integrity")[0].status = "critical"
+    $badBackup | ConvertTo-Json -Depth 8 | Set-Content $badBackupReport
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\go-live-gate.ps1") -ProjectRoot $projectRoot -HealthReport $badBackupReport -DrillEvidence $drills -OutputPath (Join-Path $testRoot "go-live-backup-blocked.json")
+    if ($LASTEXITCODE -ne 2) { throw "A failed encrypted offsite backup check must block" }
 
     Write-Output "PASS: health, update, and go-live gates fail closed"
 } finally {

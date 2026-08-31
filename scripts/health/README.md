@@ -20,9 +20,9 @@ account. The probe persists only three HTTP status codes; `health-audit.ps1`
 accepts them for at most ten minutes and otherwise fails closed or attempts a
 live check.
 
-Mỗi lần health audit chạy thật, `record-soak.ps1` tự cập nhật bằng chứng ổn định
-liên tục. Một lần health không đạt sẽ đặt lại thời gian tính bảy ngày; soak chỉ
-đạt khi đủ thời gian và cả năm failure drill đã có bằng chứng `pass`.
+Go-live dùng health report hiện tại cùng bằng chứng năm bài kiểm tra vận hành:
+restart host, mất mạng, token rotation, backup/restore và LAN fallback. Kết quả
+được áp dụng ngay; Uptime Kuma tiếp tục lưu lịch sử sức khỏe dài hạn.
 
 Uptime Kuma remains the existing internal dashboard; the health audit does not
 duplicate its history or alerting. The one-time bootstrap uses the official

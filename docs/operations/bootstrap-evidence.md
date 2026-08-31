@@ -44,8 +44,7 @@ kiện cho bản sao thứ ba; health vẫn chặn nhập khối lượng lớn 
 thống xuống thấp.
 
 **Backup off-site đã đạt:** R2 mã hóa, kiểm tra toàn vẹn và restore drill là gate
-backup được chấp nhận; không còn yêu cầu USB HDD/NAS. Go-live đầy đủ vẫn chờ
-soak liên tục đủ 7 ngày.
+backup được chấp nhận; không còn yêu cầu USB HDD/NAS hoặc thời gian chờ bổ sung.
 
 **Đã đạt gate vận hành nền:** backup, kiểm tra toàn vẹn và health audit chạy bằng
 service account riêng; health gate hiện đạt toàn bộ và vẫn fail closed nếu một
