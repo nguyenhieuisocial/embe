@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE supplier (
+CREATE TABLE IF NOT EXISTS supplier (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     source_kind TEXT NOT NULL DEFAULT 'manual'
@@ -8,7 +8,7 @@ CREATE TABLE supplier (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE supplier_listing (
+CREATE TABLE IF NOT EXISTS supplier_listing (
     id TEXT PRIMARY KEY,
     supplier_id TEXT NOT NULL REFERENCES supplier(id),
     product_ref TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE supplier_listing (
     UNIQUE (supplier_id, product_ref, provider_locator)
 );
 
-CREATE TABLE quote (
+CREATE TABLE IF NOT EXISTS quote (
     id TEXT PRIMARY KEY,
     listing_id TEXT NOT NULL REFERENCES supplier_listing(id),
     unit_price NUMERIC NOT NULL CHECK (unit_price >= 0),
@@ -29,7 +29,7 @@ CREATE TABLE quote (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE warehouse_route (
+CREATE TABLE IF NOT EXISTS warehouse_route (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     domestic_shipping NUMERIC NOT NULL DEFAULT 0 CHECK (domestic_shipping >= 0),
@@ -39,7 +39,7 @@ CREATE TABLE warehouse_route (
     lead_time_days INTEGER NOT NULL CHECK (lead_time_days > 0)
 );
 
-CREATE TABLE landed_cost_rule (
+CREATE TABLE IF NOT EXISTS landed_cost_rule (
     id TEXT PRIMARY KEY,
     warehouse_route_id TEXT NOT NULL REFERENCES warehouse_route(id),
     duty_rate NUMERIC NOT NULL DEFAULT 0 CHECK (duty_rate BETWEEN 0 AND 1),
@@ -49,7 +49,7 @@ CREATE TABLE landed_cost_rule (
     effective_until TEXT
 );
 
-CREATE TABLE purchase_proposal (
+CREATE TABLE IF NOT EXISTS purchase_proposal (
     id TEXT PRIMARY KEY,
     product_ref TEXT NOT NULL,
     listing_id TEXT REFERENCES supplier_listing(id),
@@ -65,11 +65,11 @@ CREATE TABLE purchase_proposal (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX one_open_proposal_per_product
+CREATE UNIQUE INDEX IF NOT EXISTS one_open_proposal_per_product
 ON purchase_proposal(product_ref)
 WHERE state IN ('DRAFT', 'REVIEWED', 'APPROVED', 'ORDERED');
 
-CREATE TABLE approval (
+CREATE TABLE IF NOT EXISTS approval (
     id TEXT PRIMARY KEY,
     proposal_id TEXT NOT NULL REFERENCES purchase_proposal(id),
     action TEXT NOT NULL CHECK (action IN ('REVIEWED', 'APPROVED', 'ORDERED', 'RECEIVED', 'CANCELLED')),

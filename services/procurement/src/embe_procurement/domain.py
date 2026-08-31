@@ -27,6 +27,10 @@ class ProposalStateError(ProcurementError):
     pass
 
 
+class StaleProposalError(ProposalStateError):
+    pass
+
+
 @dataclass(frozen=True)
 class ReorderRecommendation:
     daily_rate: Decimal
