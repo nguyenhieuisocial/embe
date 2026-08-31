@@ -87,6 +87,7 @@ if ($FixturePath) {
     $portalPublic = $fixture.endpoints.portal_public
     $nodeRed = $fixture.endpoints.node_red
     $uptimeKuma = $fixture.endpoints.uptime_kuma
+    $uptimeMonitoring = $fixture.uptime_monitoring
     $ollama = $fixture.endpoints.ollama
     $tailscalePrivate = $fixture.endpoints.tailscale_private
     $mcpRuntimeReady = [bool]$fixture.mcp_runtime_ready
@@ -162,6 +163,14 @@ if ($FixturePath) {
     $portalPublic = Test-HttpEndpoint $PortalUrl
     $nodeRed = Test-HttpEndpoint "http://127.0.0.1:1880/"
     $uptimeKuma = Test-UptimeKumaEndpoint
+    $uptimeMonitoring = [pscustomobject]@{ active = 0; healthy = 0; stale = 0 }
+    $uptimeStateScript = Join-Path $ProjectRoot "scripts\health\uptime-kuma-state.py"
+    $uptimeDatabase = Join-Path $ProjectRoot "data\appdata\uptime-kuma\kuma.db"
+    $uptimePython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+    if ((Test-Path -LiteralPath $uptimeStateScript -PathType Leaf) -and (Test-Path -LiteralPath $uptimeDatabase -PathType Leaf) -and (Test-Path -LiteralPath $uptimePython -PathType Leaf)) {
+        $uptimeStateJson = & $uptimePython $uptimeStateScript --database $uptimeDatabase 2>$null
+        if ($LASTEXITCODE -eq 0) { $uptimeMonitoring = $uptimeStateJson | ConvertFrom-Json }
+    }
 
     $ollama = [pscustomobject]@{ reachable = $false; required_model_present = $false }
     try {
@@ -318,6 +327,14 @@ Add-Check "node_red" $(if ($nodeRedPass) { "pass" } else { "critical" }) "Bộ �
 
 $uptimeKumaPass = [bool]$uptimeKuma.reachable -and [bool]$uptimeKuma.ready -and [int]$uptimeKuma.status_code -ge 200 -and [int]$uptimeKuma.status_code -lt 400
 Add-Check "uptime_kuma" $(if ($uptimeKumaPass) { "pass" } else { "critical" }) "Bảng giám sát nội bộ đang phản hồi" @{ reachable = [bool]$uptimeKuma.reachable; status_code = [int]$uptimeKuma.status_code; ready = [bool]$uptimeKuma.ready }
+
+$uptimeMonitorPass = [int]$uptimeMonitoring.active -eq 7 -and [int]$uptimeMonitoring.healthy -eq 7 -and [int]$uptimeMonitoring.stale -eq 0
+Add-Check "uptime_monitors" $(if ($uptimeMonitorPass) { "pass" } else { "critical" }) "Bảy monitor EmBe đang cập nhật và báo hoạt động" @{
+    expected = 7
+    active = [int]$uptimeMonitoring.active
+    healthy = [int]$uptimeMonitoring.healthy
+    stale = [int]$uptimeMonitoring.stale
+}
 
 $ollamaPass = [bool]$ollama.reachable -and [bool]$ollama.required_model_present
 Add-Check "ollama" $(if ($ollamaPass) { "pass" } else { "critical" }) "AI cục bộ và mô hình được duyệt đã sẵn sàng" @{ reachable = [bool]$ollama.reachable; required_model_present = [bool]$ollama.required_model_present }

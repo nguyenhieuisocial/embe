@@ -49,6 +49,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
             ollama = @{ reachable = $true; required_model_present = $true }
             tailscale_private = @{ immich_status_code = 200; memos_status_code = 200; babybuddy_status_code = 200 }
         }
+        uptime_monitoring = @{ active = 7; healthy = 7; stale = 0 }
         mcp_runtime_ready = $true
         pdf_report = @{
             status = "ok"
@@ -73,7 +74,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
+    foreach ($id in @("media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -93,6 +94,15 @@ try {
     if ($critical.status -ne "critical") { throw "Critical report is invalid" }
     if (@($critical.checks | Where-Object id -eq "disk_headroom")[0].status -ne "critical") { throw "Disk gate did not block" }
     if (@($critical.checks | Where-Object id -eq "backup_freshness")[0].status -ne "critical") { throw "Backup gate did not block" }
+
+    $downMonitorFixture = Join-Path $testRoot "down-monitor.json"
+    Write-Fixture $downMonitorFixture 40 2
+    $downMonitor = Get-Content $downMonitorFixture -Raw | ConvertFrom-Json
+    $downMonitor.uptime_monitoring.healthy = 6
+    $downMonitor | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $downMonitorFixture -Encoding utf8
+    $downMonitorReport = Join-Path $testRoot "down-monitor-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $downMonitorFixture -OutputPath $downMonitorReport
+    if ($LASTEXITCODE -ne 2) { throw "A failed Uptime Kuma monitor must block health" }
 
     $staleAnalyticsFixture = Join-Path $testRoot "stale-analytics.json"
     Write-Fixture $staleAnalyticsFixture 40 2
