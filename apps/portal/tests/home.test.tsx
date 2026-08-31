@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 import Home, { dynamic } from "../src/app/page";
 
 describe("family portal home", () => {
+  it("returns the mobile shell immediately instead of blocking on timeline data", () => {
+    expect(Home()).not.toBeInstanceOf(Promise);
+  });
+
   it("always renders the latest approved timeline on the server", () => {
     expect(dynamic).toBe("force-dynamic");
   });

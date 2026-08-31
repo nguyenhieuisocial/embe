@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { getTimeline, getTimelineFreshness } from "../lib/timeline";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +13,52 @@ function vietnameseDate(value: string): string {
   return new Intl.DateTimeFormat("vi-VN", { dateStyle: "long", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(value));
 }
 
-export default async function Home() {
+async function TimelinePanel() {
   const [liveTimeline, timelineFreshness] = await Promise.all([getTimeline(), getTimelineFreshness()]);
   const timeline = liveTimeline.length > 0 ? liveTimeline : emptyTimeline;
+
+  return (
+    <article className="panel timeline-panel">
+      <div className="panel-heading">
+        <p className="panel-kicker">THEO DÒNG THỜI GIAN</p>
+        <h2>Nhật ký</h2>
+      </div>
+      <div className="timeline-list">
+        {timeline.map((item) => (
+          <div className="timeline-item" key={item.id}>
+            <span className="timeline-dot" aria-hidden="true" />
+            <div>
+              <p className="timeline-date">{vietnameseDate(item.eventAt)}</p>
+              <strong>{item.title}</strong>
+              <p>{item.caption}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      {timelineFreshness !== "fresh" ? (
+        <p className="privacy-note" role="status">Nhật ký đang tạm cập nhật. Những nội dung cũ vẫn an toàn.</p>
+      ) : null}
+    </article>
+  );
+}
+
+function TimelineLoading() {
+  return (
+    <article className="panel timeline-panel timeline-loading" aria-busy="true">
+      <div className="panel-heading">
+        <p className="panel-kicker">THEO DÒNG THỜI GIAN</p>
+        <h2>Nhật ký</h2>
+      </div>
+      <div className="timeline-loading-lines" role="status">
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
+        <p>Đang cập nhật nhật ký…</p>
+      </div>
+    </article>
+  );
+}
+
+export default function Home() {
   return (
     <main>
       <header className="masthead">
@@ -75,27 +120,9 @@ export default async function Home() {
       </a>
 
       <section className="portal-grid" aria-label="Nội dung gia đình">
-        <article className="panel timeline-panel">
-          <div className="panel-heading">
-            <p className="panel-kicker">THEO DÒNG THỜI GIAN</p>
-            <h2>Nhật ký</h2>
-          </div>
-          <div className="timeline-list">
-            {timeline.map((item) => (
-              <div className="timeline-item" key={item.id}>
-                <span className="timeline-dot" aria-hidden="true" />
-                <div>
-                  <p className="timeline-date">{vietnameseDate(item.eventAt)}</p>
-                  <strong>{item.title}</strong>
-                  <p>{item.caption}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          {timelineFreshness !== "fresh" ? (
-            <p className="privacy-note" role="status">Nhật ký đang tạm cập nhật. Những nội dung cũ vẫn an toàn.</p>
-          ) : null}
-        </article>
+        <Suspense fallback={<TimelineLoading />}>
+          <TimelinePanel />
+        </Suspense>
 
         <a className="panel gallery-panel" href="/ky-niem" aria-label="Mở album kỷ niệm">
           <div className="panel-heading">
