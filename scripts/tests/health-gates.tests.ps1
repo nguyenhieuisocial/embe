@@ -51,6 +51,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         }
         uptime_monitoring = @{ active = 7; healthy = 7; stale = 0 }
         mcp_runtime_ready = $true
+        telegram_poc_disabled = $true
         pdf_report = @{
             status = "ok"
             generated_at_utc = $now.AddDays(-1).ToString("o")
@@ -74,7 +75,7 @@ try {
     if ($healthy.status -ne "pass") { throw "Healthy report is invalid" }
     $containerCheck = @($healthy.checks | Where-Object id -eq "containers")[0]
     if ($containerCheck.evidence.expected -ne 11) { throw "Health audit must cover the two IoT containers" }
-    foreach ($id in @("media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "monthly_pdf")) {
+    foreach ($id in @("media_publisher", "analytics_ingest", "portal_public", "node_red", "uptime_kuma", "uptime_monitors", "ollama", "tailscale_private", "mcp_runtime", "telegram_poc_disabled", "monthly_pdf")) {
         $check = @($healthy.checks | Where-Object id -eq $id)
         if ($check.Count -ne 1 -or $check[0].status -ne "pass") { throw "Healthy report is missing passing check: $id" }
     }
@@ -114,6 +115,17 @@ try {
     if ($LASTEXITCODE -ne 2) { throw "A stale analytics job must block health" }
     $staleAnalyticsHealth = Get-Content $staleAnalyticsReport -Raw | ConvertFrom-Json
     if (@($staleAnalyticsHealth.checks | Where-Object id -eq "analytics_ingest")[0].status -ne "critical") { throw "Stale analytics gate did not block" }
+
+    $telegramFixture = Join-Path $testRoot "telegram-poc-enabled.json"
+    Write-Fixture $telegramFixture 40 2
+    $telegramEnabled = Get-Content $telegramFixture -Raw | ConvertFrom-Json
+    $telegramEnabled.telegram_poc_disabled = $false
+    $telegramEnabled | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $telegramFixture -Encoding utf8
+    $telegramReport = Join-Path $testRoot "telegram-poc-enabled-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $telegramFixture -OutputPath $telegramReport
+    if ($LASTEXITCODE -ne 2) { throw "An enabled Telegram storage PoC must block production health" }
+    $telegramHealth = Get-Content $telegramReport -Raw | ConvertFrom-Json
+    if (@($telegramHealth.checks | Where-Object id -eq "telegram_poc_disabled")[0].status -ne "critical") { throw "Telegram PoC safety gate did not block" }
 
     $missingServiceTaskFixture = Join-Path $testRoot "missing-service-task.json"
     Write-Fixture $missingServiceTaskFixture 40 2

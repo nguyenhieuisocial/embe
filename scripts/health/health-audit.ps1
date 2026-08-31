@@ -111,6 +111,7 @@ if ($FixturePath) {
     $ollama = $fixture.endpoints.ollama
     $tailscalePrivate = $fixture.endpoints.tailscale_private
     $mcpRuntimeReady = [bool]$fixture.mcp_runtime_ready
+    $telegramPocDisabled = [bool]$fixture.telegram_poc_disabled
     $pdfReport = $fixture.pdf_report
 } else {
     $driveName = ([IO.Path]::GetPathRoot($ProjectRoot)).TrimEnd(':', '\')
@@ -263,6 +264,18 @@ if ($FixturePath) {
         $mcpRuntimeReady = $LASTEXITCODE -eq 0
     }
 
+    $telegramPocDisabled = $false
+    $storagePocEnvPath = Join-Path $ProjectRoot "infra\compose\storage-poc.env"
+    if (Test-Path -LiteralPath $storagePocEnvPath -PathType Leaf) {
+        $telegramSetting = Get-Content -LiteralPath $storagePocEnvPath |
+            Where-Object { $_ -match '^\s*EMBE_TELEGRAM_POC_ENABLED\s*=' } |
+            Select-Object -Last 1
+        if ($telegramSetting) {
+            $telegramValue = (($telegramSetting -split '=', 2)[1]).Trim().Trim('"').Trim("'")
+            $telegramPocDisabled = $telegramValue -ieq "false"
+        }
+    }
+
     $pdfReport = [pscustomobject]@{
         status = "missing"
         generated_at_utc = ""
@@ -388,6 +401,8 @@ Add-Check "tailscale_private" $(if ($tailscalePass) { "pass" } else { "critical"
 }
 
 Add-Check "mcp_runtime" $(if ($mcpRuntimeReady) { "pass" } else { "critical" }) "Lớp truy vấn AI chỉ đọc khởi tạo được" @{ runtime_ready = [bool]$mcpRuntimeReady }
+
+Add-Check "telegram_poc_disabled" $(if ($telegramPocDisabled) { "pass" } else { "critical" }) "Kho Telegram thử nghiệm bị khóa khỏi dữ liệu production" @{ disabled = [bool]$telegramPocDisabled }
 
 $pdfAge = if ($pdfReport.generated_at_utc) { Get-AgeHours $pdfReport.generated_at_utc } else { [double]::PositiveInfinity }
 $pdfPass = [string]$pdfReport.status -eq "ok" -and [bool]$pdfReport.output_exists -and [bool]$pdfReport.checksum_matches -and $pdfAge -le ($PdfMaxAgeDays * 24)
