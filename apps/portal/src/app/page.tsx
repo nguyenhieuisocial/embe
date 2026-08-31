@@ -119,6 +119,11 @@ export default function Home() {
         <span aria-hidden="true">→</span>
       </a>
 
+      <a className="inventory-entry" href="/do-dung" aria-label="Xem đồ dùng trong nhà">
+        <span><small>BỈM · SỮA · VẬT TƯ</small><strong>Biết món nào sắp hết</strong></span>
+        <span aria-hidden="true">→</span>
+      </a>
+
       <section className="portal-grid" aria-label="Nội dung gia đình">
         <Suspense fallback={<TimelineLoading />}>
           <TimelinePanel />

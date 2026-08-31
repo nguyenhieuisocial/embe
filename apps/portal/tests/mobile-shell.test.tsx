@@ -19,7 +19,7 @@ describe("mobile family shell", () => {
     expect(screen.getByRole("link", { name: "Ghi lại" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Mẹ bầu" })).toHaveAttribute("href", "/me-bau");
     expect(screen.getByRole("link", { name: "Kỷ niệm" })).toHaveAttribute("href", "/ky-niem");
-    expect(screen.getByRole("link", { name: "Gia đình" })).toHaveAttribute("href", "/huong-dan");
+    expect(screen.getByRole("link", { name: "Đồ dùng" })).toHaveAttribute("href", "/do-dung");
   });
 
   it("reserves iPhone safe areas and prevents password-field zoom", () => {

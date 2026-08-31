@@ -95,6 +95,8 @@ if ($FixturePath) {
     $mediaPublisherStatus = $fixture.media_publisher
     $bridgeStatus = $fixture.babybuddy_sync
     $analyticsIngestStatus = $fixture.analytics_ingest
+    $inventoryWorkerStatus = $fixture.inventory_worker
+    $inventoryWorkerTaskReady = [bool]$fixture.inventory_task_ready
     $backupCreated = $fixture.backup_created_utc
     $restoreStatus = [string]$fixture.restore.status
     $restoreVerified = $fixture.restore.verified_at
@@ -156,6 +158,19 @@ if ($FixturePath) {
     $bridgeStatus = if (Test-Path $bridgePath) { Get-Content $bridgePath -Raw | ConvertFrom-Json } else { $null }
     $analyticsIngestPath = Join-Path $ProjectRoot "data\health\analytics-ingest.json"
     $analyticsIngestStatus = if (Test-Path $analyticsIngestPath) { Get-Content $analyticsIngestPath -Raw | ConvertFrom-Json } else { $null }
+    $inventoryWorkerPath = Join-Path $ProjectRoot "data\status\inventory-worker.json"
+    $inventoryWorkerStatus = if (Test-Path $inventoryWorkerPath) { Get-Content $inventoryWorkerPath -Raw | ConvertFrom-Json } else { $null }
+    $inventoryWorkerTask = $null
+    foreach ($attempt in 1..3) {
+        try {
+            $inventoryWorkerTask = Get-ScheduledTask -TaskName "EmBe Inventory Worker" -ErrorAction Stop
+        } catch {
+            $inventoryWorkerTask = $null
+        }
+        if ($null -ne $inventoryWorkerTask) { break }
+        Start-Sleep -Milliseconds 200
+    }
+    $inventoryWorkerTaskReady = $null -ne $inventoryWorkerTask -and [string]$inventoryWorkerTask.State -ne "Disabled"
 
     $latestManifest = Get-ChildItem (Join-Path $ProjectRoot "exports\backup-manifests") -Filter "*.json" -File -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
@@ -445,6 +460,19 @@ Add-Check "analytics_ingest" $(if ($analyticsPass) { "pass" } else { "critical" 
     reason = $analyticsReason
     age_minutes = if ([double]::IsInfinity($analyticsAge)) { $null } else { [math]::Round($analyticsAge * 60, 1) }
     maximum_minutes = 30
+}
+
+$inventoryWorkerHealthy = $null -ne $inventoryWorkerStatus -and [string]$inventoryWorkerStatus.status -eq "ok" -and $inventoryWorkerStatus.last_success_at
+$inventoryWorkerAge = if ($inventoryWorkerHealthy) { Get-AgeHours $inventoryWorkerStatus.last_success_at } else { [double]::PositiveInfinity }
+$inventoryDeadletters = if ($null -ne $inventoryWorkerStatus -and $inventoryWorkerStatus.PSObject.Properties["queue"] -and $inventoryWorkerStatus.queue.PSObject.Properties["dead_letters"]) {
+    [int]$inventoryWorkerStatus.queue.dead_letters
+} else { 0 }
+$inventoryWorkerPass = $inventoryWorkerTaskReady -and $inventoryWorkerHealthy -and $inventoryWorkerAge -le (10 / 60) -and $inventoryDeadletters -eq 0
+Add-Check "inventory_worker" $(if ($inventoryWorkerPass) { "pass" } else { "critical" }) "Đồ dùng gia đình vừa đồng bộ với Grocy" @{
+    task_ready = [bool]$inventoryWorkerTaskReady
+    age_minutes = if ([double]::IsInfinity($inventoryWorkerAge)) { $null } else { [math]::Round($inventoryWorkerAge * 60, 1) }
+    maximum_minutes = 10
+    dead_letters = $inventoryDeadletters
 }
 
 $backupAge = if ($backupCreated) { Get-AgeHours $backupCreated } else { [double]::PositiveInfinity }

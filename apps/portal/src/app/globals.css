@@ -138,18 +138,20 @@ h2 { font-size: clamp(1.75rem, 8vw, 2.35rem); letter-spacing: -.04em; line-heigh
 .day-ribbon-note { background: var(--jade-soft); color: var(--ink-soft); font-size: .7rem; line-height: 1.5; margin: 0; padding: 13px 22px; }
 .approval-message { border-left: 3px solid var(--sun); color: var(--ink-soft); font-size: .74rem; line-height: 1.5; margin: 2px 0 20px; padding: 4px 0 4px 12px; }
 
-.guide-entry, .pregnancy-entry, .journal-entry { align-items: center; border-radius: 16px; display: grid; gap: 12px; margin-bottom: 12px; min-height: 100px; padding: 18px; text-decoration: none; }
+.guide-entry, .pregnancy-entry, .journal-entry, .inventory-entry { align-items: center; border-radius: 16px; display: grid; gap: 12px; margin-bottom: 12px; min-height: 100px; padding: 18px; text-decoration: none; }
 .guide-entry { background: var(--jade-soft); border: 1px solid rgba(31,107,90,.18); grid-template-columns: 44px 1fr auto; }
 .guide-entry-mark { align-items:center; background:var(--paper); border-radius:12px; color:var(--jade); display:flex; font-family:var(--font-display),serif; font-size:1.35rem; height:44px; justify-content:center; width:44px; }
 .pregnancy-entry { background: var(--ink-deep); color: white; grid-template-columns: 1fr auto; }
 .journal-entry { background: #f6e7d6; border: 1px solid rgba(194,81,58,.15); grid-template-columns:1fr auto; }
-.guide-entry small, .guide-entry strong, .pregnancy-entry small, .pregnancy-entry strong, .journal-entry small, .journal-entry strong { display:block; }
-.guide-entry small, .pregnancy-entry small, .journal-entry small { font-size:.61rem; letter-spacing:.12em; margin-bottom:5px; }
-.guide-entry strong, .pregnancy-entry strong, .journal-entry strong { font-family:var(--font-display),serif; font-size:1.28rem; line-height:1.1; }
+.inventory-entry { background:#e4f1ec; border:1px solid rgba(31,107,90,.16); grid-template-columns:1fr auto; }
+.guide-entry small, .guide-entry strong, .pregnancy-entry small, .pregnancy-entry strong, .journal-entry small, .journal-entry strong, .inventory-entry small, .inventory-entry strong { display:block; }
+.guide-entry small, .pregnancy-entry small, .journal-entry small, .inventory-entry small { font-size:.61rem; letter-spacing:.12em; margin-bottom:5px; }
+.guide-entry strong, .pregnancy-entry strong, .journal-entry strong, .inventory-entry strong { font-family:var(--font-display),serif; font-size:1.28rem; line-height:1.1; }
 .guide-entry p { display:none; }
 .pregnancy-entry small { color:var(--sun); }
 .journal-entry small { color:#954330; }
-.guide-entry > span:last-child, .pregnancy-entry > span:last-child, .journal-entry > span:last-child { font-size:1.35rem; }
+.inventory-entry small { color:var(--jade); }
+.guide-entry > span:last-child, .pregnancy-entry > span:last-child, .journal-entry > span:last-child, .inventory-entry > span:last-child { font-size:1.35rem; }
 .portal-grid { display:grid; gap:12px; padding:14px 0 48px; }
 .panel { background:var(--paper-raised); border:1px solid var(--line); border-radius:16px; padding:24px 20px; }
 .gallery-panel { display:block; text-decoration:none; }
@@ -310,6 +312,42 @@ footer p { margin:0; }
 .journal-safety strong { font-size:.76rem; }
 .journal-safety p { color:var(--ink-soft); font-size:.71rem; line-height:1.6; margin:4px 0 0; }
 
+.inventory-main { max-width:760px; }
+.inventory-hero { display:grid; gap:18px; grid-template-columns:1fr; padding:38px 0 26px; }
+.inventory-hero h1 { font-size:clamp(2.35rem,12vw,4.5rem); line-height:.98; margin:5px 0 14px; }
+.inventory-add,.inventory-empty button { background:var(--jade); border:0; border-radius:12px; color:white; cursor:pointer; font-size:.75rem; font-weight:600; min-height:48px; padding:11px 15px; width:100%; }
+.inventory-form { background:var(--paper-raised); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-soft); display:grid; gap:14px; margin-bottom:20px; padding:18px; }
+.inventory-form label { color:var(--jade); display:grid; font-size:.7rem; font-weight:600; gap:6px; }
+.inventory-form input,.inventory-form select { background:var(--rice); border:1px solid var(--line); border-radius:11px; color:var(--ink); font-size:16px; min-height:50px; padding:10px 12px; width:100%; }
+.inventory-form input:focus,.inventory-form select:focus { border-color:var(--jade); outline:3px solid rgba(31,107,90,.15); }
+.inventory-form-row { display:grid; gap:12px; grid-template-columns:1fr 1fr; }
+.inventory-form>button { background:var(--jade); border:0; border-radius:12px; color:white; font-weight:600; min-height:52px; }
+.inventory-list { display:grid; gap:12px; }
+.inventory-card { background:var(--paper-raised); border:1px solid var(--line); border-radius:17px; box-shadow:var(--shadow-soft); padding:17px; }
+.inventory-card.is-low { border-color:rgba(194,81,58,.42); box-shadow:inset 4px 0 0 var(--coral),var(--shadow-soft); }
+.inventory-card-top { align-items:start; display:flex; gap:14px; justify-content:space-between; }
+.inventory-card-top p { color:var(--jade); font-size:.61rem; font-weight:600; letter-spacing:.12em; margin:0 0 5px; }
+.inventory-card.is-low .inventory-card-top p { color:var(--coral); }
+.inventory-card h2 { font-size:1.35rem; margin:0; }
+.inventory-card-top>strong { color:var(--ink-deep); flex:0 0 auto; font-family:var(--font-display),serif; font-size:2.25rem; line-height:1; text-align:right; }
+.inventory-card-top small { color:var(--ink-soft); display:block; font-family:var(--font-body),sans-serif; font-size:.64rem; font-weight:500; margin-top:4px; }
+.inventory-threshold { color:var(--ink-soft); font-size:.68rem; margin:9px 0 14px; }
+.inventory-actions { display:grid; gap:9px; grid-template-columns:1fr 1fr; }
+.inventory-actions button { background:var(--rice); border:1px solid var(--line); border-radius:11px; color:var(--ink); font-size:.7rem; font-weight:600; min-height:50px; padding:8px; }
+.inventory-actions button:last-child { background:var(--ink-deep); border-color:var(--ink-deep); color:white; }
+.inventory-actions button:disabled,.inventory-form button:disabled { opacity:.45; }
+.inventory-empty,.inventory-loading { background:var(--paper-raised); border:1px solid var(--line); border-radius:17px; padding:38px 20px; text-align:center; }
+.inventory-empty>span { color:var(--jade); font-family:var(--font-display),serif; font-size:3rem; }
+.inventory-empty h2 { font-size:1.5rem; margin:5px 0; }
+.inventory-empty p,.inventory-loading { color:var(--ink-soft); font-size:.78rem; line-height:1.6; }
+.inventory-empty button { margin-top:8px; }
+.inventory-status { color:var(--ink-soft); font-size:.72rem; margin:14px 0 0; text-align:center; }
+.inventory-status.is-success { color:var(--jade); }
+.inventory-status.is-error { color:#963c2c; }
+.inventory-boundary { border-left:4px solid var(--sun); margin:24px 0 38px; padding:7px 0 7px 13px; }
+.inventory-boundary strong { font-size:.76rem; }
+.inventory-boundary p { color:var(--ink-soft); font-size:.71rem; margin:4px 0 0; }
+
 .memories-main { max-width:860px; }
 .memories-hero { padding:38px 0 30px; }
 .memory-grid { display:grid; gap:14px; padding-bottom:48px; }
@@ -347,7 +385,7 @@ body:has(.login-shell) .family-nav { display:none; }
   .intro { max-width:610px; }
   .primary-link { display:inline-flex; gap:34px; min-width:270px; }
   .day-ribbon { margin-top:0; }
-  .guide-entry,.pregnancy-entry,.journal-entry { padding:22px 26px; }
+  .guide-entry,.pregnancy-entry,.journal-entry,.inventory-entry { padding:22px 26px; }
   .portal-grid { grid-template-columns:1.08fr .92fr; padding-bottom:76px; }
   .panel { padding:30px; }
   .checklist { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -371,13 +409,16 @@ body:has(.login-shell) .family-nav { display:none; }
   .logout-form button { width:auto; }
   .login-card { padding:48px; }
   .journal-form { padding:30px; }
+  .inventory-form { padding:26px; }
+  .inventory-hero { align-items:end; grid-template-columns:1fr auto; }
+  .inventory-add,.inventory-empty button { width:auto; }
   .memory-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .family-nav { display:none; }
 }
 
 @media (hover: hover) and (pointer: fine) {
   .primary-link:hover, .login-form button:hover, .journal-form button:hover { background:var(--jade-bright); transform:translateY(-1px); }
-  .guide-entry:hover,.pregnancy-entry:hover,.journal-entry:hover { box-shadow:var(--shadow-soft); transform:translateY(-2px); }
+  .guide-entry:hover,.pregnancy-entry:hover,.journal-entry:hover,.inventory-entry:hover { box-shadow:var(--shadow-soft); transform:translateY(-2px); }
   .logout-form button:hover { background:rgba(255,255,255,.5); }
 }
 @media (prefers-reduced-motion:reduce) {

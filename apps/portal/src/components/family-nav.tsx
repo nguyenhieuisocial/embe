@@ -7,7 +7,7 @@ const destinations = [
   { href: "/ghi-lai", icon: "write", label: "Ghi lại" },
   { href: "/me-bau", icon: "care", label: "Mẹ bầu" },
   { href: "/ky-niem", icon: "memory", label: "Kỷ niệm" },
-  { href: "/huong-dan", icon: "family", label: "Gia đình" }
+  { href: "/do-dung", icon: "supply", label: "Đồ dùng" }
 ] as const;
 
 function NavIcon({ name }: { name: (typeof destinations)[number]["icon"] }) {
@@ -16,7 +16,7 @@ function NavIcon({ name }: { name: (typeof destinations)[number]["icon"] }) {
     write: <><path d="M4 20h4l11-11-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></>,
     care: <><path d="M12 21s-8-4.6-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.4-8 11-8 11Z" /></>,
     memory: <><rect x="3" y="5" width="18" height="15" rx="2" /><circle cx="9" cy="10" r="2" /><path d="m4 17 4-4 3 3 3-3 6 6" /></>,
-    family: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3.5 20c.4-4 2.3-6 5.5-6s5.1 2 5.5 6M14 15.2c3.7-.8 6.1.8 6.5 4.8" /></>
+    supply: <><path d="M5 8h14l-1 13H6L5 8Z" /><path d="M8 8V6a4 4 0 0 1 8 0v2M9 13h6" /></>
   };
 
   return <svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true">{paths[name]}</svg>;
