@@ -288,7 +288,8 @@ footer p { margin:0; }
 .author-choice label:has(input:focus-visible) { outline:3px solid rgba(31,107,90,.18); outline-offset:2px; }
 .journal-form textarea { background:var(--rice); border:1px solid var(--line); border-radius:12px; color:var(--ink); font-size:16px; line-height:1.6; min-height:158px; padding:14px; resize:vertical; scroll-margin-bottom:170px; width:100%; }
 .journal-form textarea:focus { border-color:var(--jade); outline:3px solid rgba(31,107,90,.15); }
-.journal-meta { color:var(--ink-soft); display:flex; font-size:.68rem; justify-content:flex-end; }
+.journal-meta { color:var(--ink-soft); display:flex; font-size:.68rem; gap:12px; justify-content:space-between; line-height:1.45; }
+.journal-meta span:last-child { flex:0 0 auto; margin-left:auto; }
 .journal-form button { background:var(--jade); border:0; border-radius:12px; color:white; cursor:pointer; font-weight:600; min-height:54px; padding:12px 20px; }
 .journal-form button:disabled { cursor:default; opacity:.45; }
 .journal-success,.journal-error { font-size:.78rem; line-height:1.55; margin:2px 0 0; text-align:center; }
