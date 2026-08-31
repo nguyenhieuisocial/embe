@@ -7,7 +7,7 @@ $healthSource = Get-Content -LiteralPath (Join-Path $projectRoot "scripts\health
 if (-not $healthSource.Contains('PSObject.Properties["Response"]')) {
     throw "HTTP health errors must tolerate exceptions without a Response property"
 }
-foreach ($mcpContract in @("SQLiteReadOnlyRepository", "family-analytics.sqlite3")) {
+foreach ($mcpContract in @("embe_mcp.health_probe", "family-analytics.sqlite3")) {
     if (-not $healthSource.Contains($mcpContract)) {
         throw "MCP health must execute a real read-only database probe: $mcpContract"
     }

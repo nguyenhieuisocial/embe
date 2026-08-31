@@ -11,6 +11,8 @@ SQL tùy ý, không có tool ghi/xóa và không expose bản ghi y tế thô.
 - `read_only_hint` là metadata cho client, không phải cơ chế bảo mật.
 - Adapter local chỉ mở SQLite ở chế độ chỉ đọc, dùng câu truy vấn cố định và
   không nhận câu SQL từ model.
+- Mỗi tool mở một kết nối read-only ngắn trong chính worker thread của MCP;
+  không dùng chung SQLite connection giữa các yêu cầu đồng thời.
 - Kết quả tương quan chỉ mang tính mô tả, không phải quan hệ nhân quả hay chẩn
   đoán y khoa.
 

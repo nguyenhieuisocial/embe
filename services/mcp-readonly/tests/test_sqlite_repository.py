@@ -2,6 +2,7 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,8 +36,9 @@ class SQLiteReadOnlyRepositoryTests(unittest.TestCase):
             )
             self.assertEqual(len(records), 1)
             self.assertEqual(records[0].child_id, "baby")
-            with self.assertRaises(sqlite3.OperationalError):
-                repository.connection.execute("DELETE FROM fact_sleep")
+            with closing(repository._connect()) as read_only:
+                with self.assertRaises(sqlite3.OperationalError):
+                    read_only.execute("DELETE FROM fact_sleep")
             repository.close()
 
 
