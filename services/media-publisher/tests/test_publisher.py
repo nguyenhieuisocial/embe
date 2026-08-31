@@ -1,8 +1,10 @@
 import hashlib
 import json
+import tempfile
 import unittest
+from pathlib import Path
 
-from publisher import Config, HttpResponse, publish, request_with_retry
+from publisher import Config, HttpResponse, publish, request_with_retry, write_status
 
 
 ASSET_ID = "11111111-1111-4111-8111-111111111111"
@@ -60,6 +62,13 @@ class ConfigTests(unittest.TestCase):
 
 
 class PublisherTests(unittest.TestCase):
+    def test_status_file_is_atomic_and_contains_no_credentials(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "status.json"
+            write_status(path, {"status": "disabled", "published": 0})
+            self.assertEqual(json.loads(path.read_text())["status"], "disabled")
+            self.assertFalse(path.with_suffix(".json.tmp").exists())
+
     def test_publishes_only_sanitized_preview_metadata(self):
         checksum = hashlib.sha256(JPEG).hexdigest()
         fake = FakeTransport([

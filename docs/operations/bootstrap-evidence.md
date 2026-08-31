@@ -1,6 +1,6 @@
 # Em Bé — Bootstrap evidence
 
-**Ngày xác minh:** 2026-08-30
+**Ngày xác minh gần nhất:** 2026-08-31
 
 | Hạng mục | Kết quả |
 |---|---|
@@ -18,12 +18,15 @@
 | Grocy | Khóa tích hợp riêng đã kiểm tra; 10 danh mục nền tảng đã có, không tạo tồn kho giả |
 | Home Assistant + MQTT | Tích hợp MQTT chính thức đã tạo và ở trạng thái `loaded`; chưa tạo cảm biến hoặc dữ liệu giả |
 | Tailscale | Immich, Memos và BabyBuddy Serve đã bật ở chế độ tailnet-only; HTTPS trả 200 và Funnel tắt |
+| Portal ảnh riêng tư | Kho preview Supabase private, RLS/server-only đạt; Portal proxy không lộ khóa hoặc locator |
+| Immich media publisher | Code, retry, checksum, dedupe và kiểm thử đạt; vẫn tắt cho tới khi có album chọn lọc + API key chỉ đọc |
+| Sức khỏe phần mềm | 17/17 kiểm tra đạt; CI `main` và Vercel production đạt |
 
 ## Go/no-go
 
-**Chưa Go** cho nhập ảnh iPhone: máy hiện chỉ có ổ hệ thống và dung lượng trống
-dưới ngưỡng an toàn. Cần ổ media riêng, đường LAN/VPN đã kiểm tra và một lần
-nhập synthetic đạt trước khi dùng 10 ảnh thử.
+**Chưa Go** cho nhập ảnh iPhone: máy hiện chỉ có ổ hệ thống. Dung lượng tạm thời
+đã qua ngưỡng tối thiểu nhưng vẫn cần ổ media riêng, album Immich chọn lọc,
+API key chỉ đọc và một lần nhập synthetic đạt trước khi dùng 10 ảnh thử.
 
 **Chưa go-live đầy đủ** cho media thật cho đến khi có USB HDD/NAS làm bản sao
 thứ ba và chạy restore drill trên chính thiết bị đó.

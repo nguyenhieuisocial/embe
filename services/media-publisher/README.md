@@ -11,6 +11,8 @@ Safety contract:
 - validates JPEG/WebP bytes, limits previews to 10 MB, and skips unchanged assets;
 - stages metadata before one atomic publication switch.
 
+Every run writes only counts and timestamps to `data/status/media-publisher.json`; credentials, album IDs, filenames, and media paths are never written to status output.
+
 Copy `media-publisher.example.env` to `C:\EmBe\secrets\runtime\media-publisher.env`, fill the Immich values, then set `EMBE_MEDIA_PUBLISHER_ENABLED=true`. Supabase settings are reused from the existing private portal sync file. Keep both files outside Git.
 
 Run tests from this directory:

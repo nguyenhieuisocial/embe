@@ -346,16 +346,29 @@ def read_env(path: Path) -> dict[str, str]:
     return values
 
 
+def write_status(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    temporary.replace(path)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Publish curated Immich previews to the private EmBe portal bucket.")
     parser.add_argument("--env", type=Path, default=Path(r"C:\EmBe\secrets\runtime\media-publisher.env"))
     parser.add_argument("--shared-env", type=Path, default=Path(r"C:\EmBe\secrets\runtime\portal-sync.env"))
+    parser.add_argument("--status", type=Path, default=Path(r"C:\EmBe\data\status\media-publisher.json"))
     args = parser.parse_args()
     env = {**os.environ, **read_env(args.shared_env), **read_env(args.env)}
+    attempted_at = datetime.now().astimezone().isoformat()
     try:
-        print(json.dumps(publish(Config.from_env(env)), ensure_ascii=False, sort_keys=True))
+        result = publish(Config.from_env(env))
+        write_status(args.status, {**result, "last_attempt_at": attempted_at, "last_success_at": attempted_at if result["status"] == "ok" else None})
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
         return 0
     except Exception as error:
+        failure = {"status": "error", "error_type": type(error).__name__, "last_attempt_at": attempted_at, "last_success_at": None}
+        write_status(args.status, failure)
         print(json.dumps({"status": "error", "error_type": type(error).__name__}, sort_keys=True))
         return 1
 
