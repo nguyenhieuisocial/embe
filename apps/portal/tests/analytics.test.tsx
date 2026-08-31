@@ -26,4 +26,15 @@ describe("Google Analytics", () => {
     expect(loader?.hasAttribute("async")).toBe(true);
     expect(initializer?.textContent).toContain("gtag('config', 'G-PTX99GX5F9')");
   });
+
+  it("keeps legacy iPhone standalone mode explicit", () => {
+    const markup = renderToStaticMarkup(
+      <RootLayout>
+        <main>Portal</main>
+      </RootLayout>
+    );
+
+    const document = new DOMParser().parseFromString(markup, "text/html");
+    expect(document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.getAttribute("content")).toBe("yes");
+  });
 });
