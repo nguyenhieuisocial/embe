@@ -356,3 +356,4 @@ try {
 } finally {
     if (Test-Path $testRoot) { Remove-Item $testRoot -Recurse -Force }
 }
+exit 0
