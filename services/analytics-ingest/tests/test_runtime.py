@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -25,6 +26,16 @@ class FakeBabyBuddyClient:
 
 class FakeGrocyClient(FakeBabyBuddyClient):
     pass
+
+
+class FakeHomeAssistantClient:
+    def __init__(self, states=None):
+        self.states = states or []
+        self.calls = []
+
+    def fetch_history(self, start, end, entity_ids):
+        self.calls.append((start, end, entity_ids))
+        return self.states
 
 
 class RuntimeTests(unittest.TestCase):
@@ -222,6 +233,81 @@ class RuntimeTests(unittest.TestCase):
         visible = output.getvalue() + self.status.read_text(encoding="utf-8")
         for private_value in ("bb-secret", "grocy-secret", "private note", "child-primary", "diaper-newborn"):
             self.assertNotIn(private_value, visible)
+
+    def test_run_ingests_allowlisted_home_assistant_entities_without_exposing_identifiers(self):
+        self.config.write_text(
+            json.dumps(
+                {
+                    "database_path": "analytics.sqlite3",
+                    "home_assistant": {
+                        "enabled": True,
+                        "base_url": "http://127.0.0.1:8123",
+                        "token_env": "HOME_ASSISTANT_ANALYTICS_TOKEN",
+                        "entities": {
+                            "sensor.private_nursery_temperature": "temperature",
+                            "sensor.private_nursery_humidity": "humidity",
+                        },
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        self.secrets.write_text("HOME_ASSISTANT_ANALYTICS_TOKEN=ha-secret\n", encoding="utf-8")
+        client = FakeHomeAssistantClient(
+            states=[
+                {
+                    "entity_id": "sensor.private_nursery_temperature",
+                    "state": "25.5",
+                    "last_updated": datetime.now(timezone.utc).isoformat(),
+                    "attributes": {"unit_of_measurement": "°C"},
+                }
+            ]
+        )
+        seen = []
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = run(
+                self.config,
+                self.secrets,
+                self.status,
+                client_factories={
+                    "home_assistant": lambda url, secret, entities: seen.append((url, secret, entities)) or client
+                },
+            )
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["home_assistant"]["inserted"], 1)
+        self.assertEqual(seen[0][1], "ha-secret")
+        self.assertEqual(seen[0][2], {"sensor.private_nursery_temperature", "sensor.private_nursery_humidity"})
+        visible = output.getvalue() + self.status.read_text(encoding="utf-8")
+        for private_value in ("ha-secret", "private_nursery_temperature", "private_nursery_humidity"):
+            self.assertNotIn(private_value, visible)
+
+    def test_runtime_rejects_invalid_home_assistant_allowlist_before_building_client(self):
+        self.config.write_text(
+            json.dumps(
+                {
+                    "database_path": "analytics.sqlite3",
+                    "home_assistant": {
+                        "enabled": True,
+                        "base_url": "http://127.0.0.1:8123",
+                        "token_env": "HOME_ASSISTANT_ANALYTICS_TOKEN",
+                        "entities": {"light.nursery": "temperature"},
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        self.secrets.write_text("HOME_ASSISTANT_ANALYTICS_TOKEN=ha-secret\n", encoding="utf-8")
+        built = []
+        with self.assertRaises(RuntimeConfigError):
+            run(
+                self.config,
+                self.secrets,
+                self.status,
+                client_factories={"home_assistant": lambda *_: built.append(True)},
+            )
+        self.assertEqual(built, [])
 
 
 if __name__ == "__main__":

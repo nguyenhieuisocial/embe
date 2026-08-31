@@ -29,6 +29,12 @@ def provision(
     children = {str(identifiers[0]): "child-primary"} if enabled else {}
     config = {
         "database_path": "../../data/analytics/family.sqlite3",
+        "home_assistant": {
+            "enabled": False,
+            "base_url": "http://127.0.0.1:8123",
+            "token_env": "HOME_ASSISTANT_ANALYTICS_TOKEN",
+            "entities": {},
+        },
         "babybuddy": {
             "enabled": enabled,
             "base_url": base_url,

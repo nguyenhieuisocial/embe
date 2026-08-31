@@ -8,7 +8,8 @@ from pathlib import Path
 
 from .babybuddy import BabyBuddyApiClient, BabyBuddyNormalizer
 from .grocy import GrocyApiClient, GrocyNormalizer
-from .ingest import ingest_babybuddy, ingest_grocy
+from .home_assistant import HomeAssistantHistoryClient, HomeAssistantNormalizer
+from .ingest import ingest_babybuddy, ingest_grocy, ingest_once
 from .warehouse import Warehouse
 
 
@@ -19,6 +20,7 @@ class RuntimeConfigError(ValueError):
 DEFAULT_FACTORIES = {
     "babybuddy": BabyBuddyApiClient,
     "grocy": GrocyApiClient,
+    "home_assistant": HomeAssistantHistoryClient,
 }
 
 
@@ -31,7 +33,7 @@ def run(config_path: Path, secrets_path: Path, status_path: Path, *, client_fact
         return result
 
     config = _load_config(config_path)
-    enabled = [name for name in ("babybuddy", "grocy") if _enabled(config, name)]
+    enabled = [name for name in ("home_assistant", "babybuddy", "grocy") if _enabled(config, name)]
     database_path = _resolve_database_path(config_path, config)
     if not enabled:
         Warehouse(database_path).close()
@@ -45,6 +47,20 @@ def run(config_path: Path, secrets_path: Path, status_path: Path, *, client_fact
     warehouse = Warehouse(database_path)
     try:
         result = _status("ok")
+        if "home_assistant" in enabled:
+            source = _source_config(config, "home_assistant")
+            entities = _entity_allowlist(source)
+            client = factories["home_assistant"](
+                _required_text(source, "base_url"),
+                _required_secret(source, "token_env", secrets),
+                set(entities),
+            )
+            result["home_assistant"] = ingest_once(
+                client,
+                HomeAssistantNormalizer(entities),
+                warehouse,
+                now=datetime.now(timezone.utc),
+            )
         if "babybuddy" in enabled:
             source = _source_config(config, "babybuddy")
             children = _child_allowlist(source)
@@ -204,6 +220,20 @@ def _product_allowlist(source: dict) -> dict[int, tuple[str, str]]:
     return result
 
 
+def _entity_allowlist(source: dict) -> dict[str, str]:
+    raw = source.get("entities")
+    if not isinstance(raw, dict) or not raw:
+        raise RuntimeConfigError("Home Assistant entity allowlist is empty")
+    result = {
+        str(entity_id).strip(): str(kind).strip()
+        for entity_id, kind in raw.items()
+        if str(entity_id).strip().startswith("sensor.") and str(kind).strip() in {"temperature", "humidity"}
+    }
+    if len(result) != len(raw):
+        raise RuntimeConfigError("Home Assistant entity allowlist is invalid")
+    return result
+
+
 def _required_text(value: dict, key: str) -> str:
     text = value.get(key)
     if not isinstance(text, str) or not text.strip():
@@ -241,7 +271,7 @@ def _print_summary(result: dict):
     safe = {"status": result["status"]}
     if "reason" in result:
         safe["reason"] = result["reason"]
-    for source in ("babybuddy", "grocy"):
+    for source in ("home_assistant", "babybuddy", "grocy"):
         if source in result:
             safe[source] = result[source]
     print(json.dumps(safe, separators=(",", ":"), sort_keys=True))

@@ -35,7 +35,7 @@ $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -Repetiti
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 10) -MultipleInstances IgnoreNew -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 1)
 $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Limited
 
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description 'Imports allowlisted BabyBuddy and Grocy facts into local SQLite analytics.' -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description 'Imports allowlisted Home Assistant, BabyBuddy, and Grocy facts into local SQLite analytics.' -Force | Out-Null
 
 if (-not $SkipInitialRun -and (Test-Path -LiteralPath $ConfigPath -PathType Leaf) -and (Test-Path -LiteralPath $SecretsPath -PathType Leaf)) {
     Start-ScheduledTask -TaskName $TaskName

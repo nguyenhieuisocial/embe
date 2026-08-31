@@ -1,5 +1,14 @@
 {
   "database_path": "../../data/analytics/family-analytics.sqlite3",
+  "home_assistant": {
+    "enabled": false,
+    "base_url": "http://127.0.0.1:8123",
+    "token_env": "HOME_ASSISTANT_ANALYTICS_TOKEN",
+    "entities": {
+      "sensor.REPLACE_WITH_TEMPERATURE_ENTITY": "temperature",
+      "sensor.REPLACE_WITH_HUMIDITY_ENTITY": "humidity"
+    }
+  },
   "babybuddy": {
     "enabled": false,
     "base_url": "http://127.0.0.1:8000",

@@ -23,10 +23,11 @@ Phần đã sẵn sàng:
   `.home.arpa`; trang kế tiếp của BabyBuddy phải cùng origin và đúng endpoint.
   Cursor lặp hoặc vượt giới hạn số trang làm job dừng để tránh chạy vô hạn.
 
-Chưa bật ingest thật cho Home Assistant, BabyBuddy hoặc Grocy. Bộ kiểm thử dùng
-mock hoàn toàn, không gọi API và không dùng dữ liệu gia đình. Trước khi bật job,
-cần tạo token chỉ đọc riêng, cấu hình allowlist/alias local và chạy thử vào một
-SQLite tạm; tuyệt đối không đưa token vào Git.
+Runtime thật đã hỗ trợ Home Assistant, BabyBuddy và Grocy. Tất cả nguồn mặc định
+tắt; bộ kiểm thử dùng mock hoàn toàn, không gọi API và không dùng dữ liệu gia
+đình. Chỉ bật từng nguồn sau khi có token chỉ đọc riêng và allowlist local. Với
+Home Assistant, `entities` chỉ chấp nhận `sensor.*` được gắn loại `temperature`
+hoặc `humidity`. Không đưa token, entity ID thật hoặc file local vào Git.
 
 ## Bật runtime cục bộ an toàn
 
