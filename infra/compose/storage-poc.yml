@@ -7,6 +7,8 @@ services:
     env_file:
       - path: storage-poc.env
         required: false
+      - path: ../../secrets/telegram-poc.env
+        required: false
     ports:
       - "127.0.0.1:8099:8099"
     volumes:
@@ -27,6 +29,8 @@ services:
     restart: "no"
     env_file:
       - path: storage-poc.env
+        required: false
+      - path: ../../secrets/telegram-poc.env
         required: false
     volumes:
       - C:/EmBe/data/storage-poc:/data/storage-poc
