@@ -10,6 +10,13 @@ const familyTools: Array<{
   label: string;
 }> = [
   {
+    href: "/so-me-va-be",
+    icon: "guide",
+    title: "Sổ Mẹ & Bé",
+    detail: "Xem trước, lưu PDF hoặc in.",
+    label: "Mở Sổ Mẹ và Bé"
+  },
+  {
     href: "/tim-kiem",
     icon: "memory",
     title: "Tìm trong EmBe",

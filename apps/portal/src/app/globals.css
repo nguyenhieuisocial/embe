@@ -3173,6 +3173,71 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .skeleton-line { opacity: .7; }
 }
 
+/* Sổ Mẹ & Bé: một bản xem trước như trang sách, không phải dashboard. */
+.family-book-main { max-width: 720px; }
+.family-book-export { display: grid; gap: 18px; }
+.family-book-controls { display: grid; gap: 12px; }
+.family-book-controls > div:first-child { display: grid; gap: 5px; }
+.family-book-controls h1 { font-family: var(--font-display), Georgia, serif; font-size: clamp(1.75rem, 8vw, 2.5rem); font-weight: 600; line-height: 1.08; }
+.family-book-controls > div:first-child > p:last-child { color: var(--ink-soft); font-size: .875rem; line-height: 1.55; }
+.family-book-range { background: color-mix(in srgb, var(--coral-soft) 52%, var(--paper)); border: 1px solid var(--line); border-radius: 999px; display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; }
+.family-book-range button { background: transparent; border: 0; border-radius: 999px; color: var(--ink-soft); font: inherit; font-size: .75rem; font-weight: 650; min-height: 44px; padding: 7px; }
+.family-book-range button[aria-pressed="true"] { background: var(--paper); box-shadow: 0 2px 10px rgba(118, 68, 86, .10); color: var(--coral); }
+.family-book-actions { display: grid; gap: 8px; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
+.family-book-print { align-items: center; background: var(--coral); border: 0; border-radius: 999px; color: white; display: flex; font: inherit; font-size: .875rem; font-weight: 700; gap: 8px; justify-content: center; min-height: 48px; padding: 10px 16px; }
+.family-book-print.is-secondary { background: color-mix(in srgb, var(--coral-soft) 58%, var(--paper)); border: 1px solid var(--line); color: var(--coral); }
+.family-book-print:disabled { opacity: .55; }
+.family-book-print-help, .family-book-warning { color: var(--ink-soft); font-size: .75rem; line-height: 1.5; margin: 0; }
+.family-book-warning { background: #fff5e8; border-radius: var(--radius-sm); color: #7b4e21; padding: 10px 12px; }
+.family-book-loading { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); color: var(--ink-soft); padding: 28px 18px; text-align: center; }
+.family-book-loading.is-error { color: var(--coral); }
+
+.family-book-preview { background: #fffdfd; border: 1px solid #eadbe0; border-radius: 22px; box-shadow: 0 18px 50px rgba(105, 62, 78, .12); color: #43383c; overflow: hidden; }
+.family-book-cover { align-content: center; background:
+  radial-gradient(circle at 82% 16%, rgba(255,255,255,.82) 0 8%, transparent 8.4%),
+  radial-gradient(circle at 18% 84%, rgba(255,255,255,.64) 0 12%, transparent 12.4%),
+  linear-gradient(145deg, #fce8ef, #f6cad9 55%, #edb7ca);
+  display: grid; min-height: 470px; padding: 42px 28px; position: relative; text-align: center;
+}
+.family-book-cover::after { border: 1px solid rgba(146, 64, 95, .2); border-radius: 48% 52% 49% 51%; content: ""; height: 94px; left: 50%; position: absolute; top: 52%; transform: translate(-50%, -50%) rotate(-8deg); width: 190px; }
+.family-book-cover > p { color: #8a4961; font-size: .6875rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.family-book-cover h2 { color: #6f3049; font-family: var(--font-display), Georgia, serif; font-size: clamp(2.2rem, 11vw, 4rem); font-weight: 600; line-height: 1.05; margin: 24px 0 18px; position: relative; z-index: 1; }
+.family-book-cover h2 em { color: #a04c6b; font-weight: 500; }
+.family-book-cover > span { color: #81475d; font-size: .875rem; font-weight: 650; }
+.family-book-cover > small { align-self: end; color: #875c6c; font-size: .6875rem; margin-top: 64px; }
+.family-book-section { display: grid; gap: 18px; padding: 28px 22px; }
+.family-book-section + .family-book-section { border-top: 1px solid #efe3e7; }
+.family-book-section-title { align-items: start; display: grid; gap: 12px; grid-template-columns: 36px minmax(0, 1fr); }
+.family-book-section-title > span { align-items: center; background: #fae8ef; border-radius: 50%; color: #a34f6e; display: flex; font-size: .6875rem; font-weight: 750; height: 36px; justify-content: center; }
+.family-book-section-title > div { display: grid; gap: 2px; }
+.family-book-section-title p { color: #9b687b; font-size: .6875rem; font-weight: 650; }
+.family-book-section-title h2 { color: #563b45; font-family: var(--font-display), Georgia, serif; font-size: 1.35rem; line-height: 1.2; }
+.family-book-facts { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.family-book-facts > div { background: #fff4f7; border-radius: 14px; display: grid; gap: 3px; padding: 12px; }
+.family-book-facts small { color: #8b6b77; font-size: .6875rem; }
+.family-book-facts strong { color: #613d4a; font-size: 1rem; font-variant-numeric: tabular-nums; }
+.family-book-note, .family-book-empty { background: #f8f5f6; border-radius: 12px; color: #796a70; font-size: .75rem; line-height: 1.55; padding: 11px 12px; }
+.family-book-table-wrap { margin-inline: -22px; overflow-x: auto; padding-inline: 22px; }
+.family-book-table-wrap table { border-collapse: separate; border-spacing: 0; font-size: .6875rem; min-width: 620px; width: 100%; }
+.family-book-table-wrap th, .family-book-table-wrap td { border-bottom: 1px solid #eee3e7; padding: 9px 8px; text-align: left; white-space: nowrap; }
+.family-book-table-wrap th { background: #fff4f7; color: #80566a; font-weight: 700; }
+.family-book-table-wrap td { color: #65585e; font-variant-numeric: tabular-nums; }
+.family-book-records, .family-book-plans { display: grid; gap: 10px; }
+.family-book-records > article, .family-book-plans > article { border: 1px solid #eee0e5; border-radius: 14px; display: grid; gap: 5px; padding: 13px; }
+.family-book-records > article > div:first-child { align-items: center; color: #9a6077; display: flex; font-size: .6875rem; justify-content: space-between; }
+.family-book-records h3, .family-book-plans h3 { color: #583c47; font-size: .9375rem; }
+.family-book-records p, .family-book-plans p { color: #786a70; font-size: .75rem; line-height: 1.5; }
+.family-book-records dl { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.family-book-records dl > div { background: #fff4f7; border-radius: 9px; display: grid; gap: 1px; padding: 7px 9px; }
+.family-book-records dt { color: #987181; font-size: .625rem; }
+.family-book-records dd { color: #5e3f4b; font-size: .8125rem; font-weight: 700; margin: 0; }
+.family-book-records blockquote { border-left: 2px solid #dfa2b8; color: #675960; font-size: .75rem; line-height: 1.55; margin: 4px 0 0; padding-left: 9px; }
+.family-book-records ul { color: #675960; display: grid; font-size: .75rem; gap: 4px; line-height: 1.5; margin: 3px 0 0; padding-left: 18px; }
+.family-book-plans > article > span { color: #9a6077; font-size: .6875rem; }
+.family-book-section > footer { border-top: 1px solid #eee0e5; color: #806f76; font-size: .6875rem; line-height: 1.55; padding-top: 12px; }
+
+@page { size: A4 portrait; margin: 13mm; }
+
 @media print {
   .family-nav, .quick-trigger, .quick-sheet, .quick-backdrop, .skip-link, .connection-banner { display: none; }
   body:has(.photo-viewer) { background: #fff; }
@@ -3191,4 +3256,24 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   body:has(.photo-viewer) .photo-viewer > footer { background: #fff; color: #241f21; display: block; padding: 5mm 0 0; }
   body:has(.photo-viewer) .photo-viewer-caption time,
   body:has(.photo-viewer) .photo-viewer-caption p { color: #665b60; }
+
+  body:has(.family-book-preview) { background: #fff; color: #43383c; }
+  body:has(.family-book-preview) .family-nav,
+  body:has(.family-book-preview) .quick-trigger,
+  body:has(.family-book-preview) .app-header,
+  body:has(.family-book-preview) .family-book-controls { display: none !important; }
+  body:has(.family-book-preview) .app-shell,
+  body:has(.family-book-preview) .app-canvas,
+  body:has(.family-book-preview) .family-book-main { display: block; margin: 0; max-width: none; padding: 0; width: 100%; }
+  body:has(.family-book-preview) .family-book-export { display: block; }
+  body:has(.family-book-preview) .family-book-preview { border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+  body:has(.family-book-preview) .family-book-cover { break-after: page; min-height: 267mm; }
+  body:has(.family-book-preview) .family-book-section { break-before: page; padding: 4mm 0; }
+  body:has(.family-book-preview) .family-book-section + .family-book-section { border-top: 0; }
+  body:has(.family-book-preview) .family-book-table-wrap { margin: 0; overflow: visible; padding: 0; }
+  body:has(.family-book-preview) .family-book-table-wrap table { font-size: 7.5pt; min-width: 0; }
+  body:has(.family-book-preview) .family-book-table-wrap thead { display: table-header-group; }
+  body:has(.family-book-preview) .family-book-table-wrap tr,
+  body:has(.family-book-preview) .family-book-records > article,
+  body:has(.family-book-preview) .family-book-plans > article { break-inside: avoid; }
 }
