@@ -162,7 +162,7 @@ export default function Home() {
           Hôm nay,<br /><em>mình cần làm gì?</em>
         </h1>
         <p className="intro">
-          Việc quan trọng, lịch sắp tới và một chỗ để ghi điều đáng nhớ.
+          Việc ưu tiên, lịch sắp tới và điều đáng nhớ.
         </p>
 
         <a className="action-primary" href="/ke-hoach" aria-label="Mở kế hoạch hôm nay">

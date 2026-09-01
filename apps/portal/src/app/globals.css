@@ -1021,7 +1021,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 .today-meta { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
 .today-meta time { color: var(--rose); font-size: .6875rem; font-weight: 600; text-transform: capitalize; }
-.today-hero h1 { max-width: 13ch; }
+.today-hero h1 { max-width: 16ch; }
 .today-hero .intro { font-size: .9375rem; line-height: 1.5; }
 .today-hero .action-primary { margin-top: 2px; }
 
