@@ -77,7 +77,8 @@ describe("private camera upload API", () => {
     const response = await createUpload(request("https://embe.hieu.asia/api/photo-uploads", {
       authorRole: "mother", byteSize: 2_000_000, caption: "Chào ba",
       capturedAt: "2026-09-01T01:00:00.000Z", filename: "IMG_1.JPG",
-      idempotencyKey: uploadId, mimeType: "image/jpeg"
+      idempotencyKey: uploadId, mimeType: "image/jpeg",
+      latitude: 10.7769, longitude: 106.7009, locationName: "Sài Gòn"
     }));
     const payload = await response.json();
 
@@ -85,6 +86,9 @@ describe("private camera upload API", () => {
     expect(payload).toEqual({ uploadId, uploadUrl: expect.stringContaining("token=short-token") });
     expect(JSON.stringify(payload)).not.toContain("server-only-key");
     expect(createSignedUploadUrl).toHaveBeenCalledWith(path, { upsert: false });
+    expect(rpc).toHaveBeenCalledWith("embe_create_photo_upload", expect.objectContaining({
+      p_latitude: 10.7769, p_longitude: 106.7009, p_location_name: "Sài Gòn"
+    }));
   });
 
   it("accepts a short iPhone video through the same private media inbox", async () => {

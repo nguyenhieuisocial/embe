@@ -18,7 +18,7 @@ describe("private media read model", () => {
       { id: "invalid", event_at: "bad", title: "bad", caption: "bad", mime_type: "text/html" }
     ]), { status: 200 }));
     const result = await getMediaMemories();
-    expect(result).toEqual([{ id: ID, eventAt: "2026-08-30T10:00:00Z", title: "Một ngày vui", caption: "Cả nhà bên nhau", mimeType: "image/webp", width: 1200, height: 900, placeCity: "Đà Lạt", placeRegion: "Lâm Đồng", placeCountry: "Việt Nam", albumKey: "da-lat-2025", albumTitle: "Đà Lạt · 23.12.2025", albumOrder: 50, reactions: {} }]);
+    expect(result).toEqual([{ id: ID, eventAt: "2026-08-30T10:00:00Z", title: "Một ngày vui", caption: "Cả nhà bên nhau", mimeType: "image/webp", width: 1200, height: 900, placeCity: "Đà Lạt", placeRegion: "Lâm Đồng", placeCountry: "Việt Nam", albumKey: "da-lat-2025", albumTitle: "Đà Lạt · 23.12.2025", albumOrder: 50, reactions: {}, editable: false }]);
     expect(fetchMock.mock.calls[0][0].toString()).toContain("embe_media_item");
     expect(fetchMock.mock.calls[0][0].toString()).not.toContain("object_path");
     expect(fetchMock.mock.calls[0][0].toString()).not.toContain("latitude");

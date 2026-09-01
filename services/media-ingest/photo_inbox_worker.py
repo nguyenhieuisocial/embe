@@ -190,15 +190,20 @@ class PhotoInboxWorker:
         if not UUID.match(asset_id):
             raise WorkerFailure("immich_invalid_response")
 
+        metadata = {"dateTimeOriginal": captured}
         caption = str(item.get("caption", "")).strip()
         if caption:
-            updated = self.transport(
-                "PUT", f"{self.config.immich_base_url}/api/assets/{asset_id}",
-                {"accept": "application/json", "content-type": "application/json", "x-api-key": self.config.immich_api_key},
-                json.dumps({"description": caption}, ensure_ascii=False).encode(),
-            )
-            if not 200 <= updated.status < 300:
-                raise WorkerFailure("immich_description_failed")
+            metadata["description"] = caption
+        if item.get("latitude") is not None and item.get("longitude") is not None:
+            metadata["latitude"] = float(item["latitude"])
+            metadata["longitude"] = float(item["longitude"])
+        updated = self.transport(
+            "PUT", f"{self.config.immich_base_url}/api/assets/{asset_id}",
+            {"accept": "application/json", "content-type": "application/json", "x-api-key": self.config.immich_api_key},
+            json.dumps(metadata, ensure_ascii=False).encode(),
+        )
+        if not 200 <= updated.status < 300:
+            raise WorkerFailure("immich_metadata_failed")
 
         album = self.transport(
             "PUT", f"{self.config.immich_base_url}/api/albums/{self.config.immich_album_id}/assets",
@@ -219,7 +224,26 @@ class PhotoInboxWorker:
     def run_once(self) -> dict[str, str]:
         item = self._claim()
         if item is None:
-            return {"status": "idle"}
+            metadata = self._rpc("embe_claim_photo_metadata_update", {})
+            if metadata is None:
+                return {"status": "idle"}
+            upload_id = str(metadata["id"])
+            try:
+                payload = {"dateTimeOriginal": str(metadata["captured_at"])}
+                payload["latitude"] = float(metadata["latitude"]) if metadata.get("latitude") is not None else None
+                payload["longitude"] = float(metadata["longitude"]) if metadata.get("longitude") is not None else None
+                response = self.transport(
+                    "PUT", f"{self.config.immich_base_url}/api/assets/{metadata['immich_asset_id']}",
+                    {"accept": "application/json", "content-type": "application/json", "x-api-key": self.config.immich_api_key},
+                    json.dumps(payload).encode(),
+                )
+                if not 200 <= response.status < 300:
+                    raise WorkerFailure("immich_metadata_failed")
+                self._rpc("embe_finish_photo_metadata_update", {"p_upload_id": upload_id})
+                return {"status": "metadata_updated", "upload_id": upload_id}
+            except WorkerFailure as error:
+                self._rpc("embe_fail_photo_metadata_update", {"p_upload_id": upload_id})
+                return {"status": "retry_metadata", "upload_id": upload_id, "error": error.code}
         upload_id = str(item["id"])
         try:
             body = self._download(item)

@@ -7,6 +7,7 @@ Ngày rà soát: 2026-08-31. Nguyên tắc: một công cụ cho một trách nh
 | Nhu cầu | Tái sử dụng | Cách áp dụng cho EmBe |
 |---|---|---|
 | Ảnh/video từ iPhone | [Immich mobile backup](https://docs.immich.app/features/mobile-backup/) + [Tailscale iOS](https://tailscale.com/docs/install/ios) | Đồng bộ qua mạng riêng; không public Immich. |
+| Metadata ảnh upload | [exifr](https://github.com/MikeKovarik/exifr) | Đọc ngày chụp và GPS ngay trên thiết bị trước khi upload; nếu EXIF thiếu hoặc sai, gia đình có thể sửa thủ công. |
 | Nhật ký và số liệu | Memos, BabyBuddy, Grocy | Giữ mỗi loại dữ liệu đúng một nguồn chính. |
 | AI kết nối nhật ký | [Memos MCP chính chủ](https://github.com/usememos/memos/tree/main/server/router/mcp) | Dùng endpoint `/mcp` có sẵn; health gate kiểm tra tool contract nhưng không đọc nội dung gia đình. |
 | AI kết nối chăm bé | [BabyBuddy MCP chính chủ](https://github.com/babybuddy/babybuddy-mcp) | Đã duyệt kiến trúc; chỉ bật sau khi có hồ sơ em bé và token của user giới hạn quyền. Không cấp quyền ghi cho trợ lý tự động. |

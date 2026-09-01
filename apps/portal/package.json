@@ -14,6 +14,7 @@
     "@lichta/core": "^2.2.1",
     "@supabase/supabase-js": "2.112.4",
     "@svg-maps/vietnam": "^2.0.0",
+    "exifr": "^7.1.3",
     "next": "16.3.3",
     "pdfmake": "^0.3.11",
     "react": "19.2.8",

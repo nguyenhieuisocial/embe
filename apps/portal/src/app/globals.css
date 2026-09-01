@@ -2117,6 +2117,15 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   padding: 10px 13px;
   width: 100%;
 }
+.photo-metadata-editor { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 11px 12px; }
+.photo-metadata-editor summary { cursor: pointer; font-size: .8125rem; font-weight: 700; min-height: 30px; }
+.photo-metadata-editor > p { color: var(--ink-soft); font-size: .75rem; line-height: 1.45; margin-bottom: 9px; }
+.photo-metadata-editor fieldset { border: 0; border-top: 1px solid var(--line); display: grid; gap: 8px; padding: 10px 0 2px; }
+.photo-metadata-editor legend { color: var(--rose); font-size: .75rem; font-weight: 700; padding-right: 8px; }
+.photo-metadata-editor label { display: grid; font-size: .75rem; gap: 4px; }
+.photo-metadata-editor input { background: white; border: 1px solid var(--line-strong); border-radius: 12px; font: inherit; font-size: .875rem; min-height: 44px; padding: 8px 10px; width: 100%; }
+.photo-metadata-editor fieldset > small { color: var(--ink-soft); font-size: .6875rem; }
+.photo-metadata-editor fieldset > button { background: var(--rose-soft); border: 0; border-radius: 12px; color: var(--rose); font-size: .75rem; font-weight: 650; min-height: 40px; }
 .photo-batch-review > .photo-author { justify-content: flex-start; }
 .photo-batch-review > .photo-author button { background: var(--paper); border-color: var(--line-strong); color: var(--ink-soft); min-height: 44px; }
 .photo-batch-review > .photo-author button[aria-pressed="true"] { background: var(--rose-soft); border-color: var(--rose-mist); color: var(--rose); }
@@ -2305,6 +2314,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .photo-viewer > header .photo-viewer-download { align-items: center; background: rgba(255,255,255,.12); border: 0; border-radius: 999px; color: white; display: flex; font: inherit; font-size: .8125rem; font-weight: 650; gap: 6px; min-height: 44px; padding: 8px 13px; }
 .photo-viewer > header .photo-viewer-download:disabled { opacity: .55; }
 .photo-viewer > header .photo-viewer-close { background: rgba(255,255,255,.12); border: 0; border-radius: 50%; color: white; font-size: 1.65rem; height: 44px; line-height: 1; width: 44px; }
+.photo-viewer > header .photo-viewer-edit { background: rgba(255,255,255,.12); border: 0; border-radius: 50%; color: white; font-size: 1rem; height: 44px; width: 44px; }
 .photo-viewer-stage { align-items: center; display: flex; justify-content: center; min-height: 0; overflow: hidden; position: relative; touch-action: none; }
 .photo-viewer-stage > img { height: 100%; max-width: 100%; object-fit: contain; transform-origin: center; transition: transform .14s ease-out; user-select: none; width: 100%; will-change: transform; }
 .photo-viewer-stage.is-zoomed > img { cursor: grab; transition: none; }
@@ -2321,6 +2331,11 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .photo-viewer-caption time { color: rgba(255,255,255,.62); font-size: .6875rem; text-transform: capitalize; }
 .photo-viewer-caption strong { font-family: var(--font-display), Georgia, serif; font-size: 1.05rem; }
 .photo-viewer-caption p { color: rgba(255,255,255,.72); display: -webkit-box; font-size: .8125rem; line-height: 1.45; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.photo-viewer-metadata { display: grid; gap: 8px; width: min(100%, 420px); }
+.photo-viewer-metadata label { display: grid; font-size: .6875rem; gap: 4px; }
+.photo-viewer-metadata input { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 12px; color: white; font: inherit; font-size: .8125rem; min-height: 44px; padding: 8px 10px; width: 100%; }
+.photo-viewer-metadata > button { background: #f4b5c8; border: 0; border-radius: 12px; color: #4a1727; font-weight: 700; min-height: 44px; }
+.photo-viewer-metadata > p { color: #ffd5dc; font-size: .75rem; }
 .photo-viewer-swipe { color: rgba(255,255,255,.56); flex: 0 0 auto; font-size: .6875rem; padding-bottom: 2px; }
 @media (max-width: 767px) {
   .photo-viewer > header { gap: 8px; padding-left: max(10px, env(safe-area-inset-left)); }

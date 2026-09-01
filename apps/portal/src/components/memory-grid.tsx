@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 
 import { groupByDay, groupIntoTrips } from "../lib/memory-groups";
 import type { MediaAlbum, MediaMemory } from "../lib/media";
+import { toLocalDateTime } from "../lib/photo-metadata";
 import { readDeviceRole } from "../lib/device-preferences";
 import PhotoShareButton from "./photo-share-button";
 import PhotoDownloadButton from "./photo-download-button";
@@ -160,12 +161,13 @@ function DayAlbumDetail({ memories, onOpen }: { memories: MediaMemory[]; onOpen:
   );
 }
 
-function PhotoViewer({ memory, index, total, onClose, onMove }: {
+function PhotoViewer({ memory, index, total, onClose, onMove, onMetadataSaved }: {
   memory: MediaMemory;
   index: number;
   total: number;
   onClose: () => void;
   onMove: (direction: -1 | 1) => void;
+  onMetadataSaved: (memory: MediaMemory) => void;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -177,6 +179,12 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
   const zoomRef = useRef(1);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [editing, setEditing] = useState(false);
+  const [savingMetadata, setSavingMetadata] = useState(false);
+  const [metadataMessage, setMetadataMessage] = useState("");
+  const [capturedAt, setCapturedAt] = useState(toLocalDateTime(memory.eventAt));
+  const [locationName, setLocationName] = useState(memory.placeCity ?? "");
+  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null | undefined>(undefined);
 
   function applyZoom(next: number): void {
     const value = Math.min(4, Math.max(1, Math.round(next * 100) / 100));
@@ -260,7 +268,45 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
     };
   }, []);
 
-  useEffect(() => { resetZoom(); }, [memory.id]);
+  useEffect(() => {
+    resetZoom();
+    setEditing(false);
+    setCapturedAt(toLocalDateTime(memory.eventAt));
+    setLocationName(memory.placeCity ?? "");
+    setCoordinates(undefined);
+  }, [memory.id]);
+
+  async function saveMetadata() {
+    if (!capturedAt || savingMetadata) return;
+    setSavingMetadata(true);
+    setMetadataMessage("");
+    try {
+      const response = await fetch(`/api/memories/${memory.id}`, {
+        method: "PATCH", credentials: "same-origin", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ capturedAt: new Date(capturedAt).toISOString(),
+          ...(coordinates === undefined ? {} : coordinates ?? { latitude: null, longitude: null }),
+          locationName: locationName.trim() })
+      });
+      if (!response.ok) throw new Error("save failed");
+      const result = await response.json() as { eventAt: string; placeCity: string | null };
+      onMetadataSaved({ ...memory, eventAt: result.eventAt, placeCity: result.placeCity });
+      setEditing(false);
+    } catch {
+      setMetadataMessage("Chưa lưu được. Hãy thử lại.");
+    } finally {
+      setSavingMetadata(false);
+    }
+  }
+
+  function useViewerLocation() {
+    if (!("geolocation" in navigator)) return setMetadataMessage("Điện thoại này chưa hỗ trợ lấy vị trí.");
+    navigator.geolocation.getCurrentPosition((position) => {
+      setCoordinates({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      if (!locationName) setLocationName("Vị trí hiện tại");
+      setMetadataMessage("Đã lấy vị trí hiện tại.");
+    }, () => setMetadataMessage("Chưa lấy được vị trí. Có thể nhập tên địa điểm."),
+    { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 });
+  }
 
   function keepFocusInside(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
@@ -296,6 +342,7 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
         <div className="photo-viewer-actions">
           <PhotoDownloadButton memory={memory} />
           <PhotoShareButton memory={memory} />
+          {memory.editable ? <button aria-label="Sửa ngày giờ và vị trí" className="photo-viewer-edit" onClick={() => setEditing((value) => !value)} type="button">⌖</button> : null}
           <a aria-label="In ảnh này" className="photo-viewer-print" href={`/in-anh/${memory.id}`}>
             <span aria-hidden="true">▣</span><span className="photo-action-label">In ảnh</span>
           </a>
@@ -319,6 +366,13 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
       </div>
       <footer>
         <div className="photo-viewer-caption"><time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time><strong>{memory.title}</strong><p>{memory.caption}</p></div>
+        {editing ? <div className="photo-viewer-metadata">
+          <label>Ngày và giờ chụp<input type="datetime-local" value={capturedAt} onChange={(event) => setCapturedAt(event.target.value)} /></label>
+          <label>Vị trí<input maxLength={120} placeholder="Ví dụ: Đà Lạt, Lâm Đồng" value={locationName} onChange={(event) => { setLocationName(event.target.value); setCoordinates(null); }} /></label>
+          <button onClick={useViewerLocation} type="button">Dùng vị trí hiện tại</button>
+          <button disabled={savingMetadata || !capturedAt} onClick={saveMetadata} type="button">{savingMetadata ? "Đang lưu…" : "Lưu thay đổi"}</button>
+          {metadataMessage ? <p role="alert">{metadataMessage}</p> : null}
+        </div> : null}
         <span className="photo-viewer-swipe">{zoom > 1 ? "Kéo để xem · chạm đôi để thu" : total > 1 ? "Vuốt ngang · chụm để phóng to" : "Chụm hoặc chạm đôi để phóng to"}</span>
       </footer>
     </div>
@@ -462,7 +516,9 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
         {state === "error" ? "Chưa mở được ảnh mới. Chạm Thử mở lại." : `${memories.length} ảnh đang hiển thị.`}
       </p>
       {activeIndex != null && memories[activeIndex] ? (
-        <PhotoViewer index={activeIndex} memory={memories[activeIndex]} onClose={() => setActiveIndex(null)} onMove={moveViewer} total={memories.length} />
+        <PhotoViewer index={activeIndex} memory={memories[activeIndex]} onClose={() => setActiveIndex(null)} onMove={moveViewer}
+          onMetadataSaved={(updated) => setMemories((current) => current.map((item) => item.id === updated.id ? updated : item))}
+          total={memories.length} />
       ) : null}
     </>
   );

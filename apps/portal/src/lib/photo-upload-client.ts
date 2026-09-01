@@ -1,3 +1,5 @@
+import type { PhotoMetadata } from "./photo-metadata";
+
 export type PhotoAuthor = "father" | "mother";
 
 type SendPhotoInput = {
@@ -5,6 +7,7 @@ type SendPhotoInput = {
   caption: string;
   file: File;
   idempotencyKey: string;
+  metadata?: PhotoMetadata;
   onProgress?: (percent: number) => void;
 };
 
@@ -17,9 +20,12 @@ export async function sendFamilyPhoto(input: SendPhotoInput): Promise<{ uploadId
       authorRole: input.authorRole,
       byteSize: input.file.size,
       caption: input.caption,
-      capturedAt: new Date(input.file.lastModified || Date.now()).toISOString(),
+      capturedAt: input.metadata?.capturedAt ?? new Date(input.file.lastModified || Date.now()).toISOString(),
       filename: input.file.name || "anh-moi.jpg",
       idempotencyKey: input.idempotencyKey,
+      latitude: input.metadata?.latitude ?? null,
+      locationName: input.metadata?.locationName ?? "",
+      longitude: input.metadata?.longitude ?? null,
       mimeType: input.file.type
     })
   });

@@ -29,6 +29,9 @@ class FakeTransport:
                 "byte_size": len(JPEG),
                 "caption": "Chào cả nhà",
                 "captured_at": "2026-09-01T01:00:00+00:00",
+                "latitude": 10.7769,
+                "longitude": 106.7009,
+                "location_name": "Sài Gòn",
                 "original_filename": "IMG_1.JPG",
                 "attempts": 1,
             }).encode())
@@ -82,6 +85,13 @@ def test_claim_download_validate_import_album_finish_and_cleanup():
     urls = [call[1] for call in transport.calls]
     assert any(url.endswith("/api/assets") for url in urls)
     assert any(url.endswith(f"/api/albums/{ALBUM_ID}/assets") for url in urls)
+    metadata = next(call for call in transport.calls if call[1].endswith(f"/api/assets/{ASSET_ID}"))
+    assert json.loads(metadata[3]) == {
+        "dateTimeOriginal": "2026-09-01T01:00:00+00:00",
+        "description": "Chào cả nhà",
+        "latitude": 10.7769,
+        "longitude": 106.7009,
+    }
     finish = next(call for call in transport.calls if call[1].endswith("embe_finish_photo_import"))
     assert json.loads(finish[3]) == {
         "p_upload_id": UPLOAD_ID,
@@ -110,3 +120,35 @@ def test_failure_is_requeued_with_bounded_error_code():
     assert payload["p_error_code"] == "immich_upload_failed"
     assert payload["p_retry_after_seconds"] == 60
     assert not any(call[0] == "DELETE" for call in transport.calls)
+
+
+def test_syncs_user_corrected_date_and_location_to_immich():
+    class MetadataTransport:
+        def __init__(self):
+            self.calls = []
+
+        def __call__(self, method, url, headers, body=None):
+            self.calls.append((method, url, headers, body))
+            if url.endswith("/rest/v1/rpc/embe_claim_photo_upload"):
+                return HttpResponse(200, {}, b"null")
+            if url.endswith("/rest/v1/rpc/embe_claim_photo_metadata_update"):
+                return HttpResponse(200, {}, json.dumps({
+                    "id": UPLOAD_ID, "immich_asset_id": ASSET_ID,
+                    "captured_at": "2025-04-30T03:15:00+00:00",
+                    "latitude": 11.9404, "longitude": 108.4583,
+                }).encode())
+            if url.endswith(f"/api/assets/{ASSET_ID}"):
+                return HttpResponse(200, {}, b"{}")
+            if url.endswith("/rest/v1/rpc/embe_finish_photo_metadata_update"):
+                return HttpResponse(204, {}, b"")
+            raise AssertionError((method, url))
+
+    transport = MetadataTransport()
+    result = PhotoInboxWorker(config(), transport).run_once()
+    assert result == {"status": "metadata_updated", "upload_id": UPLOAD_ID}
+    update = next(call for call in transport.calls if call[1].endswith(f"/api/assets/{ASSET_ID}"))
+    assert json.loads(update[3]) == {
+        "dateTimeOriginal": "2025-04-30T03:15:00+00:00",
+        "latitude": 11.9404,
+        "longitude": 108.4583,
+    }

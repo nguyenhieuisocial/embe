@@ -5,10 +5,11 @@ import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } fro
 
 import { PHOTO_MAX_BYTES, PHOTO_MIME_TYPES } from "../lib/photo-upload-contract";
 import { type PhotoAuthor, sendFamilyPhoto } from "../lib/photo-upload-client";
+import { readPhotoMetadata, toLocalDateTime, type PhotoMetadata } from "../lib/photo-metadata";
 import { readDeviceRole, saveDeviceRole } from "../lib/device-preferences";
 
 type ItemState = "ready" | "sending" | "sent" | "error";
-type PhotoItem = { file: File; id: string; preview: string; progress: number; state: ItemState };
+type PhotoItem = { file: File; id: string; metadata: PhotoMetadata; preview: string; progress: number; state: ItemState };
 
 const BATCH_LIMIT = 12;
 
@@ -62,7 +63,7 @@ export default function PhotoComposer() {
     return () => window.removeEventListener("beforeunload", protectQueue);
   }, [sending]);
 
-  function choose(event: ChangeEvent<HTMLInputElement>) {
+  async function choose(event: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files ?? []).map(normalizedFile);
     event.target.value = "";
     if (!selected.length) return;
@@ -84,9 +85,10 @@ export default function PhotoComposer() {
       accepted.push(file);
     }
     const room = Math.max(0, BATCH_LIMIT - items.length);
-    const added = accepted.slice(0, room).map((file) => ({
-      file, id: crypto.randomUUID(), preview: URL.createObjectURL(file), progress: 0, state: "ready" as const
-    }));
+    const added = await Promise.all(accepted.slice(0, room).map(async (file) => ({
+      file, id: crypto.randomUUID(), metadata: await readPhotoMetadata(file),
+      preview: URL.createObjectURL(file), progress: 0, state: "ready" as const
+    })));
     setItems((current) => [...current, ...added]);
     setFinished(0);
     const notices = [
@@ -117,6 +119,28 @@ export default function PhotoComposer() {
     setItems((current) => current.map((item) => item.id === id ? { ...item, ...next } : item));
   }
 
+  function updateMetadata(id: string, next: Partial<PhotoMetadata>) {
+    setItems((current) => current.map((item) => item.id === id
+      ? { ...item, metadata: { ...item.metadata, ...next } }
+      : item));
+  }
+
+  function useCurrentLocation(id: string) {
+    if (!("geolocation" in navigator)) {
+      setMessage("Điện thoại này chưa hỗ trợ lấy vị trí.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => updateMetadata(id, {
+        latitude: Math.round(position.coords.latitude * 1_000_000) / 1_000_000,
+        longitude: Math.round(position.coords.longitude * 1_000_000) / 1_000_000,
+        locationName: items.find((item) => item.id === id)?.metadata.locationName || "Vị trí hiện tại"
+      }),
+      () => setMessage("Chưa lấy được vị trí. Có thể nhập tên địa điểm thay thế."),
+      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 }
+    );
+  }
+
   async function send() {
     const pending = items.filter((item) => item.state !== "sent");
     if (!pending.length || sending) return;
@@ -136,6 +160,7 @@ export default function PhotoComposer() {
           authorRole: author,
           caption: caption.trim(),
           file: item.file,
+          metadata: item.metadata,
           idempotencyKey: item.id,
           onProgress: (progress) => updateItem(item.id, { progress })
         });
@@ -197,6 +222,27 @@ export default function PhotoComposer() {
               </figure>
             ))}
           </div>
+          <details className="photo-metadata-editor">
+            <summary>Ngày giờ &amp; vị trí</summary>
+            <p>EmBe đã đọc từ ảnh nếu có. Có thể sửa từng ảnh trước khi gửi.</p>
+            {items.map((item, index) => (
+              <fieldset key={item.id}>
+                <legend>Ảnh {index + 1}</legend>
+                <label>Ngày và giờ chụp
+                  <input disabled={sending} type="datetime-local" value={toLocalDateTime(item.metadata.capturedAt)}
+                    onChange={(event) => { if (event.target.value) updateMetadata(item.id, { capturedAt: new Date(event.target.value).toISOString() }); }} />
+                </label>
+                <label>Vị trí <small>không bắt buộc</small>
+                  <input disabled={sending} maxLength={120} placeholder="Ví dụ: Đà Lạt, Lâm Đồng"
+                    value={item.metadata.locationName} onChange={(event) => updateMetadata(item.id, {
+                      locationName: event.target.value, latitude: null, longitude: null
+                    })} />
+                </label>
+                <button disabled={sending} onClick={() => useCurrentLocation(item.id)} type="button">Dùng vị trí hiện tại</button>
+                {item.metadata.latitude != null ? <small>Đã lưu tọa độ từ ảnh.</small> : <small>Ảnh không có tọa độ; tên địa điểm vẫn được lưu để tìm kiếm.</small>}
+              </fieldset>
+            ))}
+          </details>
           <label className="photo-batch-caption">
             <span>Lời nhắn chung <small>không bắt buộc</small></span>
             <input maxLength={180} value={caption} onChange={(event) => setCaption(event.target.value)} placeholder="Ví dụ: Một buổi chiều thật dịu dàng…" disabled={sending} />

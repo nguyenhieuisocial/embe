@@ -12,6 +12,7 @@ export type MediaMemory = {
   albumKey: string;
   albumTitle: string;
   albumOrder: number;
+  editable?: boolean;
   reactions: Partial<Record<"heart" | "love" | "laugh" | "moved", number>>;
 };
 
@@ -32,7 +33,7 @@ const MEDIA_MIME = new Set(["image/jpeg", "image/webp"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const OBJECT_PATH = /^assets\/[0-9a-f-]{36}\/[0-9a-f]{64}\.(jpg|webp)$/;
 const ALBUM_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const MEDIA_SELECT = "id,event_at,title,caption,mime_type,width,height,place_city,place_region,place_country,album_key,album_title,album_order,reactions";
+const MEDIA_SELECT = "id,event_at,title,caption,mime_type,width,height,place_city,place_region,place_country,album_key,album_title,album_order,reactions,editable";
 
 function credentials(): { baseUrl: string; secretKey: string } | null {
   const baseUrl = process.env.SUPABASE_URL;
@@ -78,7 +79,8 @@ export function parseMemory(raw: unknown): MediaMemory | null {
   if ((value.place_city != null && !placeCity) || (value.place_region != null && !placeRegion) || (value.place_country != null && !placeCountry)) return null;
   return {
     id, eventAt, title, caption, mimeType: mimeType as MediaMemory["mimeType"], width, height,
-    placeCity, placeRegion, placeCountry, albumKey, albumTitle, albumOrder: Number(albumOrder), reactions
+    placeCity, placeRegion, placeCountry, albumKey, albumTitle, albumOrder: Number(albumOrder), reactions,
+    editable: value.editable === true
   };
 }
 
