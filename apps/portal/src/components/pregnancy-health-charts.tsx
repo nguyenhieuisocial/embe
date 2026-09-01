@@ -24,6 +24,8 @@ export type PregnancyHealthMetric = {
   bloodGlucoseMgDl: number | null;
   fetalMovementCount: number | null;
   symptoms: string[];
+  glucoseContext: "fasting" | "after_1h" | "after_2h" | "other" | null;
+  healthNote: string;
   checklistPercent: number;
 };
 

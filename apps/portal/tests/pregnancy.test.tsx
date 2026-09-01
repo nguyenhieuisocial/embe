@@ -124,8 +124,10 @@ describe("pregnancy daily page", () => {
     fireEvent.change(screen.getByLabelText("Số cốc nước"), { target: { value: "7" } });
     fireEvent.change(screen.getByLabelText("Vận động (phút)"), { target: { value: "25" } });
     fireEvent.change(screen.getByLabelText("Đường huyết (mg/dL)"), { target: { value: "92" } });
+    fireEvent.change(screen.getByLabelText("Thời điểm đo đường huyết"), { target: { value: "fasting" } });
     fireEvent.change(screen.getByLabelText("Số cử động thai"), { target: { value: "8" } });
     fireEvent.click(screen.getByRole("checkbox", { name: "Đau đầu nhiều" }));
+    fireEvent.change(screen.getByLabelText("Ghi chú sức khỏe hôm nay"), { target: { value: "Hơi chóng mặt sau khi ngủ dậy." } });
     fireEvent.click(screen.getByRole("button", { name: "Khá ổn" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu sức khỏe hôm nay" }));
 
@@ -146,9 +148,41 @@ describe("pregnancy daily page", () => {
         wellbeing: 4,
         bloodGlucoseMgDl: 92,
         fetalMovementCount: 8,
-        symptoms: ["severe_headache"]
+        symptoms: ["severe_headache"],
+        glucoseContext: "fasting",
+        healthNote: "Hơi chóng mặt sau khi ngủ dậy."
       })
     }));
+  });
+
+  it("stops an incomplete blood-pressure pair before sending private data", async () => {
+    render(<PregnancyPage />);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    vi.mocked(fetch).mockClear();
+
+    fireEvent.change(screen.getByLabelText("Huyết áp tâm thu"), { target: { value: "112" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu sức khỏe hôm nay" }));
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.getByText(/cần nhập đủ cả hai số huyết áp/i)).toBeInTheDocument();
+  });
+
+  it("builds a compact seven-day visit brief from real entries", async () => {
+    vi.mocked(fetch).mockImplementation(async (input) => String(input).includes("/api/pregnancy/health")
+      ? Response.json({ history: [
+          { day: "2026-08-29", weightKg: 55.8, systolic: 110, diastolic: 70, sleepMinutes: 420, waterGlasses: 6, movementMinutes: 20, wellbeing: 3, bloodGlucoseMgDl: null, fetalMovementCount: null, symptoms: [], glucoseContext: null, healthNote: "", checklistPercent: 70 },
+          { day: "2026-08-30", weightKg: 56.4, systolic: 112, diastolic: 72, sleepMinutes: 450, waterGlasses: 7, movementMinutes: 25, wellbeing: 4, bloodGlucoseMgDl: 92, fetalMovementCount: 8, symptoms: ["severe_headache"], glucoseContext: "fasting", healthNote: "Đau đầu buổi sáng.", checklistPercent: 80 }
+        ] })
+      : Response.json({ dueDate: null, completed: [], hasProfile: false, hasDayState: false }));
+
+    render(<PregnancyPage />);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const brief = screen.getByRole("heading", { name: "Tóm tắt 7 ngày để đi khám" }).closest("section");
+    expect(brief).not.toBeNull();
+    if (!brief) return;
+    expect(within(brief).getByText("2 ngày có số liệu")).toBeInTheDocument();
+    expect(within(brief).getByText(/Đau đầu nhiều/)).toBeInTheDocument();
+    expect(within(brief).getByRole("button", { name: "Sao chép tóm tắt" })).toBeInTheDocument();
   });
 
   it("does not overwrite a health value typed while the private history is loading", async () => {

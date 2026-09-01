@@ -1579,6 +1579,14 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .symptom-picker input:checked + span { background: #fff0f4; border-color: #c56c87; color: #91435c; font-weight: 650; }
 .symptom-picker input:focus-visible + span { outline: 3px solid var(--sun); outline-offset: 2px; }
 .symptom-picker > p { color: var(--ink-soft); font-size: .7rem; line-height: 1.45; margin: 6px 0 0; }
+.health-note { display: grid; gap: 6px; font-size: .78rem; font-weight: 650; }
+.health-note textarea { min-height: 72px; resize: vertical; }
+.visit-brief { background: linear-gradient(145deg, #fff8fa, #fff); border: 1px solid #f0dce3; border-radius: 18px; display: grid; gap: 8px; margin-top: 14px; padding: 14px; }
+.visit-brief h3, .visit-brief p, .visit-brief small { margin: 0; }
+.visit-brief h3 { font-size: 1rem; }
+.visit-brief > strong { color: #91435c; font-size: .82rem; }
+.visit-brief p, .visit-brief small { color: var(--ink-soft); font-size: .75rem; line-height: 1.45; }
+.visit-brief button { align-items: center; align-self: start; background: #fff0f4; border: 1px solid #e8c3cf; border-radius: 999px; color: #91435c; display: inline-flex; font: inherit; font-size: .78rem; font-weight: 700; justify-content: center; min-height: 44px; padding: 8px 14px; width: fit-content; }
 .wellbeing-picker > div {
   display: grid;
   gap: 6px;

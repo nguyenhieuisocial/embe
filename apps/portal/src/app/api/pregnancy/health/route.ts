@@ -19,6 +19,7 @@ const SYMPTOMS = new Set([
   "bleeding", "severe_abdominal_pain", "severe_headache", "vision_change", "sudden_swelling",
   "fever", "fluid_leak", "reduced_fetal_movement", "persistent_vomiting", "other"
 ]);
+const GLUCOSE_CONTEXTS = new Set(["fasting", "after_1h", "after_2h", "other"]);
 
 type MetricKey = (typeof METRIC_KEYS)[number];
 
@@ -34,6 +35,8 @@ type HealthMetric = {
   bloodGlucoseMgDl: number | null;
   fetalMovementCount: number | null;
   symptoms: string[];
+  glucoseContext: string | null;
+  healthNote: string;
   checklistPercent: number;
 };
 
@@ -115,6 +118,10 @@ function normalizeMetric(value: unknown): HealthMetric | null {
   const symptoms = Array.isArray(row.symptoms) && row.symptoms.every((item) => typeof item === "string" && SYMPTOMS.has(item))
     ? row.symptoms as string[] : null;
   if (symptoms === null) return null;
+  const glucoseContext = row.glucose_context === null ? null
+    : typeof row.glucose_context === "string" && GLUCOSE_CONTEXTS.has(row.glucose_context) ? row.glucose_context : undefined;
+  const healthNote = typeof row.health_note === "string" && row.health_note.length <= 500 ? row.health_note : undefined;
+  if (glucoseContext === undefined || healthNote === undefined) return null;
   return {
     day: row.day,
     weightKg: mapped.weightKg as number | null,
@@ -127,6 +134,8 @@ function normalizeMetric(value: unknown): HealthMetric | null {
     bloodGlucoseMgDl: mapped.bloodGlucoseMgDl as number | null,
     fetalMovementCount: mapped.fetalMovementCount as number | null,
     symptoms,
+    glucoseContext,
+    healthNote,
     checklistPercent
   };
 }
@@ -190,7 +199,7 @@ export async function PATCH(request: Request): Promise<Response> {
   }
   if (!input || typeof input !== "object") return reply({ error: "invalid_request" }, 400);
   const value = input as Record<string, unknown>;
-  const allowedKeys = new Set<string>(["day", ...METRIC_KEYS, "symptoms"]);
+  const allowedKeys = new Set<string>(["day", ...METRIC_KEYS, "symptoms", "glucoseContext", "healthNote"]);
   if (!isIsoDate(value.day) || Object.keys(value).some((key) => !allowedKeys.has(key))) {
     return reply({ error: "invalid_request" }, 400);
   }
@@ -200,11 +209,18 @@ export async function PATCH(request: Request): Promise<Response> {
     : Array.isArray(value.symptoms) && value.symptoms.length <= SYMPTOMS.size
       && value.symptoms.every((item) => typeof item === "string" && SYMPTOMS.has(item))
       ? [...new Set(value.symptoms as string[])] : null;
-  if (Object.values(metrics).some((metric) => metric === undefined) || symptoms === null) {
+  const glucoseContext = value.glucoseContext === undefined || value.glucoseContext === null || value.glucoseContext === ""
+    ? null : typeof value.glucoseContext === "string" && GLUCOSE_CONTEXTS.has(value.glucoseContext) ? value.glucoseContext : undefined;
+  const healthNote = value.healthNote === undefined ? ""
+    : typeof value.healthNote === "string" && value.healthNote.trim().length <= 500 ? value.healthNote.trim() : undefined;
+  const pressureIsPaired = (metrics.systolic === null) === (metrics.diastolic === null);
+  const glucoseIsPaired = (metrics.bloodGlucoseMgDl === null) === (glucoseContext === null);
+  if (Object.values(metrics).some((metric) => metric === undefined) || symptoms === null
+      || glucoseContext === undefined || healthNote === undefined || !pressureIsPaired || !glucoseIsPaired) {
     return reply({ error: "invalid_request" }, 400);
   }
 
-  const result = await callRpc("embe_save_pregnancy_health", {
+  const result = await callRpc("embe_save_pregnancy_health_v2", {
     p_day: value.day,
     p_weight_kg: metrics.weightKg,
     p_systolic: metrics.systolic,
@@ -215,7 +231,9 @@ export async function PATCH(request: Request): Promise<Response> {
     p_wellbeing: metrics.wellbeing,
     p_blood_glucose_mg_dl: metrics.bloodGlucoseMgDl,
     p_fetal_movement_count: metrics.fetalMovementCount,
-    p_symptoms: symptoms
+    p_symptoms: symptoms,
+    p_glucose_context: glucoseContext,
+    p_health_note: healthNote
   });
   const candidate = Array.isArray(result) ? result[0] : result;
   const metric = normalizeMetric(candidate);

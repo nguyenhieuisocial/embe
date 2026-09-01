@@ -22,6 +22,8 @@ type FormState = {
   bloodGlucoseMgDl: string;
   fetalMovementCount: string;
   symptoms: string[];
+  glucoseContext: "" | "fasting" | "after_1h" | "after_2h" | "other";
+  healthNote: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -34,7 +36,9 @@ const EMPTY_FORM: FormState = {
   wellbeing: null,
   bloodGlucoseMgDl: "",
   fetalMovementCount: "",
-  symptoms: []
+  symptoms: [],
+  glucoseContext: "",
+  healthNote: ""
 };
 
 const symptomOptions = [
@@ -71,7 +75,7 @@ function metricHasValues(metric: PregnancyHealthMetric): boolean {
     metric.bloodGlucoseMgDl,
     metric.fetalMovementCount
   ].some((value) => typeof value === "number");
-  return hasNumber || (metric.symptoms?.length ?? 0) > 0;
+  return hasNumber || (metric.symptoms?.length ?? 0) > 0 || Boolean(metric.healthNote?.trim());
 }
 
 function metricToForm(metric: PregnancyHealthMetric | undefined): FormState {
@@ -86,7 +90,9 @@ function metricToForm(metric: PregnancyHealthMetric | undefined): FormState {
     wellbeing: metric.wellbeing,
     bloodGlucoseMgDl: metric.bloodGlucoseMgDl?.toString() ?? "",
     fetalMovementCount: metric.fetalMovementCount?.toString() ?? "",
-    symptoms: metric.symptoms ?? []
+    symptoms: metric.symptoms ?? [],
+    glucoseContext: metric.glucoseContext ?? "",
+    healthNote: metric.healthNote ?? ""
   };
 }
 
@@ -95,6 +101,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
   const [history, setHistory] = useState<PregnancyHealthMetric[]>([]);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "saved" | "invalid" | "error">("loading");
+  const [validationError, setValidationError] = useState("");
   const dirtyRef = useRef(false);
 
   useEffect(() => {
@@ -125,6 +132,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
   function setField<Key extends keyof FormState>(key: Key, value: FormState[Key]) {
     dirtyRef.current = true;
     setForm((current) => ({ ...current, [key]: value }));
+    setValidationError("");
     if (status === "saved" || status === "invalid") setStatus("idle");
   }
 
@@ -133,18 +141,33 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
     if (!today || status === "saving") return;
     setStatus("saving");
     const sleepHours = inputNumber(form.sleepHours);
+    const systolic = inputNumber(form.systolic);
+    const diastolic = inputNumber(form.diastolic);
+    const bloodGlucoseMgDl = inputNumber(form.bloodGlucoseMgDl);
+    if ((systolic === null) !== (diastolic === null)) {
+      setStatus("invalid");
+      setValidationError("Cần nhập đủ cả hai số huyết áp tâm thu và tâm trương.");
+      return;
+    }
+    if ((bloodGlucoseMgDl === null) !== (form.glucoseContext === "")) {
+      setStatus("invalid");
+      setValidationError("Đường huyết cần có cả kết quả và thời điểm đo.");
+      return;
+    }
     const body = {
       day: today,
       weightKg: inputNumber(form.weightKg),
-      systolic: inputNumber(form.systolic),
-      diastolic: inputNumber(form.diastolic),
+      systolic,
+      diastolic,
       sleepMinutes: sleepHours === null ? null : Math.round(sleepHours * 60),
       waterGlasses: inputNumber(form.waterGlasses),
       movementMinutes: inputNumber(form.movementMinutes),
       wellbeing: form.wellbeing,
-      bloodGlucoseMgDl: inputNumber(form.bloodGlucoseMgDl),
+      bloodGlucoseMgDl,
       fetalMovementCount: inputNumber(form.fetalMovementCount),
-      symptoms: form.symptoms
+      symptoms: form.symptoms,
+      glucoseContext: form.glucoseContext || null,
+      healthNote: form.healthNote.trim()
     };
     try {
       const response = await fetch("/api/pregnancy/health", {
@@ -165,6 +188,29 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
       });
       dirtyRef.current = false;
       setStatus("saved");
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  const visitDays = history.slice(-7).filter(metricHasValues);
+  const symptomLabels = new Map(symptomOptions);
+  const visitSymptoms = [...new Set(visitDays.flatMap((metric) => metric.symptoms ?? []))]
+    .map((symptom) => symptomLabels.get(symptom as typeof symptomOptions[number][0]) ?? symptom);
+  const latestVisitMetric = visitDays.at(-1);
+  const visitSummary = [
+    "Tóm tắt sức khỏe 7 ngày từ EmBe",
+    `${visitDays.length} ngày có số liệu`,
+    latestVisitMetric?.weightKg ? `Cân nặng gần nhất: ${latestVisitMetric.weightKg} kg` : "",
+    latestVisitMetric?.systolic && latestVisitMetric.diastolic ? `Huyết áp gần nhất: ${latestVisitMetric.systolic}/${latestVisitMetric.diastolic} mmHg` : "",
+    latestVisitMetric?.bloodGlucoseMgDl ? `Đường huyết gần nhất: ${latestVisitMetric.bloodGlucoseMgDl} mg/dL` : "",
+    visitSymptoms.length ? `Dấu hiệu đã ghi: ${visitSymptoms.join(", ")}` : "",
+    ...visitDays.filter((metric) => metric.healthNote?.trim()).map((metric) => `${metric.day}: ${metric.healthNote.trim()}`)
+  ].filter(Boolean).join("\n");
+
+  async function copyVisitSummary() {
+    try {
+      await navigator.clipboard.writeText(visitSummary);
     } catch {
       setStatus("error");
     }
@@ -192,6 +238,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           <label>Số cốc nước<input inputMode="numeric" min="0" max="30" type="number" value={form.waterGlasses} onChange={(event) => setField("waterGlasses", event.target.value)} /></label>
           <label>Vận động (phút)<input inputMode="numeric" min="0" max="600" type="number" value={form.movementMinutes} onChange={(event) => setField("movementMinutes", event.target.value)} /></label>
           <label>Đường huyết (mg/dL)<input aria-label="Đường huyết (mg/dL)" inputMode="decimal" min="20" max="600" step="0.1" type="number" value={form.bloodGlucoseMgDl} onChange={(event) => setField("bloodGlucoseMgDl", event.target.value)} /></label>
+          <label>Thời điểm đo đường huyết<select aria-label="Thời điểm đo đường huyết" value={form.glucoseContext} onChange={(event) => setField("glucoseContext", event.target.value as FormState["glucoseContext"])}><option value="">Chưa chọn</option><option value="fasting">Lúc đói</option><option value="after_1h">Sau ăn 1 giờ</option><option value="after_2h">Sau ăn 2 giờ</option><option value="other">Thời điểm khác</option></select></label>
           {pregnancyWeek === null || pregnancyWeek >= 16
             ? <label>Số cử động thai<input inputMode="numeric" min="0" max="500" type="number" value={form.fetalMovementCount} onChange={(event) => setField("fetalMovementCount", event.target.value)} /></label>
             : <p className="stage-field-note">Mục cử động thai sẽ hiện ở giai đoạn phù hợp hơn.</p>}
@@ -206,6 +253,8 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           </label>)}</div>
           <p>Nếu có dấu hiệu đáng lo, liên hệ cơ sở y tế; việc đánh dấu chỉ để lưu lại, không thay thế đánh giá của bác sĩ.</p>
         </fieldset>
+
+        <label className="health-note">Ghi chú sức khỏe hôm nay<textarea aria-label="Ghi chú sức khỏe hôm nay" rows={2} maxLength={500} value={form.healthNote} onChange={(event) => setField("healthNote", event.target.value)} placeholder="Ví dụ: chóng mặt buổi sáng, đã trao đổi với bác sĩ…" /></label>
 
         <fieldset className="wellbeing-picker">
           <legend>Hôm nay Mẹ cảm thấy thế nào?</legend>
@@ -232,7 +281,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           {status === "saved"
             ? "Đã lưu riêng tư."
             : status === "invalid"
-              ? "Có một số chưa đúng khoảng cho phép. Hãy kiểm tra trường được đánh dấu."
+              ? validationError || "Có một số chưa đúng khoảng cho phép. Hãy kiểm tra trường được đánh dấu."
               : status === "error"
                 ? "Chưa kết nối được. Số vừa nhập vẫn còn trên màn hình để thử lại."
                 : "Không bắt buộc nhập đủ mọi mục."}
@@ -254,6 +303,13 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           <p>Ghi một mục ở trên; biểu đồ sẽ bắt đầu từ số liệu thật đầu tiên.</p>
         </div>
       )}
+      {visitDays.length ? <section className="visit-brief" aria-labelledby="visit-brief-title">
+        <div><p className="panel-kicker">Mang theo khi cần trao đổi</p><h3 id="visit-brief-title">Tóm tắt 7 ngày để đi khám</h3></div>
+        <strong>{visitDays.length} ngày có số liệu</strong>
+        {visitSymptoms.length ? <p>Dấu hiệu đã ghi: {visitSymptoms.join(", ")}</p> : <p>Chưa ghi dấu hiệu bất thường trong khoảng này.</p>}
+        <button type="button" onClick={() => void copyVisitSummary()}>Sao chép tóm tắt</button>
+        <small>Chỉ tổng hợp dữ liệu đã nhập; không đánh giá bình thường hay bất thường.</small>
+      </section> : null}
     </section>
   );
 }

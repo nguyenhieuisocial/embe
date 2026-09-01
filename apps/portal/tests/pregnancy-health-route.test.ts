@@ -33,6 +33,8 @@ const databaseMetric = {
   blood_glucose_mg_dl: 92,
   fetal_movement_count: 8,
   symptoms: ["severe_headache"],
+  glucose_context: "fasting",
+  health_note: "Hơi chóng mặt sau khi ngủ dậy.",
   checklist_percent: 62
 };
 
@@ -78,6 +80,8 @@ describe("private pregnancy health endpoint", () => {
       bloodGlucoseMgDl: 92,
       fetalMovementCount: 8,
       symptoms: ["severe_headache"],
+      glucoseContext: "fasting",
+      healthNote: "Hơi chóng mặt sau khi ngủ dậy.",
       checklistPercent: 62
     }] });
     expect(fetch).toHaveBeenCalledWith(
@@ -126,13 +130,15 @@ describe("private pregnancy health endpoint", () => {
       wellbeing: 4,
       bloodGlucoseMgDl: 92,
       fetalMovementCount: 8,
-      symptoms: ["severe_headache"]
+      symptoms: ["severe_headache"],
+      glucoseContext: "fasting",
+      healthNote: "Hơi chóng mặt sau khi ngủ dậy."
     };
     const response = await PATCH(request(metric));
 
     expect(response.status).toBe(200);
     expect(fetch).toHaveBeenCalledWith(
-      "https://project.supabase.co/rest/v1/rpc/embe_save_pregnancy_health",
+      "https://project.supabase.co/rest/v1/rpc/embe_save_pregnancy_health_v2",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
@@ -146,11 +152,22 @@ describe("private pregnancy health endpoint", () => {
           p_wellbeing: 4,
           p_blood_glucose_mg_dl: 92,
           p_fetal_movement_count: 8,
-          p_symptoms: ["severe_headache"]
+          p_symptoms: ["severe_headache"],
+          p_glucose_context: "fasting",
+          p_health_note: "Hơi chóng mặt sau khi ngủ dậy."
         })
       })
     );
     expect(JSON.stringify(await response.json())).not.toContain("server-only-key");
+  });
+
+  it("rejects one-sided blood pressure and mismatched glucose context", async () => {
+    const oneSidedPressure = await PATCH(request({ day: "2026-09-01", systolic: 112 }));
+    const contextWithoutReading = await PATCH(request({ day: "2026-09-01", glucoseContext: "fasting" }));
+    const readingWithoutContext = await PATCH(request({ day: "2026-09-01", bloodGlucoseMgDl: 92 }));
+
+    expect([oneSidedPressure.status, contextWithoutReading.status, readingWithoutContext.status]).toEqual([400, 400, 400]);
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("fails closed when the private database is unavailable", async () => {
