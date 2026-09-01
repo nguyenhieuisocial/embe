@@ -33,7 +33,7 @@ describe("mobile memory grid", () => {
       hasMore: false
     }), { status: 200, headers: { "content-type": "application/json" } }));
 
-    render(<MemoryGrid initial={initial} />);
+    render(<MemoryGrid date="2026-08-30" initial={initial} />);
     fireEvent.click(screen.getByRole("button", { name: "Xem thêm kỷ niệm" }));
 
     await waitFor(() => expect(screen.getByAltText("Kỷ niệm 24")).toBeInTheDocument());
@@ -41,11 +41,11 @@ describe("mobile memory grid", () => {
     expect(screen.queryByRole("button", { name: "Xem thêm kỷ niệm" })).not.toBeInTheDocument();
   });
 
-  it("links every memory date back to the matching calendar day", () => {
+  it("links each day album to the matching day detail", () => {
     render(<MemoryGrid initial={[memory(1)]} />);
 
-    expect(screen.getByRole("link", { name: /30 thg 8, 2026/ }))
-      .toHaveAttribute("href", "/lich?month=2026-08&date=2026-08-30#date-2026-08-30");
+    expect(screen.getByRole("link", { name: /Mở album Chủ Nhật, 30 tháng 8, 2026/i }))
+      .toHaveAttribute("href", "/ky-niem?view=ngay-thang&date=2026-08-30");
   });
 
   it("switches between chronology and journeys without a page reload", () => {
@@ -55,6 +55,23 @@ describe("mobile memory grid", () => {
 
     expect(screen.getByRole("heading", { name: "Đà Lạt · tháng 8 năm 2026" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chuyến đi" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("shows one full-width day album instead of a two-column photo feed", () => {
+    render(<MemoryGrid initial={[memory(1), memory(2)]} initialView="ngay-thang" />);
+
+    expect(screen.getByRole("link", { name: /Mở album Chủ Nhật, 30 tháng 8, 2026/i }))
+      .toHaveAttribute("href", "/ky-niem?view=ngay-thang&date=2026-08-30");
+    expect(screen.getByText("2 ảnh")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Mở ảnh Kỷ niệm/ })).not.toBeInTheDocument();
+  });
+
+  it("opens one day as an album grid with a path back to all days", () => {
+    render(<MemoryGrid date="2026-08-30" initial={[memory(1), memory(2)]} initialView="ngay-thang" />);
+
+    expect(screen.getByRole("link", { name: "Tất cả ngày" }))
+      .toHaveAttribute("href", "/ky-niem?view=ngay-thang");
+    expect(screen.getAllByRole("button", { name: /Mở ảnh Kỷ niệm/ })).toHaveLength(2);
   });
 
   it("traps viewer focus and restores it to the photo that opened it", () => {

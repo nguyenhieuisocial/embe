@@ -108,6 +108,55 @@ function AlbumOverview({ albums }: { albums: MediaAlbum[] }) {
   );
 }
 
+function DayAlbumOverview({ memories }: { memories: MediaMemory[] }) {
+  return (
+    <section className="memory-day-albums" aria-label="Album kỷ niệm theo ngày">
+      {groupByDay(memories).map((group) => {
+        const cover = group.memories[0];
+        return (
+          <Link
+            aria-label={`Mở album ${group.title}`}
+            className="memory-day-album"
+            href={`/ky-niem?view=ngay-thang&date=${group.key}`}
+            key={group.key}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt="" height={cover.height ?? 900} loading="lazy" src={`/api/media/${cover.id}`} width={cover.width ?? 1200} />
+            <span className="memory-day-album-shade" aria-hidden="true" />
+            <span className="memory-day-album-copy">
+              <strong>{group.title}</strong>
+              <small>{group.subtitle}</small>
+            </span>
+            <span className="memory-day-album-count">{group.memories.length.toLocaleString("vi-VN")} ảnh</span>
+          </Link>
+        );
+      })}
+    </section>
+  );
+}
+
+function DayAlbumDetail({ memories, onOpen }: { memories: MediaMemory[]; onOpen: (index: number) => void }) {
+  return (
+    <section className="memory-album-detail" aria-label="Album kỷ niệm trong ngày">
+      <header>
+        <Link aria-label="Tất cả ngày" href="/ky-niem?view=ngay-thang">‹ Tất cả ngày</Link>
+        <div>
+          <h2>{memories[0] ? dateLabel(memories[0].eventAt) : "Kỷ niệm trong ngày"}</h2>
+          <p>{memories.length.toLocaleString("vi-VN")} ảnh đang hiển thị</p>
+        </div>
+      </header>
+      <div className="memory-album-grid">
+        {memories.map((memory, index) => (
+          <button aria-label={`Mở ảnh ${memory.title}`} key={memory.id} onClick={() => onOpen(index)} type="button">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function PhotoViewer({ memory, index, total, onClose, onMove }: {
   memory: MediaMemory;
   index: number;
@@ -254,16 +303,9 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
         </section>
       ) : null}
 
-      {view === "ngay-thang" ? (
-        <section className="memory-timeline" aria-label="Kỷ niệm theo ngày tháng">
-          {groupByDay(memories).map((group) => (
-            <article className="memory-day" key={group.key}>
-              <header><span aria-hidden="true" /><div><h2>{group.title}</h2><p>{group.subtitle}</p></div></header>
-              <div className="memory-day-photos">{group.memories.map((memory, index) => <MemoryPhoto featured={index === 0} key={memory.id} memory={memory} onOpen={() => setActiveIndex(memories.findIndex((item) => item.id === memory.id))} />)}</div>
-            </article>
-          ))}
-        </section>
-      ) : null}
+      {view === "ngay-thang" && !date ? <DayAlbumOverview memories={memories} /> : null}
+
+      {view === "ngay-thang" && date ? <DayAlbumDetail memories={memories} onOpen={setActiveIndex} /> : null}
 
       {view === "chuyen-di" ? (
         <section className="memory-trips" aria-label="Kỷ niệm theo chuyến đi">
@@ -284,7 +326,7 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
       {view === "ban-do" ? <MemoryMap memories={memories} /> : null}
       {hasMore && !(view === "album" && !album) ? (
         <button className="memory-more" disabled={state === "loading"} onClick={loadMore} type="button">
-          {state === "loading" ? "Đang mở thêm…" : state === "error" ? "Thử mở lại" : "Xem thêm kỷ niệm"}
+          {state === "loading" ? "Đang mở thêm…" : state === "error" ? "Thử mở lại" : view === "ngay-thang" && !date ? "Xem thêm ngày" : "Xem thêm kỷ niệm"}
         </button>
       ) : null}
       <p className="sr-only" aria-live="polite">

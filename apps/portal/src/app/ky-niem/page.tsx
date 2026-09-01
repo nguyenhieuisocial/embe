@@ -101,7 +101,7 @@ export default async function MemoriesPage({
             <strong>{dateHeading}</strong>
             <small>{lunarDateLong(selectedDate)}</small>
           </div>
-          <Link href="/ky-niem">Xem tất cả</Link>
+          <Link href="/ky-niem?view=ngay-thang">Xem tất cả ngày</Link>
         </section>
       ) : null}
       <Suspense fallback={<MemoryLoading />}>

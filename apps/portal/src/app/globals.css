@@ -1483,26 +1483,6 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   color: var(--jade);
 }
 
-.memory-timeline { display: grid; gap: 28px; margin-top: 24px; }
-.memory-day { display: grid; gap: 12px; padding-left: 22px; position: relative; }
-.memory-day::before { background: var(--line-strong); bottom: -28px; content: ""; left: 5px; position: absolute; top: 9px; width: 1px; }
-.memory-day:last-child::before { bottom: 0; }
-.memory-day > header { align-items: start; display: flex; gap: 12px; }
-.memory-day > header > span {
-  background: var(--coral);
-  border: 3px solid var(--paper);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--coral);
-  height: 11px;
-  left: 0;
-  position: absolute;
-  top: 5px;
-  width: 11px;
-}
-.memory-day header div { display: grid; gap: 2px; }
-.memory-day header h2 { font-family: var(--font-display), Georgia, serif; font-size: 1.05rem; text-transform: capitalize; }
-.memory-day header p { color: var(--ink-soft); font-size: .8125rem; }
-.memory-day-photos { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .memory-photo { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; overflow: hidden; }
 .memory-photo.is-featured { grid-column: 1 / -1; }
 .memory-photo-open { background: transparent; border: 0; display: block; padding: 0; width: 100%; }
@@ -1517,6 +1497,26 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .memory-reactions button:disabled { opacity: .65; }
 .memory-reactions span { font-family: system-ui, sans-serif; font-size: 1rem; }
 .memory-reactions small { color: var(--ink-soft); font-size: .625rem; }
+
+.memory-day-albums { display: grid; gap: 18px; margin-top: 24px; }
+.memory-day-album {
+  background: var(--jade-soft);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--shadow-card);
+  color: white;
+  display: block;
+  min-height: 238px;
+  overflow: hidden;
+  position: relative;
+  text-decoration: none;
+}
+.memory-day-album > img { display: block; height: 100%; inset: 0; object-fit: cover; position: absolute; width: 100%; }
+.memory-day-album-shade { background: linear-gradient(180deg, rgba(8,22,18,.04) 28%, rgba(8,22,18,.82) 100%); inset: 0; position: absolute; }
+.memory-day-album-copy { bottom: 18px; display: grid; gap: 4px; left: 18px; max-width: calc(100% - 112px); position: absolute; z-index: 1; }
+.memory-day-album-copy strong { font-family: var(--font-display), Georgia, serif; font-size: 1.18rem; line-height: 1.2; text-transform: capitalize; }
+.memory-day-album-copy small { color: rgba(255,255,255,.78); font-size: .75rem; }
+.memory-day-album-count { backdrop-filter: blur(9px); background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.24); border-radius: var(--radius-pill); bottom: 18px; font-size: .75rem; font-weight: 650; padding: 7px 10px; position: absolute; right: 14px; z-index: 1; }
 
 .memory-albums { display: grid; gap: 16px; margin-top: 22px; }
 .memory-album {
