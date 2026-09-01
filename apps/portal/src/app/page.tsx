@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Suspense } from "react";
 
 import AppHeader from "../components/app-header";
@@ -143,12 +142,22 @@ async function TodayPlanPanel() {
 }
 
 export default function Home() {
+  const todayLabel = new Intl.DateTimeFormat("vi-VN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Ho_Chi_Minh"
+  }).format(new Date());
+
   return (
     <main className="page">
       <AppHeader note="Chỉ gia đình nhìn thấy" />
 
       <section className="today-hero">
-        <p className="eyebrow">Sổ nhà Ngân &amp; Hiếu</p>
+        <div className="today-meta">
+          <p className="eyebrow">Sổ nhà Ngân &amp; Hiếu</p>
+          <time dateTime={dateInVietnam()}>{todayLabel}</time>
+        </div>
         <h1 aria-label="Hôm nay, mình cần làm gì?">
           Hôm nay,<br /><em>mình cần làm gì?</em>
         </h1>
@@ -165,26 +174,15 @@ export default function Home() {
 
       <PregnancyChapter />
 
-      <div className="section family-hero-art" aria-hidden="true">
-        <Image
-          src="/illustrations/family-thread-hero.webp"
-          alt=""
-          width={1280}
-          height={853}
-          sizes="(max-width: 767px) 100vw, 560px"
-          unoptimized
-        />
-      </div>
-
       <Suspense fallback={<section className="section day-thread skeleton" aria-label="Đang mở kế hoạch hôm nay"><span className="skeleton-line" /><span className="skeleton-line" /></section>}>
         <TodayPlanPanel />
       </Suspense>
 
-      <Suspense fallback={<TimelineLoading />}>
-        <TimelinePanel />
-      </Suspense>
-
-      <nav className="section shortcut-list" aria-label="Lối tắt của gia đình">
+      <nav className="section shortcut-list home-shortcuts" aria-label="Lối tắt của gia đình">
+        <div className="home-shortcuts-heading">
+          <p className="panel-kicker">Đi thẳng đến nơi cần dùng</p>
+          <h2>Mở nhanh</h2>
+        </div>
         {shortcuts.map((shortcut) => (
           <a className="shortcut" href={shortcut.href} key={shortcut.href} aria-label={shortcut.label}>
             <span className="shortcut-mark" aria-hidden="true"><Icon name={shortcut.icon} /></span>
@@ -196,6 +194,10 @@ export default function Home() {
           </a>
         ))}
       </nav>
+
+      <Suspense fallback={<TimelineLoading />}>
+        <TimelinePanel />
+      </Suspense>
 
       <p className="privacy-line">Ảnh, sức khỏe và nhật ký chỉ Mẹ Ngân và Ba Hiếu xem được.</p>
     </main>

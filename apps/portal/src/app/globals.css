@@ -995,13 +995,35 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 /* ── Hôm nay ─────────────────────────────────────────────────── */
 
-.today-hero { display: grid; gap: 14px; padding-top: 6px; }
-.family-hero-art {
-  background: var(--jade-soft);
-  border-radius: 26px 26px 26px 10px;
+.today-hero {
+  background:
+    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, .95) 0 34px, transparent 35px),
+    linear-gradient(145deg, #fffafd 0%, var(--rose-soft) 100%);
+  border: 1px solid var(--line);
+  border-radius: 28px 28px 28px 10px;
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: 12px;
   overflow: hidden;
+  padding: 18px;
+  position: relative;
 }
-.family-hero-art img { display: block; height: auto; width: 100%; }
+.today-hero::after {
+  border: 1px solid color-mix(in srgb, var(--rose) 20%, transparent);
+  border-radius: 50%;
+  content: "";
+  height: 72px;
+  pointer-events: none;
+  position: absolute;
+  right: -35px;
+  top: -26px;
+  width: 72px;
+}
+.today-meta { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.today-meta time { color: var(--rose); font-size: .6875rem; font-weight: 600; text-transform: capitalize; }
+.today-hero h1 { max-width: 13ch; }
+.today-hero .intro { font-size: .9375rem; line-height: 1.5; }
+.today-hero .action-primary { margin-top: 2px; }
 
 .pregnancy-chapter {
   background: linear-gradient(145deg, var(--surface), color-mix(in srgb, var(--rose-soft) 42%, var(--surface)));
@@ -1041,6 +1063,23 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .day-thread .thread-item.is-complete .thread-body a { color: var(--ink-soft); text-decoration: line-through; }
 .day-thread > .btn { margin-top: 14px; }
 .compact-empty { margin-top: 12px; padding-block: 18px; }
+
+.home-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-shortcuts-heading { grid-column: 1 / -1; margin-bottom: 2px; }
+.home-shortcuts-heading h2 { margin-top: 3px; }
+.home-shortcuts .shortcut {
+  align-content: start;
+  display: grid;
+  gap: 7px;
+  min-height: 112px;
+  padding: 13px;
+  position: relative;
+}
+.home-shortcuts .shortcut-mark { height: 36px; width: 36px; }
+.home-shortcuts .shortcut-text { gap: 1px; }
+.home-shortcuts .shortcut-text small { line-height: 1.25; }
+.home-shortcuts .shortcut .icon-chevron { bottom: 13px; height: 18px; position: absolute; right: 12px; width: 18px; }
+.home-shortcuts .shortcut-text strong { padding-right: 20px; }
 
 .timeline-panel { margin-top: 24px; }
 .freshness { color: var(--ink-soft); font-size: .8125rem; margin-top: 12px; }
