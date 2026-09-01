@@ -29,7 +29,7 @@ export type FamilyBookReport = {
   records: MedicalRecord[];
   plans: CarePlan[];
   unavailable: string[];
-  lifecycle?: { birthOccurredAt: string | null; birthWeightG?: number | null; birthLengthCm?: number | null };
+  lifecycle?: { birthOccurredAt: string | null; babySex?: "male" | "female" | null; birthWeightG?: number | null; birthLengthCm?: number | null };
   postpartum?: Array<Record<string, unknown>>;
   babyCare?: Array<{ id: string; kind: string; occurredAt: string; endedAt: string | null; details: Record<string, unknown> }>;
   babyMedical?: Array<{ id: string; kind: string; occurredAt: string; title: string; provider: string; notes: string }>;

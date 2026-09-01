@@ -9,6 +9,7 @@ const BIRTH_DATE_KEY = "embe:family:birth-occurred-at";
 type BirthRecord = {
   birthOccurredAt: string | null;
   birthMethod: string | null;
+  babySex: "male" | "female" | null;
   gestationalWeeks: number | null;
   gestationalDays: number | null;
   birthWeightG: number | null;
@@ -28,6 +29,7 @@ type BirthRecord = {
 const EMPTY_RECORD: BirthRecord = {
   birthOccurredAt: null,
   birthMethod: null,
+  babySex: null,
   gestationalWeeks: null,
   gestationalDays: null,
   birthWeightG: null,
@@ -94,6 +96,7 @@ export default function BirthTransition() {
         body: JSON.stringify({
           birthOccurredAt: new Date(birthLocal).toISOString(),
           birthMethod: String(form.get("birthMethod") ?? ""),
+          babySex: String(form.get("babySex") ?? ""),
           gestationalWeeks: optionalNumber(form, "gestationalWeeks"),
           gestationalDays: optionalNumber(form, "gestationalDays"),
           birthWeightG: optionalNumber(form, "birthWeightG"),
@@ -146,6 +149,13 @@ export default function BirthTransition() {
               <option value="other">Khác</option>
             </select>
           </label>
+          <label htmlFor="baby-sex">Giới tính của Bé</label>
+          <select id="baby-sex" name="babySex" required defaultValue={record.babySex ?? ""}>
+            <option value="" disabled>Chọn theo hồ sơ sinh</option>
+            <option value="female">Bé gái</option>
+            <option value="male">Bé trai</option>
+          </select>
+          <small>Dùng để chọn đúng bảng tăng trưởng WHO sau sinh.</small>
           <div className="birth-form-row">
             <label>Tuần thai<input name="gestationalWeeks" type="number" inputMode="numeric" min="20" max="45" defaultValue={record.gestationalWeeks ?? ""} /></label>
             <label>Ngày lẻ<input name="gestationalDays" type="number" inputMode="numeric" min="0" max="6" defaultValue={record.gestationalDays ?? ""} /></label>

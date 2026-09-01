@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BirthTransition from "../src/components/birth-transition";
 
 const emptyRecord = {
-  birthOccurredAt: null, birthMethod: null, gestationalWeeks: null, gestationalDays: null,
+  birthOccurredAt: null, birthMethod: null, babySex: null, gestationalWeeks: null, gestationalDays: null,
   birthWeightG: null, birthLengthCm: null, birthHeadCm: null, birthFacility: null,
   birthClinician: null, premature: false, lowBirthWeight: false, specialMonitoring: false,
   specialMonitoringNotes: null, dischargedAt: null, dischargeNotes: null, hasBirthRecord: false
@@ -30,11 +30,14 @@ describe("birth transition", () => {
     fireEvent.click(screen.getByText("Em bé đã chào đời?"));
     fireEvent.change(screen.getByLabelText("Ngày và giờ sinh"), { target: { value: "2026-08-30T15:15" } });
     fireEvent.change(screen.getByLabelText("Hình thức sinh"), { target: { value: "vaginal" } });
+    fireEvent.change(screen.getByLabelText("Giới tính của Bé"), { target: { value: "female" } });
     fireEvent.click(screen.getByRole("button", { name: "Lưu thông tin sinh" }));
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
 
     expect(fetch).toHaveBeenLastCalledWith("/api/family/lifecycle", expect.objectContaining({ method: "PATCH" }));
     expect(screen.getByRole("status")).toHaveTextContent("chuyển sang chế độ sau sinh");
     expect(localStorage.getItem("embe:family:birth-occurred-at")).toContain("2026-08-30");
+    const request = vi.mocked(fetch).mock.calls.at(-1)?.[1];
+    expect(JSON.parse(String(request?.body))).toMatchObject({ babySex: "female" });
   });
 });

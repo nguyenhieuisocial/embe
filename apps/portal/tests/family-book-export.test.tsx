@@ -8,6 +8,9 @@ const { downloadFamilyBookPdf, openFamilyBookPdf, shareFamilyBookPdf } = vi.hois
   openFamilyBookPdf: vi.fn(async () => undefined),
   shareFamilyBookPdf: vi.fn(async () => undefined)
 }));
+const { downloadFamilyHealthFhir } = vi.hoisted(() => ({
+  downloadFamilyHealthFhir: vi.fn()
+}));
 
 vi.mock("../src/lib/family-book-pdf", async (importOriginal) => ({
   ...await importOriginal<typeof import("../src/lib/family-book-pdf")>(),
@@ -15,6 +18,8 @@ vi.mock("../src/lib/family-book-pdf", async (importOriginal) => ({
   openFamilyBookPdf,
   shareFamilyBookPdf
 }));
+
+vi.mock("../src/lib/family-health-fhir", () => ({ downloadFamilyHealthFhir }));
 
 function responseFor(url: string): Response {
   if (url.startsWith("/api/pregnancy/health")) return Response.json({ history: [
@@ -40,6 +45,7 @@ describe("family mother and baby book", () => {
     downloadFamilyBookPdf.mockClear();
     openFamilyBookPdf.mockClear();
     shareFamilyBookPdf.mockClear();
+    downloadFamilyHealthFhir.mockClear();
   });
 
   it("renders a private printable summary from real portal endpoints", async () => {
@@ -67,6 +73,9 @@ describe("family mother and baby book", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Chia sẻ PDF" }));
     await waitFor(() => expect(shareFamilyBookPdf).toHaveBeenCalledOnce());
+
+    fireEvent.click(screen.getByRole("button", { name: "Tải dữ liệu sức khỏe" }));
+    expect(downloadFamilyHealthFhir).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByRole("button", { name: "7 ngày" }));
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("days=7"))).toBe(true));

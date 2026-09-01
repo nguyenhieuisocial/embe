@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { openFamilyBookPdf } from "../lib/family-book-pdf";
+import { downloadFamilyHealthFhir } from "../lib/family-health-fhir";
 import { calculatePregnancyWeek, localDateKey } from "../lib/pregnancy";
 import type { MedicalRecord } from "../lib/pregnancy-medical";
 import type { CarePlan, FamilyBookReport, HealthMetric } from "../lib/family-book-pdf";
@@ -77,7 +78,12 @@ export default function FamilyBookExport() {
         }),
         plans: Array.isArray(snapshot?.plans) ? (snapshot.plans as CarePlan[]).filter((plan) => plan.active) : [],
         unavailable,
-        lifecycle: lifecycle ? { birthOccurredAt: typeof lifecycle.birthOccurredAt === "string" ? lifecycle.birthOccurredAt : null, birthWeightG: typeof lifecycle.birthWeightG === "number" ? lifecycle.birthWeightG : null, birthLengthCm: typeof lifecycle.birthLengthCm === "number" ? lifecycle.birthLengthCm : null } : undefined,
+        lifecycle: lifecycle ? {
+          birthOccurredAt: typeof lifecycle.birthOccurredAt === "string" ? lifecycle.birthOccurredAt : null,
+          babySex: lifecycle.babySex === "male" || lifecycle.babySex === "female" ? lifecycle.babySex : null,
+          birthWeightG: typeof lifecycle.birthWeightG === "number" ? lifecycle.birthWeightG : null,
+          birthLengthCm: typeof lifecycle.birthLengthCm === "number" ? lifecycle.birthLengthCm : null
+        } : undefined,
         postpartum: Array.isArray(postpartum?.history) ? postpartum.history as Array<Record<string, unknown>> : [],
         babyCare: Array.isArray(babyCare?.events) ? babyCare.events as FamilyBookReport["babyCare"] : [],
         babyMedical: Array.isArray(babyMedical?.records) ? babyMedical.records as FamilyBookReport["babyMedical"] : [],
@@ -166,8 +172,12 @@ export default function FamilyBookExport() {
           <button className="family-book-print is-secondary" disabled={status !== "ready" || pdfStatus === "loading"} onClick={() => void printPdf()} type="button">
             <span aria-hidden="true">▣</span> {pdfStatus === "loading" ? "Đang mở…" : "In"}
           </button>
+          <button className="family-book-print is-secondary" disabled={status !== "ready" || !data}
+            onClick={() => { if (data) downloadFamilyHealthFhir(data); }} type="button">
+            <span aria-hidden="true">⇩</span> Tải dữ liệu sức khỏe
+          </button>
         </div>
-        <p className="family-book-print-help">Chia sẻ PDF mở ngay Zalo, Messenger, Mail hoặc AirDrop. Chọn In để dùng AirPrint.</p>
+        <p className="family-book-print-help">PDF dùng để xem, chia sẻ hoặc in. “Tải dữ liệu sức khỏe” tạo file FHIR chuẩn để sao lưu hoặc chuyển sang hệ thống y tế tương thích.</p>
         {pdfStatus === "error" ? <p className="family-book-warning" role="alert">Chưa mở được PDF. Hãy cho phép cửa sổ bật lên rồi thử lại.</p> : null}
         {data?.unavailable.length ? <p className="family-book-warning" role="status">Tạm thiếu: {data.unavailable.join(", ")}. Bản in vẫn giữ các phần đã tải được.</p> : null}
       </div>

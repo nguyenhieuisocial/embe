@@ -25,6 +25,7 @@ describe("private family lifecycle endpoint", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
       birth_occurred_at: "2026-08-30T08:15:00+00:00",
       birth_method: "vaginal",
+      baby_sex: "female",
       gestational_weeks: 39,
       gestational_days: 2,
       birth_weight_g: 3200,
@@ -61,6 +62,7 @@ describe("private family lifecycle endpoint", () => {
     expect(await response.json()).toMatchObject({
       birthOccurredAt: "2026-08-30T08:15:00.000Z",
       birthMethod: "vaginal",
+      babySex: "female",
       gestationalWeeks: 39,
       gestationalDays: 2,
       hasBirthRecord: true
@@ -71,6 +73,7 @@ describe("private family lifecycle endpoint", () => {
     const response = await PATCH(patchRequest({
       birthOccurredAt: "2026-08-30T15:15:00+07:00",
       birthMethod: "vaginal",
+      babySex: "female",
       gestationalWeeks: 39,
       gestationalDays: 2,
       birthWeightG: 3200,
@@ -90,11 +93,23 @@ describe("private family lifecycle endpoint", () => {
       "https://project.supabase.co/rest/v1/rpc/embe_save_family_lifecycle",
       expect.objectContaining({ method: "POST" })
     );
+    expect(JSON.parse(String(vi.mocked(fetch).mock.calls.at(-1)?.[1]?.body))).toMatchObject({ p_baby_sex: "female" });
   });
 
   it("rejects impossible measurements and foreign origins", async () => {
     expect((await PATCH(patchRequest({ birthOccurredAt: "2026-08-30T08:15:00Z", birthWeightG: 99 }))).status).toBe(400);
     expect((await PATCH(patchRequest({ birthOccurredAt: "2026-08-30T08:15:00Z" }, "https://attacker.example"))).status).toBe(403);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects a baby sex value that WHO growth standards cannot use", async () => {
+    const response = await PATCH(patchRequest({
+      birthOccurredAt: "2026-08-30T15:15:00+07:00", birthMethod: "vaginal", babySex: "unspecified",
+      gestationalWeeks: null, gestationalDays: null, birthWeightG: null, birthLengthCm: null,
+      birthHeadCm: null, birthFacility: null, birthClinician: null, premature: false,
+      lowBirthWeight: false, specialMonitoring: false, specialMonitoringNotes: null,
+      dischargedAt: null, dischargeNotes: null
+    }));
+    expect(response.status).toBe(400);
   });
 });

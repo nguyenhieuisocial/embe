@@ -7,6 +7,7 @@ const BODY_LIMIT = 8192;
 type LifecycleRecord = {
   birthOccurredAt: string | null;
   birthMethod: string | null;
+  babySex: "male" | "female" | null;
   gestationalWeeks: number | null;
   gestationalDays: number | null;
   birthWeightG: number | null;
@@ -69,6 +70,7 @@ function normalize(value: unknown): LifecycleRecord | null {
   const dischargeNotes = shortText(row.discharge_notes, 2000);
   if ([birthOccurredAt, dischargedAt, birthFacility, birthClinician, specialMonitoringNotes, dischargeNotes].includes(undefined)) return null;
   if (row.birth_method !== null && (typeof row.birth_method !== "string" || !METHODS.has(row.birth_method))) return null;
+  if (row.baby_sex !== null && row.baby_sex !== "male" && row.baby_sex !== "female") return null;
   const gestationalWeeks = boundedNumber(row.gestational_weeks, 20, 45, true);
   const gestationalDays = boundedNumber(row.gestational_days, 0, 6, true);
   const birthWeightG = boundedNumber(row.birth_weight_g, 300, 7000, true);
@@ -79,6 +81,7 @@ function normalize(value: unknown): LifecycleRecord | null {
   return {
     birthOccurredAt: birthOccurredAt as string | null,
     birthMethod: row.birth_method as string | null,
+    babySex: row.baby_sex as "male" | "female" | null,
     gestationalWeeks: gestationalWeeks as number | null,
     gestationalDays: gestationalDays as number | null,
     birthWeightG: birthWeightG as number | null,
@@ -133,11 +136,12 @@ export async function PATCH(request: Request): Promise<Response> {
     return reply({ error: "invalid_request" }, 400);
   }
   if (!value || typeof value !== "object") return reply({ error: "invalid_request" }, 400);
-  const allowed = new Set(["birthOccurredAt", "birthMethod", "gestationalWeeks", "gestationalDays", "birthWeightG", "birthLengthCm", "birthHeadCm", "birthFacility", "birthClinician", "premature", "lowBirthWeight", "specialMonitoring", "specialMonitoringNotes", "dischargedAt", "dischargeNotes"]);
+  const allowed = new Set(["birthOccurredAt", "birthMethod", "babySex", "gestationalWeeks", "gestationalDays", "birthWeightG", "birthLengthCm", "birthHeadCm", "birthFacility", "birthClinician", "premature", "lowBirthWeight", "specialMonitoring", "specialMonitoringNotes", "dischargedAt", "dischargeNotes"]);
   if (Object.keys(value).some((key) => !allowed.has(key))) return reply({ error: "invalid_request" }, 400);
 
   const birthOccurredAt = timestamp(value.birthOccurredAt);
   const birthMethod = shortText(value.birthMethod, 32);
+  const babySex = shortText(value.babySex, 6);
   const gestationalWeeks = boundedNumber(value.gestationalWeeks, 20, 45, true);
   const gestationalDays = boundedNumber(value.gestationalDays, 0, 6, true);
   const birthWeightG = boundedNumber(value.birthWeightG, 300, 7000, true);
@@ -149,6 +153,7 @@ export async function PATCH(request: Request): Promise<Response> {
   const dischargedAt = timestamp(value.dischargedAt);
   const dischargeNotes = shortText(value.dischargeNotes, 2000);
   const invalid = birthOccurredAt === undefined || birthOccurredAt === null || birthMethod === undefined || birthMethod === null || !METHODS.has(birthMethod)
+    || babySex === undefined || babySex === null || !new Set(["male", "female"]).has(babySex)
     || [gestationalWeeks, gestationalDays, birthWeightG, birthLengthCm, birthHeadCm, birthFacility, birthClinician, specialMonitoringNotes, dischargedAt, dischargeNotes].includes(undefined)
     || ["premature", "lowBirthWeight", "specialMonitoring"].some((key) => typeof value[key] !== "boolean");
   if (invalid) return reply({ error: "invalid_request" }, 400);
@@ -159,6 +164,7 @@ export async function PATCH(request: Request): Promise<Response> {
   const record = await callRpc("embe_save_family_lifecycle", {
     p_birth_occurred_at: birthOccurredAt,
     p_birth_method: birthMethod,
+    p_baby_sex: babySex,
     p_gestational_weeks: gestationalWeeks,
     p_gestational_days: gestationalDays,
     p_birth_weight_g: birthWeightG,
