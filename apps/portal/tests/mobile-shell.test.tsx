@@ -59,8 +59,8 @@ describe("mobile family shell", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
     expect(css).toContain("--control: 48px");
-    expect(css).toContain("--paper: #FFF8FA");
-    expect(css).toContain("--rose: #98405F");
+    expect(css).toContain("--paper: #FFF7FA");
+    expect(css).toContain("--rose: #96405F");
     expect(ruleBody(css, ".eyebrow, .panel-kicker")).toMatch(/text-transform:\s*none/);
     expect(ruleBody(css, ".btn")).toMatch(/min-height:\s*var\(--control\)/);
     expect(ruleBody(css, ".btn")).toMatch(/border-radius:\s*var\(--radius-sm\)/);

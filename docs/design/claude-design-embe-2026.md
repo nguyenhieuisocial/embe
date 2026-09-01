@@ -8,9 +8,9 @@ Không liên quan và không được kế thừa bất kỳ thiết kế, asset
 ## Hướng thị giác — cập nhật theo người dùng chính
 
 - Người dùng chính là Mẹ Ngân đang mang thai: giao diện cần nhẹ nhàng, nữ tính và bình tĩnh, không trẻ con hóa.
-- Nền phấn hồng: `#FFF8FA`; surface kem sữa: `#FFFCFD`; viền hồng tro: `#EDDDE3`
+- Nền phấn hồng: `#FFF7FA`; surface trắng ấm: `#FFFEFE`; viền hồng tro: `#EBD9E0`
 - Chữ mận đen: `#33272B`; chữ phụ: `#75656B`
-- Rose chính: `#98405F`; rose dịu: `#F8E6ED`; mauve: `#67566F`
+- Rose chính: `#96405F`; rose dịu: `#F8E8EE`; mauve: `#67566F`
 - Sun `#B5811A` chỉ dùng chờ/offline; coral `#AE3F2C` chỉ dùng cảnh báo y tế hoặc sắp hết đồ
 - Be Vietnam Pro cho UI/body; Noto Serif cho tiêu đề cảm xúc
 - Motif duy nhất: một “sợi chỉ gia đình” mảnh nối mốc trong ngày và timeline

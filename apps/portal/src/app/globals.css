@@ -5,19 +5,20 @@
   color-scheme: light;
 
   /* Nền và bề mặt */
-  --paper: #FFF8FA;
-  --surface: #FFFCFD;
-  --line: #EDDDE3;
-  --line-strong: #D8BCC7;
+  --paper: #FFF7FA;
+  --surface: #FFFEFE;
+  --surface-soft: #FFF0F5;
+  --line: #EBD9E0;
+  --line-strong: #D6B8C4;
 
   /* Chữ */
-  --ink: #33272B;
-  --ink-soft: #75656B;
+  --ink: #34272C;
+  --ink-soft: #705E65;
 
   /* Màu dẫn */
-  --rose: #98405F;
+  --rose: #96405F;
   --rose-press: #743047;
-  --rose-soft: #F8E6ED;
+  --rose-soft: #F8E8EE;
   --jade: var(--rose);
   --jade-press: var(--rose-press);
   --jade-soft: var(--rose-soft);
@@ -31,7 +32,7 @@
   --coral-soft: #F8EAE6;
 
   /* Sợi chỉ gia đình */
-  --thread: #D8BCC7;
+  --thread: #D6B8C4;
   --thread-ring: var(--paper);
 
   /* Nhịp 4 / 8 / 12 / 16 / 20 / 24 / 32 */
@@ -69,8 +70,11 @@ body {
   font-family: var(--font-body), system-ui, -apple-system, sans-serif;
   font-size: 1rem;
   line-height: 1.55;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
+
+::selection { background: var(--rose-soft); color: var(--ink); }
 
 a, button, input, select, textarea { touch-action: manipulation; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -85,14 +89,15 @@ img, svg { max-width: 100%; }
 
 h1, h2, h3 {
   font-family: var(--font-display), Georgia, serif;
-  font-weight: 600;
-  letter-spacing: -.01em;
-  line-height: 1.22;
+  font-weight: 500;
+  letter-spacing: -.015em;
+  line-height: 1.2;
   margin: 0;
+  text-wrap: balance;
 }
 h1 { font-size: clamp(1.45rem, 5.4vw, 1.85rem); }
 h2 { font-size: clamp(1.12rem, 4.2vw, 1.34rem); }
-h3 { font-size: 1rem; }
+h3 { font-size: 1rem; font-weight: 600; letter-spacing: -.005em; }
 h1 em, h2 em { color: var(--jade); font-style: normal; }
 p { margin: 0; }
 ol, ul { margin: 0; padding: 0; }
@@ -149,10 +154,10 @@ ol, ul { margin: 0; padding: 0; }
 .family-home-hero {
   margin-inline: auto;
   max-width: var(--content);
-  padding: 24px var(--gutter) 6px;
+  padding: 20px var(--gutter) 4px;
 }
 
-.family-home-hero h1 { margin: 8px 0 10px; }
+.family-home-hero h1 { margin: 6px 0 8px; }
 .family-home-hero .intro { max-width: 38rem; }
 .family-connection, .family-privacy { display: grid; gap: 14px; }
 .family-connection > p, .family-privacy > p { color: var(--ink-soft); margin: 0; }
@@ -225,18 +230,19 @@ ol, ul { margin: 0; padding: 0; }
   color: var(--ink-soft);
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: .6875rem;
-  font-weight: 600;
-  letter-spacing: .035em;
+  font-weight: 500;
+  letter-spacing: .02em;
   margin: 0;
   text-transform: none;
 }
 .intro {
   color: var(--ink-soft);
   font-size: 1rem;
+  line-height: 1.6;
   max-width: 38ch;
 }
-.section { margin-top: 24px; }
-.section-head { display: grid; gap: 4px; margin-bottom: 16px; }
+.section { margin-top: 22px; }
+.section-head { display: grid; gap: 4px; margin-bottom: 12px; }
 .section-head p:last-child { color: var(--ink-soft); font-size: .9375rem; }
 
 /* ── Thẻ giấy ────────────────────────────────────────────────── */
@@ -247,7 +253,7 @@ ol, ul { margin: 0; padding: 0; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
-  padding: 16px;
+  padding: 15px;
 }
 
 /* ── Sợi chỉ gia đình ────────────────────────────────────────── */
@@ -649,7 +655,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   border: 1px solid rgba(255, 255, 255, .3);
   border-radius: var(--radius-pill);
   bottom: calc(72px + env(safe-area-inset-bottom));
-  box-shadow: 0 8px 24px rgba(15, 74, 68, .22);
+  box-shadow: 0 8px 24px rgba(116, 48, 71, .2);
   color: var(--surface);
   display: flex;
   font-size: .8125rem;
@@ -666,7 +672,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .quick-backdrop { border: 0; cursor: default; padding: 0; }
 .quick-sheet .sheet-head { padding-top: 10px; }
 .quick-sheet .sheet-head > div { display: grid; gap: 3px; }
-.quick-sheet .sheet-head .panel-kicker { font-size: .6875rem; letter-spacing: .14em; }
+.quick-sheet .sheet-head .panel-kicker { font-size: .6875rem; letter-spacing: .04em; }
 .quick-action-list { gap: 0; padding-top: 8px; position: relative; }
 .quick-action {
   align-items: center;
@@ -791,7 +797,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 /* ── Mẹ bầu ──────────────────────────────────────────────────── */
 
-.pregnancy-hero { display: grid; gap: 16px; padding-top: 8px; }
+.pregnancy-hero { display: grid; gap: 14px; padding-top: 6px; }
 .pregnancy-main > section,
 .pregnancy-main > aside,
 .journal-main > section,
@@ -802,18 +808,18 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .assistant-main > section,
 .assistant-main > aside,
 .guide-main > section,
-.guide-main > aside { margin-top: 24px; }
+.guide-main > aside { margin-top: 22px; }
 .pregnancy-main > .pregnancy-hero,
 .journal-main > .journal-shell,
 .memories-main > .memories-hero,
 .inventory-main > .inventory-hero,
 .assistant-main > .assistant-hero,
-.guide-main > .guide-hero { margin-top: 0; padding-top: 8px; }
+.guide-main > .guide-hero { margin-top: 0; padding-top: 6px; }
 .journal-shell,
 .memories-hero,
 .inventory-hero,
-.assistant-hero { display: grid; gap: 16px; }
-.section-heading-row { display: grid; gap: 8px; margin-bottom: 16px; }
+.assistant-hero { display: grid; gap: 14px; }
+.section-heading-row { display: grid; gap: 6px; margin-bottom: 12px; }
 .section-heading-row > p { color: var(--ink-soft); font-size: .9375rem; }
 .medical-boundary,
 .assistant-boundary,
@@ -1117,7 +1123,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 .trimester-grid p { color: var(--ink-soft); font-size: .9375rem; }
 .trimester-grid article.is-current { background: var(--jade-soft); border-color: transparent; }
-.trimester-grid article.is-current small { color: var(--jade); font-size: .6875rem; font-weight: 700; letter-spacing: .1em; }
+.trimester-grid article.is-current small { color: var(--jade); font-size: .6875rem; font-weight: 600; letter-spacing: .035em; }
 .later-trimesters { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .later-trimesters > summary { align-items: center; background: var(--surface); cursor: pointer; display: flex; font-size: .875rem; font-weight: 600; justify-content: space-between; list-style: none; min-height: 48px; padding: 10px 14px; }
 .later-trimesters > summary::-webkit-details-marker { display: none; }
@@ -1377,7 +1383,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   width: 116px;
 }
 .photo-window-copy { display: grid; gap: 8px; position: relative; z-index: 1; }
-.photo-window-copy > span { color: rgba(255,255,255,.64); font-size: .625rem; font-weight: 700; letter-spacing: .14em; }
+.photo-window-copy > span { color: rgba(255,255,255,.72); font-size: .625rem; font-weight: 600; letter-spacing: .04em; }
 .photo-window-copy h2 { color: white; font-size: 1.35rem; line-height: 1.22; }
 .photo-window-copy p { color: rgba(255,255,255,.72); font-size: .8125rem; max-width: 34ch; }
 .photo-window-actions { align-items: center; display: grid; gap: 10px; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); position: relative; z-index: 1; }
@@ -1473,7 +1479,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   padding: 16px;
 }
 .selected-date-card > div { display: grid; gap: 3px; }
-.selected-date-card span { color: var(--ink-soft); font-size: .6875rem; font-weight: 600; letter-spacing: .1em; }
+.selected-date-card span { color: var(--ink-soft); font-size: .6875rem; font-weight: 500; letter-spacing: .025em; }
 .selected-date-card strong { font-family: var(--font-display), Georgia, serif; font-size: .9875rem; text-transform: capitalize; }
 .selected-date-card small { color: var(--ink-soft); font-size: .8125rem; }
 .selected-date-card a { color: var(--jade); flex: none; font-size: .875rem; font-weight: 600; line-height: 44px; text-decoration: none; }
@@ -1616,7 +1622,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .memory-trip-cover > img { aspect-ratio: 4 / 3; display: block; object-fit: cover; width: 100%; }
 .memory-trip-cover > span { backdrop-filter: blur(8px); background: rgba(24, 38, 33, .65); border-radius: var(--radius-pill); bottom: 12px; color: white; font-size: .75rem; left: 12px; padding: 7px 11px; position: absolute; }
 .memory-trip-copy { display: grid; gap: 6px; padding: 18px; }
-.memory-trip-copy > p { color: var(--coral); font-size: .625rem; font-weight: 700; letter-spacing: .13em; }
+.memory-trip-copy > p { color: var(--coral); font-size: .625rem; font-weight: 600; letter-spacing: .035em; }
 .memory-trip-copy h2 { font-family: var(--font-display), Georgia, serif; font-size: 1.35rem; line-height: 1.2; }
 .memory-trip-copy small { color: var(--ink-soft); font-size: .75rem; text-transform: capitalize; }
 .memory-trip-strip { display: grid; gap: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0 12px 12px; }
@@ -1626,7 +1632,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .memory-map-view { display: grid; gap: 16px; margin-top: 24px; }
 .memory-map-card { background: linear-gradient(150deg, var(--rose) 0%, var(--rose-press) 100%); border-radius: 20px; color: white; display: grid; grid-template-columns: minmax(0, 1fr) minmax(112px, .72fr); min-height: 300px; overflow: hidden; padding: 18px 12px 16px 16px; }
 .memory-map-copy { align-content: start; display: grid; gap: 10px; padding-top: 10px; position: relative; z-index: 1; }
-.memory-map-copy > span { color: rgba(255,255,255,.66); font-size: .625rem; font-weight: 700; letter-spacing: .12em; }
+.memory-map-copy > span { color: rgba(255,255,255,.74); font-size: .625rem; font-weight: 600; letter-spacing: .035em; }
 .memory-map-copy h2 { font-family: var(--font-display), Georgia, serif; font-size: clamp(1.25rem, 5.5vw, 1.65rem); font-weight: 500; line-height: 1.16; }
 .memory-map-copy h2 em { color: #f3d99b; font-weight: 400; }
 .memory-map-copy p { color: rgba(255,255,255,.72); font-size: .8125rem; line-height: 1.55; max-width: 24ch; }
@@ -1896,7 +1902,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .planner-loading span { animation: skeleton-pulse 1.3s ease-in-out infinite; background: var(--line); border-radius: var(--radius); height: 76px; }
 .planner-retry { border: 1px solid var(--coral); margin-top: 14px; text-align: left; width: 100%; }
 .planner-suggestions { border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; padding-top: 16px; }
-.planner-suggestions p { color: var(--ink-soft); flex-basis: 100%; font-size: .6875rem; font-weight: 600; letter-spacing: .12em; }
+.planner-suggestions p { color: var(--ink-soft); flex-basis: 100%; font-size: .6875rem; font-weight: 500; letter-spacing: .025em; }
 .planner-suggestions a { background: var(--jade-soft); border-radius: var(--radius-pill); color: var(--jade); font-size: .75rem; font-weight: 600; min-height: 44px; padding: 11px 13px; text-decoration: none; }
 .planner-sheet .sheet-head > div { display: grid; gap: 2px; }
 .planner-form label { color: var(--ink-soft); display: grid; font-size: .75rem; font-weight: 600; gap: 6px; }
@@ -1989,7 +1995,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .inventory-card { display: grid; }
 .inventory-card-top { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
 .inventory-card-top > div { min-width: 0; }
-.inventory-card-top p { color: var(--ink-soft); font-size: .6875rem; font-weight: 600; letter-spacing: .1em; }
+.inventory-card-top p { color: var(--ink-soft); font-size: .6875rem; font-weight: 500; letter-spacing: .025em; }
 .inventory-card.is-low .inventory-card-top p { color: var(--coral); }
 .inventory-card-top h2 { font-family: var(--font-body); font-size: 1rem; }
 .inventory-card-top > strong { flex: none; font-family: var(--font-display); white-space: nowrap; }
@@ -2073,7 +2079,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .future-assistant > summary { align-items: center; cursor: pointer; display: flex; justify-content: space-between; list-style: none; min-height: 48px; }
 .future-assistant > summary::-webkit-details-marker { display: none; }
 .future-assistant > summary span:first-child { display: grid; gap: 2px; }
-.future-assistant > summary small { color: var(--ink-soft); font-size: .6875rem; font-weight: 600; letter-spacing: .08em; }
+.future-assistant > summary small { color: var(--ink-soft); font-size: .6875rem; font-weight: 500; letter-spacing: .025em; }
 .future-assistant > summary strong { font-family: var(--font-display); font-size: 1.1rem; }
 .future-assistant > p { color: var(--ink-soft); font-size: .875rem; margin-top: 8px; }
 .future-assistant .assistant-period { margin-top: 16px; }
@@ -2546,10 +2552,10 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 @media (prefers-contrast: more) {
   :root {
-    --ink-soft: #303733;
-    --line: #B9AE95;
-    --line-strong: #8C8067;
-    --thread: #6C8078;
+    --ink-soft: #5B474F;
+    --line: #A47C8B;
+    --line-strong: #795261;
+    --thread: #795261;
   }
   .card, .shortcut, .check-item, .inventory-card, .memory-card,
   .trimester-grid article, .menu-day, .assistant-topics button, .assistant-topics > a, .assistant-answer {
