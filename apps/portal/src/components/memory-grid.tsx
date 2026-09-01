@@ -312,13 +312,46 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
         <section className="memory-trips" aria-label="Kỷ niệm theo chuyến đi">
           {groupIntoTrips(memories).map((trip) => (
             <article className="memory-trip" key={trip.key}>
-              <div className="memory-trip-cover">
+              <button
+                aria-label={`Mở ảnh ${trip.memories[0].title}`}
+                className="memory-trip-cover"
+                onClick={() => setActiveIndex(memories.findIndex((item) => item.id === trip.memories[0].id))}
+                type="button"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img alt={trip.memories[0].title} height={trip.memories[0].height ?? 900} loading="lazy" src={`/api/media/${trip.memories[0].id}`} width={trip.memories[0].width ?? 1200} />
                 <span>{trip.subtitle}</span>
+              </button>
+              <div className="memory-trip-copy">
+                <div className="memory-trip-route" aria-hidden="true">
+                  <span className="memory-trip-route-start">♥</span>
+                  <span className="memory-trip-route-line"><i /></span>
+                  <span className="memory-trip-route-end">⌖</span>
+                </div>
+                <p>Chuyến đi của nhà mình</p>
+                <h2>{trip.title}</h2>
+                <small>{dateLabel(trip.memories.at(-1)!.eventAt)} — {dateLabel(trip.memories[0].eventAt)}</small>
               </div>
-              <div className="memory-trip-copy"><p>CHUYẾN ĐI CỦA NHÀ MÌNH</p><h2>{trip.title}</h2><small>{dateLabel(trip.memories.at(-1)!.eventAt)} — {dateLabel(trip.memories[0].eventAt)}</small></div>
-              {trip.memories.length > 1 ? <div className="memory-trip-strip">{trip.memories.slice(1, 5).map((memory) => <MemoryPhoto key={memory.id} memory={memory} onOpen={() => setActiveIndex(memories.findIndex((item) => item.id === memory.id))} />)}</div> : null}
+              {trip.memories.length > 1 ? (
+                <section className="memory-trip-gallery" aria-label={`Ảnh trong chuyến ${trip.title}`}>
+                  <header><strong>Khoảnh khắc tiếp theo</strong><span>Vuốt để xem từng ảnh</span></header>
+                  <div className="memory-trip-strip">
+                    {trip.memories.slice(1).map((memory, index) => (
+                      <button
+                        aria-label={`Mở ảnh ${memory.title}`}
+                        className="memory-trip-slide"
+                        key={memory.id}
+                        onClick={() => setActiveIndex(memories.findIndex((item) => item.id === memory.id))}
+                        type="button"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+                        <span>{index + 2} / {trip.memories.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
             </article>
           ))}
         </section>

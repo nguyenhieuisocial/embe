@@ -57,6 +57,15 @@ describe("mobile memory grid", () => {
     expect(screen.getByRole("button", { name: "Chuyến đi" })).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("shows every trip photo as an openable full-width journey frame", () => {
+    render(<MemoryGrid initial={[memory(1), memory(2), memory(3)]} initialView="chuyen-di" />);
+
+    expect(screen.getByRole("region", { name: "Ảnh trong chuyến Đà Lạt · tháng 8 năm 2026" }))
+      .toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Mở ảnh Kỷ niệm/ })).toHaveLength(3);
+    expect(screen.getByText("Vuốt để xem từng ảnh")).toBeInTheDocument();
+  });
+
   it("shows one full-width day album instead of a two-column photo feed", () => {
     render(<MemoryGrid initial={[memory(1), memory(2)]} initialView="ngay-thang" />);
 
