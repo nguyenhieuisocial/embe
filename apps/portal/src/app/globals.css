@@ -1224,7 +1224,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   padding: 8px 14px;
   text-decoration: none;
 }
-#viec-hom-nay, #suc-khoe, #vi-chat-thuoc, #bua-an, #cam-nang, #can-lien-he { scroll-margin-top: calc(72px + env(safe-area-inset-top)); }
+#viec-hom-nay, #suc-khoe, #ho-so-kham, #vi-chat-thuoc, #bua-an, #cam-nang, #can-lien-he { scroll-margin-top: calc(72px + env(safe-area-inset-top)); }
 #vi-chat-thuoc { scroll-margin-top: calc(144px + env(safe-area-inset-top)); }
 .pregnancy-main > #suc-khoe { margin-top: 24px; }
 .pregnancy-urgent-shortcut {
@@ -2737,8 +2737,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 /* ── Hồ sơ khám thai: một bìa hồ sơ nhỏ, không phải bảng quản trị ── */
 
-.medical-records { display: grid; gap: 14px; scroll-margin-top: 16px; }
-.medical-records-heading { align-items: end; }
+.medical-records { display: grid; gap: 14px; }
+.medical-records-heading { align-items: center; grid-template-columns: minmax(0, 1fr) auto; }
+.medical-records-heading .medical-add { justify-self: end; }
 .medical-add {
   background: var(--coral-soft); border: 1px solid color-mix(in srgb, var(--coral) 35%, var(--line));
   border-radius: 999px; color: var(--coral); font: inherit; font-size: .8125rem; font-weight: 700;
@@ -2764,7 +2765,10 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   font: inherit; font-size: .75rem; min-height: 44px; padding: 7px 12px;
 }
 .medical-kind-picker button[aria-pressed="true"], .medical-filters button[aria-pressed="true"] { background: var(--coral-soft); border-color: var(--coral); color: var(--coral); font-weight: 700; }
-.medical-form-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.medical-subsection-title { align-items: baseline; display: flex; justify-content: space-between; margin-top: 2px; }
+.medical-subsection-title h3 { font-family: var(--font-display); font-size: 1rem; margin: 0; }
+.medical-subsection-title small { color: var(--muted); font-size: .75rem; }
+.medical-form-grid { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
 .medical-form label, .medical-medicine-row label, .medical-notes, .medical-files { display: grid; font-size: .75rem; font-weight: 650; gap: 5px; min-width: 0; }
 .medical-form input:not([type="file"]), .medical-form select, .medical-form textarea {
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
@@ -2949,6 +2953,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .meal-safety-note { border-top: 1px solid var(--line); padding-top: 12px; }
 
 @media (min-width: 600px) {
+  .medical-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .meal-capture-card { grid-template-columns: 1fr 1fr; }
   .meal-type-picker, .meal-camera, .meal-state { grid-column: 1 / -1; }
   .meal-note { align-self: stretch; }

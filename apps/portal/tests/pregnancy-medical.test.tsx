@@ -30,4 +30,13 @@ describe("pregnancy medical record book", () => {
     await waitFor(() => expect(screen.getByText("Thuốc ghi trên đơn")).toBeInTheDocument());
     expect(screen.getByText(/Chỉ Hiếu và Ngân xem được/)).toBeInTheDocument();
   });
+
+  it("separates the next appointment from saved records when empty", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ records: [] }), { status: 200 })));
+    render(<PregnancyMedicalRecords />);
+    expect(await screen.findByRole("heading", { name: "Lịch khám tiếp theo" })).toBeInTheDocument();
+    expect(screen.getByText("Chưa có lịch khám sắp tới")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hồ sơ đã lưu" })).toBeInTheDocument();
+    expect(screen.getByText("Chưa có hồ sơ đã lưu")).toBeInTheDocument();
+  });
 });

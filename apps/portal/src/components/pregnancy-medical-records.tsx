@@ -117,6 +117,7 @@ export default function PregnancyMedicalRecords() {
         <button className="medical-add" type="button" onClick={() => setShowForm((value) => !value)}>{showForm ? "Đóng" : "+ Thêm hồ sơ"}</button>
       </div>
 
+      <div className="medical-subsection-title"><h3>Lịch khám tiếp theo</h3></div>
       {insights.upcoming ? <article className="next-appointment">
         <span aria-hidden="true">○</span><div><small>Lịch gần nhất</small><strong>{insights.upcoming.title}</strong>
           <p>{displayDate(insights.upcoming.occurredAt)}{insights.upcoming.provider ? ` · ${insights.upcoming.provider}` : ""}</p></div>
@@ -160,6 +161,10 @@ export default function PregnancyMedicalRecords() {
         <button className="health-save" type="submit" disabled={status === "saving"}>{status === "saving" ? "Đang lưu…" : "Lưu hồ sơ"}</button>
       </form> : null}
 
+      <div className="medical-subsection-title">
+        <h3>Hồ sơ đã lưu</h3>
+        <small>{records.length ? `${records.length} mục` : "Chưa có"}</small>
+      </div>
       {records.length ? <>
         <aside className="medical-insights">
           <div><strong>{insights.completedCount}</strong><span>lần đã lưu</span></div>
@@ -189,7 +194,7 @@ export default function PregnancyMedicalRecords() {
             {record.documents.length ? <div className="medical-documents">{record.documents.map((document) => <a key={document.id} href={`/api/pregnancy/documents/${document.id}`} target="_blank" rel="noreferrer">{document.mimeType === "application/pdf" ? "PDF" : "Ảnh"} · {document.originalFilename}</a>)}</div> : null}
           </article>)}
         </div>
-      </> : null}
+      </> : <div className="medical-empty-short"><strong>Chưa có hồ sơ đã lưu</strong><p>Kết quả khám, đơn thuốc và tài liệu sẽ được xếp theo ngày tại đây.</p></div>}
       <p className={`medical-status is-${status}`} aria-live="polite">{status === "error" ? "Chưa lưu hoặc tải hồ sơ được. Hãy kiểm tra mạng và thử lại." : "Hồ sơ y tế được giữ riêng, không xuất hiện trong album gia đình."}</p>
     </section>
   );
