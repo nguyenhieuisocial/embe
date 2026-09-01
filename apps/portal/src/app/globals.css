@@ -3322,9 +3322,16 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .print-photo-frame > span { color: var(--ink-soft); font-size: .8125rem; left: 50%; position: absolute; text-align: center; top: 50%; transform: translate(-50%, -50%); width: 80%; }
 .print-photo-sheet figcaption { color: var(--ink-soft); font-size: .75rem; line-height: 1.5; padding: 0 4px 2px; }
 .print-photo-actions { display: grid; gap: 7px; }
-.print-photo-actions button { background: var(--coral); border: 0; border-radius: 999px; color: #fff; font: inherit; font-size: .875rem; font-weight: 700; min-height: 50px; padding: 10px 18px; }
-.print-photo-actions button:disabled { opacity: .5; }
-.print-photo-actions p { color: var(--ink-soft); font-size: .6875rem; line-height: 1.5; text-align: center; }
+.print-photo-actions > button { background: var(--coral); border: 0; border-radius: 999px; color: #fff; font: inherit; font-size: .875rem; font-weight: 700; min-height: 50px; padding: 10px 18px; }
+.print-photo-actions > button:disabled { opacity: .5; }
+.print-photo-actions > p { color: var(--ink-soft); font-size: .6875rem; line-height: 1.5; text-align: center; }
+.print-photo-paper { border: 0; display: grid; gap: 7px; margin: 0 0 5px; min-width: 0; padding: 0; }
+.print-photo-paper legend { color: var(--ink); font-size: .75rem; font-weight: 650; padding: 0; }
+.print-photo-paper > div { display: flex; gap: 6px; overflow-x: auto; padding: 1px 1px 4px; scrollbar-width: none; }
+.print-photo-paper > div::-webkit-scrollbar { display: none; }
+.print-photo-paper button { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); flex: none; font: inherit; font-size: .6875rem; font-weight: 650; min-height: 42px; padding: 8px 12px; }
+.print-photo-paper button[aria-pressed="true"] { background: var(--coral-soft); border-color: color-mix(in srgb, var(--coral) 42%, var(--line)); color: var(--coral); }
+.print-photo-paper > p { color: var(--ink-soft); font-size: .6875rem; }
 .photo-viewer > header .photo-viewer-print { text-decoration: none; }
 
 @page { size: A4 portrait; margin: 13mm; }
