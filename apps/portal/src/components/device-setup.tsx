@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { readDeviceRole, saveDeviceRole, type DeviceRole } from "../lib/device-preferences";
+import NotificationSetup from "./notification-setup";
 
 const labels: Record<DeviceRole, string> = { mother: "Mẹ Ngân", father: "Ba Hiếu" };
 
@@ -33,6 +34,7 @@ export default function DeviceSetup() {
         <button aria-pressed={role === "father"} onClick={() => choose("father")} type="button">Điện thoại của Ba Hiếu</button>
       </div>
       {role ? <p className="device-setup-state" role="status"><span aria-hidden="true">✓</span> Đã nhớ đây là điện thoại của {labels[role]}.</p> : <p className="device-setup-state is-wait">Chưa chọn người dùng cho điện thoại này.</p>}
+      <NotificationSetup role={role} />
       <div className="device-setup-links">
         <a href="/me-bau#cai-dat-giai-doan">Kiểm tra ngày dự sinh</a>
         <a href="/huong-dan#iphone-title">{standalone ? "Xem hướng dẫn kết nối ảnh" : "Thêm EmBe vào màn hình chính"}</a>

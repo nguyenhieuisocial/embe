@@ -18,6 +18,14 @@ describe("privacy-safe PWA runtime", () => {
     expect(source).not.toMatch(/cache\.put\([^\n]*(?:api|media|navigate)/i);
   });
 
+  it("receives a private push and opens its EmBe destination", () => {
+    const source = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+    expect(source).toContain('addEventListener("push"');
+    expect(source).toContain("showNotification");
+    expect(source).toContain('addEventListener("notificationclick"');
+    expect(source).toContain("clients.openWindow");
+  });
+
   it("keeps generated illustrations within the mobile performance budget", () => {
     for (const name of ["family-thread-hero.webp", "memory-album-empty.webp", "pregnancy-care.webp"]) {
       const path = join(process.cwd(), "public", "illustrations", name);

@@ -59,3 +59,26 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data === "SKIP_WAITING") self.skipWaiting();
 });
+
+self.addEventListener("push", (event) => {
+  let message = {};
+  try { message = event.data?.json() ?? {}; } catch { message = {}; }
+  const title = typeof message.title === "string" ? message.title.slice(0, 80) : "EmBe nhắc nhẹ";
+  const body = typeof message.body === "string" ? message.body.slice(0, 240) : "Nhà mình có một việc cần xem.";
+  const url = typeof message.url === "string" && message.url.startsWith("/") && !message.url.startsWith("//") ? message.url : "/";
+  event.waitUntil(self.registration.showNotification(title, {
+    body, icon: "/icon-192.png", badge: "/icon-192.png", tag: typeof message.tag === "string" ? message.tag.slice(0, 100) : "embe-reminder",
+    data: { url }
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windows) => {
+    for (const client of windows) {
+      if ("focus" in client) { await client.navigate(url); return client.focus(); }
+    }
+    return self.clients.openWindow(url);
+  }));
+});

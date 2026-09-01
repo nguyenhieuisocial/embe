@@ -12,4 +12,10 @@ describe("per-phone family setup", () => {
     expect(localStorage.getItem("embe:device-role")).toBe("mother");
     expect(screen.getByRole("status")).toHaveTextContent("Mẹ Ngân");
   });
+
+  it("offers one-tap notification setup on a family phone", () => {
+    render(<DeviceSetup />);
+    expect(screen.getByRole("button", { name: "Bật thông báo" })).toBeInTheDocument();
+    expect(screen.getByText(/lịch khám, việc đến hạn và đồ dùng sắp hết/i)).toBeInTheDocument();
+  });
 });
