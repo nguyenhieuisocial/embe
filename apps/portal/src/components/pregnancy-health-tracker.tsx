@@ -102,6 +102,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "saved" | "invalid" | "error">("loading");
   const [validationError, setValidationError] = useState("");
+  const [editing, setEditing] = useState(true);
   const dirtyRef = useRef(false);
 
   useEffect(() => {
@@ -116,7 +117,9 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
         if (!active || !Array.isArray(payload.history)) return;
         setHistory(payload.history);
         if (!dirtyRef.current) {
-          setForm(metricToForm(payload.history.find((metric) => metric.day === day)));
+          const todayMetric = payload.history.find((metric) => metric.day === day);
+          setForm(metricToForm(todayMetric));
+          setEditing(!todayMetric || !metricHasValues(todayMetric));
         }
         setStatus("idle");
       } catch {
@@ -188,6 +191,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
       });
       dirtyRef.current = false;
       setStatus("saved");
+      setEditing(false);
     } catch {
       setStatus("error");
     }
@@ -198,6 +202,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
   const visitSymptoms = [...new Set(visitDays.flatMap((metric) => metric.symptoms ?? []))]
     .map((symptom) => symptomLabels.get(symptom as typeof symptomOptions[number][0]) ?? symptom);
   const latestVisitMetric = visitDays.at(-1);
+  const todayMetric = history.find((metric) => metric.day === today);
   const visitSummary = [
     "Tóm tắt sức khỏe 7 ngày từ EmBe",
     `${visitDays.length} ngày có số liệu`,
@@ -226,7 +231,10 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
         <p>Chỉ nhập số Mẹ Ngân thực sự đo hoặc nhớ được. Để trống mục chưa có; EmBe không tự chẩn đoán.</p>
       </div>
 
-      <form className="health-entry-card" onSubmit={(event) => void save(event)}>
+      {!editing && todayMetric ? <article className="health-saved-card" aria-label="Sức khỏe đã lưu hôm nay">
+        <div><span aria-hidden="true">✓</span><p><strong>Đã lưu sức khỏe hôm nay</strong><small>{[typeof todayMetric.weightKg === "number" ? `${todayMetric.weightKg} kg` : "", typeof todayMetric.sleepMinutes === "number" ? `${todayMetric.sleepMinutes / 60} giờ ngủ` : "", typeof todayMetric.waterGlasses === "number" ? `${todayMetric.waterGlasses} cốc nước` : ""].filter(Boolean).join(" · ") || "Đã lưu ghi chú và dấu hiệu đã chọn"}</small></p></div>
+        <button type="button" onClick={() => setEditing(true)}>Sửa thông tin hôm nay</button>
+      </article> : <form className="health-entry-card" onSubmit={(event) => void save(event)}>
         <div className="health-fields">
           <label>Cân nặng (kg)<input inputMode="decimal" min="25" max="300" step="0.1" type="number" value={form.weightKg} onChange={(event) => setField("weightKg", event.target.value)} /></label>
           <fieldset className="pressure-fields">
@@ -286,7 +294,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
                 ? "Chưa kết nối được. Số vừa nhập vẫn còn trên màn hình để thử lại."
                 : "Không bắt buộc nhập đủ mọi mục."}
         </p>
-      </form>
+      </form>}
 
       <div className="health-chart-heading">
         <div>
@@ -303,6 +311,23 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           <p>Ghi một mục ở trên; biểu đồ sẽ bắt đầu từ số liệu thật đầu tiên.</p>
         </div>
       )}
+      {hasHealthValues ? <section className="health-history" aria-labelledby="health-history-title">
+        <div className="health-history-heading"><h3 id="health-history-title">Lịch sử sức khỏe chi tiết</h3><small>{history.filter(metricHasValues).length} ngày đã ghi</small></div>
+        {history.filter(metricHasValues).slice().reverse().map((metric) => <details key={metric.day} className="health-history-card">
+          <summary><span><strong>{new Date(`${metric.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}</strong><small>{[typeof metric.weightKg === "number" ? `${metric.weightKg} kg` : "", typeof metric.sleepMinutes === "number" ? `${metric.sleepMinutes / 60}h ngủ` : "", typeof metric.wellbeing === "number" ? `cảm nhận ${metric.wellbeing}/5` : ""].filter(Boolean).join(" · ")}</small></span><i aria-hidden="true">⌄</i></summary>
+          <dl>
+            {typeof metric.weightKg === "number" ? <div><dt>Cân nặng</dt><dd>{metric.weightKg} kg</dd></div> : null}
+            {typeof metric.systolic === "number" && typeof metric.diastolic === "number" ? <div><dt>Huyết áp</dt><dd>{metric.systolic}/{metric.diastolic} mmHg</dd></div> : null}
+            {typeof metric.sleepMinutes === "number" ? <div><dt>Giấc ngủ</dt><dd>{metric.sleepMinutes / 60} giờ</dd></div> : null}
+            {typeof metric.waterGlasses === "number" ? <div><dt>Nước</dt><dd>{metric.waterGlasses} cốc</dd></div> : null}
+            {typeof metric.movementMinutes === "number" ? <div><dt>Vận động</dt><dd>{metric.movementMinutes} phút</dd></div> : null}
+            {typeof metric.bloodGlucoseMgDl === "number" ? <div><dt>Đường huyết</dt><dd>{metric.bloodGlucoseMgDl} mg/dL</dd></div> : null}
+            {typeof metric.fetalMovementCount === "number" ? <div><dt>Cử động thai</dt><dd>{metric.fetalMovementCount}</dd></div> : null}
+          </dl>
+          {metric.symptoms?.length ? <p>Dấu hiệu đã ghi: {metric.symptoms.map((item) => symptomLabels.get(item as typeof symptomOptions[number][0]) ?? item).join(", ")}</p> : null}
+          {metric.healthNote?.trim() ? <p>{metric.healthNote}</p> : null}
+        </details>)}
+      </section> : null}
       {visitDays.length ? <section className="visit-brief" aria-labelledby="visit-brief-title">
         <div><p className="panel-kicker">Mang theo khi cần trao đổi</p><h3 id="visit-brief-title">Tóm tắt 7 ngày để đi khám</h3></div>
         <strong>{visitDays.length} ngày có số liệu</strong>

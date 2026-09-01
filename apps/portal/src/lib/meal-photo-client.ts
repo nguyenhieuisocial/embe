@@ -25,6 +25,24 @@ export async function prepareMealPhoto(file: File): Promise<File> {
   return new File([blob], "bua-an.jpg", { type: "image/jpeg", lastModified: file.lastModified || Date.now() });
 }
 
+export async function uploadMealPhoto(uploadUrl: string, file: File): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const form = new FormData();
+    form.append("cacheControl", "300");
+    form.append("", file);
+    try {
+      const response = await fetch(uploadUrl, {
+        method: "PUT", headers: { "x-upsert": "false" }, body: form
+      });
+      if (response.ok) return;
+    } catch {
+      // A short retry covers an iPhone changing between Wi-Fi and mobile data.
+    }
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+  }
+  throw new Error("upload_failed");
+}
+
 export async function createMealNote(input: {
   authorRole: "father" | "mother";
   mealType: string;
@@ -61,9 +79,7 @@ export async function createMealDraft(input: {
   if (!created.ok) throw new Error("create_failed");
   const session = await created.json() as { entryId?: string; uploadUrl?: string };
   if (!session.entryId || !session.uploadUrl) throw new Error("create_failed");
-  const form = new FormData(); form.append("cacheControl", "300"); form.append("", file);
-  const uploaded = await fetch(session.uploadUrl, { method: "PUT", headers: { "x-upsert": "false" }, body: form });
-  if (!uploaded.ok) throw new Error("upload_failed");
+  await uploadMealPhoto(session.uploadUrl, file);
   const completed = await fetch(`/api/meals/${session.entryId}/complete`, {
     method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: "{}"
   });

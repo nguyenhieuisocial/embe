@@ -139,6 +139,20 @@ describe("private review-first meal analysis API", () => {
     expect(payload.worker.status).toBe("online");
   });
 
+  it("returns a saved meal while background nutrition is still pending", async () => {
+    rpc.mockResolvedValueOnce({ data: [{
+      id: entryId, meal_type: "lunch", eaten_at: "2026-09-01T05:00:00Z", note: "ít cơm",
+      status: "nutrition_pending", analysis: rawAnalysis
+    }], error: null });
+    rpc.mockResolvedValueOnce({ data: { state: "online", last_seen_at: new Date().toISOString() }, error: null });
+
+    const response = await history(request("https://embe.hieu.asia/api/meals?days=7", undefined, "GET"));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.history).toEqual([expect.objectContaining({ id: entryId, status: "processing" })]);
+  });
+
   it("shows a stale home worker clearly while keeping meal history available", async () => {
     rpc.mockResolvedValueOnce({ data: [], error: null });
     rpc.mockResolvedValueOnce({ data: { state: "online", last_seen_at: "2026-08-01T00:00:00Z" }, error: null });

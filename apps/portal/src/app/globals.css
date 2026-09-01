@@ -1572,6 +1572,21 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   gap: 18px;
   padding: 16px;
 }
+.health-saved-card {
+  align-items: center;
+  background: linear-gradient(145deg, #fff8fa, var(--surface));
+  border: 1px solid #efd8e0;
+  border-radius: calc(var(--radius) + 2px);
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+.health-saved-card > div { align-items: center; display: flex; gap: 10px; min-width: 0; }
+.health-saved-card > div > span { align-items: center; background: var(--jade-soft); border-radius: 50%; color: var(--jade); display: flex; flex: 0 0 30px; height: 30px; justify-content: center; }
+.health-saved-card p { display: grid; gap: 2px; margin: 0; min-width: 0; }
+.health-saved-card strong { font-size: .9rem; }
+.health-saved-card small { color: var(--ink-soft); font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.health-saved-card button { background: #fff0f4; border: 1px solid #e8c3cf; border-radius: 999px; color: #91435c; font: inherit; font-size: .78rem; font-weight: 700; min-height: 44px; padding: 8px 14px; width: 100%; }
 .health-fields {
   display: grid;
   gap: 12px;
@@ -1683,6 +1698,23 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   margin-top: 12px;
 }
 .health-chart-heading > span { color: var(--ink-soft); flex: none; font-size: .75rem; }
+.health-history { border-top: 1px solid var(--line); display: grid; gap: 8px; padding-top: 12px; }
+.health-history-heading { align-items: baseline; display: flex; justify-content: space-between; }
+.health-history-heading h3 { font-size: 1rem; margin: 0; }
+.health-history-heading small { color: var(--ink-soft); font-size: .72rem; }
+.health-history-card { border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: clip; }
+.health-history-card summary { align-items: center; cursor: pointer; display: flex; justify-content: space-between; list-style: none; min-height: 52px; padding: 9px 11px; }
+.health-history-card summary::-webkit-details-marker { display: none; }
+.health-history-card summary span { display: grid; gap: 1px; min-width: 0; }
+.health-history-card summary strong { font-size: .82rem; }
+.health-history-card summary small { color: var(--ink-soft); font-size: .7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.health-history-card summary i { color: var(--ink-soft); font-style: normal; }
+.health-history-card[open] summary i { transform: rotate(180deg); }
+.health-history-card dl { background: var(--surface); border-top: 1px solid var(--line); display: grid; gap: 1px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 9px 11px; }
+.health-history-card dl div { display: grid; gap: 1px; padding: 4px 0; }
+.health-history-card dt { color: var(--ink-soft); font-size: .68rem; }
+.health-history-card dd { font-size: .78rem; font-weight: 650; margin: 0; }
+.health-history-card > p { background: var(--surface); color: var(--ink-soft); font-size: .72rem; line-height: 1.45; margin: 0; padding: 0 11px 9px; }
 .health-chart-scroll {
   display: flex;
   gap: 10px;

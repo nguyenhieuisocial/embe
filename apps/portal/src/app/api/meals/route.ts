@@ -80,7 +80,14 @@ export async function POST(request: Request): Promise<Response> {
   }
 }
 
-type HistoryEntry = { id: string; mealType: string; eatenAt: string; note: string; analysis: ReturnType<typeof normalizeMealAnalysis> };
+type HistoryEntry = {
+  id: string;
+  mealType: string;
+  eatenAt: string;
+  note: string;
+  status: "ready" | "processing";
+  analysis: NonNullable<ReturnType<typeof normalizeMealAnalysis>>;
+};
 type WorkerStatus = { status: "online" | "degraded" | "offline" | "unknown"; lastSeenAt?: string };
 
 function workerStatus(value: unknown): WorkerStatus {
@@ -122,7 +129,9 @@ export async function GET(request: Request): Promise<Response> {
       const analysis = normalizeMealAnalysis(value.analysis);
       if (!isUuidV4(value.id) || typeof value.meal_type !== "string" || !MEAL_TYPES.has(value.meal_type)
           || typeof value.eaten_at !== "string" || typeof value.note !== "string" || !analysis) return [];
-      return [{ id: value.id, mealType: value.meal_type, eatenAt: value.eaten_at, note: value.note, analysis }];
+      const status = value.status === "nutrition_pending" || value.status === "nutrition_processing"
+        ? "processing" : "ready";
+      return [{ id: value.id, mealType: value.meal_type, eatenAt: value.eaten_at, note: value.note, status, analysis }];
     });
     const heartbeat = await store.rpc("embe_get_worker_heartbeat", { p_worker_name: "meal-analysis" });
     return privateReply({

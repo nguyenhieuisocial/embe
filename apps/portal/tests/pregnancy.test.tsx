@@ -160,6 +160,10 @@ describe("pregnancy daily page", () => {
         healthNote: "Hơi chóng mặt sau khi ngủ dậy."
       })
     }));
+    expect(screen.queryByRole("button", { name: "Lưu sức khỏe hôm nay" })).not.toBeInTheDocument();
+    expect(screen.getByText("Đã lưu sức khỏe hôm nay")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sửa thông tin hôm nay" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Lịch sử sức khỏe chi tiết" })).toBeInTheDocument();
   });
 
   it("stops an incomplete blood-pressure pair before sending private data", async () => {

@@ -14,6 +14,7 @@ vi.mock("../src/lib/meal-photo-client", () => ({
 
 const history = [{
   id: "11111111-1111-4111-8111-111111111111", mealType: "lunch", eatenAt: "2026-09-01T05:00:00Z", note: "ít cơm",
+  status: "processing" as const,
   analysis: {
     foods: [{ nameVi: "Cơm và rau", searchNameEn: "rice vegetables", estimatedGrams: 200,
       confidence: 0.8, foodGroups: ["starch", "vegetables"], safetyFlags: [] }],
@@ -42,6 +43,7 @@ describe("mobile meal journal", () => {
     await waitFor(() => expect(fetch).toHaveBeenLastCalledWith("/api/meals?days=28", { cache: "no-store" }));
     fireEvent.click(screen.getByText("Cơm và rau"));
     expect(screen.getByText("ít cơm")).toBeInTheDocument();
+    expect(screen.getByText("Đã lưu · đang bổ sung dinh dưỡng")).toBeInTheDocument();
   });
 
   it("saves a written meal when no photo is selected", async () => {

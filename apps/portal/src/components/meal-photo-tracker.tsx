@@ -185,7 +185,7 @@ export default function MealPhotoTracker() {
           : history.length === 0 ? <p className="meal-empty">Chưa có bữa nào trong khoảng này. Chụp món đầu tiên để bắt đầu.</p>
             : <>
               <div className="meal-summary-row">
-                <span><b>{history.length}</b><small>bữa đã xác nhận</small></span>
+                <span><b>{history.length}</b><small>bữa đã lưu</small></span>
                 {dashboard.calorieRange ? <span><b>{Math.round(dashboard.calorieRange.low).toLocaleString("vi-VN")}–{Math.round(dashboard.calorieRange.high).toLocaleString("vi-VN")}</b><small>kcal đã ghi</small></span> : null}
               </div>
 
@@ -226,7 +226,8 @@ export default function MealPhotoTracker() {
                   <summary>
                     <span><b>{labels[entry.mealType] ?? "Bữa ăn"}</b><small>{mealDate(entry.eatenAt)}</small></span>
                     <span><b>{entry.analysis.foods.map((food) => food.nameVi).join(", ") || entry.note || "Ghi chú bữa ăn"}</b>
-                      <small>{entry.analysis.entryMode === "note" ? "Chỉ có ghi chú"
+                      <small>{entry.status === "processing" ? "Đã lưu · đang bổ sung dinh dưỡng"
+                        : entry.analysis.entryMode === "note" ? "Chỉ có ghi chú"
                         : entry.analysis.nutrition?.calorieRange ? `${Math.round(entry.analysis.nutrition.calorieRange.low)}–${Math.round(entry.analysis.nutrition.calorieRange.high)} kcal`
                           : "Đang bổ sung dinh dưỡng"}</small></span>
                   </summary>
