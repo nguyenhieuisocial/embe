@@ -824,10 +824,12 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .inventory-boundary p,
 .help-rule p { color: var(--ink-soft); font-size: .875rem; }
 .pregnancy-care-art {
+  aspect-ratio: 16 / 7;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   display: block;
   height: auto;
+  object-fit: cover;
   width: 100%;
 }
 .week-card {
@@ -836,15 +838,15 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   display: grid;
-  gap: 10px;
-  padding: 18px;
+  gap: 8px;
+  padding: 14px;
 }
 .stage-line { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
 .stage-name { background: var(--sun-soft); border-radius: var(--radius-pill); color: var(--sun-ink); font-size: .75rem; font-weight: 600; padding: 6px 10px; }
 .week-number {
   color: var(--jade);
   font-family: var(--font-display), Georgia, serif;
-  font-size: 1.75rem;
+  font-size: 1.45rem;
   font-weight: 600;
   line-height: 1.1;
 }
@@ -886,10 +888,10 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   border: 1px solid color-mix(in srgb, var(--coral) 24%, transparent);
   border-radius: var(--radius);
   display: grid;
-  gap: 14px;
+  gap: 8px;
   margin: 16px auto 0;
   max-width: var(--content);
-  padding: 18px var(--gutter);
+  padding: 14px var(--gutter);
 }
 .pregnancy-urgent-shortcut h2 { font-size: 1.125rem; margin: 4px 0 6px; }
 .pregnancy-urgent-shortcut p { color: var(--ink-soft); font-size: .875rem; margin: 0; }
@@ -906,9 +908,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .care-summary {
   align-items: center;
   display: flex;
-  gap: 16px;
+  gap: 12px;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .progress-stamp {
   align-items: baseline;
@@ -918,7 +920,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   display: flex;
   flex: none;
   gap: 2px;
-  padding: 8px 16px;
+  padding: 6px 12px;
 }
 .progress-stamp strong { font-size: 1.25rem; font-weight: 600; }
 .progress-stamp span { font-size: .875rem; }
