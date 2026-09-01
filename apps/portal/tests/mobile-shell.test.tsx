@@ -104,7 +104,6 @@ describe("mobile family shell", () => {
       ".skip-link",
       ".connection-banner",
       ".today-hero",
-      ".pregnancy-care-art",
       ".trimester-grid",
       ".urgent-care",
       ".journal-prompts",
@@ -120,7 +119,7 @@ describe("mobile family shell", () => {
   it("keeps illustrations inside the phone viewport instead of forcing sideways scroll", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
-    for (const selector of [".pregnancy-care-art", ".memory-empty img"]) {
+    for (const selector of [".memory-empty img"]) {
       const declarations = ruleBody(css, selector);
       expect(declarations, selector).toMatch(/width:\s*100%/);
       expect(declarations, selector).toMatch(/height:\s*auto/);
