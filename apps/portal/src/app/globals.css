@@ -2692,6 +2692,79 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 /* ── Nhật ký bữa ăn: camera-first, review-first ─────────────── */
 
+/* ── Hồ sơ khám thai: một bìa hồ sơ nhỏ, không phải bảng quản trị ── */
+
+.medical-records { display: grid; gap: 14px; scroll-margin-top: 16px; }
+.medical-records-heading { align-items: end; }
+.medical-add {
+  background: var(--coral-soft); border: 1px solid color-mix(in srgb, var(--coral) 35%, var(--line));
+  border-radius: 999px; color: var(--coral); font: inherit; font-size: .8125rem; font-weight: 700;
+  min-height: 44px; padding: 8px 14px; white-space: nowrap;
+}
+.next-appointment {
+  align-items: center; background: linear-gradient(135deg, color-mix(in srgb, var(--coral-soft) 82%, var(--paper)), var(--paper));
+  border: 1px solid color-mix(in srgb, var(--coral) 24%, var(--line)); border-radius: var(--radius-lg);
+  display: grid; gap: 12px; grid-template-columns: 38px minmax(0, 1fr); padding: 15px;
+}
+.next-appointment > span { align-items: center; background: var(--paper); border-radius: 50%; color: var(--coral); display: flex; font-size: 1.5rem; height: 38px; justify-content: center; }
+.next-appointment > div { display: grid; gap: 2px; }
+.next-appointment small, .next-appointment p { color: var(--ink-soft); font-size: .8125rem; margin: 0; }
+.medical-empty-short { background: var(--paper); border: 1px dashed var(--line); border-radius: var(--radius-md); display: grid; gap: 3px; padding: 14px; }
+.medical-empty-short p { color: var(--ink-soft); font-size: .8125rem; margin: 0; }
+.medical-form, .medical-insights {
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); display: grid; gap: 14px; padding: 15px;
+}
+.medical-kind-picker, .medical-filters { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; }
+.medical-kind-picker::-webkit-scrollbar, .medical-filters::-webkit-scrollbar { display: none; }
+.medical-kind-picker button, .medical-filters button {
+  background: transparent; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); flex: 0 0 auto;
+  font: inherit; font-size: .75rem; min-height: 44px; padding: 7px 12px;
+}
+.medical-kind-picker button[aria-pressed="true"], .medical-filters button[aria-pressed="true"] { background: var(--coral-soft); border-color: var(--coral); color: var(--coral); font-weight: 700; }
+.medical-form-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.medical-form label, .medical-medicine-row label, .medical-notes, .medical-files { display: grid; font-size: .75rem; font-weight: 650; gap: 5px; }
+.medical-form-grid > label:first-child, .medical-wide, .medical-notes, .medical-files { grid-column: 1 / -1; }
+.medical-measurements { border-top: 1px solid var(--line); padding-top: 12px; }
+.medical-measurements summary { align-items: center; cursor: pointer; display: flex; font-size: .8125rem; font-weight: 650; justify-content: space-between; min-height: 44px; }
+.medical-measurements > div { display: grid; gap: 9px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding-top: 8px; }
+.medical-measurements label { display: grid; font-size: .75rem; gap: 4px; }
+.medical-medicines { border-top: 1px solid var(--line); display: grid; gap: 10px; padding-top: 13px; }
+.medical-medicine-row { background: var(--surface); border-radius: var(--radius-sm); display: grid; gap: 9px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 11px; }
+.medical-medicine-row label:first-child, .medical-medicine-row label:last-child { grid-column: 1 / -1; }
+.medical-medicines > button { background: transparent; border: 0; color: var(--coral); font: inherit; font-size: .8125rem; font-weight: 700; min-height: 44px; text-align: left; }
+.medical-files { background: color-mix(in srgb, var(--coral-soft) 50%, var(--paper)); border: 1px dashed color-mix(in srgb, var(--coral) 35%, var(--line)); border-radius: var(--radius-sm); padding: 12px; }
+.medical-files input { min-height: 44px; }
+.medical-files small { color: var(--ink-soft); font-weight: 400; }
+.medical-insights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.medical-insights > div { background: var(--coral-soft); border-radius: var(--radius-sm); display: grid; gap: 1px; padding: 11px; }
+.medical-insights > div strong { font-size: 1.125rem; }
+.medical-insights > div span, .medical-insights > small { color: var(--ink-soft); font-size: .75rem; }
+.medical-insights ul, .medical-insights > p { grid-column: 1 / -1; margin: 0; }
+.medical-insights ul { display: grid; gap: 6px; padding-left: 18px; }
+.medical-insights li, .medical-insights > p { color: var(--ink-soft); font-size: .8125rem; }
+.medical-insights > small { border-top: 1px solid var(--line); grid-column: 1 / -1; padding-top: 10px; }
+.medical-filters { margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); scroll-padding-inline: var(--gutter); }
+.medical-timeline { display: grid; gap: 10px; padding-left: 13px; }
+.medical-timeline > article { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-md); display: grid; gap: 6px; padding: 13px; position: relative; }
+.medical-timeline > article > i { background: var(--coral); border: 3px solid var(--surface); border-radius: 50%; height: 13px; left: -20px; position: absolute; top: 18px; width: 13px; }
+.medical-timeline::before { background: color-mix(in srgb, var(--coral) 25%, var(--line)); content: ""; inset: 0 auto 0 0; position: absolute; width: 1px; }
+.medical-timeline { position: relative; }
+.medical-record-head { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
+.medical-record-head span { color: var(--coral); font-size: .6875rem; font-weight: 750; letter-spacing: .02em; }
+.medical-record-head button { background: transparent; border: 0; color: var(--ink-soft); font: inherit; font-size: .75rem; min-height: 36px; padding: 4px 6px; }
+.medical-timeline time, .medical-timeline > article > small { color: var(--ink-soft); font-size: .75rem; }
+.medical-timeline > article > p { color: var(--ink-soft); font-size: .8125rem; margin: 0; }
+.medical-record-medicines { display: grid; gap: 7px; list-style: none; margin: 4px 0 0; padding: 0; }
+.medical-record-medicines li { background: var(--surface); border-radius: var(--radius-sm); display: grid; font-size: .75rem; gap: 2px; padding: 9px; }
+.medical-record-metrics { display: grid; gap: 7px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.medical-record-metrics span { background: var(--coral-soft); border-radius: var(--radius-sm); color: var(--ink-soft); display: grid; font-size: .6875rem; gap: 1px; padding: 8px; }
+.medical-record-metrics b { color: var(--ink); font-size: .8125rem; }
+.medical-record-note { border-left: 2px solid color-mix(in srgb, var(--coral) 55%, var(--line)); padding-left: 9px; }
+.medical-documents { display: flex; flex-wrap: wrap; gap: 7px; }
+.medical-documents a { background: var(--surface); border-radius: 999px; color: var(--ink); font-size: .75rem; max-width: 100%; overflow: hidden; padding: 8px 10px; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.medical-status { color: var(--ink-soft); font-size: .75rem; margin: 0; }
+.medical-status.is-error { color: var(--coral); }
+
 .meal-tracker { display: grid; gap: 16px; scroll-margin-top: 16px; }
 .meal-capture-card,
 .meal-review,

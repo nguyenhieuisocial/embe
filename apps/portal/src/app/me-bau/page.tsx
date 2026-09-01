@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "../../components/app-header";
 import PregnancyCareTracker from "../../components/pregnancy-care-tracker";
 import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
+import PregnancyMedicalRecords from "../../components/pregnancy-medical-records";
 import MealPhotoTracker from "../../components/meal-photo-tracker";
 import {
   dailyChecklist,
@@ -277,6 +278,7 @@ export default function PregnancyPage() {
       <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
         <a href="#viec-hom-nay">Hôm nay</a>
         <a href="#suc-khoe">Sức khỏe</a>
+        <a href="#ho-so-kham">Hồ sơ khám</a>
         <a href="#vi-chat-thuoc">Thuốc &amp; vi chất</a>
         <a href="#bua-an">Bữa ăn</a>
         <a href="#cam-nang">Ăn &amp; kiêng</a>
@@ -358,6 +360,8 @@ export default function PregnancyPage() {
       </section>
 
       <div id="suc-khoe"><PregnancyHealthTracker /></div>
+
+      <PregnancyMedicalRecords />
 
       <PregnancyCareTracker pregnancyWeek={week} />
 
