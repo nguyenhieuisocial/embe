@@ -2722,10 +2722,10 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 .medical-kind-picker button[aria-pressed="true"], .medical-filters button[aria-pressed="true"] { background: var(--coral-soft); border-color: var(--coral); color: var(--coral); font-weight: 700; }
 .medical-form-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.medical-form label, .medical-medicine-row label, .medical-notes, .medical-files { display: grid; font-size: .75rem; font-weight: 650; gap: 5px; }
+.medical-form label, .medical-medicine-row label, .medical-notes, .medical-files { display: grid; font-size: .75rem; font-weight: 650; gap: 5px; min-width: 0; }
 .medical-form input:not([type="file"]), .medical-form select, .medical-form textarea {
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
-  font-size: 1rem; min-height: 44px; padding: 10px 12px; width: 100%;
+  font-size: 1rem; min-height: 44px; min-width: 0; padding: 10px 12px; width: 100%;
 }
 .medical-form-grid > label:first-child, .medical-wide, .medical-notes, .medical-files { grid-column: 1 / -1; }
 .medical-measurements { border-top: 1px solid var(--line); padding-top: 12px; }
