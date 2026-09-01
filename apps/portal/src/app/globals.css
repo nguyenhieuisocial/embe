@@ -2723,6 +2723,10 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .medical-kind-picker button[aria-pressed="true"], .medical-filters button[aria-pressed="true"] { background: var(--coral-soft); border-color: var(--coral); color: var(--coral); font-weight: 700; }
 .medical-form-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .medical-form label, .medical-medicine-row label, .medical-notes, .medical-files { display: grid; font-size: .75rem; font-weight: 650; gap: 5px; }
+.medical-form input:not([type="file"]), .medical-form select, .medical-form textarea {
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  font-size: 1rem; min-height: 44px; padding: 10px 12px; width: 100%;
+}
 .medical-form-grid > label:first-child, .medical-wide, .medical-notes, .medical-files { grid-column: 1 / -1; }
 .medical-measurements { border-top: 1px solid var(--line); padding-top: 12px; }
 .medical-measurements summary { align-items: center; cursor: pointer; display: flex; font-size: .8125rem; font-weight: 650; justify-content: space-between; min-height: 44px; }
@@ -2751,7 +2755,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .medical-timeline { position: relative; }
 .medical-record-head { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
 .medical-record-head span { color: var(--coral); font-size: .6875rem; font-weight: 750; letter-spacing: .02em; }
-.medical-record-head button { background: transparent; border: 0; color: var(--ink-soft); font: inherit; font-size: .75rem; min-height: 36px; padding: 4px 6px; }
+.medical-record-head button { background: transparent; border: 0; color: var(--ink-soft); font: inherit; font-size: .75rem; min-height: 44px; padding: 4px 6px; }
 .medical-timeline time, .medical-timeline > article > small { color: var(--ink-soft); font-size: .75rem; }
 .medical-timeline > article > p { color: var(--ink-soft); font-size: .8125rem; margin: 0; }
 .medical-record-medicines { display: grid; gap: 7px; list-style: none; margin: 4px 0 0; padding: 0; }
@@ -2761,7 +2765,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .medical-record-metrics b { color: var(--ink); font-size: .8125rem; }
 .medical-record-note { border-left: 2px solid color-mix(in srgb, var(--coral) 55%, var(--line)); padding-left: 9px; }
 .medical-documents { display: flex; flex-wrap: wrap; gap: 7px; }
-.medical-documents a { background: var(--surface); border-radius: 999px; color: var(--ink); font-size: .75rem; max-width: 100%; overflow: hidden; padding: 8px 10px; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.medical-documents a { align-items: center; background: var(--surface); border-radius: 999px; color: var(--ink); display: inline-flex; font-size: .75rem; max-width: 100%; min-height: 44px; overflow: hidden; padding: 8px 10px; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
 .medical-status { color: var(--ink-soft); font-size: .75rem; margin: 0; }
 .medical-status.is-error { color: var(--coral); }
 
