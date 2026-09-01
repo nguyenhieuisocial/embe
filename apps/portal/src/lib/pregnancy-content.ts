@@ -305,6 +305,18 @@ export const pregnancyGuidanceLevels = [
 
 export const pregnancySources = [
   {
+    label: "NIH ODS — nhu cầu và giới hạn vitamin, khoáng chất trong thai kỳ",
+    href: "https://ods.od.nih.gov/factsheets/Pregnancy-HealthProfessional/"
+  },
+  {
+    label: "National Academies — phương trình nhu cầu năng lượng DRI 2023",
+    href: "https://nap.nationalacademies.org/resource/26818/DRIs_for_Energy_Highlights.pdf"
+  },
+  {
+    label: "Apple — quyền riêng tư và quyền truy cập HealthKit",
+    href: "https://developer.apple.com/documentation/healthkit/authorizing-access-to-health-data"
+  },
+  {
     label: "WHO — chăm sóc trước sinh, dinh dưỡng và vận động",
     href: "https://www.who.int/publications/i/item/9789241549912"
   },
