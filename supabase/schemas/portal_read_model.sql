@@ -2295,3 +2295,45 @@ VALUES ('embe-meal-inbox', 'embe-meal-inbox', false, 12000000,
 ON CONFLICT (id) DO UPDATE SET public = false,
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+CREATE TABLE portal_read_model.family_parent_profile (
+  role text PRIMARY KEY CHECK (role IN ('mother', 'father')),
+  birth_date date CHECK (birth_date IS NULL OR birth_date BETWEEN DATE '1940-01-01' AND CURRENT_DATE),
+  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+);
+ALTER TABLE portal_read_model.family_parent_profile ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portal_read_model.family_parent_profile FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE portal_read_model.family_parent_profile FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE ON TABLE portal_read_model.family_parent_profile TO service_role;
+CREATE POLICY family_parent_profile_deny_clients ON portal_read_model.family_parent_profile
+  FOR ALL TO anon, authenticated USING (false) WITH CHECK (false);
+
+CREATE OR REPLACE FUNCTION public.embe_get_family_profile()
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $function$
+  SELECT jsonb_build_object(
+    'mother_birth_date', (SELECT birth_date FROM portal_read_model.family_parent_profile WHERE role = 'mother'),
+    'father_birth_date', (SELECT birth_date FROM portal_read_model.family_parent_profile WHERE role = 'father')
+  );
+$function$;
+
+CREATE OR REPLACE FUNCTION public.embe_save_family_profile(p_mother_birth_date date, p_father_birth_date date)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+BEGIN
+  IF (p_mother_birth_date IS NOT NULL AND p_mother_birth_date NOT BETWEEN DATE '1940-01-01' AND CURRENT_DATE)
+    OR (p_father_birth_date IS NOT NULL AND p_father_birth_date NOT BETWEEN DATE '1940-01-01' AND CURRENT_DATE)
+  THEN RAISE EXCEPTION 'invalid family profile'; END IF;
+  INSERT INTO portal_read_model.family_parent_profile (role, birth_date, updated_at)
+  VALUES ('mother', p_mother_birth_date, timezone('utc', now())),
+         ('father', p_father_birth_date, timezone('utc', now()))
+  ON CONFLICT (role) DO UPDATE SET birth_date = EXCLUDED.birth_date, updated_at = EXCLUDED.updated_at;
+  INSERT INTO portal_read_model.pregnancy_wellness_profile (singleton, birth_date, updated_at)
+  VALUES (true, p_mother_birth_date, timezone('utc', now()))
+  ON CONFLICT (singleton) DO UPDATE SET birth_date = EXCLUDED.birth_date, updated_at = EXCLUDED.updated_at;
+  RETURN public.embe_get_family_profile();
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.embe_get_family_profile() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.embe_save_family_profile(date,date) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.embe_get_family_profile() TO service_role;
+GRANT EXECUTE ON FUNCTION public.embe_save_family_profile(date,date) TO service_role;

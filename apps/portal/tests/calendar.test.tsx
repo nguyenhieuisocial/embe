@@ -18,6 +18,7 @@ describe("Vietnamese family calendar", () => {
     const selected = new Date(2026, 7, 30);
     render(
       <FamilyCalendar
+        birthdays={[{ birthDate: "1995-08-30", label: "Mẹ Ngân" }]}
         month={8}
         year={2026}
         selectedDate={selected}
@@ -27,8 +28,9 @@ describe("Vietnamese family calendar", () => {
     );
 
     expect(screen.getAllByRole("link", { name: /Xem ngày/ })).toHaveLength(42);
-    expect(screen.getByRole("link", { name: /Xem ngày 30 tháng 8 năm 2026.*2 kỷ niệm.*1 trên 3 việc/ }))
+    expect(screen.getByRole("link", { name: /Xem ngày 30 tháng 8 năm 2026.*2 kỷ niệm.*1 trên 3 việc.*sinh nhật Mẹ Ngân/ }))
       .toHaveAttribute("href", "/ke-hoach?date=2026-08-30");
+    expect(screen.getByText("Sinh nhật")).toBeInTheDocument();
     expect(screen.getByText("18/7")).toBeInTheDocument();
   });
 });

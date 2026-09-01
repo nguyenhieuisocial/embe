@@ -4,6 +4,7 @@ import MemoryTabs from "../../components/memory-tabs";
 import { calendarMonth, dateKey, monthRange, parseDateKey } from "../../lib/calendar";
 import { getMediaMemoryDates } from "../../lib/media";
 import { getFamilyTasks } from "../../lib/family-tasks-server";
+import { getFamilyProfile } from "../../lib/family-profile-server";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,10 @@ export default async function CalendarPage({
   const range = monthRange(month, year);
   const firstDay = `${year}-${String(month).padStart(2, "0")}-01`;
   const lastDay = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`;
-  const [memoryDates, tasks] = await Promise.all([
+  const [memoryDates, tasks, familyProfile] = await Promise.all([
     getMediaMemoryDates(range),
-    getFamilyTasks(firstDay, lastDay).catch(() => [])
+    getFamilyTasks(firstDay, lastDay).catch(() => []),
+    getFamilyProfile()
   ]);
   const memoryCounts = memoryDates.reduce<Record<string, number>>((counts, value) => {
     const key = dateKey(value);
@@ -46,7 +48,13 @@ export default async function CalendarPage({
         <p className="intro">Xem ngày dương, ngày âm và mở lại đúng kỷ niệm chỉ bằng một chạm.</p>
       </section>
       <MemoryTabs current="calendar" />
-      <FamilyCalendar month={month} year={year} selectedDate={selectedDate} memoryCounts={memoryCounts} taskCounts={taskCounts} />
+      <FamilyCalendar
+        birthdays={[
+          ...(familyProfile.motherBirthDate ? [{ birthDate: familyProfile.motherBirthDate, label: "Mẹ Ngân" }] : []),
+          ...(familyProfile.fatherBirthDate ? [{ birthDate: familyProfile.fatherBirthDate, label: "Ba Hiếu" }] : [])
+        ]}
+        month={month} year={year} selectedDate={selectedDate} memoryCounts={memoryCounts} taskCounts={taskCounts}
+      />
     </main>
   );
 }

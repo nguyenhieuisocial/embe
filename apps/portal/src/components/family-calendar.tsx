@@ -13,12 +13,14 @@ function taskLabel(count: { completed: number; total: number }): string {
 }
 
 export default function FamilyCalendar({
+  birthdays,
   memoryCounts,
   month,
   selectedDate,
   taskCounts,
   year
 }: {
+  birthdays?: Array<{ birthDate: string; label: string }>;
   memoryCounts: Record<string, number>;
   month: number;
   selectedDate?: Date | null;
@@ -54,15 +56,17 @@ export default function FamilyCalendar({
           const key = dateKey(cell.solar);
           const count = memoryCounts[key] ?? 0;
           const taskCount = taskCounts[key] ?? { completed: 0, total: 0 };
+          const birthday = birthdays?.find(({ birthDate }) => birthDate.slice(5) === key.slice(5));
           const classes = [
             "calendar-day",
             !cell.isCurrentMonth && "is-outside",
             cell.isToday && "is-today",
             cell.isSelected && "is-selected",
             count > 0 && "has-memory",
-            taskCount.total > 0 && "has-task"
+            taskCount.total > 0 && "has-task",
+            birthday && "has-birthday"
           ].filter(Boolean).join(" ");
-          const label = `Xem ngày ${cell.solar.getDate()} tháng ${cell.solar.getMonth() + 1} năm ${cell.solar.getFullYear()}, âm lịch ${cell.lunar.day} tháng ${cell.lunar.month}${memoryLabel(count)}${taskLabel(taskCount)}`;
+          const label = `Xem ngày ${cell.solar.getDate()} tháng ${cell.solar.getMonth() + 1} năm ${cell.solar.getFullYear()}, âm lịch ${cell.lunar.day} tháng ${cell.lunar.month}${memoryLabel(count)}${taskLabel(taskCount)}${birthday ? `, sinh nhật ${birthday.label}` : ""}`;
 
           return (
             <a
@@ -76,6 +80,7 @@ export default function FamilyCalendar({
               <span className="lunar-day">{lunarDateLabel(cell.solar)}</span>
               {count > 0 ? <span className="memory-dot" aria-hidden="true" /> : null}
               {taskCount.total > 0 ? <span className="task-dot" aria-hidden="true" /> : null}
+              {birthday ? <span className="birthday-mark" aria-hidden="true">♥</span> : null}
             </a>
           );
         })}
@@ -83,6 +88,7 @@ export default function FamilyCalendar({
       <div className="calendar-legend">
         <span><i className="memory-dot" aria-hidden="true" /> Có kỷ niệm</span>
         <span><i className="task-dot" aria-hidden="true" /> Có việc</span>
+        <span><i className="birthday-mark" aria-hidden="true">♥</i> Sinh nhật</span>
         <span>Chữ nhỏ là ngày âm</span>
       </div>
     </section>

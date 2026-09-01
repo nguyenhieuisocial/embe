@@ -1,5 +1,6 @@
 import AppHeader from "../../components/app-header";
 import DeviceSetup from "../../components/device-setup";
+import FamilyProfile from "../../components/family-profile";
 import { Icon, type IconName } from "../../components/embe-icon";
 
 const familyTools: Array<{
@@ -80,6 +81,8 @@ export default function FamilyHomePage() {
       </nav>
 
       <DeviceSetup />
+
+      <FamilyProfile />
 
       <section className="section family-connection" aria-labelledby="photo-connection-title">
         <div className="section-head">
