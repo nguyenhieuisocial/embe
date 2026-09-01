@@ -55,14 +55,18 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/\.quick-trigger\s*\{[^}]*env\(safe-area-inset-bottom\)/s);
   });
 
-  it("uses one tactile control system and a native-like active dock", () => {
+  it("uses the Opus 5 tactile control system and active navigation", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
     expect(css).toContain("--control: 54px");
+    expect(css).toContain("--paper: #FBF8F1");
     expect(ruleBody(css, ".btn")).toMatch(/min-height:\s*var\(--control\)/);
-    expect(ruleBody(css, ".family-nav")).toMatch(/border-radius:\s*22px/);
+    expect(ruleBody(css, ".family-nav")).toMatch(/bottom:\s*0/);
     expect(ruleBody(css, '.family-nav a[aria-current="page"]')).toMatch(/background:\s*var\(--jade-soft\)/);
     expect(css).toMatch(/button,\s*\n?\s*\[role="button"\][^{]*\{[^}]*-webkit-tap-highlight-color:\s*transparent/s);
+    expect(ruleBody(css, ":focus-visible")).toMatch(/outline:\s*3px solid var\(--sun\)/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*:has\([^)]*:focus[^)]*\)[^{]*\.family-nav[^{]*\{[^}]*display:\s*none/s);
+    expect(ruleBody(css, '.journal-form > button[type="submit"]')).toMatch(/position:\s*sticky/);
   });
 
   it("stacks dense form rows on phones instead of squeezing two fields together", () => {
