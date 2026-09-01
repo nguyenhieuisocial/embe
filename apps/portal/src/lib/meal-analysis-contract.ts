@@ -47,7 +47,7 @@ export function normalizeMealAnalysis(value: unknown): MealAnalysis | null {
     const food = candidate as Record<string, unknown>;
     const nameVi = text(food.name_vi ?? food.nameVi, 80);
     const searchNameEn = text(food.search_name_en ?? food.searchNameEn, 100);
-    const grams = food.estimated_grams ?? food.estimatedGrams;
+    const grams = Object.hasOwn(food, "estimated_grams") ? food.estimated_grams : food.estimatedGrams;
     const confidence = food.confidence;
     const groups = food.food_groups ?? food.foodGroups;
     const flags = food.safety_flags ?? food.safetyFlags;
