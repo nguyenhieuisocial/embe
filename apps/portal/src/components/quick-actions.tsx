@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { calculatePregnancyWeek } from "../lib/pregnancy";
+import { useFamilyStage } from "../lib/use-family-stage";
 import { Icon, type IconName } from "./embe-icon";
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
@@ -38,6 +39,7 @@ export default function QuickActions() {
   const [dueDate, setDueDate] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const { postpartum } = useFamilyStage();
 
   useEffect(() => {
     const refreshStage = () => setDueDate(localStorage.getItem(DUE_DATE_KEY) ?? "");
@@ -123,7 +125,14 @@ export default function QuickActions() {
               </button>
             </header>
             <nav className="sheet-body quick-action-list" aria-label="Các thao tác nhanh">
-              {actionsForStage(dueDate).map((action) => (
+              {(postpartum ? [
+                { href: "/be?quick=feeding", icon: "milk" as const, title: "Bắt đầu cữ bú", detail: "Chạm một lần, kết thúc khi Bé bú xong" },
+                { href: "/be?quick=diaper", icon: "check" as const, title: "Ghi thay tã", detail: "Ướt, bẩn hoặc cả hai" },
+                { href: "/be?quick=sleep", icon: "sleep" as const, title: "Bắt đầu giấc ngủ", detail: "Theo dõi bằng bộ đếm giờ" },
+                { href: "/be?quick=temperature", icon: "room" as const, title: "Ghi nhiệt độ", detail: "Lưu số đo vừa kiểm tra" },
+                { href: "/me", icon: "care" as const, title: "Mẹ hồi phục hôm nay", detail: "Ghi thật nhanh các dấu hiệu cần theo dõi" },
+                { href: "/ky-niem#gui-anh", icon: "memory" as const, title: "Chụp một khoảnh khắc", detail: "Gửi vào album gia đình" }
+              ] : actionsForStage(dueDate)).map((action) => (
                 <a className="quick-action" href={action.href} key={action.href} onClick={() => setOpen(false)}>
                   <span className="quick-action-mark" aria-hidden="true"><Icon name={action.icon} /></span>
                   <span>

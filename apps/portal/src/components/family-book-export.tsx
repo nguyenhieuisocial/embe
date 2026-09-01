@@ -50,8 +50,10 @@ export default function FamilyBookExport() {
       readJson(`/api/pregnancy?day=${day}`),
       readJson(`/api/pregnancy/health?end=${day}&days=${days}`),
       readJson(`/api/pregnancy/care?day=${day}`),
-      readJson("/api/pregnancy/records")
-    ]).then(([pregnancy, health, care, medical]) => {
+      readJson("/api/pregnancy/records"), readJson("/api/family/lifecycle"),
+      readJson(`/api/postpartum/health?end=${day}&days=${days}`), readJson(`/api/baby/care?day=${day}`),
+      readJson("/api/baby/medical"), readJson("/api/baby/development")
+    ]).then(([pregnancy, health, care, medical, lifecycle, postpartum, babyCare, babyMedical, development]) => {
       if (!active) return;
       if (!pregnancy && !health && !care && !medical) {
         setStatus("error");
@@ -74,7 +76,13 @@ export default function FamilyBookExport() {
           return Number.isFinite(occurredAt) && occurredAt >= rangeStart && occurredAt <= rangeEnd;
         }),
         plans: Array.isArray(snapshot?.plans) ? (snapshot.plans as CarePlan[]).filter((plan) => plan.active) : [],
-        unavailable
+        unavailable,
+        lifecycle: lifecycle ? { birthOccurredAt: typeof lifecycle.birthOccurredAt === "string" ? lifecycle.birthOccurredAt : null, birthWeightG: typeof lifecycle.birthWeightG === "number" ? lifecycle.birthWeightG : null, birthLengthCm: typeof lifecycle.birthLengthCm === "number" ? lifecycle.birthLengthCm : null } : undefined,
+        postpartum: Array.isArray(postpartum?.history) ? postpartum.history as Array<Record<string, unknown>> : [],
+        babyCare: Array.isArray(babyCare?.events) ? babyCare.events as FamilyBookReport["babyCare"] : [],
+        babyMedical: Array.isArray(babyMedical?.records) ? babyMedical.records as FamilyBookReport["babyMedical"] : [],
+        growth: Array.isArray(development?.growth) ? development.growth as FamilyBookReport["growth"] : [],
+        milestones: Array.isArray(development?.milestones) ? development.milestones as FamilyBookReport["milestones"] : []
       });
       setStatus("ready");
     });
@@ -209,6 +217,7 @@ export default function FamilyBookExport() {
           </article>)}</div> : <p className="family-book-empty">Chưa có thuốc hoặc vi chất đang dùng được ghi trong EmBe.</p>}
           <footer>Chỉ dùng thuốc và vi chất theo hướng dẫn của bác sĩ hoặc dược sĩ. Sổ này dùng để xem lại, không thay thế đơn thuốc hay hồ sơ bệnh án.</footer>
         </section>
+        {data.lifecycle?.birthOccurredAt ? <section className="family-book-section"><div className="family-book-section-title"><span>05</span><div><p>Sau khi Bé chào đời</p><h2>Mẹ hồi phục · Bé lớn lên</h2></div></div><div className="family-book-facts"><div><small>Ngày sinh</small><strong>{formatDay(data.lifecycle.birthOccurredAt)}</strong></div><div><small>Lần chăm đã ghi</small><strong>{data.babyCare?.length ?? 0}</strong></div><div><small>Hồ sơ của Bé</small><strong>{data.babyMedical?.length ?? 0}</strong></div><div><small>Cột mốc</small><strong>{data.milestones?.length ?? 0}</strong></div></div>{data.growth?.length ? <div className="family-book-records">{data.growth.slice(0,8).map((item) => <article key={item.id}><div><span>Tăng trưởng</span><time>{formatDay(item.measured_at)}</time></div><p>{item.weight_g ? `${(item.weight_g/1000).toFixed(2)} kg` : "—"} · {item.length_cm ? `${item.length_cm} cm` : "—"} · {item.head_cm ? `${item.head_cm} cm vòng đầu` : "—"}</p></article>)}</div> : <p className="family-book-empty">Chưa có số đo tăng trưởng.</p>}</section> : null}
       </article> : null}
     </section>
   );

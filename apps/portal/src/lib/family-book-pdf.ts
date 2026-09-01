@@ -29,6 +29,12 @@ export type FamilyBookReport = {
   records: MedicalRecord[];
   plans: CarePlan[];
   unavailable: string[];
+  lifecycle?: { birthOccurredAt: string | null; birthWeightG?: number | null; birthLengthCm?: number | null };
+  postpartum?: Array<Record<string, unknown>>;
+  babyCare?: Array<{ id: string; kind: string; occurredAt: string; endedAt: string | null; details: Record<string, unknown> }>;
+  babyMedical?: Array<{ id: string; kind: string; occurredAt: string; title: string; provider: string; notes: string }>;
+  growth?: Array<{ id: string; measured_at: string; weight_g: number | null; length_cm: number | null; head_cm: number | null }>;
+  milestones?: Array<{ id: string; observed_at: string; title: string; domain: string; notes: string }>;
 };
 
 type PdfInput = {
@@ -167,6 +173,17 @@ export function buildFamilyBookDocument({ data, days, generatedAt, week }: PdfIn
         ], style: "card", unbreakable: true
       })) : [{ text: "Chưa có thuốc hoặc vi chất đang dùng được ghi trong EmBe.", style: "empty" }]),
       { text: "Chỉ dùng thuốc và vi chất theo hướng dẫn của bác sĩ hoặc dược sĩ. Sổ này dùng để xem lại, không thay thế đơn thuốc hay hồ sơ bệnh án.", style: "notice", margin: [0, 14, 0, 0] },
+      ...(data.lifecycle?.birthOccurredAt ? [
+        section("05", "SAU KHI BÉ CHÀO ĐỜI", "Hồi phục, chăm Bé & phát triển"),
+        { table: { widths: ["*", "*", "*", "*"], body: [[
+          stat("Ngày sinh", formatDay(data.lifecycle.birthOccurredAt)),
+          stat("Lần chăm đã ghi", data.babyCare?.length ?? 0),
+          stat("Hồ sơ của Bé", data.babyMedical?.length ?? 0),
+          stat("Cột mốc", data.milestones?.length ?? 0)
+        ]] }, layout: "lightHorizontalLines", margin: [0, 0, 0, 10] },
+        ...(data.growth?.length ? [{ text: data.growth.slice(0, 8).map((entry) => `${formatDay(entry.measured_at)} · ${entry.weight_g ? `${Number((entry.weight_g / 1000).toFixed(2))} kg` : "—"} · ${entry.length_cm ? `${entry.length_cm} cm` : "—"}`).join("\n"), style: "muted", margin: [0, 4, 0, 12] }] : [{ text: "Chưa có số đo tăng trưởng trong khoảng này.", style: "empty" }]),
+        ...(data.babyMedical?.length ? data.babyMedical.slice(0, 12).map((record) => ({ stack: [{ text: formatDay(record.occurredAt), style: "tag" }, { text: record.title, style: "cardTitle" }, { text: [record.provider, record.notes].filter(Boolean).join(" · ") || "Không có ghi chú", style: "muted" }], style: "card", unbreakable: true })) : [])
+      ] : []),
       ...(data.unavailable.length ? [{ text: `Dữ liệu tạm thiếu khi xuất: ${data.unavailable.join(", ")}.`, color: "#9a526d", fontSize: 8, margin: [0, 10, 0, 0] }] : [])
     ],
     styles: {

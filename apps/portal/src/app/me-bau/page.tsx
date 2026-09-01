@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
+import BirthTransition from "../../components/birth-transition";
 import PregnancyCareTracker from "../../components/pregnancy-care-tracker";
 import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
 import PregnancyMedicalRecords from "../../components/pregnancy-medical-records";
@@ -264,6 +265,9 @@ export default function PregnancyPage() {
           </details>
         </div>
       </section>
+
+      <BirthTransition />
+      <a className="stage-feature-link" href="/chuan-bi-sinh"><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></a>
 
       <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
         <a href="#viec-hom-nay">Hôm nay</a>

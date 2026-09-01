@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import AppHeader from "../components/app-header";
 import { Icon } from "../components/embe-icon";
-import PregnancyChapter from "../components/pregnancy-chapter";
+import StageToday from "../components/stage-today";
 import { getTimeline, getTimelineFreshness } from "../lib/timeline";
 import { dateInVietnam, LINK_DETAILS } from "../lib/family-task-contract";
 import { getFamilyTasks } from "../lib/family-tasks-server";
@@ -172,7 +172,7 @@ export default function Home() {
 
       </section>
 
-      <PregnancyChapter />
+      <StageToday />
 
       <Suspense fallback={<section className="section day-thread skeleton" aria-label="Đang mở kế hoạch hôm nay"><span className="skeleton-line" /><span className="skeleton-line" /></section>}>
         <TodayPlanPanel />

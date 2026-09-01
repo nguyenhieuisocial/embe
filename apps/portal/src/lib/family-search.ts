@@ -1,7 +1,8 @@
 import { parseMemory, type MediaMemory } from "./media";
 import { parseEvent, type TimelineEvent } from "./timeline";
 
-export type FamilySearchResults = { memories: MediaMemory[]; journal: TimelineEvent[] };
+export type FamilyHealthSearchItem = { id: string; source: "pregnancy" | "baby" | "milestone"; kind: string; occurredAt: string; title: string; provider: string; notes: string };
+export type FamilySearchResults = { memories: MediaMemory[]; journal: TimelineEvent[]; health: FamilyHealthSearchItem[] };
 
 export function normalizeFamilySearch(value: string): string {
   const normalized = value.normalize("NFC")
@@ -51,7 +52,7 @@ function endpoint(baseUrl: string, view: string, select: string, fields: string[
 export async function searchFamilyContent(value: string): Promise<FamilySearchResults> {
   const query = normalizeFamilySearch(value);
   const config = credentials();
-  if (!query || !config) return { memories: [], journal: [] };
+  if (!query || !config) return { memories: [], journal: [], health: [] };
   const headers = { Accept: "application/json", apikey: config.secretKey };
   const mediaUrl = endpoint(
     config.baseUrl,
@@ -68,12 +69,14 @@ export async function searchFamilyContent(value: string): Promise<FamilySearchRe
     query
   );
   try {
-    const [mediaResponse, timelineResponse] = await Promise.all([
+    const [mediaResponse, timelineResponse, healthResponse] = await Promise.all([
       fetch(mediaUrl, { cache: "no-store", headers, signal: AbortSignal.timeout(8000) }),
-      fetch(timelineUrl, { cache: "no-store", headers, signal: AbortSignal.timeout(8000) })
+      fetch(timelineUrl, { cache: "no-store", headers, signal: AbortSignal.timeout(8000) }),
+      fetch(`${config.baseUrl}/rest/v1/rpc/embe_search_family_health`, { method: "POST", cache: "no-store", headers: { ...headers, "content-type": "application/json" }, body: JSON.stringify({ p_query: query }), signal: AbortSignal.timeout(8000) })
     ]);
     const media: unknown = mediaResponse.ok ? await mediaResponse.json() : [];
     const timeline: unknown = timelineResponse.ok ? await timelineResponse.json() : [];
+    const healthRaw: unknown = healthResponse?.ok ? await healthResponse.json() : [];
     return {
       memories: Array.isArray(media) ? media.flatMap((item): MediaMemory[] => {
         const parsed = parseMemory(item);
@@ -82,9 +85,15 @@ export async function searchFamilyContent(value: string): Promise<FamilySearchRe
       journal: Array.isArray(timeline) ? timeline.flatMap((item): TimelineEvent[] => {
         const parsed = parseEvent(item);
         return parsed ? [parsed] : [];
+      }) : [],
+      health: Array.isArray(healthRaw) ? healthRaw.flatMap((item): FamilyHealthSearchItem[] => {
+        if (!item || typeof item !== "object") return [];
+        const row = item as Record<string, unknown>; const occurredAt = typeof row.occurred_at === "string" ? row.occurred_at : "";
+        if (typeof row.id !== "string" || !["pregnancy", "baby", "milestone"].includes(String(row.source)) || !occurredAt || typeof row.title !== "string") return [];
+        return [{ id: row.id, source: row.source as FamilyHealthSearchItem["source"], kind: String(row.kind ?? "other"), occurredAt, title: row.title, provider: String(row.provider ?? ""), notes: String(row.notes ?? "") }];
       }) : []
     };
   } catch {
-    return { memories: [], journal: [] };
+    return { memories: [], journal: [], health: [] };
   }
 }

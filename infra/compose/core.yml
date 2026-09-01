@@ -24,6 +24,27 @@ services:
       retries: 5
       start_period: 60s
 
+  baby-care-sync:
+    build:
+      context: ../../services/baby-care-sync
+    restart: unless-stopped
+    env_file:
+      - ../../secrets/runtime/babybuddy-memos-sync.env
+      - ../../secrets/runtime/portal-sync.env
+    environment:
+      BABYBUDDY_BASE_URL: http://babybuddy:8000
+    depends_on:
+      babybuddy:
+        condition: service_healthy
+    networks:
+      - embe-core
+    healthcheck:
+      test: ["CMD-SHELL", "ps -ef | grep -q '[e]mbe_baby_care_sync.worker'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
   memos:
     image: neosmemo/memos:0.30.0
     restart: unless-stopped

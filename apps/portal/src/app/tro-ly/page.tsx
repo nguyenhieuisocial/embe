@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import AppHeader from "../../components/app-header";
 import { Icon, type IconName } from "../../components/embe-icon";
 import { sendFamilyPhoto } from "../../lib/photo-upload-client";
+import { useFamilyStage } from "../../lib/use-family-stage";
 
 type Topic = "ngu" | "bu" | "moi-truong";
 type State = "ready" | "waiting" | "done" | "error";
@@ -38,6 +39,7 @@ const pregnancyHelp = [
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 export default function AssistantPage() {
+  const { postpartum } = useFamilyStage();
   const [days, setDays] = useState(7);
   const [state, setState] = useState<State>("ready");
   const [answer, setAnswer] = useState("");
@@ -169,8 +171,8 @@ export default function AssistantPage() {
       <AppHeader note="Trợ lý riêng của gia đình" />
       <section className="assistant-hero">
         <p className="eyebrow">Đồng hành đúng giai đoạn</p>
-        <h1>Mẹ Ngân cần gì lúc này?</h1>
-        <p className="intro">Chọn một việc cần xem ngay. Nếu có dấu hiệu bất thường, hãy liên hệ nơi Mẹ Ngân đang khám.</p>
+        <h1>{postpartum ? "Mẹ và Bé cần gì lúc này?" : "Mẹ Ngân cần gì lúc này?"}</h1>
+        <p className="intro">{postpartum ? "Xem lại dữ liệu chăm Bé hoặc chuẩn bị điều cần hỏi ở lần khám tiếp theo." : "Chọn một việc cần xem ngay. Nếu có dấu hiệu bất thường, hãy liên hệ nơi Mẹ Ngân đang khám."}</p>
       </section>
       <section className="assistant-chat" aria-labelledby="assistant-chat-title">
         <div className="assistant-chat-heading"><div><p className="eyebrow">Hỏi trực tiếp</p><h2 id="assistant-chat-title">Trò chuyện với EmBe</h2></div><span><i /> Máy nhà</span></div>
@@ -202,15 +204,19 @@ export default function AssistantPage() {
         <p className="assistant-chat-note">Micro chuyển lời nói thành chữ; EmBe không lưu file ghi âm. Ảnh/video tối đa 25 MB được lưu riêng vào kỷ niệm, AI chỉ trả lời phần chữ.</p>
         {chatState === "error" ? <p className="assistant-error" role="alert">Nếu micro không mở được, hãy cho Safari quyền dùng micro hoặc nhập bằng bàn phím. Ảnh/video cần đúng định dạng và không quá 25 MB.</p> : null}
       </section>
-      <section className="assistant-topics pregnancy-help" aria-label="Hỗ trợ thai kỳ">
-        {pregnancyHelp.map((item) => (
+      <section className="assistant-topics pregnancy-help" aria-label={postpartum ? "Hỗ trợ Mẹ và Bé" : "Hỗ trợ thai kỳ"}>
+        {(postpartum ? [
+          { href: "/me", icon: "care" as const, title: "Hồi phục của Mẹ", detail: "Xem dấu hiệu và phần chưa ghi hôm nay" },
+          { href: "/be/ho-so", icon: "calendar" as const, title: "Lịch khám của Bé", detail: "Chuẩn bị câu hỏi và tài liệu" },
+          { href: "/be/phat-trien", icon: "check" as const, title: "Tăng trưởng & cột mốc", detail: "Xem xu hướng đã ghi" }
+        ] : pregnancyHelp).map((item) => (
           <a key={item.href} href={item.href} aria-label={item.title}>
             <span className="shortcut-mark" aria-hidden="true"><Icon name={item.icon} /></span><span><strong>{item.title}</strong><small>{item.detail}</small></span><Icon name="arrow" className="icon icon-chevron" />
           </a>
         ))}
       </section>
-      <details className="future-assistant">
-        <summary><span><small>Dành cho giai đoạn sau</small><strong>Sau khi em bé chào đời</strong></span><span aria-hidden="true">⌄</span></summary>
+      <details className="future-assistant" open={postpartum || undefined}>
+        <summary><span><small>{postpartum ? "Dữ liệu 7–30 ngày" : "Dành cho giai đoạn sau"}</small><strong>{postpartum ? "Phân tích chăm Bé" : "Sau khi em bé chào đời"}</strong></span><span aria-hidden="true">⌄</span></summary>
         <p>Phần này phân tích số liệu bú, ngủ và môi trường khi gia đình bắt đầu ghi nhận sau sinh.</p>
         <div className="assistant-period" role="group" aria-label="Khoảng thời gian">
           {[7, 14, 30].map((value) => (
