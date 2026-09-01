@@ -1185,7 +1185,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   padding: 8px 14px;
   text-decoration: none;
 }
-#viec-hom-nay, #suc-khoe, #bua-an, #cam-nang, #can-lien-he { scroll-margin-top: calc(72px + env(safe-area-inset-top)); }
+#viec-hom-nay, #suc-khoe, #vi-chat-thuoc, #bua-an, #cam-nang, #can-lien-he { scroll-margin-top: calc(72px + env(safe-area-inset-top)); }
 .pregnancy-main > #suc-khoe { margin-top: 24px; }
 .pregnancy-urgent-shortcut {
   align-items: center;
