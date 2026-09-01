@@ -22,7 +22,7 @@ function safeText(value: unknown, maximum: number): string | null {
   return typeof value === "string" && value.length > 0 && value.length <= maximum ? value : null;
 }
 
-function parseEvent(value: RawTimelineEvent): TimelineEvent | null {
+export function parseEvent(value: RawTimelineEvent): TimelineEvent | null {
   const id = safeText(value.id, 80);
   const eventAt = safeText(value.event_at, 40);
   const title = safeText(value.title, 120);

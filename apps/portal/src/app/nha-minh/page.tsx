@@ -1,4 +1,5 @@
 import AppHeader from "../../components/app-header";
+import DeviceSetup from "../../components/device-setup";
 import { Icon, type IconName } from "../../components/embe-icon";
 
 const familyTools: Array<{
@@ -8,6 +9,13 @@ const familyTools: Array<{
   detail: string;
   label: string;
 }> = [
+  {
+    href: "/tim-kiem",
+    icon: "memory",
+    title: "Tìm trong EmBe",
+    detail: "Tìm lại ảnh, chuyến đi và nhật ký theo ngày, địa điểm hoặc lời đã ghi.",
+    label: "Mở tìm kiếm"
+  },
   {
     href: "/do-dung",
     icon: "supply",
@@ -66,6 +74,8 @@ export default function FamilyHomePage() {
           </a>
         ))}
       </nav>
+
+      <DeviceSetup />
 
       <section className="section family-connection" aria-labelledby="photo-connection-title">
         <div className="section-head">

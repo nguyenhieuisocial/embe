@@ -13,8 +13,8 @@ describe("one-handed family journal", () => {
     render(<JournalPage />);
 
     expect(screen.getByRole("heading", { name: "Hôm nay có gì đáng nhớ?" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "Ba Hiếu" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Mẹ Ngân" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Mẹ Ngân" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Ba Hiếu" })).toBeInTheDocument();
     expect(screen.getByLabelText("Điều đáng nhớ")).toHaveAttribute("maxLength", "1000");
     expect(screen.getByText(/Không ghi thông tin khám/i)).toBeInTheDocument();
   });

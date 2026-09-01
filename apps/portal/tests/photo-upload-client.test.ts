@@ -13,11 +13,13 @@ describe("camera-first upload client", () => {
     vi.stubGlobal("fetch", fetchMock);
     const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], "IMG_1.JPG", { type: "image/jpeg", lastModified: Date.parse("2026-09-01T01:00:00Z") });
 
-    await expect(sendFamilyPhoto({ authorRole: "mother", caption: "Chào ba", file, idempotencyKey: "11111111-1111-4111-8111-111111111111" })).resolves.toEqual({ uploadId: "11111111-1111-4111-8111-111111111111" });
+    const onProgress = vi.fn();
+    await expect(sendFamilyPhoto({ authorRole: "mother", caption: "Chào ba", file, idempotencyKey: "11111111-1111-4111-8111-111111111111", onProgress })).resolves.toEqual({ uploadId: "11111111-1111-4111-8111-111111111111" });
     expect(fetchMock.mock.calls[0][0]).toBe("/api/photo-uploads");
     expect(fetchMock.mock.calls[1][0]).toBe("https://storage.example/signed");
     expect(fetchMock.mock.calls[1][1]).toEqual(expect.objectContaining({ method: "PUT", body: expect.any(FormData) }));
     expect(fetchMock.mock.calls[2][0]).toBe("/api/photo-uploads/11111111-1111-4111-8111-111111111111/complete");
+    expect(onProgress.mock.calls.map(([value]) => value)).toEqual([15, 82, 100]);
   });
 
   it("stops before completion when direct storage rejects the file", async () => {

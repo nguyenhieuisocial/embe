@@ -5,6 +5,7 @@ type SendPhotoInput = {
   caption: string;
   file: File;
   idempotencyKey: string;
+  onProgress?: (percent: number) => void;
 };
 
 export async function sendFamilyPhoto(input: SendPhotoInput): Promise<{ uploadId: string }> {
@@ -25,6 +26,7 @@ export async function sendFamilyPhoto(input: SendPhotoInput): Promise<{ uploadId
   if (!created.ok) throw new Error(created.status === 400 ? "invalid_photo" : "create_failed");
   const session = await created.json() as { uploadId?: string; uploadUrl?: string };
   if (!session.uploadId || !session.uploadUrl) throw new Error("create_failed");
+  input.onProgress?.(15);
 
   const form = new FormData();
   form.append("cacheControl", "3600");
@@ -35,6 +37,7 @@ export async function sendFamilyPhoto(input: SendPhotoInput): Promise<{ uploadId
     body: form
   });
   if (!uploaded.ok) throw new Error("upload_failed");
+  input.onProgress?.(82);
 
   const completed = await fetch(`/api/photo-uploads/${session.uploadId}/complete`, {
     method: "POST",
@@ -43,6 +46,6 @@ export async function sendFamilyPhoto(input: SendPhotoInput): Promise<{ uploadId
     body: "{}"
   });
   if (!completed.ok) throw new Error("complete_failed");
+  input.onProgress?.(100);
   return { uploadId: session.uploadId };
 }
-

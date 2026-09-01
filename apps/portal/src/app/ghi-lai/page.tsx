@@ -8,6 +8,7 @@ import {
   flushJournalQueue,
   readJournalQueue
 } from "../../lib/journal-offline";
+import { readDeviceRole, saveDeviceRole } from "../../lib/device-preferences";
 
 type AuthorRole = "father" | "mother";
 
@@ -17,7 +18,7 @@ const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 const quickPrompts = ["Một cột mốc nhỏ", "Một câu nói muốn nhớ", "Cảm xúc của hôm nay"] as const;
 
 export default function JournalPage() {
-  const [authorRole, setAuthorRole] = useState<AuthorRole>("father");
+  const [authorRole, setAuthorRole] = useState<AuthorRole>("mother");
   const [content, setContent] = useState("");
   const [state, setState] = useState<"idle" | "saving" | "saved" | "queued" | "error" | "expired" | "rejected">("idle");
   const [draftReady, setDraftReady] = useState(false);
@@ -29,6 +30,7 @@ export default function JournalPage() {
 
   useEffect(() => {
     try {
+      setAuthorRole(readDeviceRole(localStorage) ?? "mother");
       const rawDraft = localStorage.getItem(DRAFT_KEY);
       if (rawDraft) {
         const draft = JSON.parse(rawDraft) as Record<string, unknown>;
@@ -160,7 +162,7 @@ export default function JournalPage() {
             <div className="author-choice">
               {(["father", "mother"] as const).map((role) => (
                 <label key={role} className={authorRole === role ? "is-selected" : ""}>
-                  <input type="radio" name="author" value={role} checked={authorRole === role} onChange={() => { setAuthorRole(role); setDraftRestored(false); }} />
+                  <input type="radio" name="author" value={role} checked={authorRole === role} onChange={() => { setAuthorRole(role); saveDeviceRole(localStorage, role); setDraftRestored(false); }} />
                   {role === "father" ? "Ba Hiếu" : "Mẹ Ngân"}
                 </label>
               ))}

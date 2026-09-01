@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { groupByDay, groupIntoTrips } from "../lib/memory-groups";
 import type { MediaAlbum, MediaMemory } from "../lib/media";
+import { readDeviceRole } from "../lib/device-preferences";
 
 const PAGE_SIZE = 24;
 const REACTIONS = [
@@ -51,7 +52,7 @@ function MemoryPhoto({ memory, featured = false, onOpen }: { memory: MediaMemory
 
   async function react(emoji: typeof REACTIONS[number][0]) {
     if (pending) return;
-    const saved = window.localStorage.getItem("embe-photo-author");
+    const saved = readDeviceRole(window.localStorage) ?? window.localStorage.getItem("embe-photo-author");
     const authorRole = saved === "father" ? "father" : "mother";
     setPending(emoji);
     try {

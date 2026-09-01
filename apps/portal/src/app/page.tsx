@@ -109,7 +109,12 @@ function TimelineLoading() {
 
 async function TodayPlanPanel() {
   const today = dateInVietnam();
-  const tasks = await getFamilyTasks(today, today).catch(() => []);
+  const tasks = (await getFamilyTasks(today, today).catch(() => [])).sort((left, right) => {
+    if (left.completed !== right.completed) return left.completed ? 1 : -1;
+    const priority = (category: string) => category === "appointment" ? 0 : category === "health" ? 1 : category === "pregnancy" ? 2 : 3;
+    const categoryOrder = priority(left.category) - priority(right.category);
+    return categoryOrder || (left.dueTime ?? "99:99").localeCompare(right.dueTime ?? "99:99");
+  });
   const completed = tasks.filter((task) => task.completed).length;
 
   return (
@@ -119,7 +124,7 @@ async function TodayPlanPanel() {
         <h2 id="day-thread-title">{tasks.length ? `${completed}/${tasks.length} việc đã xong` : "Một ngày đang thật nhẹ"}</h2>
       </div>
       {tasks.length ? <div className="thread">
-        {tasks.slice(0, 4).map((task) => {
+        {tasks.slice(0, 3).map((task) => {
           const target = LINK_DETAILS[task.linkTarget];
           return <div className={`thread-item${task.completed ? " is-complete" : ""}`} key={task.id}>
             <span className="thread-node" aria-hidden="true" />

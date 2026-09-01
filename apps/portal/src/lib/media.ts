@@ -51,7 +51,7 @@ function safeText(value: unknown, maximum: number): string | null {
   return typeof value === "string" && value.length > 0 && value.length <= maximum ? value : null;
 }
 
-function parseMemory(raw: unknown): MediaMemory | null {
+export function parseMemory(raw: unknown): MediaMemory | null {
   if (!raw || typeof raw !== "object") return null;
   const value = raw as Record<string, unknown>;
   const id = safeText(value.id, 36);
