@@ -174,7 +174,7 @@ def main(argv=None) -> int:
             "schema_version": 1, "status": "ok",
             "last_success_at": datetime.now(timezone.utc).isoformat(),
             "processed": processed, "queue": status,
-            "privacy": "Only allowlisted aggregates reach loopback Ollama; no raw records or free-form prompts leave the browser."
+            "privacy": "Only the family question and allowlisted aggregates reach loopback Ollama; no raw records or media are sent."
         })
     finally:
         repository.close()
