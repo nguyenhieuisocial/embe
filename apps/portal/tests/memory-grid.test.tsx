@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import MemoryGrid from "../src/components/memory-grid";
@@ -24,7 +24,11 @@ function memory(index: number): MediaMemory {
 }
 
 describe("mobile memory grid", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    Reflect.deleteProperty(navigator, "share");
+    Reflect.deleteProperty(navigator, "canShare");
+  });
 
   it("loads the next private page without replacing visible memories", async () => {
     const initial = Array.from({ length: 24 }, (_, index) => memory(index));
@@ -92,12 +96,11 @@ describe("mobile memory grid", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Kỷ niệm 1" });
     const close = screen.getByRole("button", { name: "Đóng ảnh" });
-    const next = screen.getByRole("button", { name: "Ảnh sau" });
     expect(close).toHaveFocus();
 
-    next.focus();
+    screen.getByRole("button", { name: "Phóng to ảnh" }).focus();
     fireEvent.keyDown(dialog, { key: "Tab" });
-    expect(screen.getByRole("button", { name: "Chia sẻ ảnh" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Lưu ảnh về máy" })).toHaveFocus();
 
     fireEvent.click(close);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -108,7 +111,7 @@ describe("mobile memory grid", () => {
     render(<MemoryGrid album="da-lat-2025" initial={[memory(1), memory(2)]} initialView="album" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" }));
-    expect(screen.getByText("Vuốt ngang để đổi ảnh")).toBeInTheDocument();
+    expect(screen.getByText("Vuốt ngang · chụm để phóng to")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "In ảnh này" }))
       .toHaveAttribute("href", "/in-anh/00000001-1111-4111-8111-111111111111");
   });
@@ -120,5 +123,46 @@ describe("mobile memory grid", () => {
 
     expect(screen.getByRole("button", { name: "Gửi ảnh" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Gửi link xem 7 ngày" })).toBeInTheDocument();
+  });
+
+  it("saves the original photo through the native iPhone sheet", async () => {
+    const share = vi.fn(async (_data: ShareData): Promise<void> => undefined);
+    Object.defineProperty(navigator, "share", { configurable: true, value: share });
+    Object.defineProperty(navigator, "canShare", { configurable: true, value: () => true });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(new Uint8Array([1, 2, 3]), {
+      status: 200, headers: { "content-type": "image/webp" }
+    }));
+    render(<MemoryGrid album="da-lat-2025" initial={[memory(1)]} initialView="album" />);
+    fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu ảnh về máy" }));
+
+    await waitFor(() => expect(share).toHaveBeenCalledOnce());
+    const data = share.mock.calls[0][0] as ShareData;
+    expect(data.files?.[0]).toBeInstanceOf(File);
+    expect(data.files?.[0].type).toBe("image/webp");
+  });
+
+  it("zooms in and out with visible controls", () => {
+    render(<MemoryGrid album="da-lat-2025" initial={[memory(1)]} initialView="album" />);
+    fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" }));
+    const image = within(screen.getByRole("dialog", { name: "Kỷ niệm 1" })).getByAltText("Kỷ niệm 1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Phóng to ảnh" }));
+    expect(image).toHaveStyle({ transform: "translate3d(0px, 0px, 0) scale(1.5)" });
+    expect(screen.getByRole("button", { name: "Đặt ảnh về kích thước ban đầu" })).toHaveTextContent("150%");
+
+    fireEvent.click(screen.getByRole("button", { name: "Thu nhỏ ảnh" }));
+    expect(image).toHaveStyle({ transform: "translate3d(0px, 0px, 0) scale(1)" });
+  });
+
+  it("toggles touch-friendly quick zoom by double tapping the image", () => {
+    render(<MemoryGrid album="da-lat-2025" initial={[memory(1)]} initialView="album" />);
+    fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" }));
+    const image = within(screen.getByRole("dialog", { name: "Kỷ niệm 1" })).getByAltText("Kỷ niệm 1");
+
+    fireEvent.doubleClick(image);
+    expect(image).toHaveStyle({ transform: "translate3d(0px, 0px, 0) scale(2)" });
+    fireEvent.doubleClick(image);
+    expect(image).toHaveStyle({ transform: "translate3d(0px, 0px, 0) scale(1)" });
   });
 });

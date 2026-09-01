@@ -100,7 +100,7 @@ export default function PhotoShareButton({ memory }: { memory: MediaMemory }) {
 
   return <>
     <button ref={triggerRef} aria-expanded={open} aria-label="Chia sẻ ảnh" className="photo-viewer-share" onClick={() => { setOpen(true); setState("idle"); }} type="button">
-      <span aria-hidden="true">↗</span> Chia sẻ
+      <span aria-hidden="true">↗</span><span className="photo-action-label">Chia sẻ</span>
     </button>
     {open ? <div className="photo-share-backdrop" onClick={closeSheet} onKeyDown={keepFocusInSheet}>
       <section ref={sheetRef} aria-label="Cách chia sẻ ảnh" className="photo-share-sheet" onClick={(event) => event.stopPropagation()}>
