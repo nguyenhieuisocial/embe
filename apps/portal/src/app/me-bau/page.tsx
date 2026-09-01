@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
@@ -264,61 +263,24 @@ export default function PregnancyPage() {
             </div>
           </details>
         </div>
-        <Image
-          className="pregnancy-care-art"
-          src="/illustrations/pregnancy-care.webp"
-          alt="Minh họa nước uống, bữa ăn chín, vận động nhẹ, nghỉ ngơi và ghi câu hỏi"
-          width={900}
-          height={675}
-          sizes="(max-width: 720px) 100vw, 340px"
-          unoptimized
-        />
       </section>
 
       <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
         <a href="#viec-hom-nay">Hôm nay</a>
-        <a href="#suc-khoe">Sức khỏe</a>
-        <a href="#ho-so-kham">Hồ sơ khám</a>
-        <a href="#vi-chat-thuoc">Thuốc &amp; vi chất</a>
-        <a href="#bua-an">Bữa ăn</a>
-        <a href="#cam-nang">Ăn &amp; kiêng</a>
-        <a href="#can-lien-he">Cần liên hệ</a>
+        <a href="#vi-chat-thuoc">Thuốc</a>
+        <a href="#bua-an">Chụp món</a>
+        <a href="#suc-khoe">Ghi sức khỏe</a>
+        <a href="#ho-so-kham">Lịch khám</a>
       </nav>
 
       <aside className="pregnancy-urgent-shortcut" aria-labelledby="urgent-shortcut-title">
         <div>
           <p className="panel-kicker">Cần tìm nhanh</p>
-          <h2 id="urgent-shortcut-title">Nếu có dấu hiệu bất thường</h2>
-          <p>Đừng chờ checklist hoặc trợ lý. Mở ngay danh sách dấu hiệu cần liên hệ nơi đang khám.</p>
+          <h2 id="urgent-shortcut-title">Có dấu hiệu bất thường?</h2>
+          <p>Mở ngay hướng dẫn liên hệ nơi đang khám.</p>
         </div>
-        <a href="#can-lien-he">Xem khi nào cần liên hệ</a>
+        <a href="#can-lien-he">Xem ngay</a>
       </aside>
-
-      <section className="trimester-section" aria-labelledby="trimester-title">
-        <div className="section-heading-row">
-          <div>
-            <p className="panel-kicker">Nhắc đúng việc · không tự chẩn đoán</p>
-            <h2 id="trimester-title">Điều nên ưu tiên theo giai đoạn</h2>
-          </div>
-          <p>Ngày dự sinh chỉ giúp hiển thị tuần thai. Mọi lịch khám, xét nghiệm và thuốc vẫn theo nơi Mẹ Ngân đang được chăm sóc.</p>
-        </div>
-        <div className="trimester-grid">
-          <article className="is-current">
-            <small>Ưu tiên lúc này</small>
-            <h3>{trimesterGuides[trimesterIndex].title}</h3>
-            <p>{trimesterGuides[trimesterIndex].detail}</p>
-          </article>
-          <details className="later-trimesters">
-            <summary>Xem các giai đoạn tiếp theo <span aria-hidden="true">⌄</span></summary>
-            {trimesterGuides.filter((_, index) => index !== trimesterIndex).map((guide) => (
-              <article key={guide.title}>
-                <h3>{guide.title}</h3>
-                <p>{guide.detail}</p>
-              </article>
-            ))}
-          </details>
-        </div>
-      </section>
 
       <section className="care-board" id="viec-hom-nay" aria-labelledby="daily-title">
         <div className="care-summary">
@@ -359,13 +321,41 @@ export default function PregnancyPage() {
         </div>
       </section>
 
+      <PregnancyCareTracker pregnancyWeek={week} />
+
+      <MealPhotoTracker />
+
       <div id="suc-khoe"><PregnancyHealthTracker /></div>
 
       <PregnancyMedicalRecords />
 
-      <PregnancyCareTracker pregnancyWeek={week} />
+      <div className="pregnancy-reference-label"><span>Tham khảo khi cần</span></div>
 
-      <MealPhotoTracker />
+      <section className="trimester-section" aria-labelledby="trimester-title">
+        <div className="section-heading-row">
+          <div>
+            <p className="panel-kicker">Nhắc đúng việc · không tự chẩn đoán</p>
+            <h2 id="trimester-title">Điều nên ưu tiên theo giai đoạn</h2>
+          </div>
+          <p>Ngày dự sinh chỉ giúp hiển thị tuần thai. Mọi lịch khám, xét nghiệm và thuốc vẫn theo nơi Mẹ Ngân đang được chăm sóc.</p>
+        </div>
+        <div className="trimester-grid">
+          <article className="is-current">
+            <small>Ưu tiên lúc này</small>
+            <h3>{trimesterGuides[trimesterIndex].title}</h3>
+            <p>{trimesterGuides[trimesterIndex].detail}</p>
+          </article>
+          <details className="later-trimesters">
+            <summary>Xem các giai đoạn tiếp theo <span aria-hidden="true">⌄</span></summary>
+            {trimesterGuides.filter((_, index) => index !== trimesterIndex).map((guide) => (
+              <article key={guide.title}>
+                <h3>{guide.title}</h3>
+                <p>{guide.detail}</p>
+              </article>
+            ))}
+          </details>
+        </div>
+      </section>
 
       <section className="guidance-section" id="cam-nang" aria-labelledby="guidance-title">
         <div className="section-heading-row">
@@ -464,8 +454,8 @@ export default function PregnancyPage() {
         </ul>
       </section>
 
-      <section className="source-section" aria-labelledby="source-title">
-        <h2 id="source-title">Nguồn đã đối chiếu</h2>
+      <details className="source-section">
+        <summary><h2>Nguồn đã đối chiếu</h2><span aria-hidden="true">⌄</span></summary>
         <ul>
           {pregnancySources.map((source) => (
             <li key={source.href}>
@@ -473,7 +463,7 @@ export default function PregnancyPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </details>
 
       <footer>
         <p>EmBe ưu tiên lưu tức thì trên điện thoại và tự đồng bộ an toàn.</p>

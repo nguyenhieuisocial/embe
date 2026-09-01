@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -60,8 +60,8 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Mới mang thai")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "#viec-hom-nay");
-    expect(screen.getByRole("heading", { name: "Nếu có dấu hiệu bất thường" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Xem khi nào cần liên hệ" })).toHaveAttribute("href", "#can-lien-he");
+    expect(screen.getByRole("heading", { name: "Có dấu hiệu bất thường?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Xem ngay" })).toHaveAttribute("href", "#can-lien-he");
     expect(screen.getByText("Đã ăn sáng")).toBeInTheDocument();
     expect(screen.getByText("Đã ăn trưa")).toBeInTheDocument();
     expect(screen.getByText("Đã ăn tối")).toBeInTheDocument();
@@ -87,8 +87,23 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Chưa có số liệu sức khỏe")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Khi nào cần liên hệ ngay" })).toBeInTheDocument();
     expect(screen.getByText(/không thay thế tư vấn/iu)).toBeInTheDocument();
+    const sources = screen.getByText("Nguồn đã đối chiếu").closest("details");
+    expect(sources).not.toHaveAttribute("open");
+    if (sources) fireEvent.click(within(sources).getByText("Nguồn đã đối chiếu"));
     expect(screen.getByRole("link", { name: /WHO/ })).toHaveAttribute("href", expect.stringContaining("who.int"));
     expect(screen.getAllByRole("link", { name: /ACOG/ })[0]).toHaveAttribute("href", expect.stringContaining("acog.org"));
+  });
+
+  it("puts frequent daily actions before occasional records and reference content", () => {
+    render(<PregnancyPage />);
+    expect(screen.queryByRole("img", { name: /nước uống, bữa ăn chín/i })).not.toBeInTheDocument();
+    const headings = screen.getAllByRole("heading").map((heading) => heading.textContent ?? "");
+    const position = (name: string) => headings.findIndex((heading) => heading.includes(name));
+    expect(position("Việc của hôm nay")).toBeLessThan(position("Thuốc, vi chất & dinh dưỡng"));
+    expect(position("Thuốc, vi chất & dinh dưỡng")).toBeLessThan(position("Nhật ký bữa ăn"));
+    expect(position("Nhật ký bữa ăn")).toBeLessThan(position("Nhật ký sức khỏe"));
+    expect(position("Nhật ký sức khỏe")).toBeLessThan(position("Hồ sơ khám thai"));
+    expect(position("Hồ sơ khám thai")).toBeLessThan(position("Điều nên ưu tiên theo giai đoạn"));
   });
 
   it("saves one bounded daily health snapshot from simple mobile fields", async () => {

@@ -1098,7 +1098,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 /* ── Mẹ bầu ──────────────────────────────────────────────────── */
 
-.pregnancy-hero { display: grid; gap: 14px; padding-top: 6px; }
+.pregnancy-hero { display: grid; gap: 10px; padding-top: 6px; }
 .pregnancy-main > section,
 .pregnancy-main > aside,
 .journal-main > section,
@@ -1130,24 +1130,15 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .assistant-boundary p,
 .inventory-boundary p,
 .help-rule p { color: var(--ink-soft); font-size: .875rem; }
-.pregnancy-care-art {
-  aspect-ratio: 16 / 7;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  display: block;
-  height: auto;
-  object-fit: cover;
-  width: 100%;
-}
 .week-card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 26px 26px 26px 10px;
   box-shadow: var(--shadow-card);
   display: grid;
-  gap: 10px;
+  gap: 8px;
   overflow: hidden;
-  padding: 16px;
+  padding: 14px;
   position: relative;
 }
 .week-card::before {
@@ -1230,7 +1221,6 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   text-decoration: none;
 }
 #viec-hom-nay, #suc-khoe, #ho-so-kham, #vi-chat-thuoc, #bua-an, #cam-nang, #can-lien-he { scroll-margin-top: calc(72px + env(safe-area-inset-top)); }
-#vi-chat-thuoc { scroll-margin-top: calc(144px + env(safe-area-inset-top)); }
 .pregnancy-main > #suc-khoe { margin-top: 24px; }
 .pregnancy-urgent-shortcut {
   align-items: center;
@@ -1238,13 +1228,14 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   border: 1px solid color-mix(in srgb, var(--coral) 24%, transparent);
   border-radius: var(--radius);
   display: grid;
-  gap: 8px;
-  margin: 16px auto 0;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 12px auto 0;
   max-width: var(--content);
-  padding: 14px var(--gutter);
+  padding: 12px var(--gutter);
 }
-.pregnancy-urgent-shortcut h2 { font-size: 1.125rem; margin: 4px 0 6px; }
-.pregnancy-urgent-shortcut p { color: var(--ink-soft); font-size: .875rem; margin: 0; }
+.pregnancy-urgent-shortcut h2 { font-size: 1rem; margin: 3px 0; }
+.pregnancy-urgent-shortcut p { color: var(--ink-soft); font-size: .75rem; margin: 0; }
 .pregnancy-urgent-shortcut > a {
   align-items: center;
   color: var(--coral);
@@ -1254,6 +1245,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   min-height: 44px;
   text-decoration: none;
 }
+.pregnancy-reference-label { align-items: center; color: var(--ink-soft); display: flex; font-size: .75rem; gap: 10px; margin: 28px auto 0; max-width: var(--content); padding-inline: var(--gutter); }
+.pregnancy-reference-label::after { background: var(--line); content: ""; flex: 1; height: 1px; }
 
 .care-summary {
   align-items: center;
@@ -1607,6 +1600,11 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 
 .source-section { margin-top: 24px; }
+.source-section > summary { align-items: center; cursor: pointer; display: flex; justify-content: space-between; list-style: none; min-height: 48px; }
+.source-section > summary::-webkit-details-marker { display: none; }
+.source-section > summary h2 { font-size: 1rem; margin: 0; }
+.source-section > summary span { color: var(--rose); transition: transform 160ms ease-out; }
+.source-section[open] > summary span { transform: rotate(180deg); }
 .source-section ul { display: grid; list-style: none; margin-top: 4px; }
 .source-section a {
   align-items: center;
@@ -3030,6 +3028,19 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 /* ── Hoàn thiện cảm giác ứng dụng trên điện thoại ────────────── */
 
 @media (max-width: 480px) {
+  .pregnancy-main > section,
+  .pregnancy-main > aside { margin-top: 18px; }
+  .pregnancy-main > .pregnancy-hero { margin-top: 0; }
+  .pregnancy-hero .intro { font-size: .9375rem; line-height: 1.5; }
+  .pregnancy-jump { gap: 6px; padding-block: 6px; }
+  .pregnancy-jump a { font-size: .75rem; min-height: 44px; padding-inline: 12px; }
+  .checklist, .checklist-group { gap: 6px; }
+  .checklist-group + .checklist-group { margin-top: 8px; }
+  .check-item { align-items: center; border-radius: 14px; gap: 10px; min-height: 48px; padding: 8px 11px; }
+  .custom-check { height: 24px; margin-top: 0; width: 24px; }
+  .check-text strong { font-size: .875rem; }
+  .check-text small { display: none; }
+
   .planner-form-row,
   .inventory-form-row { grid-template-columns: 1fr; }
 
