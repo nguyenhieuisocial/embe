@@ -3331,17 +3331,17 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 @media print {
   .family-nav, .quick-trigger, .quick-sheet, .quick-backdrop, .skip-link, .connection-banner { display: none; }
-  body:has(.print-photo-main) { background: #fff; }
-  body:has(.print-photo-main) .print-photo-header,
-  body:has(.print-photo-main) .print-photo-actions { display: none !important; }
-  body:has(.print-photo-main) .app-shell,
-  body:has(.print-photo-main) .app-canvas,
-  body:has(.print-photo-main) .print-photo-main { display: block; margin: 0; max-width: none; min-height: 0; padding: 0; width: 100%; }
-  body:has(.print-photo-main) .print-photo-sheet { border: 0; border-radius: 0; box-shadow: none; display: grid; gap: 4mm; padding: 0; }
-  body:has(.print-photo-main) .print-photo-frame { background: #fff; border-radius: 0; min-height: 0; overflow: visible; }
-  body:has(.print-photo-main) .print-photo-frame img { height: auto; max-height: 245mm; object-fit: contain; width: 100%; }
-  body:has(.print-photo-main) .print-photo-frame > span { display: none; }
-  body:has(.print-photo-main) .print-photo-sheet figcaption { color: #4f4649; font-size: 9pt; padding: 0; }
+  body.print-photo-mode { background: #fff; height: auto !important; margin: 0 !important; min-height: 0 !important; overflow: visible !important; padding: 0 !important; }
+  body.print-photo-mode .print-photo-header,
+  body.print-photo-mode .print-photo-actions { display: none !important; }
+  body.print-photo-mode .app-shell,
+  body.print-photo-mode .app-canvas,
+  body.print-photo-mode .print-photo-main { height: auto !important; margin: 0 !important; max-width: none; min-height: 0 !important; overflow: visible !important; padding: 0 !important; width: 100%; }
+  body.print-photo-mode .print-photo-sheet { border: 0; border-radius: 0; box-shadow: none; break-inside: avoid; display: block; height: auto; margin: 0; overflow: visible; padding: 0; page-break-inside: avoid; }
+  body.print-photo-mode .print-photo-frame { background: #fff; border-radius: 0; display: block; height: auto; min-height: 0; overflow: visible; }
+  body.print-photo-mode .print-photo-frame img { display: block; height: auto !important; margin: 0 auto; max-height: 268mm; max-width: 100%; object-fit: contain; width: auto !important; }
+  body.print-photo-mode .print-photo-frame > span { display: none; }
+  body.print-photo-mode .print-photo-sheet figcaption { display: none; }
 
   body:has(.family-book-preview) { background: #fff; color: #43383c; }
   body:has(.family-book-preview) .family-nav,
