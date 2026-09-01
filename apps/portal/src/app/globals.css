@@ -416,7 +416,7 @@ ol, ul { margin: 0; padding: 0; }
 .notification-setup { align-items: center; border-top: 1px solid var(--line); display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) auto; padding-top: 12px; }
 .notification-setup strong { font-size: .875rem; }
 .notification-setup p { color: var(--ink-soft); font-size: .75rem; line-height: 1.55; margin: 3px 0 0; }
-.notification-setup button { background: var(--rose-soft); border: 1px solid color-mix(in srgb, var(--rose) 30%, var(--line)); border-radius: 999px; color: var(--rose); font: inherit; font-size: .75rem; font-weight: 700; min-height: 42px; padding: 8px 13px; white-space: nowrap; }
+.notification-setup button { background: var(--rose-soft); border: 1px solid color-mix(in srgb, var(--rose) 30%, var(--line)); border-radius: 999px; color: var(--rose); font: inherit; font-size: .75rem; font-weight: 700; min-height: 44px; padding: 8px 13px; white-space: nowrap; }
 .notification-setup button:disabled { opacity: .55; }
 .notification-time { align-items: center; display: flex; gap: 10px; grid-column: 1 / -1; justify-content: space-between; }
 .notification-time span { color: var(--ink-soft); font-size: .75rem; font-weight: 600; }
@@ -456,7 +456,7 @@ ol, ul { margin: 0; padding: 0; }
 .settings-row strong, .settings-toggle strong { font-size: .84rem; }
 .settings-row small, .settings-toggle small { color: var(--ink-soft); font-size: .69rem; line-height: 1.45; }
 .settings-segment { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; }
-.settings-segment button { background: transparent; border: 0; border-radius: 999px; color: var(--ink-soft); font-size: .72rem; font-weight: 650; min-height: 38px; min-width: 58px; padding-inline: 10px; }
+.settings-segment button { background: transparent; border: 0; border-radius: 999px; color: var(--ink-soft); font-size: .72rem; font-weight: 650; min-height: 44px; min-width: 58px; padding-inline: 10px; }
 .settings-segment button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 3px 10px rgba(86, 49, 63, .09); color: var(--rose); }
 .settings-toggle { cursor: pointer; }
 .settings-toggle input { appearance: none; background: var(--line-strong); border: 0; border-radius: 999px; height: 30px; margin: 0; position: relative; transition: background 140ms ease; width: 50px; }
