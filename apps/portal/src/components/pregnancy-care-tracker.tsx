@@ -278,7 +278,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         <p className="formula-note">Mốc tự tính dùng phương trình DRI 2023 theo hồ sơ và cộng khoảng 340 kcal ở ba tháng giữa, 450 kcal ở ba tháng cuối. Đây là điểm bắt đầu để theo dõi, không phải chỉ định giảm/tăng cân; mốc chuyên môn đã nhập luôn được ưu tiên.</p>
       </details>
 
-      <details className="iphone-health-card" open={snapshot.iphone_devices.length === 0}>
+      <details className="iphone-health-card" id="suc-khoe-iphone" open={snapshot.iphone_devices.length === 0}>
         <summary><span><strong>Sức khỏe từ iPhone</strong><small>{snapshot.iphone_health ? "Đã nhận dữ liệu hôm nay" : "Cần cấp quyền một lần trên iPhone"}</small></span><i>⌄</i></summary>
         {snapshot.iphone_health && <div className="iphone-metrics">
           <span><strong>{snapshot.iphone_health.steps ?? "—"}</strong>bước</span>
