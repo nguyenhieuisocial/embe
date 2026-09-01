@@ -193,3 +193,23 @@ export async function downloadFamilyBookPdf(input: PdfInput): Promise<void> {
   const day = new Date().toISOString().slice(0, 10);
   await pdfMake.createPdf(buildFamilyBookDocument(input)).download(`so-me-va-be-${day}-${input.days}-ngay.pdf`);
 }
+
+export async function openFamilyBookPdf(input: PdfInput): Promise<void> {
+  const pdfWindow = window.open("", "_blank");
+  if (!pdfWindow) throw new Error("PDF window was blocked");
+
+  try {
+    const [{ default: pdfMake }, { default: vfs }] = await Promise.all([
+      import("pdfmake/build/pdfmake"),
+      import("pdfmake/build/vfs_fonts")
+    ]);
+    pdfMake.addVirtualFileSystem(vfs);
+    const blob = await pdfMake.createPdf(buildFamilyBookDocument(input)).getBlob();
+    const url = URL.createObjectURL(blob);
+    pdfWindow.location.replace(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (error) {
+    pdfWindow.close();
+    throw error;
+  }
+}

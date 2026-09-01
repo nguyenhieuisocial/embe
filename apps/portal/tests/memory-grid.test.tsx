@@ -97,21 +97,19 @@ describe("mobile memory grid", () => {
 
     next.focus();
     fireEvent.keyDown(dialog, { key: "Tab" });
-    expect(screen.getByRole("button", { name: "In ảnh này" })).toHaveFocus();
+    expect(screen.getByRole("link", { name: "In ảnh này" })).toHaveFocus();
 
     fireEvent.click(close);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
   });
 
-  it("opens the system print dialog for the current private photo", () => {
-    const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
+  it("opens a dedicated print page for the current private photo", () => {
     render(<MemoryGrid album="da-lat-2025" initial={[memory(1), memory(2)]} initialView="album" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" }));
     expect(screen.getByText("Vuốt ngang để đổi ảnh")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "In ảnh này" }));
-
-    expect(print).toHaveBeenCalledOnce();
+    expect(screen.getByRole("link", { name: "In ảnh này" }))
+      .toHaveAttribute("href", "/in-anh/00000001-1111-4111-8111-111111111111");
   });
 });

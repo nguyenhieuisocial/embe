@@ -119,6 +119,23 @@ export async function getMediaMemories(
   }
 }
 
+export async function getMediaMemory(id: string): Promise<MediaMemory | null> {
+  const config = credentials();
+  if (!config || !UUID.test(id)) return null;
+  const query = new URLSearchParams({ select: MEDIA_SELECT, id: `eq.${id}`, limit: "1" });
+  try {
+    const response = await fetch(`${config.baseUrl}/rest/v1/embe_media_item?${query}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json", apikey: config.secretKey }
+    });
+    if (!response.ok) return null;
+    const payload: unknown = await response.json();
+    return Array.isArray(payload) ? parseMemory(payload[0]) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getMediaAlbums(): Promise<MediaAlbum[]> {
   const config = credentials();
   if (!config) return [];

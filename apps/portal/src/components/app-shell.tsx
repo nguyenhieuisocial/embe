@@ -11,7 +11,7 @@ const BARE_ROUTES = new Set(["/login", "/offline"]);
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const showNav = !BARE_ROUTES.has(pathname ?? "");
+  const showNav = !BARE_ROUTES.has(pathname ?? "") && !pathname?.startsWith("/in-anh/");
 
   return (
     <div className={showNav ? "app-shell has-nav" : "app-shell is-bare"}>

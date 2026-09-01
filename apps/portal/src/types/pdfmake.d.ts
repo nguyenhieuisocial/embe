@@ -3,6 +3,7 @@ declare module "pdfmake/build/pdfmake" {
     addVirtualFileSystem(vfs: Record<string, string>): void;
     createPdf(documentDefinition: unknown): {
       download(filename?: string): Promise<void> | void;
+      getBlob(): Promise<Blob>;
       getBuffer(): Promise<Uint8Array>;
     };
   };

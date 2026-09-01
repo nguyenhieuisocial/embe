@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { openFamilyBookPdf } from "../lib/family-book-pdf";
 import { calculatePregnancyWeek, localDateKey } from "../lib/pregnancy";
 import type { MedicalRecord } from "../lib/pregnancy-medical";
 import type { CarePlan, FamilyBookReport, HealthMetric } from "../lib/family-book-pdf";
@@ -112,6 +113,17 @@ export default function FamilyBookExport() {
     }
   }
 
+  async function printPdf(): Promise<void> {
+    if (!data || status !== "ready") return;
+    setPdfStatus("loading");
+    try {
+      await openFamilyBookPdf({ data, days, generatedAt, week });
+      setPdfStatus("idle");
+    } catch {
+      setPdfStatus("error");
+    }
+  }
+
   return (
     <section className="family-book-export" aria-labelledby="family-book-title">
       <div className="family-book-controls">
@@ -127,12 +139,12 @@ export default function FamilyBookExport() {
           <button className="family-book-print" disabled={status !== "ready" || pdfStatus === "loading"} onClick={() => void downloadPdf()} type="button">
             <span aria-hidden="true">↓</span> {pdfStatus === "loading" ? "Đang tạo PDF…" : "Tải PDF"}
           </button>
-          <button className="family-book-print is-secondary" disabled={status !== "ready"} onClick={() => window.print()} type="button">
-            <span aria-hidden="true">▣</span> In
+          <button className="family-book-print is-secondary" disabled={status !== "ready" || pdfStatus === "loading"} onClick={() => void printPdf()} type="button">
+            <span aria-hidden="true">▣</span> {pdfStatus === "loading" ? "Đang mở…" : "In"}
           </button>
         </div>
         <p className="family-book-print-help">Tải PDF để lưu hoặc gửi. Chọn In để dùng AirPrint ngay trên iPhone.</p>
-        {pdfStatus === "error" ? <p className="family-book-warning" role="alert">Chưa tạo được PDF. Hãy thử lại; bản xem trước vẫn có thể in.</p> : null}
+        {pdfStatus === "error" ? <p className="family-book-warning" role="alert">Chưa mở được PDF. Hãy cho phép cửa sổ bật lên rồi thử lại.</p> : null}
         {data?.unavailable.length ? <p className="family-book-warning" role="status">Tạm thiếu: {data.unavailable.join(", ")}. Bản in vẫn giữ các phần đã tải được.</p> : null}
       </div>
 

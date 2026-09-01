@@ -3309,26 +3309,39 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .family-book-plans > article > span { color: #9a6077; font-size: .6875rem; }
 .family-book-section > footer { border-top: 1px solid #eee0e5; color: #806f76; font-size: .6875rem; line-height: 1.55; padding-top: 12px; }
 
+/* Trang in ảnh riêng: không mang theo modal, menu hoặc lớp phủ của web-app. */
+.print-photo-main { display: grid; gap: 16px; margin: 0 auto; max-width: 720px; min-height: 100dvh; padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); }
+.print-photo-header { align-items: start; display: grid; gap: 12px; grid-template-columns: auto minmax(0, 1fr); }
+.print-photo-header > a { align-items: center; color: var(--coral); display: flex; font-size: .8125rem; font-weight: 700; min-height: 44px; text-decoration: none; }
+.print-photo-header > div { display: grid; gap: 2px; }
+.print-photo-header p { color: var(--ink-soft); font-size: .6875rem; }
+.print-photo-header h1 { font-family: var(--font-display), Georgia, serif; font-size: 1.4rem; font-weight: 600; line-height: 1.2; }
+.print-photo-sheet { background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 12px 35px rgba(105, 62, 78, .1); display: grid; gap: 10px; margin: 0; overflow: hidden; padding: 10px; }
+.print-photo-frame { align-items: center; background: #f6f2f3; border-radius: 12px; display: flex; justify-content: center; min-height: 52dvh; overflow: hidden; position: relative; }
+.print-photo-frame img { display: block; height: auto; max-height: 70dvh; object-fit: contain; width: 100%; }
+.print-photo-frame > span { color: var(--ink-soft); font-size: .8125rem; left: 50%; position: absolute; text-align: center; top: 50%; transform: translate(-50%, -50%); width: 80%; }
+.print-photo-sheet figcaption { color: var(--ink-soft); font-size: .75rem; line-height: 1.5; padding: 0 4px 2px; }
+.print-photo-actions { display: grid; gap: 7px; }
+.print-photo-actions button { background: var(--coral); border: 0; border-radius: 999px; color: #fff; font: inherit; font-size: .875rem; font-weight: 700; min-height: 50px; padding: 10px 18px; }
+.print-photo-actions button:disabled { opacity: .5; }
+.print-photo-actions p { color: var(--ink-soft); font-size: .6875rem; line-height: 1.5; text-align: center; }
+.photo-viewer > header .photo-viewer-print { text-decoration: none; }
+
 @page { size: A4 portrait; margin: 13mm; }
 
 @media print {
   .family-nav, .quick-trigger, .quick-sheet, .quick-backdrop, .skip-link, .connection-banner { display: none; }
-  body:has(.photo-viewer) { background: #fff; }
-  body:has(.photo-viewer) * { visibility: hidden !important; }
-  body:has(.photo-viewer) .photo-viewer,
-  body:has(.photo-viewer) .photo-viewer * { visibility: visible !important; }
-  body:has(.photo-viewer) .photo-viewer {
-    background: #fff; color: #241f21; display: grid; grid-template-rows: minmax(0, 1fr) auto;
-    height: 100%; inset: 0; position: fixed; width: 100%;
-  }
-  body:has(.photo-viewer) .photo-viewer > header,
-  body:has(.photo-viewer) .photo-viewer-stage > button,
-  body:has(.photo-viewer) .photo-viewer-swipe { display: none !important; }
-  body:has(.photo-viewer) .photo-viewer-stage { grid-row: 1; overflow: visible; }
-  body:has(.photo-viewer) .photo-viewer-stage > img { height: 100%; max-height: 245mm; object-fit: contain; width: 100%; }
-  body:has(.photo-viewer) .photo-viewer > footer { background: #fff; color: #241f21; display: block; padding: 5mm 0 0; }
-  body:has(.photo-viewer) .photo-viewer-caption time,
-  body:has(.photo-viewer) .photo-viewer-caption p { color: #665b60; }
+  body:has(.print-photo-main) { background: #fff; }
+  body:has(.print-photo-main) .print-photo-header,
+  body:has(.print-photo-main) .print-photo-actions { display: none !important; }
+  body:has(.print-photo-main) .app-shell,
+  body:has(.print-photo-main) .app-canvas,
+  body:has(.print-photo-main) .print-photo-main { display: block; margin: 0; max-width: none; min-height: 0; padding: 0; width: 100%; }
+  body:has(.print-photo-main) .print-photo-sheet { border: 0; border-radius: 0; box-shadow: none; display: grid; gap: 4mm; padding: 0; }
+  body:has(.print-photo-main) .print-photo-frame { background: #fff; border-radius: 0; min-height: 0; overflow: visible; }
+  body:has(.print-photo-main) .print-photo-frame img { height: auto; max-height: 245mm; object-fit: contain; width: 100%; }
+  body:has(.print-photo-main) .print-photo-frame > span { display: none; }
+  body:has(.print-photo-main) .print-photo-sheet figcaption { color: #4f4649; font-size: 9pt; padding: 0; }
 
   body:has(.family-book-preview) { background: #fff; color: #43383c; }
   body:has(.family-book-preview) .family-nav,

@@ -3,11 +3,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import FamilyBookExport from "../src/components/family-book-export";
 
-const { downloadFamilyBookPdf } = vi.hoisted(() => ({ downloadFamilyBookPdf: vi.fn(async () => undefined) }));
+const { downloadFamilyBookPdf, openFamilyBookPdf } = vi.hoisted(() => ({
+  downloadFamilyBookPdf: vi.fn(async () => undefined),
+  openFamilyBookPdf: vi.fn(async () => undefined)
+}));
 
 vi.mock("../src/lib/family-book-pdf", async (importOriginal) => ({
   ...await importOriginal<typeof import("../src/lib/family-book-pdf")>(),
-  downloadFamilyBookPdf
+  downloadFamilyBookPdf,
+  openFamilyBookPdf
 }));
 
 function responseFor(url: string): Response {
@@ -32,6 +36,7 @@ describe("family mother and baby book", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     downloadFamilyBookPdf.mockClear();
+    openFamilyBookPdf.mockClear();
   });
 
   it("renders a private printable summary from real portal endpoints", async () => {
@@ -45,9 +50,8 @@ describe("family mother and baby book", () => {
     expect(screen.getByText(/EmBe không dùng chúng để chẩn đoán/)).toBeInTheDocument();
   });
 
-  it("downloads a PDF, opens the print dialog, and reloads the selected range", async () => {
+  it("downloads and opens the same PDF for printing, then reloads the selected range", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => responseFor(String(input)));
-    const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
     render(<FamilyBookExport />);
 
     const pdfButton = await screen.findByRole("button", { name: /Tải PDF/ });
@@ -56,7 +60,7 @@ describe("family mother and baby book", () => {
 
     const printButton = screen.getByRole("button", { name: "In" });
     fireEvent.click(printButton);
-    expect(print).toHaveBeenCalledOnce();
+    await waitFor(() => expect(openFamilyBookPdf).toHaveBeenCalledOnce());
 
     fireEvent.click(screen.getByRole("button", { name: "7 ngày" }));
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("days=7"))).toBe(true));

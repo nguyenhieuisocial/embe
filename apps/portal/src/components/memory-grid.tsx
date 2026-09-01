@@ -204,10 +204,6 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
     }
   }
 
-  function printPhoto() {
-    window.print();
-  }
-
   return (
     <div ref={dialogRef} aria-label={memory.title} aria-modal="true" className="photo-viewer" role="dialog"
       onKeyDown={keepFocusInside}
@@ -221,9 +217,9 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
       <header>
         <span>Ảnh {index + 1} / {total}</span>
         <div className="photo-viewer-actions">
-          <button aria-label="In ảnh này" className="photo-viewer-print" onClick={printPhoto} type="button">
+          <a aria-label="In ảnh này" className="photo-viewer-print" href={`/in-anh/${memory.id}`}>
             <span aria-hidden="true">▣</span> In ảnh
-          </button>
+          </a>
           <button ref={closeRef} aria-label="Đóng ảnh" className="photo-viewer-close" onClick={onClose} type="button">×</button>
         </div>
       </header>
