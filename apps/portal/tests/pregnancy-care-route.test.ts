@@ -5,7 +5,7 @@ const rpc = vi.fn();
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc }) }));
 
 import { GET, PATCH } from "../src/app/api/pregnancy/care/route";
-import { POST as createDevice, PUT as ingestHealth } from "../src/app/api/pregnancy/iphone-health/route";
+import { GET as probeHealth, POST as createDevice, PUT as ingestHealth } from "../src/app/api/pregnancy/iphone-health/route";
 import { estimatedEnergyTarget, PREGNANCY_NUTRIENTS } from "../src/lib/pregnancy-nutrition";
 
 const originalEnvironment = { ...process.env };
@@ -98,6 +98,38 @@ describe("private pregnancy care and iPhone health APIs", () => {
       body: JSON.stringify({ day: "2026-09-01", steps: 5200, latitude: 10.7 })
     }));
     expect(rejected.status).toBe(400);
+  });
+
+  it("lets an iPhone verify its private receiver before sending health data", async () => {
+    const token = `embe_health_${"a".repeat(43)}`;
+    rpc.mockResolvedValueOnce({
+      data: { device_id: planId, label: "iPhone của Mẹ Ngân", last_synced_at: null }, error: null
+    });
+    const response = await probeHealth(new Request("https://embe.hieu.asia/api/pregnancy/iphone-health", {
+      headers: { authorization: `Bearer ${token}` }
+    }));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      connected: true, deviceId: planId, label: "iPhone của Mẹ Ngân", lastSyncedAt: null
+    });
+    expect(rpc).toHaveBeenCalledWith("embe_probe_iphone_health", { p_token_hash: expect.stringMatching(/^[0-9a-f]{64}$/) });
+  });
+
+  it("accepts the reviewed open-source Apple Shortcut daily export format", async () => {
+    const token = `embe_health_${"a".repeat(43)}`;
+    rpc.mockResolvedValueOnce({ data: true, error: null });
+    const response = await createDevice(new Request("https://embe.hieu.asia/api/pregnancy/iphone-health", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ data: [
+        { type: "Steps", date: "2026-09-01T00:00:00+07:00", value: "5432", unit: "count" },
+        { type: "Active Calories", date: "2026-09-01T00:00:00+07:00", value: "321.5", unit: "kcal" }
+      ] })
+    }));
+    expect(response.status).toBe(202);
+    expect(rpc).toHaveBeenCalledWith("embe_ingest_iphone_health", expect.objectContaining({
+      p_day: "2026-09-01", p_steps: 5432, p_active_energy_kcal: 321.5
+    }));
   });
 });
 

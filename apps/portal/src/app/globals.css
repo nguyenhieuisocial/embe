@@ -186,6 +186,18 @@
 .iphone-metrics span { display: grid; padding: .65rem; border-radius: 13px; background: #f9f3f5; color: #806c73; font-size: .67rem; }
 .iphone-metrics strong { color: #704052; font-size: 1rem; }
 .sync-secret { display: grid; gap: .35rem; margin-top: .7rem; padding: .75rem; border-radius: 14px; background: #f6f1ff; }
+.iphone-connection-warning { padding: .65rem .75rem; border-radius: 12px; background: #fff4e8; color: #7c5739 !important; }
+.iphone-setup-steps { display: grid; gap: .55rem; margin: .35rem 0; padding: 0; list-style: none; }
+.iphone-setup-steps li { display: grid; grid-template-columns: 28px 1fr; gap: .55rem; align-items: start; }
+.iphone-setup-steps li > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #e6d9ff; color: #654793; font-size: .72rem; font-weight: 700; }
+.iphone-setup-steps li div { display: grid; gap: .08rem; }
+.iphone-setup-steps li strong { font-size: .76rem; }
+.iphone-setup-steps li small { color: #746b78; font-size: .68rem; line-height: 1.45; }
+.iphone-shortcut-link { display: grid; place-items: center; text-decoration: none; }
+.iphone-setup-value { display: grid; grid-template-columns: 1fr auto; gap: .25rem .5rem; align-items: center; padding: .55rem; border-radius: 12px; background: #fff; }
+.iphone-setup-value small { grid-column: 1 / -1; color: #746b78; font-size: .65rem; }
+.iphone-setup-value code { min-width: 0; overflow: hidden; color: #514a56; font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
+.iphone-setup-value button { min-width: 56px; min-height: 44px; border: 0; border-radius: 11px; background: #efe6ff; color: #60438d; font: inherit; font-size: .72rem; font-weight: 650; }
 .sync-secret p, .sync-secret small { margin: 0; color: #6f647a; font-size: .7rem; }
 .sync-secret code { overflow-wrap: anywhere; user-select: all; font-size: .68rem; }
 .care-status { min-height: 1rem; margin: .7rem 0 0; color: #7f7075; font-size: .68rem; text-align: center; }

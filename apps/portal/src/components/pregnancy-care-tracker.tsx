@@ -91,6 +91,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
   const [showPlan, setShowPlan] = useState(false);
   const [syncSecret, setSyncSecret] = useState<{ token: string; ingestUrl: string } | null>(null);
+  const [copied, setCopied] = useState<"token" | "url" | null>(null);
 
   async function load(currentDay: string) {
     try {
@@ -172,6 +173,14 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     } catch { setStatus("error"); }
   }
 
+  async function copySetupValue(kind: "token" | "url", value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+      window.setTimeout(() => setCopied(null), 1800);
+    } catch { setStatus("error"); }
+  }
+
   const activePlans = snapshot.plans.filter((plan) => plan.active);
   const doseCount = activePlans.reduce((sum, plan) => sum + plan.times_per_day, 0);
   const takenCount = activePlans.reduce((sum, plan) => sum + plan.taken_slots.length, 0);
@@ -189,6 +198,19 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const profile = profileFromSnapshot(snapshot);
   const energyTarget = estimatedEnergyTarget(profile, pregnancyWeek);
   const calories = Math.round(mealTotals.calories ?? 0);
+  const activeIphoneDevices = snapshot.iphone_devices.filter((device) => device.active);
+  const lastIphoneSync = activeIphoneDevices
+    .map((device) => device.last_synced_at)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1) ?? null;
+  const iphoneConnectionLabel = snapshot.iphone_health
+    ? "Đã nhận dữ liệu hôm nay"
+    : lastIphoneSync
+      ? `Chưa có dữ liệu hôm nay · lần cuối ${new Date(lastIphoneSync).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}`
+      : activeIphoneDevices.length
+        ? "Đã tạo điểm nhận, iPhone chưa gửi dữ liệu"
+        : "Chưa kết nối Apple Health";
 
   return (
     <section className="care-tracker" id="vi-chat-thuoc" aria-labelledby="care-tracker-title">
@@ -278,18 +300,36 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         <p className="formula-note">Mốc tự tính dùng phương trình DRI 2023 theo hồ sơ và cộng khoảng 340 kcal ở ba tháng giữa, 450 kcal ở ba tháng cuối. Đây là điểm bắt đầu để theo dõi, không phải chỉ định giảm/tăng cân; mốc chuyên môn đã nhập luôn được ưu tiên.</p>
       </details>
 
-      <details className="iphone-health-card" id="suc-khoe-iphone" open={snapshot.iphone_devices.length === 0}>
-        <summary><span><strong>Sức khỏe từ iPhone</strong><small>{snapshot.iphone_health ? "Đã nhận dữ liệu hôm nay" : "Cần cấp quyền một lần trên iPhone"}</small></span><i>⌄</i></summary>
+      <details className="iphone-health-card" id="suc-khoe-iphone" open={!snapshot.iphone_health}>
+        <summary><span><strong>Sức khỏe từ iPhone</strong><small>{iphoneConnectionLabel}</small></span><i>⌄</i></summary>
         {snapshot.iphone_health && <div className="iphone-metrics">
           <span><strong>{snapshot.iphone_health.steps ?? "—"}</strong>bước</span>
           <span><strong>{snapshot.iphone_health.sleep_minutes ? `${(snapshot.iphone_health.sleep_minutes / 60).toFixed(1)}h` : "—"}</strong>ngủ</span>
           <span><strong>{snapshot.iphone_health.active_energy_kcal ?? "—"}</strong>kcal vận động</span>
           <span><strong>{snapshot.iphone_health.weight_kg ?? "—"}</strong>kg</span>
         </div>}
-        <p>Safari không được Apple cho đọc HealthKit trực tiếp. Cầu nối chỉ nhận tổng số Mẹ Ngân chọn (bước chân, ngủ, năng lượng, cân nặng, nước, nhịp tim trung bình), không lấy vị trí hay dữ liệu thô.</p>
-        {!syncSecret && <button className="care-add-button" type="button" onClick={() => void createIphoneConnection()}>Tạo kết nối iPhone riêng tư</button>}
-        {syncSecret && <div className="sync-secret" role="status"><strong>Khóa kết nối đã tạo</strong><p>Khóa chỉ hiện lần này. EmBe sẽ dùng nó trong Phím tắt iPhone; không gửi cho người khác.</p><code>{syncSecret.token}</code><small>Điểm nhận: {syncSecret.ingestUrl}</small></div>}
-        <p className="formula-note">iOS bắt buộc chính Mẹ Ngân chấp thuận quyền HealthKit trên điện thoại. Không website nào có thể bỏ qua bước bảo mật này.</p>
+        <p>Safari không thể tự đọc Apple Health. EmBe cần một Phím tắt trên chính iPhone để gửi các tổng số đã chọn; không lấy vị trí, hồ sơ khám hay dữ liệu thô.</p>
+        {!syncSecret && <>
+          {activeIphoneDevices.length > 0 && !lastIphoneSync && <p className="iphone-connection-warning">Lần trước mới tạo điểm nhận nhưng chưa cài cầu nối, nên chưa có dữ liệu nào được gửi.</p>}
+          <button className="care-add-button" type="button" onClick={() => void createIphoneConnection()}>
+            {activeIphoneDevices.length ? "Làm lại kết nối" : "Bắt đầu kết nối"}
+          </button>
+        </>}
+        {syncSecret && <div className="sync-secret" role="status">
+          <strong>Điểm nhận đã sẵn sàng</strong>
+          <p>Việc còn lại phải thực hiện một lần trên iPhone vì Apple chỉ cho ứng dụng Phím tắt xin quyền đọc Sức khỏe.</p>
+          <ol className="iphone-setup-steps">
+            <li><span>1</span><div><strong>Cài mẫu đã kiểm tra</strong><small>Khi được hỏi URL, dán “Điểm nhận” ở bên dưới.</small></div></li>
+            <li><span>2</span><div><strong>Thêm khóa riêng</strong><small>Mở bước “Lấy nội dung của URL”, thêm tiêu đề Authorization rồi dán giá trị bên dưới.</small></div></li>
+            <li><span>3</span><div><strong>Chạy thử một lần</strong><small>Chấp thuận Bước chân và Năng lượng vận động khi Apple hỏi; sau đó quay lại EmBe để xem kết quả.</small></div></li>
+            <li><span>4</span><div><strong>Cho chạy mỗi ngày</strong><small>Trong Tự động hóa, chọn một giờ hằng ngày và “Chạy ngay”.</small></div></li>
+          </ol>
+          <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài mẫu Phím tắt miễn phí</a>
+          <div className="iphone-setup-value"><small>Điểm nhận</small><code>{syncSecret.ingestUrl}</code><button type="button" onClick={() => void copySetupValue("url", syncSecret.ingestUrl)}>{copied === "url" ? "Đã chép" : "Chép"}</button></div>
+          <div className="iphone-setup-value"><small>Authorization</small><code>Bearer {syncSecret.token}</code><button type="button" onClick={() => void copySetupValue("token", `Bearer ${syncSecret.token}`)}>{copied === "token" ? "Đã chép" : "Chép"}</button></div>
+          <p className="formula-note">Mẫu mã nguồn mở chỉ gửi tổng bước chân và năng lượng vận động theo ngày. Khóa chỉ hiện lần này; kết nối mới đã vô hiệu hóa các điểm nhận cũ chưa từng gửi dữ liệu.</p>
+        </div>}
+        <p className="formula-note">Chỉ bấm “Cho phép” trong Apple Health là chưa đủ: Phím tắt còn phải chạy và gửi dữ liệu về EmBe. iOS có thể hoãn tự động hóa khi máy khóa, bật tiết kiệm pin hoặc không có mạng.</p>
       </details>
 
       <p className={`care-status is-${status}`} aria-live="polite">{status === "saving" ? "Đang lưu riêng tư…" : status === "error" ? "Chưa đồng bộ được; hãy thử lại khi có mạng." : "Dữ liệu sức khỏe được giữ riêng cho gia đình."}</p>
