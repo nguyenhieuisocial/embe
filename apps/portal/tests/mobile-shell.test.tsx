@@ -63,6 +63,13 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/\.source-section a\s*\{[^}]*min-height:\s*44px/s);
   });
 
+  it("keeps the EmBe wordmark visible when the private note is long", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+
+    expect(ruleBody(css, ".wordmark")).toMatch(/flex:\s*none/);
+    expect(ruleBody(css, ".privacy-note")).toMatch(/text-overflow:\s*ellipsis/);
+  });
+
   it("styles every class the mobile screens actually render", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 

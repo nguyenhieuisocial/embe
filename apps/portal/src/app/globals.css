@@ -166,6 +166,7 @@ ol, ul { margin: 0; padding: 0; }
   font-family: var(--font-display), Georgia, serif;
   font-size: 1.2rem;
   font-weight: 600;
+  flex: none;
   gap: 8px;
   letter-spacing: -.02em;
   min-height: 44px;
@@ -181,7 +182,11 @@ ol, ul { margin: 0; padding: 0; }
   font-size: .75rem;
   gap: 6px;
   letter-spacing: .01em;
+  min-width: 0;
+  overflow: hidden;
   text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .privacy-note .dot {
   background: var(--jade);
