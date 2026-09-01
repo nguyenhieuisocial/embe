@@ -88,9 +88,9 @@ export default async function MemoriesPage({
     <main className="memories-main">
       <AppHeader note="Chỉ ảnh bố mẹ đã chọn" />
       <section className="memories-hero">
-        <p className="eyebrow">Album của gia đình</p>
+        <p className="eyebrow">Ảnh &amp; câu chuyện</p>
         <h1>Những ngày<br /><em>mình muốn nhớ</em></h1>
-        <p className="intro">{dateHeading ? `Những điều mình đã lưu trong ${dateHeading}.` : "Mỗi album đi theo đúng folder đã chọn trong kho ảnh gia đình; ảnh gốc vẫn an toàn ở máy nhà."}</p>
+        <p className="intro">{dateHeading ? `Kỷ niệm của ${dateHeading}.` : "Chạm album để xem, hoặc đổi sang Ngày tháng, Chuyến đi và Bản đồ."}</p>
       </section>
       <PhotoComposer />
       <MemoryTabs current="album" />

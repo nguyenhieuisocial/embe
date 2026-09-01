@@ -17,6 +17,7 @@ describe("family home hub", () => {
     expect(screen.getByRole("link", { name: "Mở trợ lý" })).toHaveAttribute("href", "/tro-ly");
     expect(screen.getByRole("link", { name: "Xem hướng dẫn" })).toHaveAttribute("href", "/huong-dan");
     expect(screen.getByRole("link", { name: "Mở lịch gia đình" })).toHaveAttribute("href", "/lich");
+    expect(screen.getByText("Chọn công cụ cần mở hoặc thiết lập điện thoại này.")).toBeInTheDocument();
   });
 
   it("never renders an unavailable photo endpoint as a broken link", () => {

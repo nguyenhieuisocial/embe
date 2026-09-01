@@ -61,7 +61,7 @@ export default function AssistantPage() {
       <section className="assistant-hero">
         <p className="eyebrow">Đồng hành đúng giai đoạn</p>
         <h1>Mẹ Ngân cần gì lúc này?</h1>
-        <p className="intro">Hiện tại EmBe ưu tiên thai kỳ. Chọn một việc cần xem ngay; nội dung không thay thế tư vấn của bác sĩ.</p>
+        <p className="intro">Chọn một việc cần xem ngay. Nếu có dấu hiệu bất thường, hãy liên hệ nơi Mẹ Ngân đang khám.</p>
       </section>
       <section className="assistant-topics pregnancy-help" aria-label="Hỗ trợ thai kỳ">
         {pregnancyHelp.map((item) => (
@@ -71,7 +71,7 @@ export default function AssistantPage() {
         ))}
       </section>
       <details className="future-assistant">
-        <summary><span><small>ĐỂ DÀNH CHO GIAI ĐOẠN SAU</small><strong>Sau khi em bé chào đời</strong></span><span aria-hidden="true">⌄</span></summary>
+        <summary><span><small>Dành cho giai đoạn sau</small><strong>Sau khi em bé chào đời</strong></span><span aria-hidden="true">⌄</span></summary>
         <p>Phần này phân tích số liệu bú, ngủ và môi trường khi gia đình bắt đầu ghi nhận sau sinh.</p>
         <div className="assistant-period" role="group" aria-label="Khoảng thời gian">
           {[7, 14, 30].map((value) => (
@@ -89,7 +89,7 @@ export default function AssistantPage() {
       {state === "waiting" ? <section className="assistant-answer is-waiting" role="status"><span /><span /><p>Máy nhà đang xem lại số liệu…</p></section> : null}
       {state === "done" ? <section className="assistant-answer" aria-live="polite"><small>KẾT QUẢ TỪ MÁY NHÀ</small><p>{answer}</p></section> : null}
       {state === "error" ? <p className="assistant-error" role="alert">Máy nhà chưa trả lời được lúc này. Dữ liệu vẫn an toàn; hãy chạm thử lại sau.</p> : null}
-      <aside className="assistant-boundary"><strong>Riêng tư theo thiết kế</strong><p>Không gửi ghi chú, thời điểm chi tiết hoặc hồ sơ gốc cho mô hình AI.</p></aside>
+      <aside className="assistant-boundary"><strong>Dữ liệu vẫn riêng tư</strong><p>AI chỉ nhận bản tóm tắt, không nhận ảnh hoặc hồ sơ gốc.</p></aside>
     </main>
   );
 }

@@ -14,29 +14,29 @@ const shortcuts = [
   {
     href: "/ky-niem",
     icon: "album" as const,
-    kicker: "Album gia đình",
-    title: "Khoảnh khắc",
+    kicker: "Ảnh & chuyến đi",
+    title: "Kỷ niệm",
     label: "Mở album kỷ niệm"
   },
   {
     href: "/do-dung",
     icon: "supply" as const,
-    kicker: "Chuẩn bị từng chút",
-    title: "Đồ cần cho mẹ và em bé",
+    kicker: "Theo dõi số lượng",
+    title: "Đồ dùng",
     label: "Xem đồ dùng trong nhà"
   },
   {
     href: "/tro-ly",
     icon: "assistant" as const,
-    kicker: "Đúng giai đoạn hiện tại",
-    title: "Mẹ Ngân cần gì lúc này?",
+    kicker: "Theo tuần thai",
+    title: "Trợ lý",
     label: "Hỏi trợ lý riêng của gia đình"
   },
   {
     href: "/huong-dan",
     icon: "guide" as const,
-    kicker: "Dành cho cả nhà",
-    title: "Dùng EmBe thật đơn giản",
+    kicker: "Cài trên iPhone",
+    title: "Hướng dẫn",
     label: "Xem cách sử dụng đơn giản"
   }
 ];
@@ -121,7 +121,7 @@ async function TodayPlanPanel() {
     <section className="section day-thread" aria-labelledby="day-thread-title">
       <div className="section-head">
         <p className="panel-kicker">Việc nhà mình hôm nay</p>
-        <h2 id="day-thread-title">{tasks.length ? `${completed}/${tasks.length} việc đã xong` : "Một ngày đang thật nhẹ"}</h2>
+        <h2 id="day-thread-title">{tasks.length ? `${completed}/${tasks.length} việc đã xong` : "Hôm nay chưa có việc"}</h2>
       </div>
       {tasks.length ? <div className="thread">
         {tasks.slice(0, 3).map((task) => {
@@ -135,7 +135,7 @@ async function TodayPlanPanel() {
           </div>;
         })}
       </div> : <div className="empty-state compact-empty">
-        <strong>Chưa có việc nào</strong><p>Thêm việc đầu tiên để Mẹ Ngân và Ba Hiếu cùng theo dõi.</p>
+        <strong>Có thể bắt đầu thật nhẹ</strong><p>Thêm lịch khám, việc cần làm hoặc điều Ba Hiếu hỗ trợ.</p>
       </div>}
       <a className="btn btn-quiet btn-block" href="/ke-hoach">Mở toàn bộ kế hoạch</a>
     </section>
@@ -153,12 +153,11 @@ export default function Home() {
           Hôm nay,<br /><em>mình cần làm gì?</em>
         </h1>
         <p className="intro">
-          Một nơi duy nhất để mẹ xem việc cần làm, cả nhà lưu điều đáng nhớ và
-          cùng dõi theo em bé lớn lên.
+          Ba việc quan trọng, lịch sắp tới và một chỗ để ghi điều đáng nhớ.
         </p>
 
         <a className="action-primary" href="/ke-hoach" aria-label="Mở kế hoạch hôm nay">
-          Xem việc hôm nay
+          Xem 3 việc ưu tiên
           <Icon name="arrow" className="icon" />
         </a>
 
@@ -198,11 +197,7 @@ export default function Home() {
         ))}
       </nav>
 
-      <p className="privacy-line">Chỉ những điều bố mẹ đã chọn mới xuất hiện tại đây.</p>
-
-      <footer>
-        <p>Được lưu giữ riêng tư cho gia đình.</p>
-      </footer>
+      <p className="privacy-line">Ảnh, sức khỏe và nhật ký chỉ Mẹ Ngân và Ba Hiếu xem được.</p>
     </main>
   );
 }

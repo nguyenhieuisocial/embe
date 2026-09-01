@@ -13,35 +13,35 @@ const familyTools: Array<{
     href: "/tim-kiem",
     icon: "memory",
     title: "Tìm trong EmBe",
-    detail: "Tìm lại ảnh, chuyến đi và nhật ký theo ngày, địa điểm hoặc lời đã ghi.",
+    detail: "Ảnh, chuyến đi và nhật ký.",
     label: "Mở tìm kiếm"
   },
   {
     href: "/do-dung",
     icon: "supply",
     title: "Đồ dùng",
-    detail: "Theo dõi những thứ sắp hết và chuẩn bị cho mẹ, em bé.",
+    detail: "Số lượng và món sắp hết.",
     label: "Mở đồ dùng"
   },
   {
     href: "/tro-ly",
     icon: "assistant",
     title: "Trợ lý riêng",
-    detail: "Tóm tắt những gì gia đình đã ghi, không gửi dữ liệu thô ra ngoài.",
+    detail: "Tóm tắt dữ liệu gia đình đã ghi.",
     label: "Mở trợ lý"
   },
   {
     href: "/lich",
     icon: "calendar",
     title: "Lịch gia đình",
-    detail: "Xem lịch âm, lịch dương, việc cần làm và kỷ niệm cùng ngày.",
+    detail: "Lịch âm, lịch dương và việc cùng ngày.",
     label: "Mở lịch gia đình"
   },
   {
     href: "/huong-dan",
     icon: "guide",
     title: "Hướng dẫn",
-    detail: "Cài EmBe lên iPhone và xem cách dùng thật ngắn gọn.",
+    detail: "Cài trên iPhone và xem cách dùng.",
     label: "Xem hướng dẫn"
   }
 ];
@@ -51,15 +51,12 @@ export default function FamilyHomePage() {
 
   return (
     <main className="page family-home-main">
-      <AppHeader note="Không gian riêng của Ngân & Hiếu" />
+      <AppHeader note="Công cụ & thiết lập" />
 
       <section className="family-home-hero">
-        <p className="eyebrow">Một nơi cho những việc ít dùng hơn</p>
+        <p className="eyebrow">Công cụ của gia đình</p>
         <h1>Nhà mình</h1>
-        <p className="intro">
-          Đồ dùng, lịch, trợ lý và các thiết lập được gom ở đây để màn hình hằng
-          ngày luôn nhẹ và dễ dùng bằng một tay.
-        </p>
+        <p className="intro">Chọn công cụ cần mở hoặc thiết lập điện thoại này.</p>
       </section>
 
       <nav className="section shortcut-list" aria-label="Công cụ của nhà mình">
@@ -82,10 +79,7 @@ export default function FamilyHomePage() {
           <p className="panel-kicker">Ảnh gốc ở máy nhà</p>
           <h2 id="photo-connection-title">Thư viện ảnh riêng</h2>
         </div>
-        <p>
-          Immich giữ ảnh gốc; EmBe chỉ hiển thị những ảnh gia đình đã chọn qua
-          đường kết nối riêng.
-        </p>
+        <p>Ảnh gốc nằm trong Immich; EmBe chỉ hiện ảnh gia đình đã chọn.</p>
         {photoServerUrl ? (
           <p className="state-note"><span className="dot" aria-hidden="true" /> Địa chỉ kết nối đã sẵn sàng trong Hướng dẫn.</p>
         ) : (
@@ -99,7 +93,7 @@ export default function FamilyHomePage() {
           <p className="panel-kicker">Riêng tư theo mặc định</p>
           <h2 id="family-privacy-title">Chỉ Hiếu và Ngân sử dụng</h2>
         </div>
-        <p>Không có đăng ký công khai. Ảnh, sức khỏe và nhật ký không được đưa vào trang công khai hoặc cache dùng chung.</p>
+        <p>Không có đăng ký công khai; dữ liệu không xuất hiện trên trang công khai.</p>
       </section>
     </main>
   );

@@ -166,9 +166,9 @@ export default function PhotoComposer() {
       {!items.length ? (
         <div className="photo-window">
           <div className="photo-window-copy">
-            <span>Khung cửa gia đình</span>
-            <h2>Một tấm hình,<br />gửi ngay cho nhà mình.</h2>
-            <p>Có thể chọn nhiều ảnh một lượt. Ảnh gốc vẫn được cất riêng tư.</p>
+            <span>Thêm kỷ niệm</span>
+            <h2>Chụp hoặc chọn ảnh</h2>
+            <p>Có thể chọn nhiều ảnh trong một lượt.</p>
           </div>
           <div className="photo-window-actions">
             <button className="photo-shutter" type="button" onClick={() => camera.current?.click()}>

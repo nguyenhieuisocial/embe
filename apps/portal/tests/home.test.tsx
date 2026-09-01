@@ -47,7 +47,8 @@ describe("family portal home", () => {
     render(await Home());
 
     expect(
-      screen.getByText("Chỉ những điều bố mẹ đã chọn mới xuất hiện tại đây.")
+      screen.getByText("Ảnh, sức khỏe và nhật ký chỉ Mẹ Ngân và Ba Hiếu xem được.")
     ).toBeInTheDocument();
+    expect(screen.queryByText("Được lưu giữ riêng tư cho gia đình.")).not.toBeInTheDocument();
   });
 });

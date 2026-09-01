@@ -34,6 +34,7 @@ describe("mobile inventory page", () => {
 
     expect(await screen.findByText("Chưa có đồ dùng nào")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Thêm đồ dùng đầu tiên" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Thêm đồ dùng/ })).toHaveLength(1);
   });
 
   it("queues a one-tap consume action and refreshes the snapshot", async () => {
@@ -52,7 +53,7 @@ describe("mobile inventory page", () => {
     render(<InventoryPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Đã dùng 1 Bỉm sơ sinh" }));
 
-    await waitFor(() => expect(screen.getByText("Đã ghi nhận · hệ thống đang cập nhật")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Đã cập nhật")).toBeInTheDocument());
     expect(request).toHaveBeenCalledTimes(3);
   });
 

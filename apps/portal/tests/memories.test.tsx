@@ -58,6 +58,7 @@ describe("family memories", () => {
       expect(input).toHaveAttribute("aria-hidden", "true");
       expect(input).toHaveAttribute("tabindex", "-1");
     }
+    expect(screen.getByRole("heading", { name: "Chụp hoặc chọn ảnh" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chụp ngay" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Chọn nhiều ảnh" })).toBeInTheDocument();
   });

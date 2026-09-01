@@ -106,11 +106,13 @@ export default function InventoryPage() {
         <div>
           <p className="eyebrow">Bỉm · sữa · vật tư</p>
           <h1>Đồ dùng trong nhà</h1>
-          <p className="intro">Nhìn một lần là biết món nào sắp hết. Mỗi lần mua hoặc dùng chỉ cần chạm một nút.</p>
+          <p className="intro">Xem món sắp hết và cập nhật số lượng bằng một chạm.</p>
         </div>
-        <button className="inventory-add" type="button" onClick={() => setShowForm((value) => !value)}>
-          {showForm ? "Đóng" : "Thêm đồ dùng"}
-        </button>
+        {snapshot.items.length > 0 || showForm ? (
+          <button className="inventory-add" type="button" onClick={() => setShowForm((value) => !value)}>
+            {showForm ? "Đóng" : "Thêm đồ dùng"}
+          </button>
+        ) : null}
       </section>
 
       {showForm ? (
@@ -150,7 +152,7 @@ export default function InventoryPage() {
           {snapshot.items.map((item) => (
             <article className={`inventory-card${item.needsRestock ? " is-low" : ""}`} key={item.productId}>
               <div className="inventory-card-top">
-                <div><p>{item.needsRestock ? "SẮP HẾT" : "ĐANG ĐỦ"}</p><h2>{item.name}</h2></div>
+                <div><p>{item.needsRestock ? "Sắp hết" : "Đang đủ"}</p><h2>{item.name}</h2></div>
                 <strong>{item.quantity.toLocaleString("vi-VN")} <small>{item.unit}</small></strong>
               </div>
               <p className="inventory-threshold">Nhắc khi còn {item.minQuantity.toLocaleString("vi-VN")} {item.unit}</p>
@@ -163,12 +165,12 @@ export default function InventoryPage() {
         </section>
       ) : null}
 
-      {screenState === "saved" ? <p className="inventory-status is-success" role="status">Đã ghi nhận · hệ thống đang cập nhật</p> : null}
+      {screenState === "saved" ? <p className="inventory-status is-success" role="status">Đã cập nhật</p> : null}
       {snapshot.pending > 0 ? <p className="inventory-status" role="status">Có {snapshot.pending} thay đổi đang được xử lý.</p> : null}
       {screenState === "error" && snapshot.items.length > 0 ? <p className="inventory-status is-error" role="alert">
         Đang xem danh sách đã lưu {cachedAt ? <time dateTime={cachedAt}>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(cachedAt))}</time> : "gần nhất"}. Chạm thử lại khi có mạng.
       </p> : null}
-      <aside className="inventory-boundary"><strong>EmBe chỉ nhắc, không tự mua</strong><p>Mọi quyết định mua hàng vẫn do gia đình xác nhận.</p></aside>
+      <aside className="inventory-boundary"><strong>EmBe chỉ nhắc, không tự đặt mua.</strong></aside>
     </main>
   );
 }

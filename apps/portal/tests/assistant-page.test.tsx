@@ -12,6 +12,7 @@ describe("mobile family assistant", () => {
     expect(screen.getByRole("link", { name: /việc nên làm hôm nay/i })).toHaveAttribute("href", "/me-bau#viec-hom-nay");
     expect(screen.getByRole("link", { name: /ăn gì, kiêng gì/i })).toHaveAttribute("href", "/me-bau#cam-nang");
     expect(screen.getByText("Sau khi em bé chào đời")).toBeInTheDocument();
+    expect(screen.getByText(/Nếu có dấu hiệu bất thường, hãy liên hệ nơi Mẹ Ngân đang khám\./)).toBeInTheDocument();
   });
 
   it("submits and shows the locally generated answer", async () => {
