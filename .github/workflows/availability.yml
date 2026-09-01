@@ -20,7 +20,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - run: node scripts/health/portal-public-smoke.mjs
       - name: Dispatch private family reminders
-        if: ${{ secrets.EMBE_PUSH_CRON_SECRET != '' }}
         env:
           EMBE_PUSH_CRON_SECRET: ${{ secrets.EMBE_PUSH_CRON_SECRET }}
         run: >-
