@@ -11,8 +11,15 @@ describe("private installable portal", () => {
     const appManifest = manifest();
 
     expect(appManifest.lang).toBe("vi");
+    expect(appManifest.id).toBe("/");
+    expect(appManifest.scope).toBe("/");
     expect(appManifest.start_url).toBe("/");
     expect(appManifest.display).toBe("standalone");
+    expect(appManifest.shortcuts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "Ghi lại", url: "/ghi-lai" }),
+      expect.objectContaining({ name: "Kế hoạch", url: "/ke-hoach" }),
+      expect.objectContaining({ name: "Kỷ niệm", url: "/ky-niem" })
+    ]));
     expect(appManifest.icons).toEqual(expect.arrayContaining([
       expect.objectContaining({ src: "/icon-192.png", sizes: "192x192", type: "image/png" }),
       expect.objectContaining({ src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" })
