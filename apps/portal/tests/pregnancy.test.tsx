@@ -179,7 +179,7 @@ describe("pregnancy daily page", () => {
 
   it("stores the due date locally and displays the calculated week", () => {
     render(<PregnancyPage />);
-    fireEvent.change(screen.getByLabelText("Ngày dự sinh do bác sĩ xác nhận"), {
+    fireEvent.change(screen.getByLabelText("Ngày dự sinh (bác sĩ xác nhận)"), {
       target: { value: "2026-10-08" }
     });
 
@@ -204,7 +204,7 @@ describe("pregnancy daily page", () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByLabelText("Ngày dự sinh do bác sĩ xác nhận")).toHaveValue("2026-10-08");
+    expect(screen.getByLabelText("Ngày dự sinh (bác sĩ xác nhận)")).toHaveValue("2026-10-08");
     expect(screen.getAllByRole("checkbox")[0]).toBeChecked();
     expect(screen.getByText("Đã đồng bộ riêng tư")).toBeInTheDocument();
   });

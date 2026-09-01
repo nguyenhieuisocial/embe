@@ -252,7 +252,7 @@ export default function PregnancyPage() {
               <i aria-hidden="true">⌄</i>
             </summary>
             <div>
-              <label htmlFor="due-date">Ngày dự sinh do bác sĩ xác nhận</label>
+              <label htmlFor="due-date">Ngày dự sinh (bác sĩ xác nhận)</label>
               <input
                 id="due-date"
                 type="date"
@@ -260,7 +260,6 @@ export default function PregnancyPage() {
                 disabled={!ready}
                 onChange={(event) => updateDueDate(event.target.value)}
               />
-              <p>EmBe sẽ tự sắp xếp lời nhắc theo đúng giai đoạn. Nếu chưa có ngày xác nhận, cứ để trống.</p>
             </div>
           </details>
         </div>

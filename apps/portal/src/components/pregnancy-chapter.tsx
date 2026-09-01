@@ -12,25 +12,25 @@ function chapterFor(dueDate: string) {
   if (week === null) return {
     kicker: "Mới mang thai",
     title: "Mình bắt đầu thật nhẹ nhàng",
-    detail: "Ưu tiên sức khỏe Mẹ Ngân, ghi câu hỏi cho lần khám tới và cài ngày dự sinh khi đã có.",
+    detail: "Sức khỏe Mẹ, lịch khám và ngày dự sinh.",
     action: "Chăm Mẹ hôm nay"
   };
   if (week <= 13) return {
     kicker: `Tuần ${week} · ba tháng đầu`,
     title: "Chăm mẹ trước, mọi việc khác để sau",
-    detail: "EmBe ưu tiên nghỉ ngơi, ăn uống an toàn, lịch khám và những điều Mẹ Ngân muốn hỏi.",
+    detail: "Nghỉ ngơi, ăn an toàn, lịch khám và câu hỏi cho bác sĩ.",
     action: "Xem ưu tiên hôm nay"
   };
   if (week <= 27) return {
     kicker: `Tuần ${week} · ba tháng giữa`,
     title: "Cùng theo dõi từng thay đổi nhỏ",
-    detail: "Sức khỏe, bữa ăn, vận động nhẹ và những khoảnh khắc đáng nhớ được đưa lên trước.",
+    detail: "Sức khỏe, bữa ăn, vận động nhẹ và kỷ niệm.",
     action: "Xem hành trình hôm nay"
   };
   return {
     kicker: `Tuần ${week} · ba tháng cuối`,
     title: "Chuẩn bị đón em bé, từng chút một",
-    detail: "EmBe ưu tiên lịch khám, dấu hiệu cần liên hệ và những việc thật sự cần trước ngày sinh.",
+    detail: "Lịch khám, dấu hiệu cần liên hệ và đồ cần chuẩn bị.",
     action: "Xem việc cần chuẩn bị"
   };
 }

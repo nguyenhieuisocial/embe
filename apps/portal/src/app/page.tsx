@@ -133,10 +133,8 @@ async function TodayPlanPanel() {
             </div>
           </div>;
         })}
-      </div> : <div className="empty-state compact-empty">
-        <strong>Có thể bắt đầu thật nhẹ</strong><p>Thêm lịch khám, việc cần làm hoặc điều Ba Hiếu hỗ trợ.</p>
-      </div>}
-      <a className="btn btn-quiet btn-block" href="/ke-hoach">Mở toàn bộ kế hoạch</a>
+      </div> : null}
+      <a className="btn btn-quiet btn-block" href="/ke-hoach">{tasks.length ? "Mở kế hoạch" : "Thêm việc hoặc lịch khám"}</a>
     </section>
   );
 }

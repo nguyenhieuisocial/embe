@@ -3693,8 +3693,16 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .stage-name { font-size: .6875rem; padding: 4px 8px; }
   .stage-nudge { font-size: .8rem; line-height: 1.4; }
   .stage-settings > summary { min-height: 44px; padding: 6px 10px; }
+  .stage-settings > div { gap: 5px; padding: 8px 10px 10px; }
+  .birth-transition { border-radius: 13px; margin: 8px 0 0; }
+  .birth-transition > summary,
+  .birth-transition-summary { min-height: 44px; padding: 7px 10px; }
+  .stage-feature-link { margin: 8px 0; min-height: 44px; padding: 7px 10px; }
   .pregnancy-jump { gap: 5px; padding-block: 4px; }
   .pregnancy-jump a { font-size: .72rem; padding: 6px 10px; }
+  .pregnancy-urgent-shortcut { border-radius: 13px; gap: 7px; margin-top: 8px; padding: 9px 11px; }
+  .pregnancy-urgent-shortcut h2 { font-size: .9rem; margin: 1px 0; }
+  .pregnancy-urgent-shortcut p:last-child { display: none; }
 
   .health-tracker,
   .meal-tracker { gap: 10px; }
