@@ -34,14 +34,18 @@
   /* Nhịp 4 / 8 / 12 / 16 / 20 / 24 / 32 */
   --gutter: 20px;
   --radius-sm: 10px;
+  --radius-md: 14px;
   --radius: 16px;
   --radius-lg: 22px;
   --radius-pill: 999px;
   --tap: 44px;
+  --control: 54px;
   --rail: 92px;
+  --content: 640px;
   --measure: 560px;
 
   --shadow-card: 0 1px 2px rgba(24, 38, 33, .04), 0 8px 28px rgba(24, 38, 33, .035);
+  --shadow-action: 0 8px 20px rgba(15, 74, 68, .16);
   --shadow-lift: 0 -6px 28px rgba(24, 38, 33, .10);
 }
 
@@ -67,6 +71,12 @@ body {
 
 a, button, input, select, textarea { touch-action: manipulation; }
 button, input, select, textarea { font: inherit; color: inherit; }
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
 a { color: inherit; }
 img, svg { max-width: 100%; }
 
@@ -295,19 +305,19 @@ ol, ul { margin: 0; padding: 0; }
   align-items: center;
   background: none;
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: var(--radius);
   cursor: pointer;
   display: inline-flex;
   font-size: 1rem;
   font-weight: 600;
   gap: 8px;
   justify-content: center;
-  min-height: 52px;
+  min-height: var(--control);
   padding: 12px 20px;
   text-decoration: none;
-  transition: background-color 160ms ease-out, border-color 160ms ease-out;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out, transform 120ms ease-out;
 }
-.btn-primary { background: var(--jade); color: var(--surface); }
+.btn-primary { background: var(--jade); box-shadow: var(--shadow-action); color: var(--surface); }
 .btn-primary:active { background: var(--jade-press); }
 .btn-quiet { background: var(--surface); border-color: var(--line-strong); color: var(--jade); }
 .btn-quiet:active { background: var(--jade-soft); }
@@ -320,6 +330,11 @@ ol, ul { margin: 0; padding: 0; }
 .btn:disabled { cursor: default; opacity: .5; }
 .btn-block { display: flex; width: 100%; }
 
+:where(.btn, .action-primary, .quick-trigger, .health-save, .inventory-add, .planner-add, .memory-more, .journal-form > button[type="submit"]):not(:disabled):active {
+  transform: scale(.985);
+}
+:where(button, [role="button"]):disabled { cursor: default; }
+
 .action-primary {
   align-items: center;
   background: var(--jade);
@@ -330,10 +345,11 @@ ol, ul { margin: 0; padding: 0; }
   font-weight: 600;
   gap: 12px;
   justify-content: space-between;
-  min-height: 60px;
+  box-shadow: var(--shadow-action);
+  min-height: 58px;
   padding: 14px 20px;
   text-decoration: none;
-  transition: background-color 160ms ease-out;
+  transition: background-color 160ms ease-out, box-shadow 160ms ease-out, transform 120ms ease-out;
 }
 .action-primary:active { background: var(--jade-press); }
 .action-primary .icon { flex: none; }
@@ -479,9 +495,9 @@ select,
 textarea {
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 1rem;
-  min-height: 52px;
+  min-height: var(--control);
   padding: 12px 14px;
   width: 100%;
 }
@@ -496,15 +512,15 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   backdrop-filter: blur(18px) saturate(1.15);
   background: rgba(255, 255, 255, .94);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
-  border-top: 1px solid var(--line);
-  bottom: 0;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 82%, transparent);
+  border-radius: 22px;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  box-shadow: 0 8px 28px rgba(24, 38, 33, .13);
   display: flex;
-  left: 0;
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  left: max(8px, env(safe-area-inset-left));
+  padding: 4px;
   position: fixed;
-  right: 0;
+  right: max(8px, env(safe-area-inset-right));
   z-index: 40;
 }
 .family-nav a {
@@ -517,23 +533,13 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   font-weight: 500;
   gap: 4px;
   justify-content: center;
-  min-height: 58px;
+  border-radius: 17px;
+  min-height: 56px;
   padding: 8px 2px;
   position: relative;
   text-decoration: none;
 }
-.family-nav a[aria-current="page"] { color: var(--jade); font-weight: 600; }
-.family-nav a[aria-current="page"]::before {
-  background: var(--jade);
-  border-radius: 0 0 3px 3px;
-  content: "";
-  height: 3px;
-  left: 50%;
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  width: 28px;
-}
+.family-nav a[aria-current="page"] { background: var(--jade-soft); color: var(--jade); font-weight: 600; }
 .nav-icon {
   fill: none;
   height: 23px;
@@ -579,7 +585,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .sheet {
   animation: sheet-rise 220ms ease-out;
   background: var(--surface);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: 28px 28px 0 0;
   bottom: 0;
   box-shadow: var(--shadow-lift);
   display: flex;
@@ -637,7 +643,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   background: var(--jade);
   border: 1px solid rgba(255, 255, 255, .3);
   border-radius: var(--radius-pill);
-  bottom: calc(72px + env(safe-area-inset-bottom));
+  bottom: calc(86px + env(safe-area-inset-bottom));
   box-shadow: 0 8px 24px rgba(15, 74, 68, .22);
   color: var(--surface);
   display: flex;
@@ -1037,11 +1043,12 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .health-save {
   background: var(--jade);
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-action);
   color: white;
   font: inherit;
   font-weight: 600;
-  min-height: 50px;
+  min-height: var(--control);
   padding: 12px 16px;
   width: 100%;
 }
@@ -1306,6 +1313,17 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   padding-block: 12px;
   position: sticky;
 }
+.journal-form > button[type="submit"] {
+  background: var(--jade);
+  border: 1px solid var(--jade);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-action);
+  color: var(--surface);
+  font-weight: 600;
+  min-height: var(--control);
+  padding: 12px 18px;
+}
+.journal-form > button[type="submit"]:disabled { box-shadow: none; opacity: .48; }
 .journal-success, .journal-queued, .journal-error {
   border-radius: var(--radius-sm);
   font-size: .9375rem;
@@ -1947,13 +1965,18 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .logout-form button {
   background: var(--jade);
   border: 1px solid var(--jade);
-  border-radius: 14px;
+  border-radius: var(--radius);
   color: var(--surface);
   cursor: pointer;
   font-weight: 600;
-  min-height: 52px;
+  min-height: var(--control);
   padding: 12px 16px;
 }
+.inventory-add,
+.inventory-form button,
+.inventory-empty button,
+.inventory-error button,
+.logout-form button { box-shadow: var(--shadow-action); }
 .inventory-card { display: grid; }
 .inventory-card-top { align-items: center; display: flex; gap: 12px; justify-content: space-between; }
 .inventory-card-top > div { min-width: 0; }
@@ -2353,6 +2376,34 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 .login-privacy { color: var(--ink-soft); font-size: .8125rem; }
 
+/* ── Hoàn thiện cảm giác ứng dụng trên điện thoại ────────────── */
+
+@media (max-width: 480px) {
+  .planner-form-row,
+  .inventory-form-row { grid-template-columns: 1fr; }
+
+  .calendar-jump { grid-template-columns: 1fr 1fr; }
+  .calendar-jump input { grid-column: 1 / -1; }
+
+  .sheet-head { padding-inline: var(--gutter); }
+  .sheet-body { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+
+  .planner-days,
+  .pregnancy-jump {
+    scroll-padding-inline: var(--gutter);
+    scroll-snap-type: x proximity;
+  }
+  .planner-days a,
+  .pregnancy-jump a { scroll-snap-align: start; }
+}
+
+@media (max-width: 360px) {
+  :root { --gutter: 16px; }
+  .chapter-actions { grid-template-columns: 1fr; }
+  .photo-window-actions { grid-template-columns: 1fr; }
+  .family-nav a { font-size: .625rem; }
+}
+
 /* ── iPad và desktop: điều hướng thành thanh dọc ─────────────── */
 
 @media (min-width: 768px) {
@@ -2377,26 +2428,21 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .guide-main { max-width: var(--measure); }
 
   .family-nav {
+    border: 0;
+    border-radius: 0;
     border-right: 1px solid var(--line);
-    border-top: none;
     bottom: 0;
+    box-shadow: none;
     flex-direction: column;
     gap: 4px;
     justify-content: flex-start;
+    left: 0;
     padding: max(20px, env(safe-area-inset-top)) 8px 20px;
     right: auto;
     top: 0;
     width: calc(var(--rail) + env(safe-area-inset-left));
   }
   .family-nav a { flex: none; min-height: 68px; width: 100%; }
-  .family-nav a[aria-current="page"]::before {
-    border-radius: 0 3px 3px 0;
-    height: 28px;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-  }
 
   .quick-trigger {
     bottom: 20px;

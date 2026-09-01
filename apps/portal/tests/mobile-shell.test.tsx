@@ -55,6 +55,22 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/\.quick-trigger\s*\{[^}]*env\(safe-area-inset-bottom\)/s);
   });
 
+  it("uses one tactile control system and a native-like active dock", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+
+    expect(css).toContain("--control: 54px");
+    expect(ruleBody(css, ".btn")).toMatch(/min-height:\s*var\(--control\)/);
+    expect(ruleBody(css, ".family-nav")).toMatch(/border-radius:\s*22px/);
+    expect(ruleBody(css, '.family-nav a[aria-current="page"]')).toMatch(/background:\s*var\(--jade-soft\)/);
+    expect(css).toMatch(/button,\s*\n?\s*\[role="button"\][^{]*\{[^}]*-webkit-tap-highlight-color:\s*transparent/s);
+  });
+
+  it("stacks dense form rows on phones instead of squeezing two fields together", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+
+    expect(css).toMatch(/@media \(max-width: 480px\)[\s\S]*\.planner-form-row,[\s\S]*\.inventory-form-row\s*\{[^}]*grid-template-columns:\s*1fr/s);
+  });
+
   it("gives compact text links a full iPhone touch target", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
