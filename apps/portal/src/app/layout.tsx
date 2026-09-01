@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
 
 import AppShell from "../components/app-shell";
+import DevicePreferencesRuntime from "../components/device-preferences-runtime";
 import PwaRuntime from "../components/pwa-runtime";
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${body.variable} ${display.variable}`}>
+        <DevicePreferencesRuntime />
         <AppShell>{children}</AppShell>
         <PwaRuntime />
       </body>

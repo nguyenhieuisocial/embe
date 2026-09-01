@@ -42,10 +42,10 @@ describe("private family push routes", () => {
     sendNotification.mockResolvedValueOnce({ statusCode: 201 });
     const response = await subscriptionRoute.POST(request("https://embe.hieu.asia/api/notifications/subscriptions", "POST", {
       subscription: { endpoint: "https://push.example.test/device/1", expirationTime: null, keys: { p256dh: "a".repeat(87), auth: "b".repeat(22) } },
-      deviceRole: "mother", timezone: "Asia/Ho_Chi_Minh"
+      deviceRole: "mother", timezone: "Asia/Ho_Chi_Minh", notifyAt: "07:30"
     }));
     expect(response.status).toBe(201);
-    expect(rpc).toHaveBeenCalledWith("embe_upsert_push_subscription", expect.objectContaining({ p_device_role: "mother" }));
+    expect(rpc).toHaveBeenCalledWith("embe_upsert_push_subscription", expect.objectContaining({ p_device_role: "mother", p_notify_at: "07:30" }));
     expect(sendNotification).toHaveBeenCalledWith(
       expect.objectContaining({ endpoint: "https://push.example.test/device/1" }),
       expect.stringContaining("Đã bật thông báo"), expect.objectContaining({ TTL: 86_400 })
@@ -68,5 +68,16 @@ describe("private family push routes", () => {
     expect(sendNotification.mock.calls[0][1]).not.toContain(notification.p256dh);
     expect(sendNotification.mock.calls[0][1]).not.toContain(notification.endpoint);
     expect(rpc).toHaveBeenLastCalledWith("embe_complete_push_delivery", expect.objectContaining({ p_sent: true }));
+  });
+
+  it("updates the reminder time for only the current phone", async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: null });
+    const response = await subscriptionRoute.PATCH(request("https://embe.hieu.asia/api/notifications/subscriptions", "PATCH", {
+      endpoint: "https://push.example.test/device/1", notifyAt: "19:15"
+    }));
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("embe_update_push_schedule", {
+      p_endpoint: "https://push.example.test/device/1", p_notify_at: "19:15"
+    });
   });
 });

@@ -6,6 +6,7 @@ export type PushSubscriptionInput = {
   auth: string;
   deviceRole: FamilyDeviceRole;
   timezone: string;
+  notifyAt: string;
 };
 
 function validTimezone(value: string): boolean {
@@ -26,7 +27,8 @@ export function normalizePushSubscription(value: unknown): PushSubscriptionInput
       || typeof key.p256dh !== "string" || key.p256dh.length < 80 || key.p256dh.length > 128
       || typeof key.auth !== "string" || key.auth.length < 16 || key.auth.length > 64
       || typeof input.deviceRole !== "string" || !["mother", "father", "family"].includes(input.deviceRole)
-      || typeof input.timezone !== "string" || !validTimezone(input.timezone)) return null;
+      || typeof input.timezone !== "string" || !validTimezone(input.timezone)
+      || typeof input.notifyAt !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(input.notifyAt)) return null;
   try {
     const endpoint = new URL(raw.endpoint);
     if (endpoint.protocol !== "https:" || endpoint.username || endpoint.password) return null;
@@ -34,8 +36,17 @@ export function normalizePushSubscription(value: unknown): PushSubscriptionInput
   if (!/^[A-Za-z0-9_-]+$/.test(key.p256dh) || !/^[A-Za-z0-9_-]+$/.test(key.auth)) return null;
   return {
     endpoint: raw.endpoint, p256dh: key.p256dh, auth: key.auth,
-    deviceRole: input.deviceRole as FamilyDeviceRole, timezone: input.timezone
+    deviceRole: input.deviceRole as FamilyDeviceRole, timezone: input.timezone, notifyAt: input.notifyAt
   };
+}
+
+export function normalizePushSchedule(value: unknown): { endpoint: string; notifyAt: string } | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const input = value as Record<string, unknown>;
+  const endpoint = normalizeEndpoint(input.endpoint);
+  return endpoint && typeof input.notifyAt === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(input.notifyAt)
+    ? { endpoint, notifyAt: input.notifyAt }
+    : null;
 }
 
 export function normalizeEndpoint(value: unknown): string | null {

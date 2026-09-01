@@ -18,6 +18,7 @@ describe("family home hub", () => {
     expect(screen.getByRole("link", { name: "Xem hướng dẫn" })).toHaveAttribute("href", "/huong-dan");
     expect(screen.getByRole("link", { name: "Mở lịch gia đình" })).toHaveAttribute("href", "/lich");
     expect(screen.getByRole("link", { name: "Mở Sổ Mẹ và Bé" })).toHaveAttribute("href", "/so-me-va-be");
+    expect(screen.getByRole("link", { name: "Mở cài đặt" })).toHaveAttribute("href", "/cai-dat");
     expect(screen.getByText("Chọn công cụ cần mở hoặc thiết lập điện thoại này.")).toBeInTheDocument();
   });
 

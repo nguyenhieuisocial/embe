@@ -12,11 +12,18 @@ describe("private family push notification contract", () => {
         expirationTime: null,
         keys: { p256dh: "a".repeat(87), auth: "b".repeat(22) }
       },
-      deviceRole: "mother", timezone: "Asia/Ho_Chi_Minh"
-    })).toEqual(expect.objectContaining({ deviceRole: "mother", timezone: "Asia/Ho_Chi_Minh" }));
+      deviceRole: "mother", timezone: "Asia/Ho_Chi_Minh", notifyAt: "07:30"
+    })).toEqual(expect.objectContaining({ deviceRole: "mother", timezone: "Asia/Ho_Chi_Minh", notifyAt: "07:30" }));
     expect(contract.normalizePushSubscription({
       subscription: { endpoint: "javascript:alert(1)", keys: { p256dh: "x", auth: "y" } },
       deviceRole: "mother", timezone: "Asia/Ho_Chi_Minh"
+    })).toBeNull();
+    expect(contract.normalizePushSubscription({
+      subscription: {
+        endpoint: "https://push.example.test/device/1",
+        keys: { p256dh: "a".repeat(87), auth: "b".repeat(22) }
+      },
+      deviceRole: "mother", timezone: "Asia/Ho_Chi_Minh", notifyAt: "25:00"
     })).toBeNull();
   });
 

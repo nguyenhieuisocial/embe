@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import type { DeviceRole } from "../lib/device-preferences";
+import { readNotifyAt, saveNotifyAt } from "../lib/device-preferences";
 
 type State = "checking" | "off" | "busy" | "on" | "blocked" | "unsupported" | "error";
 
@@ -20,14 +21,24 @@ function available(): boolean {
 
 export default function NotificationSetup({ role }: { role: DeviceRole | null }) {
   const [state, setState] = useState<State>("checking");
+  const [notifyAt, setNotifyAt] = useState("08:00");
 
   useEffect(() => {
+    setNotifyAt(readNotifyAt(localStorage));
     if (!available()) { setState("unsupported"); return; }
     if (Notification.permission === "denied") { setState("blocked"); return; }
     void navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription())
       .then((subscription) => setState(subscription ? "on" : "off"))
       .catch(() => setState("off"));
   }, []);
+
+  async function saveSubscription(subscription: PushSubscription) {
+    const saved = await fetch("/api/notifications/subscriptions", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ subscription: subscription.toJSON(), deviceRole: role ?? "family", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, notifyAt })
+    });
+    if (!saved.ok) throw new Error("notification subscription unavailable");
+  }
 
   async function enable() {
     if (!available()) { setState("unsupported"); return; }
@@ -41,11 +52,26 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
       const { publicKey } = await config.json() as { publicKey: string };
       let subscription = await registration.pushManager.getSubscription();
       subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: applicationKey(publicKey) });
-      const saved = await fetch("/api/notifications/subscriptions", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ subscription: subscription.toJSON(), deviceRole: role ?? "family", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })
+      await saveSubscription(subscription);
+      setState("on");
+    } catch { setState("error"); }
+  }
+
+  async function changeNotifyAt(value: string) {
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return;
+    setNotifyAt(value);
+    saveNotifyAt(localStorage, value);
+    if (state !== "on") return;
+    setState("busy");
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) { setState("off"); return; }
+      const response = await fetch("/api/notifications/subscriptions", {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint, notifyAt: value })
       });
-      if (!saved.ok) throw new Error("notification subscription unavailable");
+      if (!response.ok) throw new Error("notification schedule unavailable");
       setState("on");
     } catch { setState("error"); }
   }
@@ -72,9 +98,10 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
           : "Nhận lịch khám, việc đến hạn và đồ dùng sắp hết ngay trên điện thoại.";
 
   return <div className="notification-setup">
-    <div><strong>Thông báo trên điện thoại</strong><p>{note}</p></div>
+    <div className="notification-copy"><strong>Thông báo trên điện thoại</strong><p>{note}</p></div>
     {state === "on"
       ? <button type="button" onClick={() => void disable()}>Tắt thông báo</button>
-      : <button type="button" disabled={state === "busy" || state === "checking"} onClick={() => void enable()}>{state === "busy" ? "Đang bật…" : "Bật thông báo"}</button>}
+      : <button type="button" disabled={state === "busy" || state === "checking"} onClick={() => void enable()}>{state === "busy" ? "Đang lưu…" : "Bật thông báo"}</button>}
+    <label className="notification-time"><span>Giờ nhắc hằng ngày</span><input aria-label="Giờ nhắc hằng ngày" disabled={state === "busy" || state === "checking"} type="time" value={notifyAt} onChange={(event) => void changeNotifyAt(event.target.value)} /></label>
   </div>;
 }

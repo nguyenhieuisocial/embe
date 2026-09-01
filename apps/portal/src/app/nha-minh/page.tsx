@@ -1,6 +1,4 @@
 import AppHeader from "../../components/app-header";
-import DeviceSetup from "../../components/device-setup";
-import FamilyProfile from "../../components/family-profile";
 import { Icon, type IconName } from "../../components/embe-icon";
 
 const familyTools: Array<{
@@ -10,6 +8,13 @@ const familyTools: Array<{
   detail: string;
   label: string;
 }> = [
+  {
+    href: "/cai-dat",
+    icon: "settings",
+    title: "Cài đặt",
+    detail: "Điện thoại, thông báo và hồ sơ gia đình.",
+    label: "Mở cài đặt"
+  },
   {
     href: "/so-me-va-be",
     icon: "guide",
@@ -79,10 +84,6 @@ export default function FamilyHomePage() {
           </a>
         ))}
       </nav>
-
-      <DeviceSetup />
-
-      <FamilyProfile />
 
       <section className="section family-connection" aria-labelledby="photo-connection-title">
         <div className="section-head">
