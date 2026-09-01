@@ -59,7 +59,7 @@ export default function AssistantPage() {
     <main className="assistant-main">
       <AppHeader note="Trợ lý riêng của gia đình" />
       <section className="assistant-hero">
-        <p className="eyebrow">ĐỒNG HÀNH ĐÚNG GIAI ĐOẠN</p>
+        <p className="eyebrow">Đồng hành đúng giai đoạn</p>
         <h1>Mẹ Ngân cần gì lúc này?</h1>
         <p className="intro">Hiện tại EmBe ưu tiên thai kỳ. Chọn một việc cần xem ngay; nội dung không thay thế tư vấn của bác sĩ.</p>
       </section>

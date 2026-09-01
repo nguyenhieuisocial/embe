@@ -104,7 +104,7 @@ export default function InventoryPage() {
 
       <section className="inventory-hero">
         <div>
-          <p className="eyebrow">BỈM · SỮA · VẬT TƯ</p>
+          <p className="eyebrow">Bỉm · sữa · vật tư</p>
           <h1>Đồ dùng trong nhà</h1>
           <p className="intro">Nhìn một lần là biết món nào sắp hết. Mỗi lần mua hoặc dùng chỉ cần chạm một nút.</p>
         </div>

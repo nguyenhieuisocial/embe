@@ -212,7 +212,7 @@ export default function PregnancyPage() {
 
       <section className="pregnancy-hero">
         <div>
-          <p className="eyebrow">CHĂM MẸ NGÂN · TỪNG NGÀY</p>
+          <p className="eyebrow">Chăm Mẹ Ngân · từng ngày</p>
           <h1>Mẹ bầu hôm nay</h1>
           <p className="intro">
             Chỉ những điều cần nhớ hôm nay — nhẹ nhàng, rõ ràng và không tạo áp lực.

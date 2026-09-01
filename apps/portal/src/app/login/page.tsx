@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <PublicAnalytics />
       <section className="bare-card" aria-labelledby="login-title">
         <span className="bare-mark" aria-hidden="true"><EmBeMark className="" /></span>
-        <p className="eyebrow">EMBE · GIA ĐÌNH NGÂN &amp; HIẾU</p>
+        <p className="eyebrow">EmBe · gia đình Ngân &amp; Hiếu</p>
         <h1 aria-label="Mời cả nhà vào bên trong" id="login-title">
           Mời cả nhà<br /><em>vào bên trong</em>
         </h1>

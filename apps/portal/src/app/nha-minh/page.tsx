@@ -46,7 +46,7 @@ export default function FamilyHomePage() {
       <AppHeader note="Không gian riêng của Ngân & Hiếu" />
 
       <section className="family-home-hero">
-        <p className="eyebrow">MỘT NƠI CHO NHỮNG VIỆC ÍT DÙNG HƠN</p>
+        <p className="eyebrow">Một nơi cho những việc ít dùng hơn</p>
         <h1>Nhà mình</h1>
         <p className="intro">
           Đồ dùng, lịch, trợ lý và các thiết lập được gom ở đây để màn hình hằng

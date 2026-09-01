@@ -43,7 +43,7 @@ export default function GuidePage() {
 
       <section className="guide-hero">
         <div>
-          <p className="eyebrow">BẮT ĐẦU Ở ĐÂY</p>
+          <p className="eyebrow">Bắt đầu ở đây</p>
           <h1>Bạn không cần học các ứng dụng phía sau</h1>
           <p className="intro">
             Từ giờ, hãy coi <strong>EmBe</strong> là cánh cửa duy nhất. Những phần

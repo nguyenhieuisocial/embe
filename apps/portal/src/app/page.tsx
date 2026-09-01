@@ -142,7 +142,7 @@ export default function Home() {
       <AppHeader note="Chỉ gia đình nhìn thấy" />
 
       <section className="today-hero">
-        <p className="eyebrow">SỔ NHÀ NGÂN &amp; HIẾU</p>
+        <p className="eyebrow">Sổ nhà Ngân &amp; Hiếu</p>
         <h1 aria-label="Hôm nay, mình cần làm gì?">
           Hôm nay,<br /><em>mình cần làm gì?</em>
         </h1>

@@ -5,14 +5,16 @@ Nguồn thiết kế tương tác: https://claude.ai/design/p/abc909c0-47e2-4be6
 Đây là hệ thiết kế riêng của EmBe, dựng từ trang trắng bằng Claude Design Opus 5.
 Không liên quan và không được kế thừa bất kỳ thiết kế, asset hay component nào từ iFan.
 
-## Hướng thị giác
+## Hướng thị giác — cập nhật theo người dùng chính
 
-- Nền giấy: `#FBF8F1`; surface: `#FFFDF8`; viền: `#E6DECE`
-- Chữ chính: `#1C231F`; chữ phụ: `#55605A`
-- Jade chính: `#0F4A44`; jade dịu: `#E8F0ED`; indigo: `#303C5E`
+- Người dùng chính là Mẹ Ngân đang mang thai: giao diện cần nhẹ nhàng, nữ tính và bình tĩnh, không trẻ con hóa.
+- Nền phấn hồng: `#FFF8FA`; surface kem sữa: `#FFFCFD`; viền hồng tro: `#EDDDE3`
+- Chữ mận đen: `#33272B`; chữ phụ: `#75656B`
+- Rose chính: `#98405F`; rose dịu: `#F8E6ED`; mauve: `#67566F`
 - Sun `#B5811A` chỉ dùng chờ/offline; coral `#AE3F2C` chỉ dùng cảnh báo y tế hoặc sắp hết đồ
 - Be Vietnam Pro cho UI/body; Noto Serif cho tiêu đề cảm xúc
 - Motif duy nhất: một “sợi chỉ gia đình” mảnh nối mốc trong ngày và timeline
+- Dùng sentence case; hạn chế chữ in hoa và giãn chữ rộng vì tạo cảm giác nặng.
 - Không glassmorphism, không dashboard KPI, không emoji, không gradient hồng/xanh kiểu trẻ em
 
 ## Quy tắc mobile

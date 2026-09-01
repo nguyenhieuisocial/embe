@@ -5,7 +5,7 @@ export default function OfflinePage() {
     <main className="bare-page">
       <section className="bare-card" role="status">
         <span className="bare-mark is-wait" aria-hidden="true"><Icon name="refresh" className="" /></span>
-        <p className="eyebrow">EMBE ĐANG CHỜ KẾT NỐI</p>
+        <p className="eyebrow">EmBe đang chờ kết nối</p>
         <h1>Điện thoại đang mất mạng</h1>
         <p>
           Hãy kiểm tra Wi‑Fi hoặc 4G/5G. Ghi chú đang viết thường được giữ tạm trên

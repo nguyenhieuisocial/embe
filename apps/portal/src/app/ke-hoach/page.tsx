@@ -12,7 +12,7 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
     <main className="planner-main">
       <AppHeader note="Kế hoạch riêng của Ngân & Hiếu" />
       <section className="planner-hero">
-        <p className="eyebrow">VIỆC NHÀ MÌNH</p>
+        <p className="eyebrow">Việc nhà mình</p>
         <h1>Một ngày rõ ràng,<br /><em>cả nhà cùng nhẹ lòng</em></h1>
         <p className="intro">Việc cần làm, lịch hẹn và những điều muốn nhớ nằm chung một mạch.</p>
       </section>

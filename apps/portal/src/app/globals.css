@@ -1,24 +1,27 @@
 /* EmBe 2026 — hệ thiết kế riêng của gia đình.
-   Sương · ngọc · chàm · nắng · san hô. Motif duy nhất: sợi chỉ gia đình. */
+   Phấn hồng · kem sữa · mận chín · nắng · san hô. Motif duy nhất: sợi chỉ gia đình. */
 
 :root {
   color-scheme: light;
 
   /* Nền và bề mặt */
-  --paper: #FBF8F1;
-  --surface: #FFFDF8;
-  --line: #E6DECE;
-  --line-strong: #C8BFA9;
+  --paper: #FFF8FA;
+  --surface: #FFFCFD;
+  --line: #EDDDE3;
+  --line-strong: #D8BCC7;
 
   /* Chữ */
-  --ink: #1C231F;
-  --ink-soft: #55605A;
+  --ink: #33272B;
+  --ink-soft: #75656B;
 
   /* Màu dẫn */
-  --jade: #0F4A44;
-  --jade-press: #0A342F;
-  --jade-soft: #E8F0ED;
-  --indigo: #303C5E;
+  --rose: #98405F;
+  --rose-press: #743047;
+  --rose-soft: #F8E6ED;
+  --jade: var(--rose);
+  --jade-press: var(--rose-press);
+  --jade-soft: var(--rose-soft);
+  --indigo: #67566F;
 
   /* Màu trạng thái — dùng đúng chỗ, không trang trí */
   --sun: #B5811A;
@@ -28,7 +31,7 @@
   --coral-soft: #F8EAE6;
 
   /* Sợi chỉ gia đình */
-  --thread: #C8BFA9;
+  --thread: #D8BCC7;
   --thread-ring: var(--paper);
 
   /* Nhịp 4 / 8 / 12 / 16 / 20 / 24 / 32 */
@@ -46,7 +49,7 @@
 
   --shadow-card: none;
   --shadow-action: none;
-  --shadow-lift: 0 -12px 40px -12px rgba(28, 35, 31, .35);
+  --shadow-lift: 0 -12px 40px -12px rgba(51, 39, 43, .28);
 }
 
 * { box-sizing: border-box; }
@@ -223,9 +226,9 @@ ol, ul { margin: 0; padding: 0; }
   font-family: var(--font-body), system-ui, sans-serif;
   font-size: .6875rem;
   font-weight: 600;
-  letter-spacing: .14em;
+  letter-spacing: .035em;
   margin: 0;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .intro {
   color: var(--ink-soft);
@@ -293,8 +296,8 @@ ol, ul { margin: 0; padding: 0; }
   color: var(--ink-soft);
   font-size: .75rem;
   font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  letter-spacing: .025em;
+  text-transform: none;
 }
 .thread-body strong { font-size: 1rem; font-weight: 600; }
 .thread-body p { color: var(--ink-soft); font-size: .9375rem; }
@@ -386,8 +389,8 @@ ol, ul { margin: 0; padding: 0; }
   color: var(--ink-soft);
   font-size: .6875rem;
   font-weight: 600;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  letter-spacing: .025em;
+  text-transform: none;
 }
 .shortcut-text strong { font-size: .9875rem; font-weight: 600; }
 .shortcut .icon-chevron { color: var(--ink-soft); flex: none; margin-left: auto; }
@@ -926,9 +929,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .checklist-group h3 {
   color: var(--ink-soft);
   font-size: .75rem;
-  letter-spacing: .08em;
+  letter-spacing: .025em;
   margin: 4px 2px 0;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .check-item {
   align-items: flex-start;
@@ -1166,8 +1169,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   color: var(--ink-soft);
   font-size: .6875rem;
   font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  letter-spacing: .025em;
+  text-transform: none;
 }
 .guidance-item summary strong { font-size: .9375rem; font-weight: 600; }
 .guidance-item summary i {
@@ -1219,8 +1222,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   color: var(--ink-soft);
   font-size: .75rem;
   font-weight: 600;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  letter-spacing: .025em;
+  text-transform: none;
 }
 .menu-day dd { font-size: .9375rem; margin: 0; }
 
@@ -1938,8 +1941,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   color: var(--ink-soft);
   font-size: .6875rem;
   font-weight: 600;
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  letter-spacing: .025em;
+  text-transform: none;
 }
 .inventory-card.is-low .inventory-flag { color: var(--coral); }
 .inventory-card-text h3 { font-size: 1rem; }
@@ -2047,8 +2050,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   color: var(--ink-soft);
   font-size: .6875rem;
   font-weight: 600;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  letter-spacing: .025em;
+  text-transform: none;
 }
 .assistant-answer p { white-space: pre-line; }
 .assistant-error { margin-top: 16px; }
@@ -2215,8 +2218,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   color: var(--ink-soft);
   font-size: .6875rem;
   font-weight: 600;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  letter-spacing: .025em;
+  text-transform: none;
 }
 .rhythm-item p { color: var(--ink-soft); font-size: .9375rem; }
 .rhythm-item a {

@@ -151,7 +151,7 @@ export default function JournalPage() {
     <main className="journal-main">
       <AppHeader note="Chỉ gia đình nhìn thấy" />
       <section className="journal-shell">
-        <p className="eyebrow">MỘT DÒNG CHO MAI SAU</p>
+        <p className="eyebrow">Một dòng cho mai sau</p>
         <h1>Hôm nay có gì đáng nhớ?</h1>
         <p className="intro">Một câu ngắn cũng đủ. EmBe sẽ tự đưa vào dòng thời gian gia đình.</p>
         <form className="journal-form" id="viet-nhat-ky" onSubmit={submit}>

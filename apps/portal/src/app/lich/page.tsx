@@ -41,7 +41,7 @@ export default async function CalendarPage({
     <main className="calendar-main">
       <AppHeader note="Lịch riêng của gia đình" />
       <section className="calendar-hero">
-        <p className="eyebrow">NHỊP THỜI GIAN CỦA EM BÉ</p>
+        <p className="eyebrow">Nhịp thời gian của em bé</p>
         <h1>Mỗi ngày đều có<br /><em>một điều để nhớ</em></h1>
         <p className="intro">Xem ngày dương, ngày âm và mở lại đúng kỷ niệm chỉ bằng một chạm.</p>
       </section>
