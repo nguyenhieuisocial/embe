@@ -3,14 +3,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { MealAnalysis } from "../lib/meal-analysis-contract";
+import { buildMealDashboard, FOOD_GROUP_LABELS, type MealHistoryEntry } from "../lib/meal-dashboard";
 import { createMealDraft, waitForMealDraft, waitForMealNutrition } from "../lib/meal-photo-client";
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
+const nutrientLabels = [
+  ["protein_g", "Đạm", "g"], ["fiber_g", "Chất xơ", "g"],
+  ["calcium_mg", "Canxi", "mg"], ["iron_mg", "Sắt", "mg"], ["folate_ug", "Folate", "µg"]
+] as const;
 
 function defaultMealType(): string {
   const hour = new Date().getHours();
   return hour < 10 ? "breakfast" : hour < 15 ? "lunch" : hour < 21 ? "dinner" : "snack";
 }
+
+function mealDate(value: string): string {
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh", weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit"
+  }).format(new Date(value));
+}
+
+type Worker = { status: "online" | "degraded" | "offline" | "unknown"; lastSeenAt?: string };
 
 export default function MealPhotoTracker() {
   const [mealType, setMealType] = useState("lunch");
@@ -19,36 +32,33 @@ export default function MealPhotoTracker() {
   const [analysis, setAnalysis] = useState<MealAnalysis | null>(null);
   const [entryId, setEntryId] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [historyCount, setHistoryCount] = useState(0);
-  const [loggedCalories, setLoggedCalories] = useState<{ low: number; high: number } | null>(null);
-  const [loggedNutrients, setLoggedNutrients] = useState<Record<string, number>>({});
+  const [history, setHistory] = useState<MealHistoryEntry[]>([]);
+  const [range, setRange] = useState<7 | 28>(7);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [worker, setWorker] = useState<Worker>({ status: "unknown" });
   const [status, setStatus] = useState<"idle" | "sending" | "analyzing" | "review" | "saving" | "saved" | "error">("idle");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setMealType(defaultMealType()); void loadHistory(); }, []);
+  useEffect(() => { setMealType(defaultMealType()); }, []);
+  useEffect(() => { void loadHistory(range); }, [range]);
 
-  async function loadHistory() {
+  async function loadHistory(days = range) {
+    setHistoryLoading(true);
     try {
-      const response = await fetch("/api/meals?days=7", { cache: "no-store" });
+      const response = await fetch(`/api/meals?days=${days}`, { cache: "no-store" });
       if (!response.ok) return;
-      const payload = await response.json() as { history?: Array<{ analysis?: MealAnalysis }>; suggestions?: string[] };
-      setHistoryCount(payload.history?.length ?? 0); setSuggestions(payload.suggestions ?? []);
-      const ranges = payload.history?.flatMap((entry) => entry.analysis?.nutrition?.calorieRange ? [entry.analysis.nutrition.calorieRange] : []) ?? [];
-      setLoggedCalories(ranges.length ? {
-        low: ranges.reduce((sum, range) => sum + range.low, 0),
-        high: ranges.reduce((sum, range) => sum + range.high, 0)
-      } : null);
-      const nutrientTotals: Record<string, number> = {};
-      for (const entry of payload.history ?? []) {
-        for (const [key, value] of Object.entries(entry.analysis?.nutrition?.totals ?? {})) {
-          nutrientTotals[key] = (nutrientTotals[key] ?? 0) + value;
-        }
-      }
-      setLoggedNutrients(nutrientTotals);
-    } catch { /* The capture flow remains available without a history summary. */ }
+      const payload = await response.json() as { history?: MealHistoryEntry[]; suggestions?: string[]; worker?: Worker };
+      setHistory(payload.history ?? []);
+      setSuggestions(payload.suggestions ?? []);
+      setWorker(payload.worker ?? { status: "unknown" });
+    } catch { /* Chụp ảnh vẫn dùng được khi phần lịch sử tạm gián đoạn. */ }
+    finally { setHistoryLoading(false); }
   }
 
+  const dashboard = useMemo(() => buildMealDashboard(history, range), [history, range]);
   const risks = useMemo(() => new Set(analysis?.foods.flatMap((food) => food.safetyFlags) ?? []), [analysis]);
+  const groups = Object.entries(dashboard.groupCounts).sort((a, b) => b[1] - a[1]);
+  const maxGroup = Math.max(1, ...groups.map(([, count]) => count));
 
   async function analyze() {
     if (!file || status === "sending" || status === "analyzing") return;
@@ -77,18 +87,24 @@ export default function MealPhotoTracker() {
         method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysis, note })
       });
       if (!response.ok) throw new Error("save_failed");
+      const savedId = entryId;
       setStatus("saved"); setFile(null); setAnalysis(null); setEntryId(""); setNote("");
       if (inputRef.current) inputRef.current.value = "";
       await loadHistory();
-      void waitForMealNutrition(entryId).then(loadHistory);
+      void waitForMealNutrition(savedId).then(() => loadHistory());
     } catch { setStatus("error"); }
   }
 
+  const workerCopy = worker.status === "online" ? "Nhận diện sẵn sàng"
+    : worker.status === "degraded" ? "Nhận diện đang chậm"
+      : worker.status === "offline" ? "Máy nhà đang tắt"
+        : "Chưa thấy máy nhận diện";
+
   return (
     <section className="meal-tracker" id="bua-an" aria-labelledby="meal-title">
-      <div className="section-heading-row">
+      <div className="section-heading-row meal-heading">
         <div><p className="panel-kicker">Chụp · xác nhận · lưu</p><h2 id="meal-title">Nhật ký bữa ăn</h2></div>
-        <p>Ảnh được nhận diện trên máy nhà. EmBe chỉ lưu kết quả sau khi Mẹ xác nhận.</p>
+        <span className={`meal-worker is-${worker.status}`}><i aria-hidden="true" />{workerCopy}</span>
       </div>
 
       <div className="meal-capture-card">
@@ -100,19 +116,19 @@ export default function MealPhotoTracker() {
         <label className="meal-camera">
           <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
           <span aria-hidden="true">◎</span><strong>{file ? "Đã chọn ảnh — chạm để đổi" : "Chụp bữa ăn"}</strong>
-          <small>Ảnh sẽ được thu nhỏ và bỏ thông tin vị trí trước khi gửi.</small>
+          <small>Ảnh được thu nhỏ và bỏ vị trí trước khi gửi.</small>
         </label>
-        <label className="meal-note">Ghi chú giúp nhận diện đúng hơn
-          <textarea maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: cá hồi, nửa bát cơm, không có nước chấm" />
+        <label className="meal-note">Ghi chú để nhận diện đúng hơn
+          <textarea maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: nửa bát cơm, cá hồi, không có nước chấm" />
         </label>
         <button className="health-save" type="button" disabled={!file || status === "sending" || status === "analyzing"} onClick={() => void analyze()}>
           {status === "sending" ? "Đang gửi ảnh…" : status === "analyzing" ? "Đang nhận diện…" : "Nhận diện bữa ăn"}
         </button>
         <p className={`meal-state is-${status}`} aria-live="polite">
-          {status === "analyzing" ? "Thường mất khoảng một phút. Có thể tiếp tục xem trang trong lúc chờ."
-            : status === "saved" ? "Đã lưu món và khẩu phần. Số dinh dưỡng sẽ được tra từ nguồn chuẩn ở lượt nền tiếp theo."
-              : status === "error" ? "Chưa nhận diện được. Ảnh chưa được ghi vào lịch sử; hãy thử lại khi máy nhà đang bật."
-                : "Con số là khoảng ước lượng, không phải kết luận y tế."}
+          {status === "analyzing" ? "Thường mất khoảng một phút. Mẹ có thể tiếp tục xem trang."
+            : status === "saved" ? "Đã lưu bữa ăn. Dinh dưỡng sẽ được bổ sung ở lượt nền tiếp theo."
+              : status === "error" ? "Chưa nhận diện được. Ảnh chưa được lưu; hãy thử lại khi máy nhà đang bật."
+                : "Kết quả là khoảng ước lượng và luôn cần Mẹ xác nhận."}
         </p>
       </div>
 
@@ -124,23 +140,75 @@ export default function MealPhotoTracker() {
           <small>Độ chắc chắn {Math.round(food.confidence * 100)}%</small>
         </div>)}
         {analysis.needsUserConfirmation.length ? <ul className="meal-questions">{analysis.needsUserConfirmation.map((question) => <li key={question}>{question}</li>)}</ul> : null}
-        {risks.size ? <p className="meal-risk">Ảnh có điểm cần kiểm tra về độ chín, tiệt trùng hoặc loại cá. Không dùng ảnh để kết luận món đã an toàn.</p> : null}
+        {risks.size ? <p className="meal-risk">Có điểm cần kiểm tra về độ chín, tiệt trùng hoặc loại cá. Không dùng ảnh để kết luận món đã an toàn.</p> : null}
         <button className="health-save" type="button" disabled={status === "saving"} onClick={() => void confirm()}>{status === "saving" ? "Đang lưu…" : "Đúng rồi, lưu bữa này"}</button>
       </div> : null}
 
-      <aside className="meal-history-summary">
-        <div><strong>{historyCount}</strong><span>bữa đã xác nhận trong 7 ngày</span></div>
-        {loggedCalories ? <p><b>{Math.round(loggedCalories.low).toLocaleString("vi-VN")}–{Math.round(loggedCalories.high).toLocaleString("vi-VN")} kcal</b> từ riêng những bữa đã ghi, không phải mục tiêu cần đạt.</p> : null}
-        {Object.keys(loggedNutrients).length ? <div className="meal-nutrients" aria-label="Dinh dưỡng ước lượng từ các bữa đã ghi">
-          {([
-            ["protein_g", "Đạm", "g"], ["fiber_g", "Chất xơ", "g"],
-            ["calcium_mg", "Canxi", "mg"], ["iron_mg", "Sắt", "mg"], ["folate_ug", "Folate", "µg"]
-          ] as const).flatMap(([key, label, unit]) => loggedNutrients[key] > 0
-            ? [<span key={key}><b>{Math.round(loggedNutrients[key] * 10) / 10} {unit}</b><small>{label}</small></span>] : [])}
-        </div> : null}
-        <ul>{suggestions.map((suggestion) => <li key={suggestion}>{suggestion}</li>)}</ul>
-        <small>Chỉ nhìn xu hướng của bữa đã ghi; không tự kết luận thiếu chất hoặc tự đề nghị uống thêm vi chất.</small>
-      </aside>
+      <section className="meal-dashboard" aria-labelledby="meal-dashboard-title">
+        <header className="meal-dashboard-head">
+          <div><p className="panel-kicker">Từ những bữa đã ghi</p><h3 id="meal-dashboard-title">Nhìn lại dinh dưỡng</h3></div>
+          <div className="meal-range" role="group" aria-label="Khoảng thời gian">
+            {[7, 28].map((days) => <button key={days} type="button" aria-pressed={range === days} onClick={() => setRange(days as 7 | 28)}>{days} ngày</button>)}
+          </div>
+        </header>
+
+        {historyLoading ? <p className="meal-empty" aria-live="polite">Đang mở sổ bữa ăn…</p>
+          : history.length === 0 ? <p className="meal-empty">Chưa có bữa nào trong khoảng này. Chụp món đầu tiên để bắt đầu.</p>
+            : <>
+              <div className="meal-summary-row">
+                <span><b>{history.length}</b><small>bữa đã xác nhận</small></span>
+                {dashboard.calorieRange ? <span><b>{Math.round(dashboard.calorieRange.low).toLocaleString("vi-VN")}–{Math.round(dashboard.calorieRange.high).toLocaleString("vi-VN")}</b><small>kcal đã ghi</small></span> : null}
+              </div>
+
+              <div className="meal-chart-block">
+                <h4>Năng lượng theo ngày</h4>
+                <div className="meal-daily-scroll">
+                  <div className="meal-daily-chart" style={{
+                    gridTemplateColumns: `repeat(${range}, minmax(20px, 1fr))`,
+                    minWidth: `${Math.max(320, range * 26)}px`
+                  }}>
+                    {dashboard.daily.map((day) => <span className="meal-day" key={day.key} title={`${day.label}: ${Math.round(day.calories)} kcal`}>
+                      <i style={{ height: `${Math.max(day.calories ? 8 : 2, day.calories / dashboard.maxDailyCalories * 100)}%` }} />
+                      <small>{range === 7 || day.key.endsWith("-01") ? day.label : day.label.split("/")[0]}</small>
+                    </span>)}
+                  </div>
+                </div>
+                <p>Chỉ cộng các bữa đã ghi, không phải mục tiêu mỗi ngày.</p>
+              </div>
+
+              {groups.length ? <div className="meal-chart-block meal-group-chart">
+                <h4>Nhóm thực phẩm xuất hiện</h4>
+                {groups.map(([group, count]) => <div className="meal-group-row" key={group}>
+                  <span>{FOOD_GROUP_LABELS[group] ?? group}</span>
+                  <i><b style={{ width: `${count / maxGroup * 100}%` }} /></i><small>{count} bữa</small>
+                </div>)}
+              </div> : null}
+
+              {Object.keys(dashboard.nutrientTotals).length ? <div className="meal-nutrients" aria-label="Dinh dưỡng ước lượng từ các bữa đã ghi">
+                {nutrientLabels.flatMap(([key, label, unit]) => dashboard.nutrientTotals[key] > 0
+                  ? [<span key={key}><b>{Math.round(dashboard.nutrientTotals[key] * 10) / 10} {unit}</b><small>{label}</small></span>] : [])}
+              </div> : null}
+
+              <ul className="meal-suggestions">{suggestions.map((suggestion) => <li key={suggestion}>{suggestion}</li>)}</ul>
+
+              <div className="meal-history-list">
+                <h4>Lịch sử từng bữa</h4>
+                {history.map((entry) => <details className="meal-history-card" key={entry.id}>
+                  <summary>
+                    <span><b>{labels[entry.mealType] ?? "Bữa ăn"}</b><small>{mealDate(entry.eatenAt)}</small></span>
+                    <span><b>{entry.analysis.foods.map((food) => food.nameVi).join(", ")}</b>
+                      <small>{entry.analysis.nutrition?.calorieRange ? `${Math.round(entry.analysis.nutrition.calorieRange.low)}–${Math.round(entry.analysis.nutrition.calorieRange.high)} kcal` : "Đang bổ sung dinh dưỡng"}</small></span>
+                  </summary>
+                  <div className="meal-history-detail">
+                    {entry.note ? <p>{entry.note}</p> : null}
+                    <ul>{entry.analysis.foods.map((food, index) => <li key={`${entry.id}-${index}`}>{food.nameVi}{food.estimatedGrams ? ` · ${food.estimatedGrams} g` : ""}</li>)}</ul>
+                    <small>{entry.analysis.nutrition?.notice ?? entry.analysis.estimateNotice}</small>
+                  </div>
+                </details>)}
+              </div>
+            </>}
+        <small className="meal-safety-note">Không tự kết luận thiếu chất hoặc tự đề nghị uống thêm vi chất.</small>
+      </section>
     </section>
   );
 }

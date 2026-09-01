@@ -25,6 +25,7 @@ function actionsForStage(dueDate: string): QuickAction[] {
 
   return [
     stageAction,
+    { href: "/me-bau?quick=meal#bua-an", icon: "meal", title: "Chụp bữa ăn", detail: "Mở camera và nhận diện món" },
     { href: "/ke-hoach?them=1#them-viec", icon: "check", title: "Thêm việc cần làm", detail: "Giao cho Mẹ Ngân, Ba Hiếu hoặc cả nhà" },
     { href: "/ghi-lai#viet-nhat-ky", icon: "write", title: "Ghi một dòng", detail: "Lưu điều vừa xảy ra" },
     { href: "/ky-niem#gui-anh", icon: "memory", title: "Chụp hoặc chọn ảnh", detail: "Gửi vào album gia đình" }
