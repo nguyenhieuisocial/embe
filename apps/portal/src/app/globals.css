@@ -2148,7 +2148,12 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .iphone-steps li > div { display: grid; gap: 4px; }
 .iphone-steps p { color: var(--ink-soft); font-size: .9375rem; }
 .iphone-setup > small { color: var(--ink-soft); display: block; font-size: .8125rem; margin-top: 16px; }
-.app-store-link { color: var(--jade); }
+.app-store-link {
+  align-items: center;
+  color: var(--jade);
+  display: inline-flex;
+  min-height: 44px;
+}
 
 .immich-server-card {
   background: var(--jade-soft);
@@ -2405,6 +2410,19 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .chapter-actions { grid-template-columns: 1fr; }
   .photo-window-actions { grid-template-columns: 1fr; }
   .family-nav a { font-size: .625rem; }
+}
+
+@media (max-width: 339px) {
+  .family-calendar {
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: 0;
+  }
+  .calendar-toolbar,
+  .calendar-jump { margin-inline: var(--gutter); }
+  .calendar-grid { gap: 0; }
 }
 
 /* ── iPad và desktop: điều hướng thành thanh dọc ─────────────── */

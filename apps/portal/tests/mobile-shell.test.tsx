@@ -81,6 +81,9 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/\.wordmark\s*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.rhythm-item a[^\{]*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.source-section a\s*\{[^}]*min-height:\s*44px/s);
+    expect(ruleBody(css, ".app-store-link")).toMatch(/min-height:\s*44px/);
+    expect(css).toMatch(/@media \(max-width: 339px\)[\s\S]*\.family-calendar[^{]*\{[^}]*margin-inline:\s*calc\(-1 \* var\(--gutter\)\)/s);
+    expect(css).toMatch(/@media \(max-width: 339px\)[\s\S]*\.calendar-grid[^{]*\{[^}]*gap:\s*0/s);
   });
 
   it("keeps the EmBe wordmark visible when the private note is long", () => {
