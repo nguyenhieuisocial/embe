@@ -3,8 +3,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import MealPhotoTracker from "../src/components/meal-photo-tracker";
 
+const mealClient = vi.hoisted(() => ({
+  createMealDraft: vi.fn(), createMealNote: vi.fn(),
+  waitForMealDraft: vi.fn(), waitForMealNutrition: vi.fn()
+}));
+
 vi.mock("../src/lib/meal-photo-client", () => ({
-  createMealDraft: vi.fn(), waitForMealDraft: vi.fn(), waitForMealNutrition: vi.fn()
+  ...mealClient
 }));
 
 const history = [{
@@ -19,7 +24,7 @@ const history = [{
 }];
 
 describe("mobile meal journal", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 
   it("shows worker availability, charts and full meal details for 7 or 28 days", async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({
@@ -37,5 +42,25 @@ describe("mobile meal journal", () => {
     await waitFor(() => expect(fetch).toHaveBeenLastCalledWith("/api/meals?days=28", { cache: "no-store" }));
     fireEvent.click(screen.getByText("Cơm và rau"));
     expect(screen.getByText("ít cơm")).toBeInTheDocument();
+  });
+
+  it("saves a written meal when no photo is selected", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: [], suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+    mealClient.createMealNote.mockResolvedValue("11111111-1111-4111-8111-111111111111");
+
+    render(<MealPhotoTracker />);
+    fireEvent.change(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh"), {
+      target: { value: "Một ly sữa và một quả chuối" }
+    });
+    const save = screen.getByRole("button", { name: "Lưu ghi chú" });
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+
+    await waitFor(() => expect(mealClient.createMealNote).toHaveBeenCalledWith(expect.objectContaining({
+      note: "Một ly sữa và một quả chuối", mealType: expect.any(String)
+    })));
+    expect(await screen.findByText("Đã lưu ghi chú bữa ăn.")).toBeInTheDocument();
   });
 });

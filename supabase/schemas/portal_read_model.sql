@@ -1716,11 +1716,11 @@ CREATE TABLE portal_read_model.meal_analysis (
   meal_type text NOT NULL CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'snack')),
   eaten_at timestamptz NOT NULL,
   note text NOT NULL DEFAULT '' CHECK (char_length(note) <= 300),
-  original_filename text NOT NULL CHECK (char_length(original_filename) BETWEEN 1 AND 180),
-  mime_type text NOT NULL CHECK (mime_type IN ('image/jpeg', 'image/png', 'image/webp')),
-  byte_size bigint NOT NULL CHECK (byte_size BETWEEN 1 AND 12000000),
-  storage_path text NOT NULL UNIQUE CHECK (
-    storage_path ~ '^incoming/[0-9]{4}/[0-9]{2}/[0-9a-f-]{36}\.(jpg|png|webp)$'
+  original_filename text CHECK (original_filename IS NULL OR char_length(original_filename) BETWEEN 1 AND 180),
+  mime_type text CHECK (mime_type IS NULL OR mime_type IN ('image/jpeg', 'image/png', 'image/webp')),
+  byte_size bigint CHECK (byte_size IS NULL OR byte_size BETWEEN 1 AND 12000000),
+  storage_path text UNIQUE CHECK (
+    storage_path IS NULL OR storage_path ~ '^incoming/[0-9]{4}/[0-9]{2}/[0-9a-f-]{36}\.(jpg|png|webp)$'
   ),
   status text NOT NULL DEFAULT 'awaiting_upload' CHECK (
     status IN ('awaiting_upload', 'uploaded', 'analyzing', 'review', 'nutrition_pending', 'nutrition_processing', 'confirmed', 'failed', 'rejected', 'deleted')
@@ -1741,6 +1741,9 @@ CREATE TABLE portal_read_model.meal_analysis (
   updated_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
   CONSTRAINT meal_analysis_claim_shape CHECK (
     (status IN ('analyzing', 'nutrition_processing')) = (claimed_at IS NOT NULL)
+  ),
+  CONSTRAINT meal_analysis_image_shape CHECK (
+    num_nonnulls(original_filename, mime_type, byte_size, storage_path) IN (0, 4)
   )
 );
 
@@ -1802,6 +1805,46 @@ BEGIN
 
   SELECT * INTO result_row FROM portal_read_model.meal_analysis WHERE idempotency_key = p_idempotency_key;
   RETURN jsonb_build_object('id', result_row.id, 'storage_path', result_row.storage_path, 'status', result_row.status);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.embe_create_meal_note(
+  p_idempotency_key uuid, p_author_role text, p_meal_type text,
+  p_eaten_at timestamptz, p_note text
+)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+DECLARE
+  entry_id uuid := gen_random_uuid();
+  result_row portal_read_model.meal_analysis%ROWTYPE;
+  note_text text := btrim(COALESCE(p_note, ''));
+BEGIN
+  IF p_idempotency_key IS NULL
+     OR p_author_role NOT IN ('father', 'mother')
+     OR p_meal_type NOT IN ('breakfast', 'lunch', 'dinner', 'snack')
+     OR p_eaten_at IS NULL OR p_eaten_at < TIMESTAMPTZ '2000-01-01 00:00:00+00'
+     OR p_eaten_at > timezone('utc', now()) + interval '1 day'
+     OR char_length(note_text) NOT BETWEEN 1 AND 300 THEN
+    RAISE EXCEPTION 'invalid meal note request';
+  END IF;
+
+  INSERT INTO portal_read_model.meal_analysis (
+    id, idempotency_key, author_role, meal_type, eaten_at, note,
+    status, confirmed_analysis, confirmed_at
+  ) VALUES (
+    entry_id, p_idempotency_key, p_author_role, p_meal_type, p_eaten_at, note_text,
+    'confirmed', jsonb_build_object(
+      'entry_mode', 'note', 'foods', '[]'::jsonb,
+      'needs_user_confirmation', '[]'::jsonb,
+      'estimate_notice', 'Bữa ăn được ghi bằng ghi chú, chưa có ước lượng dinh dưỡng.',
+      'nutrition', jsonb_build_object(
+        'status', 'unavailable',
+        'notice', 'Ghi chú đã được lưu; chưa có ảnh hoặc khẩu phần để ước lượng dinh dưỡng.'
+      )
+    ), timezone('utc', now())
+  ) ON CONFLICT (idempotency_key) DO NOTHING;
+
+  SELECT * INTO result_row FROM portal_read_model.meal_analysis WHERE idempotency_key = p_idempotency_key;
+  RETURN jsonb_build_object('id', result_row.id, 'status', result_row.status);
 END;
 $function$;
 
@@ -2000,6 +2043,7 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.embe_create_meal_analysis(uuid,text,text,timestamptz,text,text,text,bigint) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.embe_create_meal_note(uuid,text,text,timestamptz,text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.embe_get_meal_analysis(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.embe_complete_meal_upload(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.embe_claim_meal_analysis() FROM PUBLIC, anon, authenticated;
@@ -2013,6 +2057,7 @@ REVOKE ALL ON FUNCTION public.embe_list_meal_history(integer) FROM PUBLIC, anon,
 REVOKE ALL ON FUNCTION public.embe_delete_meal_analysis(uuid) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.embe_create_meal_analysis(uuid,text,text,timestamptz,text,text,text,bigint) TO service_role;
+GRANT EXECUTE ON FUNCTION public.embe_create_meal_note(uuid,text,text,timestamptz,text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_get_meal_analysis(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_complete_meal_upload(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_claim_meal_analysis() TO service_role;

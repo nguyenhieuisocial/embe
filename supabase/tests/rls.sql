@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(93);
+SELECT plan(97);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -334,6 +334,14 @@ SELECT ok(
   'The portal server can create bounded meal analysis jobs'
 );
 SELECT ok(
+  NOT has_function_privilege('anon', 'public.embe_create_meal_note(uuid,text,text,timestamptz,text)', 'EXECUTE'),
+  'Anonymous clients cannot create private meal notes'
+);
+SELECT ok(
+  has_function_privilege('service_role', 'public.embe_create_meal_note(uuid,text,text,timestamptz,text)', 'EXECUTE'),
+  'The portal server can create a bounded meal note without a photo'
+);
+SELECT ok(
   NOT has_function_privilege('authenticated', 'public.embe_claim_meal_analysis()', 'EXECUTE'),
   'Authenticated clients cannot claim local vision work'
 );
@@ -405,6 +413,23 @@ SELECT is(
   'An exhausted stale photo claim becomes a released terminal failure'
 );
 
+DELETE FROM portal_read_model.meal_analysis;
+SELECT is(
+  public.embe_create_meal_note(
+    'd1111111-1111-4111-8111-111111111111', 'mother', 'snack',
+    timezone('utc', now()), 'Một ly sữa và một quả chuối'
+  ) ->> 'status',
+  'confirmed',
+  'A written meal is saved immediately without waiting for image analysis'
+);
+SELECT ok(
+  (SELECT storage_path IS NULL
+       AND confirmed_analysis ->> 'entry_mode' = 'note'
+       AND jsonb_array_length(confirmed_analysis -> 'foods') = 0
+   FROM portal_read_model.meal_analysis
+   WHERE idempotency_key = 'd1111111-1111-4111-8111-111111111111'),
+  'A written meal has no fake image or invented foods'
+);
 DELETE FROM portal_read_model.meal_analysis;
 INSERT INTO portal_read_model.meal_analysis (
   id, idempotency_key, author_role, meal_type, eaten_at, note,

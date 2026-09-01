@@ -6,15 +6,15 @@ import {
 } from "../../../lib/meal-analysis-contract";
 import { verifySessionCookie } from "../../../lib/portal-auth";
 
-type UploadRequest = {
+type MealRequest = {
   authorRole: "father" | "mother";
-  byteSize: number;
   eatenAt: string;
-  filename: string;
   idempotencyKey: string;
   mealType: string;
-  mimeType: string;
   note: string;
+  byteSize?: number;
+  filename?: string;
+  mimeType?: string;
 };
 
 function cookieValue(header: string | null): string | undefined {
@@ -27,21 +27,24 @@ function authorized(request: Request): boolean {
   return Boolean(secret && verifySessionCookie(cookieValue(request.headers.get("cookie")), secret));
 }
 
-function validInput(value: unknown): value is UploadRequest {
+function validInput(value: unknown): value is MealRequest {
   if (!value || typeof value !== "object") return false;
   const input = value as Record<string, unknown>;
   const eatenAt = typeof input.eatenAt === "string" ? new Date(input.eatenAt) : null;
-  return (
+  const baseIsValid = (
     (input.authorRole === "father" || input.authorRole === "mother")
-    && Number.isSafeInteger(input.byteSize) && Number(input.byteSize) >= 1 && Number(input.byteSize) <= MEAL_MAX_BYTES
     && Boolean(eatenAt && !Number.isNaN(eatenAt.getTime()) && eatenAt.getTime() <= Date.now() + 86_400_000)
-    && typeof input.filename === "string" && input.filename.trim().length >= 1 && input.filename.trim().length <= 180
     && isUuidV4(input.idempotencyKey)
     && typeof input.mealType === "string" && MEAL_TYPES.has(input.mealType)
-    && typeof input.mimeType === "string" && MEAL_MIME_TYPES.has(input.mimeType)
     && typeof input.note === "string" && input.note.trim().length <= 300
     && Object.keys(input).every((key) => ["authorRole", "byteSize", "eatenAt", "filename", "idempotencyKey", "mealType", "mimeType", "note"].includes(key))
   );
+  if (!baseIsValid) return false;
+  const hasAnyPhotoField = [input.byteSize, input.filename, input.mimeType].some((field) => field !== undefined);
+  if (!hasAnyPhotoField) return (input.note as string).trim().length >= 1;
+  return Number.isSafeInteger(input.byteSize) && Number(input.byteSize) >= 1 && Number(input.byteSize) <= MEAL_MAX_BYTES
+    && typeof input.filename === "string" && input.filename.trim().length >= 1 && input.filename.trim().length <= 180
+    && typeof input.mimeType === "string" && MEAL_MIME_TYPES.has(input.mimeType);
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -53,10 +56,19 @@ export async function POST(request: Request): Promise<Response> {
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
   try {
+    if (input.byteSize === undefined) {
+      const { data, error } = await store.rpc("embe_create_meal_note", {
+        p_idempotency_key: input.idempotencyKey, p_author_role: input.authorRole,
+        p_meal_type: input.mealType, p_eaten_at: input.eatenAt, p_note: input.note.trim()
+      });
+      const result = data as Record<string, unknown> | null;
+      if (error || !result || !isUuidV4(result.id)) throw new Error("meal note unavailable");
+      return privateReply({ entryId: result.id, status: "confirmed" }, 201);
+    }
     const { data, error } = await store.rpc("embe_create_meal_analysis", {
       p_idempotency_key: input.idempotencyKey, p_author_role: input.authorRole,
       p_meal_type: input.mealType, p_eaten_at: input.eatenAt, p_note: input.note.trim(),
-      p_original_filename: input.filename.trim(), p_mime_type: input.mimeType, p_byte_size: input.byteSize
+      p_original_filename: input.filename!.trim(), p_mime_type: input.mimeType!, p_byte_size: input.byteSize
     });
     const result = data as Record<string, unknown> | null;
     if (error || !result || !isUuidV4(result.id) || typeof result.storage_path !== "string") throw new Error("queue unavailable");

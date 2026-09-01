@@ -67,6 +67,30 @@ describe("private review-first meal analysis API", () => {
     expect(invalid.status).toBe(400);
   });
 
+  it("stores a written meal note without requiring a photo", async () => {
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "confirmed" }, error: null });
+    const response = await createMeal(request("https://embe.hieu.asia/api/meals", {
+      authorRole: "mother", eatenAt: "2026-09-01T05:00:00Z", idempotencyKey: entryId,
+      mealType: "lunch", note: "Một bát phở bò, ăn hết khoảng hai phần ba"
+    }));
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ entryId, status: "confirmed" });
+    expect(rpc).toHaveBeenCalledWith("embe_create_meal_note", expect.objectContaining({
+      p_note: "Một bát phở bò, ăn hết khoảng hai phần ba"
+    }));
+    expect(createSignedUploadUrl).not.toHaveBeenCalled();
+  });
+
+  it("rejects a meal submission that has neither a photo nor a note", async () => {
+    const response = await createMeal(request("https://embe.hieu.asia/api/meals", {
+      authorRole: "mother", eatenAt: "2026-09-01T05:00:00Z", idempotencyKey: entryId,
+      mealType: "lunch", note: ""
+    }));
+    expect(response.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("verifies stored bytes before queueing local image analysis", async () => {
     rpc.mockResolvedValueOnce({ data: { id: entryId, storage_path: storagePath, byte_size: 1000, mime_type: "image/jpeg" }, error: null });
     info.mockResolvedValueOnce({ data: { size: 1000, contentType: "image/jpeg" }, error: null });

@@ -17,6 +17,7 @@ export type MealFood = {
 };
 
 export type MealAnalysis = {
+  entryMode?: "note";
   foods: MealFood[];
   needsUserConfirmation: string[];
   estimateNotice: string;
@@ -37,7 +38,9 @@ function text(value: unknown, maximum: number): string | null {
 export function normalizeMealAnalysis(value: unknown): MealAnalysis | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
-  if (!Array.isArray(raw.foods) || raw.foods.length < 1 || raw.foods.length > 8) return null;
+  const entryMode = raw.entry_mode ?? raw.entryMode;
+  if (entryMode !== undefined && entryMode !== "note") return null;
+  if (!Array.isArray(raw.foods) || raw.foods.length > 8 || (entryMode !== "note" && raw.foods.length < 1)) return null;
   const foods: MealFood[] = [];
   for (const candidate of raw.foods) {
     if (!candidate || typeof candidate !== "object") return null;
@@ -86,6 +89,7 @@ export function normalizeMealAnalysis(value: unknown): MealAnalysis | null {
     }
   }
   return {
+    ...(entryMode === "note" ? { entryMode } : {}),
     foods,
     needsUserConfirmation: questions.map((question) => String(question).trim()),
     estimateNotice: String(notice).trim(),
@@ -95,6 +99,7 @@ export function normalizeMealAnalysis(value: unknown): MealAnalysis | null {
 
 export function databaseMealAnalysis(value: MealAnalysis): Record<string, unknown> {
   return {
+    ...(value.entryMode === "note" ? { entry_mode: "note" } : {}),
     foods: value.foods.map((food) => ({
       name_vi: food.nameVi, search_name_en: food.searchNameEn,
       estimated_grams: food.estimatedGrams, confidence: food.confidence,

@@ -11,7 +11,7 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 }
 
 export async function prepareMealPhoto(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") || file.size < 1) throw new Error("invalid_image");
+  if ((file.type && !file.type.startsWith("image/")) || file.size < 1) throw new Error("invalid_image");
   const image = await loadImage(file);
   const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
   const canvas = document.createElement("canvas");
@@ -23,6 +23,24 @@ export async function prepareMealPhoto(file: File): Promise<File> {
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
   if (!blob || blob.size > 12_000_000) throw new Error("image_too_large");
   return new File([blob], "bua-an.jpg", { type: "image/jpeg", lastModified: file.lastModified || Date.now() });
+}
+
+export async function createMealNote(input: {
+  authorRole: "father" | "mother";
+  mealType: string;
+  note: string;
+}): Promise<string> {
+  const created = await fetch("/api/meals", {
+    method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      authorRole: input.authorRole, eatenAt: new Date().toISOString(),
+      idempotencyKey: crypto.randomUUID(), mealType: input.mealType, note: input.note.trim()
+    })
+  });
+  if (!created.ok) throw new Error("note_failed");
+  const value = await created.json() as { entryId?: string };
+  if (!value.entryId) throw new Error("note_failed");
+  return value.entryId;
 }
 
 export async function createMealDraft(input: {
@@ -53,7 +71,7 @@ export async function createMealDraft(input: {
   return session.entryId;
 }
 
-export async function waitForMealDraft(entryId: string, attempts = 45): Promise<{ analysis: MealAnalysis; note: string }> {
+export async function waitForMealDraft(entryId: string, attempts = 150): Promise<{ analysis: MealAnalysis; note: string }> {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const response = await fetch(`/api/meals/${entryId}`, { cache: "no-store" });
     if (!response.ok) throw new Error("analysis_failed");

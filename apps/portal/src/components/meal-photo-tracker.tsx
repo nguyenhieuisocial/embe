@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { MealAnalysis } from "../lib/meal-analysis-contract";
 import { buildMealDashboard, FOOD_GROUP_LABELS, type MealHistoryEntry } from "../lib/meal-dashboard";
-import { createMealDraft, waitForMealDraft, waitForMealNutrition } from "../lib/meal-photo-client";
+import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition } from "../lib/meal-photo-client";
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
 const nutrientLabels = [
@@ -36,7 +36,8 @@ export default function MealPhotoTracker() {
   const [range, setRange] = useState<7 | 28>(7);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [worker, setWorker] = useState<Worker>({ status: "unknown" });
-  const [status, setStatus] = useState<"idle" | "sending" | "analyzing" | "review" | "saving" | "saved" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "analyzing" | "queued" | "review" | "saving" | "saved" | "error">("idle");
+  const [statusMessage, setStatusMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setMealType(defaultMealType()); }, []);
@@ -61,14 +62,41 @@ export default function MealPhotoTracker() {
   const maxGroup = Math.max(1, ...groups.map(([, count]) => count));
 
   async function analyze() {
-    if (!file || status === "sending" || status === "analyzing") return;
-    setStatus("sending"); setAnalysis(null);
+    if ((!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving") return;
+    setAnalysis(null); setStatusMessage("");
+    if (!file) {
+      setStatus("saving");
+      try {
+        await createMealNote({ authorRole: "mother", mealType, note });
+        setNote(""); setStatusMessage("Đã lưu ghi chú bữa ăn."); setStatus("saved");
+        await loadHistory();
+      } catch {
+        setStatusMessage("Chưa lưu được ghi chú. Hãy kiểm tra mạng và thử lại."); setStatus("error");
+      }
+      return;
+    }
+    setStatus("sending");
     try {
       const id = await createMealDraft({ authorRole: "mother", file, mealType, note });
       setEntryId(id); setStatus("analyzing");
       const draft = await waitForMealDraft(id);
       setAnalysis(draft.analysis); setStatus("review");
-    } catch { setStatus("error"); }
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "unknown";
+      if (code === "analysis_timeout") {
+        setStatusMessage("Ảnh đã gửi an toàn. Máy nhà đang nhận diện; EmBe sẽ giữ kết quả trong nhật ký.");
+        setStatus("queued");
+      } else {
+        setStatusMessage(code === "invalid_image"
+          ? "iPhone chưa đọc được ảnh này. Hãy chụp lại hoặc chọn một ảnh khác."
+          : code === "image_too_large"
+            ? "Ảnh quá lớn để xử lý. Hãy chụp lại ở chế độ thường."
+            : code === "upload_failed"
+              ? "Mạng bị ngắt khi gửi ảnh. Ảnh chưa được lưu; hãy thử lại."
+              : "Chưa gửi được ảnh. Hãy kiểm tra mạng rồi thử lại.");
+        setStatus("error");
+      }
+    }
   }
 
   function updateFood(index: number, field: "nameVi" | "estimatedGrams", value: string) {
@@ -118,17 +146,18 @@ export default function MealPhotoTracker() {
           <span aria-hidden="true">◎</span><strong>{file ? "Đã chọn ảnh — chạm để đổi" : "Chụp bữa ăn"}</strong>
           <small>Ảnh được thu nhỏ và bỏ vị trí trước khi gửi.</small>
         </label>
-        <label className="meal-note">Ghi chú để nhận diện đúng hơn
+        <label className="meal-note">Ghi chú món ăn · có thể lưu không cần ảnh
           <textarea maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: nửa bát cơm, cá hồi, không có nước chấm" />
         </label>
-        <button className="health-save" type="button" disabled={!file || status === "sending" || status === "analyzing"} onClick={() => void analyze()}>
-          {status === "sending" ? "Đang gửi ảnh…" : status === "analyzing" ? "Đang nhận diện…" : "Nhận diện bữa ăn"}
+        <button className="health-save" type="button" disabled={(!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving"} onClick={() => void analyze()}>
+          {status === "sending" ? "Đang gửi ảnh…" : status === "analyzing" ? "Đang nhận diện…"
+            : status === "saving" ? "Đang lưu…" : file ? "Nhận diện bữa ăn" : "Lưu ghi chú"}
         </button>
         <p className={`meal-state is-${status}`} aria-live="polite">
-          {status === "analyzing" ? "Thường mất khoảng một phút. Mẹ có thể tiếp tục xem trang."
+          {statusMessage || (status === "analyzing" ? "Đang tự nhận diện tên món. Mẹ có thể tiếp tục xem trang."
             : status === "saved" ? "Đã lưu bữa ăn. Dinh dưỡng sẽ được bổ sung ở lượt nền tiếp theo."
-              : status === "error" ? "Chưa nhận diện được. Ảnh chưa được lưu; hãy thử lại khi máy nhà đang bật."
-                : "Kết quả là khoảng ước lượng và luôn cần Mẹ xác nhận."}
+              : status === "queued" ? "Ảnh đã gửi và đang chờ nhận diện."
+              : "Kết quả là khoảng ước lượng và luôn cần Mẹ xác nhận.")}
         </p>
       </div>
 
@@ -196,8 +225,10 @@ export default function MealPhotoTracker() {
                 {history.map((entry) => <details className="meal-history-card" key={entry.id}>
                   <summary>
                     <span><b>{labels[entry.mealType] ?? "Bữa ăn"}</b><small>{mealDate(entry.eatenAt)}</small></span>
-                    <span><b>{entry.analysis.foods.map((food) => food.nameVi).join(", ")}</b>
-                      <small>{entry.analysis.nutrition?.calorieRange ? `${Math.round(entry.analysis.nutrition.calorieRange.low)}–${Math.round(entry.analysis.nutrition.calorieRange.high)} kcal` : "Đang bổ sung dinh dưỡng"}</small></span>
+                    <span><b>{entry.analysis.foods.map((food) => food.nameVi).join(", ") || entry.note || "Ghi chú bữa ăn"}</b>
+                      <small>{entry.analysis.entryMode === "note" ? "Chỉ có ghi chú"
+                        : entry.analysis.nutrition?.calorieRange ? `${Math.round(entry.analysis.nutrition.calorieRange.low)}–${Math.round(entry.analysis.nutrition.calorieRange.high)} kcal`
+                          : "Đang bổ sung dinh dưỡng"}</small></span>
                   </summary>
                   <div className="meal-history-detail">
                     {entry.note ? <p>{entry.note}</p> : null}
