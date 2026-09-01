@@ -21,6 +21,9 @@ export type PregnancyHealthMetric = {
   waterGlasses: number | null;
   movementMinutes: number | null;
   wellbeing: number | null;
+  bloodGlucoseMgDl: number | null;
+  fetalMovementCount: number | null;
+  symptoms: string[];
   checklistPercent: number;
 };
 
@@ -79,6 +82,8 @@ export default function PregnancyHealthCharts({ history }: { history: PregnancyH
   const water = latestValue(history, "waterGlasses");
   const movement = latestValue(history, "movementMinutes");
   const wellbeing = latestValue(history, "wellbeing");
+  const glucose = latestValue(history, "bloodGlucoseMgDl");
+  const fetalMovement = latestValue(history, "fetalMovementCount");
   const checklist = latestValue(history, "checklistPercent");
 
   return (
@@ -153,6 +158,30 @@ export default function PregnancyHealthCharts({ history }: { history: PregnancyH
             <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}/5`, "Cảm nhận"]} />
             <Line type="monotone" dataKey="wellbeing" stroke="#986aa6" strokeWidth={3} dot={{ r: 3 }} connectNulls />
           </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Đường huyết đã đo" summary={glucose === null ? "Chưa ghi" : `${glucose} mg/dL`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} domain={["dataMin - 10", "dataMax + 10"]} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value} mg/dL`, "Đường huyết"]} />
+            <Line type="monotone" dataKey="bloodGlucoseMgDl" stroke="#b86d81" strokeWidth={3} dot={{ r: 3 }} connectNulls />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Cử động thai đã ghi" summary={fetalMovement === null ? "Chưa ghi" : `${fetalMovement} lần`}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
+            <CartesianGrid stroke="#edf1ee" vertical={false} />
+            <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
+            <YAxis tick={axis} tickLine={false} axisLine={false} allowDecimals={false} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value} lần`, "Cử động thai"]} />
+            <Bar dataKey="fetalMovementCount" fill="#c58ca0" radius={[6, 6, 0, 0]} />
+          </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 

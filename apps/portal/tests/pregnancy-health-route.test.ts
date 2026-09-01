@@ -30,6 +30,9 @@ const databaseMetric = {
   water_glasses: 7,
   movement_minutes: 25,
   wellbeing: 4,
+  blood_glucose_mg_dl: 92,
+  fetal_movement_count: 8,
+  symptoms: ["severe_headache"],
   checklist_percent: 62
 };
 
@@ -72,6 +75,9 @@ describe("private pregnancy health endpoint", () => {
       waterGlasses: 7,
       movementMinutes: 25,
       wellbeing: 4,
+      bloodGlucoseMgDl: 92,
+      fetalMovementCount: 8,
+      symptoms: ["severe_headache"],
       checklistPercent: 62
     }] });
     expect(fetch).toHaveBeenCalledWith(
@@ -117,7 +123,10 @@ describe("private pregnancy health endpoint", () => {
       sleepMinutes: 450,
       waterGlasses: 7,
       movementMinutes: 25,
-      wellbeing: 4
+      wellbeing: 4,
+      bloodGlucoseMgDl: 92,
+      fetalMovementCount: 8,
+      symptoms: ["severe_headache"]
     };
     const response = await PATCH(request(metric));
 
@@ -134,7 +143,10 @@ describe("private pregnancy health endpoint", () => {
           p_sleep_minutes: 450,
           p_water_glasses: 7,
           p_movement_minutes: 25,
-          p_wellbeing: 4
+          p_wellbeing: 4,
+          p_blood_glucose_mg_dl: 92,
+          p_fetal_movement_count: 8,
+          p_symptoms: ["severe_headache"]
         })
       })
     );

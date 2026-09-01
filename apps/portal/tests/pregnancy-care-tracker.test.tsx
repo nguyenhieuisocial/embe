@@ -22,4 +22,28 @@ describe("iPhone health connection state", () => {
     expect(screen.queryByText("Cần cấp quyền một lần trên iPhone")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Làm lại kết nối" })).toBeInTheDocument();
   });
+
+  it("shows all available iPhone health groups with per-metric sync time", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/pregnancy/care")) return Response.json({ snapshot: {
+        profile: null, plans: [], iphone_health: null, iphone_devices: [{ id: "device-1", label: "iPhone", active: true, last_synced_at: "2026-09-01T08:00:00Z" }],
+        iphone_health_history: [{ day: "2026-09-01", height_cm: 160, steps: 5200, distance_m: 4100,
+          resting_heart_rate_bpm: 68, respiratory_rate: 15.2, oxygen_saturation_percent: 98,
+          body_temperature_c: 36.7, wrist_temperature_c: 36.4, hrv_ms: 42, exercise_minutes: 28,
+          mindfulness_minutes: 10, active_energy_kcal: 320, resting_energy_kcal: 1350,
+          sleep_minutes: 450, weight_kg: 53.2, water_ml: 1800, systolic: 112, diastolic: 72,
+          metric_synced_at: { heightCm: "2026-09-01T08:00:00Z", steps: "2026-09-01T08:00:00Z" }, updated_at: "2026-09-01T08:00:00Z" }]
+      } });
+      return Response.json({ history: [] });
+    }));
+
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+
+    await waitFor(() => expect(screen.getByText("160 cm")).toBeInTheDocument());
+    expect(screen.getByText("4,1 km")).toBeInTheDocument();
+    expect(screen.getByText("112/72")).toBeInTheDocument();
+    expect(screen.getAllByText(/đồng bộ/iu).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Lịch sử sức khỏe từ iPhone" })).toBeInTheDocument();
+  });
 });

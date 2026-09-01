@@ -34,7 +34,12 @@ export async function GET(request: Request): Promise<Response> {
   const day = new URL(request.url).searchParams.get("day") ?? "";
   if (!ISO_DAY.test(day)) return privateReply({ error: "invalid_request" }, 400);
   const snapshot = await refresh(day);
-  return snapshot ? privateReply({ snapshot }, 200) : privateReply({ error: "temporarily_unavailable" }, 503);
+  if (!snapshot) return privateReply({ error: "temporarily_unavailable" }, 503);
+  const store = photoStore();
+  const history = store ? await store.rpc("embe_get_iphone_health_history", { p_end_day: day, p_days: 28 }) : null;
+  return history && !history.error && Array.isArray(history.data)
+    ? privateReply({ snapshot: { ...(snapshot as Record<string, unknown>), iphone_health_history: history.data } }, 200)
+    : privateReply({ error: "temporarily_unavailable" }, 503);
 }
 
 export async function PATCH(request: Request): Promise<Response> {
@@ -59,14 +64,20 @@ export async function PATCH(request: Request): Promise<Response> {
     const heightCm = finiteOrNull(profile.heightCm, 120, 220);
     const weightKg = finiteOrNull(profile.prePregnancyWeightKg, 25, 300);
     const target = finiteOrNull(profile.clinicianEnergyTargetKcal, 1000, 5000);
+    const weightGainMin = finiteOrNull(profile.clinicianWeightGainMinKg, 0, 50);
+    const weightGainMax = finiteOrNull(profile.clinicianWeightGainMaxKg, 0, 50);
     const activity = profile.activityLevel === null || profile.activityLevel === "" ? null
       : typeof profile.activityLevel === "string" && ACTIVITY_LEVELS.has(profile.activityLevel) ? profile.activityLevel : undefined;
-    if ([birthDate, heightCm, weightKg, target, activity].some((value) => value === undefined)) {
+    const invalidWeightGain = typeof weightGainMin === "number" && typeof weightGainMax === "number"
+      && weightGainMin > weightGainMax;
+    if ([birthDate, heightCm, weightKg, target, weightGainMin, weightGainMax, activity].some((value) => value === undefined)
+        || invalidWeightGain) {
       return privateReply({ error: "invalid_request" }, 400);
     }
     const { error } = await store.rpc("embe_save_pregnancy_wellness_profile", {
       p_birth_date: birthDate, p_height_cm: heightCm, p_pre_pregnancy_weight_kg: weightKg,
-      p_activity_level: activity, p_clinician_energy_target_kcal: target
+      p_activity_level: activity, p_clinician_energy_target_kcal: target,
+      p_clinician_weight_gain_min_kg: weightGainMin, p_clinician_weight_gain_max_kg: weightGainMax
     });
     if (error) return privateReply({ error: "temporarily_unavailable" }, 503);
   } else if (body.action === "plan" && body.plan && typeof body.plan === "object") {

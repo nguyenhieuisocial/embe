@@ -328,7 +328,7 @@ export default function PregnancyPage() {
 
       <MealPhotoTracker />
 
-      <div id="suc-khoe"><PregnancyHealthTracker /></div>
+      <div id="suc-khoe"><PregnancyHealthTracker pregnancyWeek={week} /></div>
 
       <PregnancyMedicalRecords />
 

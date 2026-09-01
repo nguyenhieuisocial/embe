@@ -19,6 +19,9 @@ type FormState = {
   waterGlasses: string;
   movementMinutes: string;
   wellbeing: number | null;
+  bloodGlucoseMgDl: string;
+  fetalMovementCount: string;
+  symptoms: string[];
 };
 
 const EMPTY_FORM: FormState = {
@@ -28,8 +31,19 @@ const EMPTY_FORM: FormState = {
   sleepHours: "",
   waterGlasses: "",
   movementMinutes: "",
-  wellbeing: null
+  wellbeing: null,
+  bloodGlucoseMgDl: "",
+  fetalMovementCount: "",
+  symptoms: []
 };
+
+const symptomOptions = [
+  ["bleeding", "Ra máu"], ["severe_abdominal_pain", "Đau bụng nhiều"],
+  ["severe_headache", "Đau đầu nhiều"], ["vision_change", "Nhìn mờ / thay đổi thị lực"],
+  ["sudden_swelling", "Phù xuất hiện nhanh"], ["fever", "Sốt"],
+  ["fluid_leak", "Nghi rỉ ối"], ["reduced_fetal_movement", "Thai máy giảm"],
+  ["persistent_vomiting", "Nôn kéo dài"], ["other", "Dấu hiệu khác"]
+] as const;
 
 const wellbeingOptions = [
   { value: 1, label: "Rất mệt", emoji: "😣" },
@@ -46,15 +60,18 @@ function inputNumber(value: string): number | null {
 }
 
 function metricHasValues(metric: PregnancyHealthMetric): boolean {
-  return [
+  const hasNumber = [
     metric.weightKg,
     metric.systolic,
     metric.diastolic,
     metric.sleepMinutes,
     metric.waterGlasses,
     metric.movementMinutes,
-    metric.wellbeing
-  ].some((value) => value !== null);
+    metric.wellbeing,
+    metric.bloodGlucoseMgDl,
+    metric.fetalMovementCount
+  ].some((value) => typeof value === "number");
+  return hasNumber || (metric.symptoms?.length ?? 0) > 0;
 }
 
 function metricToForm(metric: PregnancyHealthMetric | undefined): FormState {
@@ -66,11 +83,14 @@ function metricToForm(metric: PregnancyHealthMetric | undefined): FormState {
     sleepHours: metric.sleepMinutes === null ? "" : String(metric.sleepMinutes / 60),
     waterGlasses: metric.waterGlasses?.toString() ?? "",
     movementMinutes: metric.movementMinutes?.toString() ?? "",
-    wellbeing: metric.wellbeing
+    wellbeing: metric.wellbeing,
+    bloodGlucoseMgDl: metric.bloodGlucoseMgDl?.toString() ?? "",
+    fetalMovementCount: metric.fetalMovementCount?.toString() ?? "",
+    symptoms: metric.symptoms ?? []
   };
 }
 
-export default function PregnancyHealthTracker() {
+export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregnancyWeek?: number | null }) {
   const [today, setToday] = useState("");
   const [history, setHistory] = useState<PregnancyHealthMetric[]>([]);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -121,7 +141,10 @@ export default function PregnancyHealthTracker() {
       sleepMinutes: sleepHours === null ? null : Math.round(sleepHours * 60),
       waterGlasses: inputNumber(form.waterGlasses),
       movementMinutes: inputNumber(form.movementMinutes),
-      wellbeing: form.wellbeing
+      wellbeing: form.wellbeing,
+      bloodGlucoseMgDl: inputNumber(form.bloodGlucoseMgDl),
+      fetalMovementCount: inputNumber(form.fetalMovementCount),
+      symptoms: form.symptoms
     };
     try {
       const response = await fetch("/api/pregnancy/health", {
@@ -168,7 +191,21 @@ export default function PregnancyHealthTracker() {
           <label>Giấc ngủ (giờ)<input inputMode="decimal" min="0" max="24" step="0.5" type="number" value={form.sleepHours} onChange={(event) => setField("sleepHours", event.target.value)} /></label>
           <label>Số cốc nước<input inputMode="numeric" min="0" max="30" type="number" value={form.waterGlasses} onChange={(event) => setField("waterGlasses", event.target.value)} /></label>
           <label>Vận động (phút)<input inputMode="numeric" min="0" max="600" type="number" value={form.movementMinutes} onChange={(event) => setField("movementMinutes", event.target.value)} /></label>
+          <label>Đường huyết (mg/dL)<input aria-label="Đường huyết (mg/dL)" inputMode="decimal" min="20" max="600" step="0.1" type="number" value={form.bloodGlucoseMgDl} onChange={(event) => setField("bloodGlucoseMgDl", event.target.value)} /></label>
+          {pregnancyWeek === null || pregnancyWeek >= 16
+            ? <label>Số cử động thai<input inputMode="numeric" min="0" max="500" type="number" value={form.fetalMovementCount} onChange={(event) => setField("fetalMovementCount", event.target.value)} /></label>
+            : <p className="stage-field-note">Mục cử động thai sẽ hiện ở giai đoạn phù hợp hơn.</p>}
         </div>
+
+        <fieldset className="symptom-picker">
+          <legend>Dấu hiệu cần ghi lại</legend>
+          <div>{symptomOptions.map(([value, label]) => <label key={value}>
+            <input type="checkbox" checked={form.symptoms.includes(value)} onChange={(event) => setField("symptoms", event.target.checked
+              ? [...form.symptoms, value] : form.symptoms.filter((item) => item !== value))} />
+            <span>{label}</span>
+          </label>)}</div>
+          <p>Nếu có dấu hiệu đáng lo, liên hệ cơ sở y tế; việc đánh dấu chỉ để lưu lại, không thay thế đánh giá của bác sĩ.</p>
+        </fieldset>
 
         <fieldset className="wellbeing-picker">
           <legend>Hôm nay Mẹ cảm thấy thế nào?</legend>

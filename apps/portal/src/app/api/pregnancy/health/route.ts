@@ -10,8 +10,15 @@ const METRIC_KEYS = [
   "sleepMinutes",
   "waterGlasses",
   "movementMinutes",
-  "wellbeing"
+  "wellbeing",
+  "bloodGlucoseMgDl",
+  "fetalMovementCount"
 ] as const;
+
+const SYMPTOMS = new Set([
+  "bleeding", "severe_abdominal_pain", "severe_headache", "vision_change", "sudden_swelling",
+  "fever", "fluid_leak", "reduced_fetal_movement", "persistent_vomiting", "other"
+]);
 
 type MetricKey = (typeof METRIC_KEYS)[number];
 
@@ -24,6 +31,9 @@ type HealthMetric = {
   waterGlasses: number | null;
   movementMinutes: number | null;
   wellbeing: number | null;
+  bloodGlucoseMgDl: number | null;
+  fetalMovementCount: number | null;
+  symptoms: string[];
   checklistPercent: number;
 };
 
@@ -34,7 +44,9 @@ const BOUNDS: Record<MetricKey, readonly [number, number, boolean]> = {
   sleepMinutes: [0, 1440, true],
   waterGlasses: [0, 30, true],
   movementMinutes: [0, 600, true],
-  wellbeing: [1, 5, true]
+  wellbeing: [1, 5, true],
+  bloodGlucoseMgDl: [20, 600, false],
+  fetalMovementCount: [0, 500, true]
 };
 
 function cookieValue(header: string | null, name: string): string | undefined {
@@ -90,7 +102,9 @@ function normalizeMetric(value: unknown): HealthMetric | null {
     sleepMinutes: databaseNumber(row.sleep_minutes),
     waterGlasses: databaseNumber(row.water_glasses),
     movementMinutes: databaseNumber(row.movement_minutes),
-    wellbeing: databaseNumber(row.wellbeing)
+    wellbeing: databaseNumber(row.wellbeing),
+    bloodGlucoseMgDl: databaseNumber(row.blood_glucose_mg_dl),
+    fetalMovementCount: databaseNumber(row.fetal_movement_count)
   };
   if (Object.values(mapped).some((item) => item === undefined)) return null;
   const checklistPercent = databaseNumber(row.checklist_percent);
@@ -98,6 +112,9 @@ function normalizeMetric(value: unknown): HealthMetric | null {
     return null;
   }
 
+  const symptoms = Array.isArray(row.symptoms) && row.symptoms.every((item) => typeof item === "string" && SYMPTOMS.has(item))
+    ? row.symptoms as string[] : null;
+  if (symptoms === null) return null;
   return {
     day: row.day,
     weightKg: mapped.weightKg as number | null,
@@ -107,6 +124,9 @@ function normalizeMetric(value: unknown): HealthMetric | null {
     waterGlasses: mapped.waterGlasses as number | null,
     movementMinutes: mapped.movementMinutes as number | null,
     wellbeing: mapped.wellbeing as number | null,
+    bloodGlucoseMgDl: mapped.bloodGlucoseMgDl as number | null,
+    fetalMovementCount: mapped.fetalMovementCount as number | null,
+    symptoms,
     checklistPercent
   };
 }
@@ -170,13 +190,17 @@ export async function PATCH(request: Request): Promise<Response> {
   }
   if (!input || typeof input !== "object") return reply({ error: "invalid_request" }, 400);
   const value = input as Record<string, unknown>;
-  const allowedKeys = new Set<string>(["day", ...METRIC_KEYS]);
+  const allowedKeys = new Set<string>(["day", ...METRIC_KEYS, "symptoms"]);
   if (!isIsoDate(value.day) || Object.keys(value).some((key) => !allowedKeys.has(key))) {
     return reply({ error: "invalid_request" }, 400);
   }
 
   const metrics = Object.fromEntries(METRIC_KEYS.map((key) => [key, boundedNumber(value[key], key)])) as Record<MetricKey, number | null | undefined>;
-  if (Object.values(metrics).some((metric) => metric === undefined)) {
+  const symptoms = value.symptoms === undefined ? []
+    : Array.isArray(value.symptoms) && value.symptoms.length <= SYMPTOMS.size
+      && value.symptoms.every((item) => typeof item === "string" && SYMPTOMS.has(item))
+      ? [...new Set(value.symptoms as string[])] : null;
+  if (Object.values(metrics).some((metric) => metric === undefined) || symptoms === null) {
     return reply({ error: "invalid_request" }, 400);
   }
 
@@ -188,7 +212,10 @@ export async function PATCH(request: Request): Promise<Response> {
     p_sleep_minutes: metrics.sleepMinutes,
     p_water_glasses: metrics.waterGlasses,
     p_movement_minutes: metrics.movementMinutes,
-    p_wellbeing: metrics.wellbeing
+    p_wellbeing: metrics.wellbeing,
+    p_blood_glucose_mg_dl: metrics.bloodGlucoseMgDl,
+    p_fetal_movement_count: metrics.fetalMovementCount,
+    p_symptoms: symptoms
   });
   const candidate = Array.isArray(result) ? result[0] : result;
   const metric = normalizeMetric(candidate);

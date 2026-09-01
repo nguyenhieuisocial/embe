@@ -22,13 +22,27 @@ type CarePlan = {
 };
 
 type IphoneHealth = {
+  day?: string;
   steps: number | null;
   active_energy_kcal: number | null;
   resting_energy_kcal: number | null;
   sleep_minutes: number | null;
   weight_kg: number | null;
+  height_cm: number | null;
+  distance_m: number | null;
   water_ml: number | null;
   heart_rate_avg: number | null;
+  resting_heart_rate_bpm: number | null;
+  respiratory_rate: number | null;
+  oxygen_saturation_percent: number | null;
+  body_temperature_c: number | null;
+  wrist_temperature_c: number | null;
+  hrv_ms: number | null;
+  exercise_minutes: number | null;
+  mindfulness_minutes: number | null;
+  systolic: number | null;
+  diastolic: number | null;
+  metric_synced_at?: Record<string, string>;
   updated_at: string;
 };
 
@@ -39,9 +53,12 @@ type Snapshot = {
     pre_pregnancy_weight_kg: number | null;
     activity_level: EnergyProfile["activityLevel"];
     clinician_energy_target_kcal: number | null;
+    clinician_weight_gain_min_kg: number | null;
+    clinician_weight_gain_max_kg: number | null;
   };
   plans: CarePlan[];
   iphone_health: IphoneHealth | null;
+  iphone_health_history: IphoneHealth[];
   iphone_devices: { id: string; label: string; active: boolean; last_synced_at: string | null }[];
 };
 
@@ -50,7 +67,7 @@ type MealEntry = {
   analysis: { nutrition?: { totals?: Record<string, number>; calorieRange?: { mid: number } | null } };
 };
 
-const EMPTY_SNAPSHOT: Snapshot = { profile: null, plans: [], iphone_health: null, iphone_devices: [] };
+const EMPTY_SNAPSHOT: Snapshot = { profile: null, plans: [], iphone_health: null, iphone_health_history: [], iphone_devices: [] };
 const EMPTY_PROFILE: EnergyProfile = {
   birthDate: null, heightCm: null, prePregnancyWeightKg: null,
   activityLevel: null, clinicianEnergyTargetKcal: null
@@ -67,8 +84,8 @@ function profileFromSnapshot(snapshot: Snapshot): EnergyProfile {
     birthDate: profile.birth_date,
     heightCm: profile.height_cm,
     prePregnancyWeightKg: profile.pre_pregnancy_weight_kg,
-    activityLevel: profile.activity_level,
-    clinicianEnergyTargetKcal: profile.clinician_energy_target_kcal
+      activityLevel: profile.activity_level,
+      clinicianEnergyTargetKcal: profile.clinician_energy_target_kcal
   } : EMPTY_PROFILE;
 }
 
@@ -82,6 +99,12 @@ function dailyMealTotals(entries: MealEntry[], day: string): Record<string, numb
     }
   }
   return result;
+}
+
+function metricSyncLabel(health: IphoneHealth, key: string): string {
+  const value = health.metric_synced_at?.[key];
+  return value ? `Đồng bộ ${new Date(value).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+    : "Chưa đồng bộ riêng";
 }
 
 export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek: number | null }) {
@@ -125,7 +148,11 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       if (!response.ok) throw new Error("save unavailable");
       const payload = await response.json() as { snapshot?: Snapshot };
       if (!payload.snapshot) throw new Error("malformed snapshot");
-      setSnapshot(payload.snapshot);
+      const nextSnapshot = payload.snapshot;
+      setSnapshot((current) => ({
+        ...nextSnapshot,
+        iphone_health_history: nextSnapshot.iphone_health_history ?? current.iphone_health_history
+      }));
       setStatus("idle");
     } catch { setStatus("error"); }
   }
@@ -155,7 +182,9 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       heightCm: numberValue(String(data.get("heightCm") ?? "")),
       prePregnancyWeightKg: numberValue(String(data.get("prePregnancyWeightKg") ?? "")),
       activityLevel: data.get("activityLevel") || null,
-      clinicianEnergyTargetKcal: numberValue(String(data.get("clinicianEnergyTargetKcal") ?? ""))
+      clinicianEnergyTargetKcal: numberValue(String(data.get("clinicianEnergyTargetKcal") ?? "")),
+      clinicianWeightGainMinKg: numberValue(String(data.get("clinicianWeightGainMinKg") ?? "")),
+      clinicianWeightGainMaxKg: numberValue(String(data.get("clinicianWeightGainMaxKg") ?? ""))
     } });
   }
 
@@ -204,13 +233,19 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     .filter((value): value is string => Boolean(value))
     .sort()
     .at(-1) ?? null;
-  const iphoneConnectionLabel = snapshot.iphone_health
+  const iphoneHistory = snapshot.iphone_health_history ?? [];
+  const latestIphoneHealth = iphoneHistory.at(-1) ?? snapshot.iphone_health;
+  const iphoneConnectionLabel = latestIphoneHealth?.day === day
     ? "Đã nhận dữ liệu hôm nay"
-    : lastIphoneSync
-      ? `Chưa có dữ liệu hôm nay · lần cuối ${new Date(lastIphoneSync).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}`
-      : activeIphoneDevices.length
-        ? "Đã tạo điểm nhận, iPhone chưa gửi dữ liệu"
-        : "Chưa kết nối Apple Health";
+    : latestIphoneHealth?.day
+      ? `Dữ liệu gần nhất ngày ${new Date(`${latestIphoneHealth.day}T00:00:00+07:00`).toLocaleDateString("vi-VN")}`
+      : latestIphoneHealth
+        ? "Đã nhận dữ liệu gần nhất"
+        : lastIphoneSync
+          ? `Chưa có dữ liệu hôm nay · lần cuối ${new Date(lastIphoneSync).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}`
+          : activeIphoneDevices.length
+            ? "Đã tạo điểm nhận, iPhone chưa gửi dữ liệu"
+            : "Chưa kết nối Apple Health";
 
   return (
     <section className="care-tracker" id="vi-chat-thuoc" aria-labelledby="care-tracker-title">
@@ -295,19 +330,50 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <label>Cân nặng trước thai kỳ (kg)<input name="prePregnancyWeightKg" type="number" min="25" max="300" step="0.1" defaultValue={profile.prePregnancyWeightKg ?? ""} /></label>
           <label>Mức vận động<select name="activityLevel" defaultValue={profile.activityLevel ?? ""}><option value="">Chọn mức gần nhất</option><option value="sedentary">Ít vận động</option><option value="low_active">Vận động nhẹ</option><option value="active">Khá năng động</option><option value="very_active">Rất năng động</option></select></label>
           <label className="care-wide">Mốc kcal bác sĩ/dinh dưỡng viên dặn (nếu có)<input name="clinicianEnergyTargetKcal" type="number" min="1000" max="5000" defaultValue={profile.clinicianEnergyTargetKcal ?? ""} /></label>
+          <label>Mức tăng cân tối thiểu bác sĩ dặn (kg)<input name="clinicianWeightGainMinKg" type="number" min="0" max="50" step="0.1" defaultValue={snapshot.profile?.clinician_weight_gain_min_kg ?? ""} /></label>
+          <label>Mức tăng cân tối đa bác sĩ dặn (kg)<input name="clinicianWeightGainMaxKg" type="number" min="0" max="50" step="0.1" defaultValue={snapshot.profile?.clinician_weight_gain_max_kg ?? ""} /></label>
           <button className="health-save" type="submit">Lưu &amp; tính lại</button>
         </form>
         <p className="formula-note">Mốc tự tính dùng phương trình DRI 2023 theo hồ sơ và cộng khoảng 340 kcal ở ba tháng giữa, 450 kcal ở ba tháng cuối. Đây là điểm bắt đầu để theo dõi, không phải chỉ định giảm/tăng cân; mốc chuyên môn đã nhập luôn được ưu tiên.</p>
       </details>
 
-      <details className="iphone-health-card" id="suc-khoe-iphone" open={!snapshot.iphone_health}>
+      <details className="iphone-health-card" id="suc-khoe-iphone" open={!latestIphoneHealth}>
         <summary><span><strong>Sức khỏe từ iPhone</strong><small>{iphoneConnectionLabel}</small></span><i>⌄</i></summary>
-        {snapshot.iphone_health && <div className="iphone-metrics">
-          <span><strong>{snapshot.iphone_health.steps ?? "—"}</strong>bước</span>
-          <span><strong>{snapshot.iphone_health.sleep_minutes ? `${(snapshot.iphone_health.sleep_minutes / 60).toFixed(1)}h` : "—"}</strong>ngủ</span>
-          <span><strong>{snapshot.iphone_health.active_energy_kcal ?? "—"}</strong>kcal vận động</span>
-          <span><strong>{snapshot.iphone_health.weight_kg ?? "—"}</strong>kg</span>
-        </div>}
+        {latestIphoneHealth && <>
+          <div className="iphone-metrics iphone-metrics-complete">
+            <span><strong>{latestIphoneHealth.height_cm ? `${latestIphoneHealth.height_cm} cm` : "—"}</strong>chiều cao<small>{metricSyncLabel(latestIphoneHealth, "heightCm")}</small></span>
+            <span><strong>{latestIphoneHealth.weight_kg ? `${latestIphoneHealth.weight_kg} kg` : "—"}</strong>cân nặng<small>{metricSyncLabel(latestIphoneHealth, "weightKg")}</small></span>
+            <span><strong>{latestIphoneHealth.sleep_minutes ? `${(latestIphoneHealth.sleep_minutes / 60).toFixed(1)}h` : "—"}</strong>ngủ<small>{metricSyncLabel(latestIphoneHealth, "sleepMinutes")}</small></span>
+            <span><strong>{latestIphoneHealth.resting_heart_rate_bpm ?? "—"}</strong>nhịp tim nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingHeartRateBpm")}</small></span>
+            <span><strong>{latestIphoneHealth.steps?.toLocaleString("vi-VN") ?? "—"}</strong>bước<small>{metricSyncLabel(latestIphoneHealth, "steps")}</small></span>
+            <span><strong>{latestIphoneHealth.distance_m ? `${(latestIphoneHealth.distance_m / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km` : "—"}</strong>quãng đường<small>{metricSyncLabel(latestIphoneHealth, "distanceM")}</small></span>
+            <span><strong>{latestIphoneHealth.active_energy_kcal ?? "—"}</strong>kcal vận động<small>{metricSyncLabel(latestIphoneHealth, "activeEnergyKcal")}</small></span>
+            <span><strong>{latestIphoneHealth.resting_energy_kcal ?? "—"}</strong>kcal nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingEnergyKcal")}</small></span>
+          </div>
+          <details className="iphone-health-more">
+            <summary>Chỉ số khác khi thiết bị có ghi nhận <span>⌄</span></summary>
+            <div className="iphone-metrics iphone-metrics-complete">
+              <span><strong>{latestIphoneHealth.systolic && latestIphoneHealth.diastolic ? `${latestIphoneHealth.systolic}/${latestIphoneHealth.diastolic}` : "—"}</strong>huyết áp<small>{metricSyncLabel(latestIphoneHealth, "systolic")}</small></span>
+              <span><strong>{latestIphoneHealth.respiratory_rate ?? "—"}</strong>nhịp thở<small>{metricSyncLabel(latestIphoneHealth, "respiratoryRate")}</small></span>
+              <span><strong>{latestIphoneHealth.oxygen_saturation_percent ? `${latestIphoneHealth.oxygen_saturation_percent}%` : "—"}</strong>SpO₂<small>{metricSyncLabel(latestIphoneHealth, "oxygenSaturationPercent")}</small></span>
+              <span><strong>{latestIphoneHealth.body_temperature_c ?? latestIphoneHealth.wrist_temperature_c ?? "—"}</strong>°C<small>{metricSyncLabel(latestIphoneHealth, latestIphoneHealth.body_temperature_c ? "bodyTemperatureC" : "wristTemperatureC")}</small></span>
+              <span><strong>{latestIphoneHealth.hrv_ms ?? "—"}</strong>HRV ms<small>{metricSyncLabel(latestIphoneHealth, "hrvMs")}</small></span>
+              <span><strong>{latestIphoneHealth.exercise_minutes ?? "—"}</strong>phút tập<small>{metricSyncLabel(latestIphoneHealth, "exerciseMinutes")}</small></span>
+              <span><strong>{latestIphoneHealth.mindfulness_minutes ?? "—"}</strong>phút thư giãn<small>{metricSyncLabel(latestIphoneHealth, "mindfulnessMinutes")}</small></span>
+              <span><strong>{latestIphoneHealth.water_ml ?? "—"}</strong>ml nước<small>{metricSyncLabel(latestIphoneHealth, "waterMl")}</small></span>
+            </div>
+          </details>
+          <p className="iphone-metric-sync">Mỗi chỉ số giữ thời điểm đồng bộ riêng · cập nhật gần nhất {new Date(latestIphoneHealth.updated_at).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}</p>
+          <div className="iphone-health-history">
+            <h3>Lịch sử sức khỏe từ iPhone</h3>
+            <div>{iphoneHistory.slice(-7).reverse().map((item) => <article key={item.day}>
+              <time>{item.day ? new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : "—"}</time>
+              <span>{item.steps?.toLocaleString("vi-VN") ?? "—"} bước</span>
+              <span>{item.sleep_minutes ? `${(item.sleep_minutes / 60).toFixed(1)}h ngủ` : "—"}</span>
+              <span>{item.weight_kg ? `${item.weight_kg} kg` : "—"}</span>
+            </article>)}</div>
+          </div>
+        </>}
         <p>Safari không thể tự đọc Apple Health. EmBe cần một Phím tắt trên chính iPhone để gửi các tổng số đã chọn; không lấy vị trí, hồ sơ khám hay dữ liệu thô.</p>
         {!syncSecret && <>
           {activeIphoneDevices.length > 0 && !lastIphoneSync && <p className="iphone-connection-warning">Lần trước mới tạo điểm nhận nhưng chưa cài cầu nối, nên chưa có dữ liệu nào được gửi.</p>}
@@ -321,13 +387,13 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <ol className="iphone-setup-steps">
             <li><span>1</span><div><strong>Cài mẫu đã kiểm tra</strong><small>Khi được hỏi URL, dán “Điểm nhận” ở bên dưới.</small></div></li>
             <li><span>2</span><div><strong>Thêm khóa riêng</strong><small>Mở bước “Lấy nội dung của URL”, thêm tiêu đề Authorization rồi dán giá trị bên dưới.</small></div></li>
-            <li><span>3</span><div><strong>Chạy thử một lần</strong><small>Chấp thuận Bước chân và Năng lượng vận động khi Apple hỏi; sau đó quay lại EmBe để xem kết quả.</small></div></li>
+            <li><span>3</span><div><strong>Chạy thử một lần</strong><small>Chỉ cho phép các chỉ số Mẹ Ngân muốn chia sẻ; sau đó quay lại EmBe để xem kết quả.</small></div></li>
             <li><span>4</span><div><strong>Cho chạy mỗi ngày</strong><small>Trong Tự động hóa, chọn một giờ hằng ngày và “Chạy ngay”.</small></div></li>
           </ol>
           <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài mẫu Phím tắt miễn phí</a>
           <div className="iphone-setup-value"><small>Điểm nhận</small><code>{syncSecret.ingestUrl}</code><button type="button" onClick={() => void copySetupValue("url", syncSecret.ingestUrl)}>{copied === "url" ? "Đã chép" : "Chép"}</button></div>
           <div className="iphone-setup-value"><small>Authorization</small><code>Bearer {syncSecret.token}</code><button type="button" onClick={() => void copySetupValue("token", `Bearer ${syncSecret.token}`)}>{copied === "token" ? "Đã chép" : "Chép"}</button></div>
-          <p className="formula-note">Mẫu mã nguồn mở chỉ gửi tổng bước chân và năng lượng vận động theo ngày. Khóa chỉ hiện lần này; kết nối mới đã vô hiệu hóa các điểm nhận cũ chưa từng gửi dữ liệu.</p>
+          <p className="formula-note">Mẫu cài nhanh gửi bước chân và năng lượng vận động. Điểm nhận mới đã hỗ trợ đầy đủ các chỉ số hiển thị ở trên khi Phím tắt có gửi và Apple Health có dữ liệu. Khóa chỉ hiện lần này.</p>
         </div>}
         <p className="formula-note">Chỉ bấm “Cho phép” trong Apple Health là chưa đủ: Phím tắt còn phải chạy và gửi dữ liệu về EmBe. iOS có thể hoãn tự động hóa khi máy khóa, bật tiết kiệm pin hoặc không có mạng.</p>
       </details>

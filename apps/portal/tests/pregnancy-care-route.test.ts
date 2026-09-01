@@ -36,16 +36,31 @@ describe("private pregnancy care and iPhone health APIs", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("returns a bounded iPhone health history with the care snapshot", async () => {
+    rpc.mockResolvedValueOnce({ data: snapshot, error: null }).mockResolvedValueOnce({
+      data: [{ day: "2026-09-01", height_cm: 160, steps: 5200, metric_synced_at: { heightCm: "2026-09-01T08:00:00Z" } }], error: null
+    });
+    const response = await GET(request("https://embe.hieu.asia/api/pregnancy/care?day=2026-09-01", "GET"));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ snapshot: {
+      ...snapshot, iphone_health_history: [{ day: "2026-09-01", height_cm: 160, steps: 5200, metric_synced_at: { heightCm: "2026-09-01T08:00:00Z" } }]
+    } });
+    expect(rpc).toHaveBeenNthCalledWith(2, "embe_get_iphone_health_history", { p_end_day: "2026-09-01", p_days: 28 });
+  });
+
   it("saves a bounded profile and returns a refreshed snapshot", async () => {
     rpc.mockResolvedValueOnce({ data: null, error: null }).mockResolvedValueOnce({ data: snapshot, error: null });
     const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
       action: "profile", day: "2026-09-01", profile: {
         birthDate: "1995-05-20", heightCm: 160, prePregnancyWeightKg: 52,
-        activityLevel: "low_active", clinicianEnergyTargetKcal: null
+        activityLevel: "low_active", clinicianEnergyTargetKcal: null,
+        clinicianWeightGainMinKg: 11.5, clinicianWeightGainMaxKg: 16
       }
     }));
     expect(response.status).toBe(200);
-    expect(rpc).toHaveBeenNthCalledWith(1, "embe_save_pregnancy_wellness_profile", expect.objectContaining({ p_height_cm: 160 }));
+    expect(rpc).toHaveBeenNthCalledWith(1, "embe_save_pregnancy_wellness_profile", expect.objectContaining({
+      p_height_cm: 160, p_clinician_weight_gain_min_kg: 11.5, p_clinician_weight_gain_max_kg: 16
+    }));
   });
 
   it("stores only an explicit doctor plan and whitelisted nutrient amounts", async () => {
@@ -90,9 +105,18 @@ describe("private pregnancy care and iPhone health APIs", () => {
     rpc.mockResolvedValueOnce({ data: true, error: null });
     const accepted = await ingestHealth(new Request("https://embe.hieu.asia/api/pregnancy/iphone-health", {
       method: "PUT", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify({ day: "2026-09-01", steps: 5200, sleepMinutes: 450, weightKg: 53.2 })
+      body: JSON.stringify({
+        day: "2026-09-01", steps: 5200, sleepMinutes: 450, weightKg: 53.2, heightCm: 160,
+        distanceM: 4100, restingHeartRateBpm: 68, respiratoryRate: 15.2, oxygenSaturationPercent: 98,
+        bodyTemperatureC: 36.7, wristTemperatureC: 36.4, hrvMs: 42, exerciseMinutes: 28,
+        mindfulnessMinutes: 10, systolic: 112, diastolic: 72
+      })
     }));
     expect(accepted.status).toBe(202);
+    expect(rpc).toHaveBeenCalledWith("embe_ingest_iphone_health_v2", expect.objectContaining({
+      p_height_cm: 160, p_distance_m: 4100, p_resting_heart_rate_bpm: 68,
+      p_oxygen_saturation_percent: 98, p_hrv_ms: 42, p_systolic: 112, p_diastolic: 72
+    }));
     const rejected = await ingestHealth(new Request("https://embe.hieu.asia/api/pregnancy/iphone-health", {
       method: "PUT", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
       body: JSON.stringify({ day: "2026-09-01", steps: 5200, latitude: 10.7 })
@@ -127,9 +151,42 @@ describe("private pregnancy care and iPhone health APIs", () => {
       ] })
     }));
     expect(response.status).toBe(202);
-    expect(rpc).toHaveBeenCalledWith("embe_ingest_iphone_health", expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith("embe_ingest_iphone_health_v2", expect.objectContaining({
       p_day: "2026-09-01", p_steps: 5432, p_active_energy_kcal: 321.5
     }));
+  });
+
+  it("normalizes extended Apple Health Shortcut samples", async () => {
+    const token = `embe_health_${"a".repeat(43)}`;
+    rpc.mockResolvedValue({ data: true, error: null });
+    const response = await createDevice(new Request("https://embe.hieu.asia/api/pregnancy/iphone-health", {
+      method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ data: [
+        { type: "Height", date: "2026-09-01T08:00:00+07:00", value: 1.6, unit: "m" },
+        { type: "Walking + Running Distance", date: "2026-09-01T08:00:00+07:00", value: 4.2, unit: "km" },
+        { type: "Resting Heart Rate", date: "2026-09-01T08:00:00+07:00", value: 67, unit: "bpm" },
+        { type: "Blood Oxygen", date: "2026-09-01T08:00:00+07:00", value: 0.98, unit: "%" }
+      ] })
+    }));
+    expect(response.status).toBe(202);
+    expect(rpc).toHaveBeenCalledWith("embe_ingest_iphone_health_v2", expect.objectContaining({
+      p_height_cm: 160, p_distance_m: 4200, p_resting_heart_rate_bpm: 67,
+      p_oxygen_saturation_percent: 98
+    }));
+  });
+
+  it("accepts a bounded 31-day Apple Health backfill", async () => {
+    const token = `embe_health_${"a".repeat(43)}`;
+    rpc.mockResolvedValue({ data: true, error: null });
+    const data = Array.from({ length: 31 }, (_, index) => ({
+      type: "Steps", date: `2026-08-${String(index + 1).padStart(2, "0")}T08:00:00+07:00`, value: 5000 + index, unit: "count"
+    }));
+    const response = await createDevice(new Request("https://embe.hieu.asia/api/pregnancy/iphone-health", {
+      method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ data })
+    }));
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({ accepted: true, days: 31 });
+    expect(rpc).toHaveBeenCalledTimes(31);
   });
 });
 

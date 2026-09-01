@@ -68,7 +68,8 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Có rau hoặc quả trong ngày")).toBeInTheDocument();
     expect(screen.getByText("Có nguồn đạm trong ngày")).toBeInTheDocument();
     expect(screen.getByText("Uống nước đều trong ngày")).toBeInTheDocument();
-    expect(screen.getAllByRole("checkbox")).toHaveLength(13);
+    const dailyBoard = document.querySelector<HTMLElement>("#viec-hom-nay");
+    expect(dailyBoard && within(dailyBoard).getAllByRole("checkbox")).toHaveLength(13);
     expect(screen.getByRole("heading", { level: 3, name: "Ăn uống" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" })).toBeInTheDocument();
@@ -83,6 +84,9 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText(/Không cần “kiêng” mọi món theo truyền miệng/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Điều nên ưu tiên theo giai đoạn" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nhật ký sức khỏe" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Đường huyết (mg/dL)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Số cử động thai")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Dấu hiệu cần ghi lại" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Biểu đồ 28 ngày" })).toBeInTheDocument();
     expect(screen.getByText("Chưa có số liệu sức khỏe")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Khi nào cần liên hệ ngay" })).toBeInTheDocument();
@@ -119,6 +123,9 @@ describe("pregnancy daily page", () => {
     fireEvent.change(screen.getByLabelText("Giấc ngủ (giờ)"), { target: { value: "7.5" } });
     fireEvent.change(screen.getByLabelText("Số cốc nước"), { target: { value: "7" } });
     fireEvent.change(screen.getByLabelText("Vận động (phút)"), { target: { value: "25" } });
+    fireEvent.change(screen.getByLabelText("Đường huyết (mg/dL)"), { target: { value: "92" } });
+    fireEvent.change(screen.getByLabelText("Số cử động thai"), { target: { value: "8" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Đau đầu nhiều" }));
     fireEvent.click(screen.getByRole("button", { name: "Khá ổn" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu sức khỏe hôm nay" }));
 
@@ -136,7 +143,10 @@ describe("pregnancy daily page", () => {
         sleepMinutes: 450,
         waterGlasses: 7,
         movementMinutes: 25,
-        wellbeing: 4
+        wellbeing: 4,
+        bloodGlucoseMgDl: 92,
+        fetalMovementCount: 8,
+        symptoms: ["severe_headache"]
       })
     }));
   });
