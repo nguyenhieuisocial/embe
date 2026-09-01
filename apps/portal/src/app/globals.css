@@ -1999,8 +1999,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 .memory-trips { display: grid; gap: 18px; margin-top: 20px; }
 .memory-trip { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-card); overflow: hidden; }
-.memory-trip-cover { background: #f7edf1; border: 0; display: block; overflow: hidden; padding: 0; position: relative; width: 100%; }
-.memory-trip-cover > img { aspect-ratio: 4 / 3; display: block; object-fit: contain; width: 100%; }
+.memory-trip-cover { aspect-ratio: 4 / 3; background: #f7edf1; border: 0; display: block; overflow: hidden; padding: 0; position: relative; width: 100%; }
+.memory-trip-cover > img { display: block; height: 100%; object-fit: contain; width: 100%; }
 .memory-trip-cover > span { backdrop-filter: blur(8px); background: rgba(24, 38, 33, .65); border-radius: var(--radius-pill); bottom: 12px; color: white; font-size: .75rem; left: 12px; padding: 7px 11px; position: absolute; }
 .memory-trip-copy { display: grid; gap: 6px; padding: 16px 18px 14px; }
 .memory-trip-copy > p { color: var(--coral); font-size: .75rem; font-weight: 650; }
@@ -2017,8 +2017,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .memory-trip-gallery > header span { color: var(--ink-soft); font-size: .6875rem; }
 .memory-trip-strip { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-inline: contain; padding: 0 14px 3px; scroll-padding-inline: 14px; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .memory-trip-strip::-webkit-scrollbar { display: none; }
-.memory-trip-slide { background: #f7edf1; border: 0; border-radius: 16px; flex: 0 0 calc(100% - 16px); overflow: hidden; padding: 0; position: relative; scroll-snap-align: start; scroll-snap-stop: always; }
-.memory-trip-slide > img { aspect-ratio: 4 / 3; display: block; object-fit: contain; width: 100%; }
+.memory-trip-slide { aspect-ratio: 3 / 2; background: #f7edf1; border: 0; border-radius: 16px; flex: 0 0 calc(100% - 16px); overflow: hidden; padding: 0; position: relative; scroll-snap-align: start; scroll-snap-stop: always; }
+.memory-trip-slide > img { display: block; height: 100%; object-fit: contain; width: 100%; }
 .memory-trip-slide > span { backdrop-filter: blur(8px); background: rgba(33, 24, 28, .58); border-radius: var(--radius-pill); bottom: 10px; color: white; font-size: .6875rem; padding: 6px 9px; position: absolute; right: 10px; }
 
 @keyframes memory-route-travel {
