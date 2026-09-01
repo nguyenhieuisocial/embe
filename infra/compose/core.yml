@@ -39,7 +39,7 @@ services:
     networks:
       - embe-core
     healthcheck:
-      test: ["CMD-SHELL", "ps -ef | grep -q '[e]mbe_baby_care_sync.worker'"]
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert 'embe_baby_care_sync.worker' in Path('/proc/1/cmdline').read_bytes().decode(errors='ignore')"]
       interval: 30s
       timeout: 5s
       retries: 3
