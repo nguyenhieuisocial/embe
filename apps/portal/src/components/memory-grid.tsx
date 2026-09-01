@@ -204,6 +204,10 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
     }
   }
 
+  function printPhoto() {
+    window.print();
+  }
+
   return (
     <div ref={dialogRef} aria-label={memory.title} aria-modal="true" className="photo-viewer" role="dialog"
       onKeyDown={keepFocusInside}
@@ -215,8 +219,13 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
       }}
       onTouchStart={(event) => { touchStart.current = event.touches[0].clientX; }}>
       <header>
-        <span>{index + 1} / {total}</span>
-        <button ref={closeRef} aria-label="Đóng ảnh" onClick={onClose} type="button">×</button>
+        <span>Ảnh {index + 1} / {total}</span>
+        <div className="photo-viewer-actions">
+          <button aria-label="In ảnh này" className="photo-viewer-print" onClick={printPhoto} type="button">
+            <span aria-hidden="true">▣</span> In ảnh
+          </button>
+          <button ref={closeRef} aria-label="Đóng ảnh" className="photo-viewer-close" onClick={onClose} type="button">×</button>
+        </div>
       </header>
       <div className="photo-viewer-stage">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -226,7 +235,10 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
           <button aria-label="Ảnh sau" className="photo-viewer-next" onClick={() => onMove(1)} type="button">›</button>
         </> : null}
       </div>
-      <footer><time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time><strong>{memory.title}</strong><p>{memory.caption}</p></footer>
+      <footer>
+        <div className="photo-viewer-caption"><time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time><strong>{memory.title}</strong><p>{memory.caption}</p></div>
+        {total > 1 ? <span className="photo-viewer-swipe">Vuốt ngang để đổi ảnh</span> : null}
+      </footer>
     </div>
   );
 }
