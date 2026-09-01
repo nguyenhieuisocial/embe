@@ -9,11 +9,12 @@ function sessionCookie(): string {
   return `embe_session=${createSessionCookie("server-secret")}`;
 }
 
-function request(body: unknown, authenticated = true): Request {
+function request(body: unknown, authenticated = true, origin = "https://embe.hieu.asia"): Request {
   return new Request("https://embe.hieu.asia/api/pregnancy/health", {
     method: "PATCH",
     headers: {
       "content-type": "application/json",
+      origin,
       ...(authenticated ? { cookie: sessionCookie() } : {})
     },
     body: JSON.stringify(body)
@@ -93,6 +94,17 @@ describe("private pregnancy health endpoint", () => {
 
     expect([invalidDay.status, invalidPressure.status, invalidWellbeing.status, invalidWindow.status])
       .toEqual([400, 400, 400, 400]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects a foreign origin before storage", async () => {
+    const response = await PATCH(request(
+      { day: "2026-09-01", weightKg: 56 },
+      true,
+      "https://attacker.example"
+    ));
+
+    expect(response.status).toBe(403);
     expect(fetch).not.toHaveBeenCalled();
   });
 

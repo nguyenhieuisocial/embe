@@ -1,4 +1,5 @@
 import { verifySessionCookie } from "../../../lib/portal-auth";
+import { authorizeMutation } from "../../../lib/photo-upload-server";
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TOPICS = new Set(["ngu", "bu", "moi-truong"]);
@@ -33,7 +34,8 @@ async function rpc(config: { baseUrl: string; secretKey: string }, name: string,
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (!authorized(request)) return reply({ error: "unauthorized" }, 401);
+  const authorization = authorizeMutation(request);
+  if (authorization) return reply({ error: authorization === 401 ? "unauthorized" : "forbidden" }, authorization);
   let input: Record<string, unknown>;
   try {
     const raw = await request.text();

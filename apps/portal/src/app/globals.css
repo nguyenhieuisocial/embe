@@ -131,6 +131,18 @@ ol, ul { margin: 0; padding: 0; }
 .has-nav .inventory-main,
 .has-nav .assistant-main,
 .has-nav .guide-main { padding-bottom: calc(140px + env(safe-area-inset-bottom)); }
+.family-home-main { padding-bottom: calc(140px + env(safe-area-inset-bottom)); }
+
+.family-home-hero {
+  margin-inline: auto;
+  max-width: var(--content);
+  padding: 34px var(--gutter) 8px;
+}
+
+.family-home-hero h1 { margin: 8px 0 10px; }
+.family-home-hero .intro { max-width: 38rem; }
+.family-connection, .family-privacy { display: grid; gap: 14px; }
+.family-connection > p, .family-privacy > p { color: var(--ink-soft); margin: 0; }
 
 @keyframes page-in {
   from { opacity: 0; }
@@ -824,12 +836,17 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .week-card .field-hint { font-size: .8125rem; }
 .week-empty { color: var(--ink-soft); font-size: .9375rem; }
 .pregnancy-jump {
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
   display: flex;
   gap: 8px;
-  margin-inline: calc(var(--gutter) * -1);
+  margin-inline: auto;
+  max-width: var(--content);
   overflow-x: auto;
-  padding: 0 var(--gutter) 4px;
+  padding: 8px var(--gutter);
+  position: sticky;
   scrollbar-width: none;
+  top: env(safe-area-inset-top);
+  z-index: 12;
 }
 .pregnancy-jump::-webkit-scrollbar { display: none; }
 .pregnancy-jump a {
@@ -845,8 +862,30 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   padding: 8px 14px;
   text-decoration: none;
 }
-#viec-hom-nay, #suc-khoe, #cam-nang, #can-lien-he { scroll-margin-top: 18px; }
+#viec-hom-nay, #suc-khoe, #bua-an, #cam-nang, #can-lien-he { scroll-margin-top: calc(72px + env(safe-area-inset-top)); }
 .pregnancy-main > #suc-khoe { margin-top: 32px; }
+.pregnancy-urgent-shortcut {
+  align-items: center;
+  background: var(--coral-soft);
+  border: 1px solid color-mix(in srgb, var(--coral) 24%, transparent);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 14px;
+  margin: 16px auto 0;
+  max-width: var(--content);
+  padding: 18px var(--gutter);
+}
+.pregnancy-urgent-shortcut h2 { font-size: 1.125rem; margin: 4px 0 6px; }
+.pregnancy-urgent-shortcut p { color: var(--ink-soft); font-size: .875rem; margin: 0; }
+.pregnancy-urgent-shortcut > a {
+  align-items: center;
+  color: var(--coral);
+  display: inline-flex;
+  font-size: .875rem;
+  font-weight: 600;
+  min-height: 44px;
+  text-decoration: none;
+}
 
 .care-summary {
   align-items: center;
@@ -1526,15 +1565,15 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   width: 100%;
   z-index: 100;
 }
-.photo-viewer > header { align-items: center; display: flex; justify-content: space-between; padding: max(8px, env(safe-area-inset-top)) 10px 8px 18px; }
+.photo-viewer > header { align-items: center; display: flex; justify-content: space-between; padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(18px, env(safe-area-inset-left)); }
 .photo-viewer > header span { color: rgba(255,255,255,.72); font-size: .8125rem; font-variant-numeric: tabular-nums; }
 .photo-viewer > header button { background: rgba(255,255,255,.12); border: 0; border-radius: 50%; color: white; font-size: 1.65rem; height: 44px; line-height: 1; width: 44px; }
 .photo-viewer-stage { align-items: center; display: flex; justify-content: center; min-height: 0; overflow: hidden; position: relative; touch-action: pan-y; }
 .photo-viewer-stage > img { height: 100%; max-width: 100%; object-fit: contain; width: 100%; }
 .photo-viewer-stage > button { align-items: center; background: rgba(16,19,17,.56); border: 0; border-radius: 50%; color: white; display: flex; font-size: 1.7rem; height: 44px; justify-content: center; position: absolute; top: 50%; transform: translateY(-50%); width: 44px; }
-.photo-viewer-prev { left: 8px; }
-.photo-viewer-next { right: 8px; }
-.photo-viewer > footer { background: rgba(16,19,17,.94); display: grid; gap: 4px; padding: 12px 18px max(18px, env(safe-area-inset-bottom)); }
+.photo-viewer-prev { left: max(8px, env(safe-area-inset-left)); }
+.photo-viewer-next { right: max(8px, env(safe-area-inset-right)); }
+.photo-viewer > footer { background: rgba(16,19,17,.94); display: grid; gap: 4px; padding: 12px max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); }
 .photo-viewer > footer time { color: rgba(255,255,255,.62); font-size: .6875rem; text-transform: capitalize; }
 .photo-viewer > footer strong { font-family: var(--font-display), Georgia, serif; font-size: 1.05rem; }
 .photo-viewer > footer p { color: rgba(255,255,255,.72); display: -webkit-box; font-size: .8125rem; line-height: 1.45; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -1633,6 +1672,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .memory-empty a { color: var(--jade); font-weight: 600; line-height: 44px; }
 .memory-loading { display: grid; gap: 12px; margin-top: 24px; }
 .memory-loading .skeleton-line.is-block { border-radius: var(--radius); height: 180px; }
+.memory-error { background: var(--coral-soft); border: 1px solid var(--coral); border-radius: var(--radius); display: grid; gap: 8px; margin-top: 24px; padding: 18px; }
+.memory-error p { color: var(--ink-soft); }
+.memory-error a { color: var(--coral); font-weight: 600; line-height: 44px; }
 
 /* ── Lịch gia đình: dương lớn, âm nhỏ, kỷ niệm bằng một chấm ── */
 

@@ -24,9 +24,9 @@ class AnalyticsServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         repository = InMemoryRepository(
             sleeps=[
-                SleepRecord(utc(1, 20), utc(1, 22), "baby"),
-                SleepRecord(utc(2, 20), utc(2, 23), "baby"),
-                SleepRecord(utc(3, 20), utc(4, 0), "baby"),
+                SleepRecord(utc(1, 10), utc(1, 12), "baby"),
+                SleepRecord(utc(2, 10), utc(2, 13), "baby"),
+                SleepRecord(utc(3, 10), utc(3, 14), "baby"),
             ],
             feedings=[
                 FeedingRecord(utc(1, 8), 90, "baby"),
@@ -34,9 +34,9 @@ class AnalyticsServiceTests(unittest.TestCase):
                 FeedingRecord(utc(5, 8), 120, "baby"),
             ],
             environment=[
-                EnvironmentRecord(utc(1, 20), 28.0, 70.0),
-                EnvironmentRecord(utc(2, 20), 27.0, 65.0),
-                EnvironmentRecord(utc(3, 20), 26.0, 60.0),
+                EnvironmentRecord(utc(1, 10), 28.0, 70.0),
+                EnvironmentRecord(utc(2, 10), 27.0, 65.0),
+                EnvironmentRecord(utc(3, 10), 26.0, 60.0),
             ],
         )
         self.service = AnalyticsService(repository, allowed_child_ids={"baby"})
@@ -73,6 +73,20 @@ class AnalyticsServiceTests(unittest.TestCase):
         for child_id in ("other", "baby; DROP TABLE fact_sleep"):
             with self.subTest(child_id=child_id), self.assertRaises(PermissionError):
                 self.service.sleep_summary(date(2026, 8, 1), date(2026, 8, 2), child_id=child_id)
+
+    def test_calendar_days_follow_vietnam_time_not_utc(self) -> None:
+        service = AnalyticsService(
+            InMemoryRepository(
+                feedings=[FeedingRecord(utc(31, 18), 90, "baby")],
+            ),
+            allowed_child_ids={"baby"},
+        )
+
+        result = service.feeding_summary(
+            date(2026, 9, 1), date(2026, 9, 1), child_id="baby"
+        )
+
+        self.assertEqual(result.feeding_count, 1)
 
 
 if __name__ == "__main__":

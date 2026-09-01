@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Icon, type IconName } from "./embe-icon";
@@ -7,9 +8,9 @@ import { Icon, type IconName } from "./embe-icon";
 const destinations: Array<{ href: string; icon: IconName; label: string }> = [
   { href: "/", icon: "home", label: "Hôm nay" },
   { href: "/ke-hoach", icon: "check", label: "Kế hoạch" },
-  { href: "/me-bau", icon: "care", label: "Mẹ bầu" },
-  { href: "/lich", icon: "calendar", label: "Lịch" },
-  { href: "/do-dung", icon: "supply", label: "Đồ dùng" }
+  { href: "/me-bau", icon: "care", label: "Hành trình" },
+  { href: "/ky-niem", icon: "memory", label: "Kỷ niệm" },
+  { href: "/nha-minh", icon: "thread", label: "Nhà mình" }
 ];
 
 export default function FamilyNav() {
@@ -17,14 +18,14 @@ export default function FamilyNav() {
   return (
     <nav className="family-nav" aria-label="Điều hướng gia đình">
       {destinations.map((destination) => (
-        <a
+        <Link
           href={destination.href}
           key={destination.href}
           aria-current={pathname === destination.href ? "page" : undefined}
         >
           <Icon name={destination.icon} className="nav-icon" />
           {destination.label}
-        </a>
+        </Link>
       ))}
     </nav>
   );

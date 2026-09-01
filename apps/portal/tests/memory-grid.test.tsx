@@ -57,13 +57,24 @@ describe("mobile memory grid", () => {
     expect(screen.getByRole("button", { name: "Chuyến đi" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("opens an album photo in a full-screen one-hand viewer", () => {
+  it("traps viewer focus and restores it to the photo that opened it", () => {
     render(<MemoryGrid album="da-lat-2025" initial={[memory(1), memory(2)]} initialView="album" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" }));
-    expect(screen.getByRole("dialog", { name: "Kỷ niệm 1" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Đóng ảnh" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Đóng ảnh" }));
+    const opener = screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" });
+    opener.focus();
+    fireEvent.click(opener);
+
+    const dialog = screen.getByRole("dialog", { name: "Kỷ niệm 1" });
+    const close = screen.getByRole("button", { name: "Đóng ảnh" });
+    const next = screen.getByRole("button", { name: "Ảnh sau" });
+    expect(close).toHaveFocus();
+
+    next.focus();
+    fireEvent.keyDown(dialog, { key: "Tab" });
+    expect(close).toHaveFocus();
+
+    fireEvent.click(close);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
   });
 });

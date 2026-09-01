@@ -181,6 +181,7 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
                   {task.note ? <p>{task.note}</p> : null}
                   <div className="planner-task-links">
                     {target.href ? <a href={target.href}>Mở {target.label}<Icon name="arrow" /></a> : <span>{categoryLabels[task.category]}</span>}
+                    {task.category === "appointment" ? <a href={`/api/tasks/${task.id}/calendar?day=${task.occurrenceOn}`} download>Thêm vào Calendar</a> : null}
                     <button type="button" onClick={() => showEdit(task)}>Sửa</button>
                   </div>
                 </div>

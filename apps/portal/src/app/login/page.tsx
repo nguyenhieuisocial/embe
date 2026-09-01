@@ -1,5 +1,6 @@
 import { EmBeMark } from "../../components/embe-icon";
 import PasswordField from "../../components/password-field";
+import PublicAnalytics from "../../components/public-analytics";
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; next?: string }>;
@@ -10,6 +11,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <main className="bare-page">
+      <PublicAnalytics />
       <section className="bare-card" aria-labelledby="login-title">
         <span className="bare-mark" aria-hidden="true"><EmBeMark className="" /></span>
         <p className="eyebrow">EMBE · GIA ĐÌNH NGÂN &amp; HIẾU</p>

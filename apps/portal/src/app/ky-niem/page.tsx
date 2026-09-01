@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import AppHeader from "../../components/app-header";
@@ -11,42 +12,52 @@ import { getMediaAlbums, getMediaMemories } from "../../lib/media";
 export const dynamic = "force-dynamic";
 
 export async function MemoryGallery({ album, date, view = "album" }: { album?: string; date?: string; view?: MemoryView } = {}) {
-  const range = date ? dayRange(date) : null;
-  const albums = await getMediaAlbums();
-  const selectedAlbum = album && albums.some((item) => item.key === album) ? album : undefined;
-  const memories = await getMediaMemories({ album: selectedAlbum, limit: 24, ...range });
+  try {
+    const range = date ? dayRange(date) : null;
+    const albums = await getMediaAlbums();
+    const selectedAlbum = album && albums.some((item) => item.key === album) ? album : undefined;
+    const memories = await getMediaMemories({ album: selectedAlbum, limit: 24, ...range });
 
-  return memories.length || albums.length ? (
-    <MemoryGrid
-      album={selectedAlbum}
-      albums={albums}
-      date={date}
-      initial={memories}
-      initialView={view}
-      key={`${selectedAlbum ?? "all"}:${date ?? "all"}:${view}`}
-    />
-  ) : (
-    <section className="memory-empty" role="status">
-      <Image
-        src="/illustrations/memory-album-empty.webp"
-        alt=""
-        aria-hidden="true"
-        width={900}
-        height={675}
-        sizes="(max-width: 720px) 84vw, 420px"
+    return memories.length || (albums.length && !date) ? (
+      <MemoryGrid
+        album={selectedAlbum}
+        albums={albums}
+        date={date}
+        initial={memories}
+        initialView={view}
+        key={`${selectedAlbum ?? "all"}:${date ?? "all"}:${view}`}
       />
-      <h2>{date ? "Ngày này chưa có kỷ niệm" : "Chưa có ảnh được chọn"}</h2>
-      <p>{date ? "Mình có thể chọn một ngày khác trên lịch hoặc lưu lại khoảnh khắc mới." : "Mẹ Ngân hoặc Ba Hiếu chọn ảnh trong album gia đình trước. EmBe sẽ tự đưa bản xem nhẹ vào đây sau khi đồng bộ."}</p>
-      <a href={date ? "/lich" : "/huong-dan#iphone-title"}>{date ? "Trở lại lịch gia đình" : "Xem cách đưa ảnh từ iPhone"}</a>
-    </section>
-  );
+    ) : (
+      <section className="memory-empty" role="status">
+        <Image
+          src="/illustrations/memory-album-empty.webp"
+          alt=""
+          aria-hidden="true"
+          width={900}
+          height={675}
+          sizes="(max-width: 720px) 84vw, 420px"
+        />
+        <h2>{date ? "Ngày này chưa có kỷ niệm" : "Chưa có ảnh được chọn"}</h2>
+        <p>{date ? "Mình có thể chọn một ngày khác trên lịch hoặc lưu lại khoảnh khắc mới." : "Mẹ Ngân hoặc Ba Hiếu chọn ảnh trong album gia đình trước. EmBe sẽ tự đưa bản xem nhẹ vào đây sau khi đồng bộ."}</p>
+        <Link href={date ? "/lich" : "/huong-dan#iphone-title"}>{date ? "Trở lại lịch gia đình" : "Xem cách đưa ảnh từ iPhone"}</Link>
+      </section>
+    );
+  } catch {
+    return (
+      <section className="memory-error" role="alert">
+        <h2>Chưa mở được album</h2>
+        <p>Phần gửi ảnh vẫn dùng được. Mình có thể thử mở lại album sau.</p>
+        <Link href="/ky-niem">Thử mở lại album</Link>
+      </section>
+    );
+  }
 }
 
-function MemoryLoading() {
+export function MemoryLoading() {
   return (
     <section className="memory-loading" role="status" aria-busy="true">
-      <span aria-hidden="true" />
-      <span aria-hidden="true" />
+      <span className="skeleton-line is-block" aria-hidden="true" />
+      <span className="skeleton-line is-short" aria-hidden="true" />
       <p>Đang mở album riêng của gia đình…</p>
     </section>
   );
@@ -90,7 +101,7 @@ export default async function MemoriesPage({
             <strong>{dateHeading}</strong>
             <small>{lunarDateLong(selectedDate)}</small>
           </div>
-          <a href="/ky-niem">Xem tất cả</a>
+          <Link href="/ky-niem">Xem tất cả</Link>
         </section>
       ) : null}
       <Suspense fallback={<MemoryLoading />}>

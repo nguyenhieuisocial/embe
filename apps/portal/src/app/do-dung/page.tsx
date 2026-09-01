@@ -17,24 +17,49 @@ type Snapshot = { items: InventoryItem[]; pending: number };
 type ScreenState = "loading" | "ready" | "saving" | "saved" | "error";
 
 const units = ["cái", "gói", "hộp", "ml", "g"] as const;
+const INVENTORY_CACHE_KEY = "embe:inventory:last-snapshot";
+
+function cachedSnapshot(value: string | null): { snapshot: Snapshot; savedAt: string } | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as { snapshot?: Snapshot; savedAt?: string };
+    if (!parsed.snapshot || !Array.isArray(parsed.snapshot.items) || typeof parsed.snapshot.pending !== "number"
+      || typeof parsed.savedAt !== "string" || Number.isNaN(Date.parse(parsed.savedAt))) return null;
+    const validItems = parsed.snapshot.items.every((item) => Number.isInteger(item.productId)
+      && typeof item.name === "string" && typeof item.quantity === "number" && typeof item.unit === "string"
+      && typeof item.minQuantity === "number" && typeof item.needsRestock === "boolean");
+    return validItems ? { snapshot: parsed.snapshot, savedAt: parsed.savedAt } : null;
+  } catch { return null; }
+}
 
 export default function InventoryPage() {
   const [snapshot, setSnapshot] = useState<Snapshot>({ items: [], pending: 0 });
   const [screenState, setScreenState] = useState<ScreenState>("loading");
   const [showForm, setShowForm] = useState(false);
+  const [cachedAt, setCachedAt] = useState("");
 
   const load = useCallback(async (preserveMessage = false) => {
     try {
       const response = await fetch("/api/inventory", { cache: "no-store" });
       if (!response.ok) throw new Error("inventory unavailable");
-      setSnapshot(await response.json() as Snapshot);
+      const next = await response.json() as Snapshot;
+      setSnapshot(next);
+      setCachedAt("");
+      try { localStorage.setItem(INVENTORY_CACHE_KEY, JSON.stringify({ snapshot: next, savedAt: new Date().toISOString() })); } catch { /* Cache is optional. */ }
       if (!preserveMessage) setScreenState("ready");
     } catch {
       setScreenState("error");
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const cached = cachedSnapshot(localStorage.getItem(INVENTORY_CACHE_KEY));
+    if (cached) {
+      setSnapshot(cached.snapshot);
+      setCachedAt(cached.savedAt);
+    }
+    void load();
+  }, [load]);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("them") === "1") setShowForm(true);
@@ -140,7 +165,9 @@ export default function InventoryPage() {
 
       {screenState === "saved" ? <p className="inventory-status is-success" role="status">Đã ghi nhận · hệ thống đang cập nhật</p> : null}
       {snapshot.pending > 0 ? <p className="inventory-status" role="status">Có {snapshot.pending} thay đổi đang được xử lý.</p> : null}
-      {screenState === "error" && snapshot.items.length > 0 ? <p className="inventory-status is-error" role="alert">Chưa cập nhật được. Hãy chạm thử lại khi có mạng.</p> : null}
+      {screenState === "error" && snapshot.items.length > 0 ? <p className="inventory-status is-error" role="alert">
+        Đang xem danh sách đã lưu {cachedAt ? <time dateTime={cachedAt}>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(cachedAt))}</time> : "gần nhất"}. Chạm thử lại khi có mạng.
+      </p> : null}
       <aside className="inventory-boundary"><strong>EmBe chỉ nhắc, không tự mua</strong><p>Mọi quyết định mua hàng vẫn do gia đình xác nhận.</p></aside>
     </main>
   );

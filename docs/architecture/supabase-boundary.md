@@ -1,6 +1,8 @@
 # Supabase Read-Model Boundary
 
-**Mục tiêu Task 6:** Supabase chỉ giữ dữ liệu `portal_read_model` đã duyệt, có thể rebuild từ nguồn nội bộ; không là hệ thống nguồn.
+**Mục tiêu hiện tại:** Supabase là kho riêng tư cho trạng thái web-app cần đồng bộ
+giữa iPhone của Hiếu và Ngân. Media gốc và nhật ký dài hạn vẫn thuộc Immich,
+Memos/BabyBuddy hoặc vault tại máy nhà.
 
 ## Thành phần cho phép ghi vào Supabase
 
@@ -9,10 +11,17 @@
   - `source_system`, `source_event_id`
   - `event_at`, `portal_event_type`, `title`, `caption`
   - `album_cover_url`, `portal_role`, `approved`, `approved_at`
+- Các bảng kế hoạch, thai kỳ và sức khỏe thai kỳ giữ dữ liệu nhập trực tiếp từ
+  portal để hai điện thoại thấy cùng một trạng thái. Chúng chỉ được gọi qua API
+  server đã xác thực; browser không có quyền đọc/ghi trực tiếp.
+- `photo_upload` và `meal_analysis` giữ metadata hàng đợi. File ảnh trong
+  Supabase Storage chỉ là bản tạm để worker máy nhà nhập vào Immich hoặc phân
+  tích; worker xóa object sau khi hoàn tất.
 
 ## Thành phần tuyệt đối KHÔNG cho phép vào Supabase
 
-- Dữ liệu y tế dạng raw, tọa độ GPS chính xác, token API, credentials.
+- Hồ sơ bệnh án, ảnh giấy khám, kết quả xét nghiệm dạng file/raw, tọa độ GPS
+  chính xác, token API, credentials.
 - Tên file media gốc, SHA thông tin định danh media nhạy cảm, raw note private.
 - Thông tin vận hành server/source secrets.
 
@@ -64,7 +73,8 @@ npx -y supabase stop
 
 ## Cập nhật boundary khi mở rộng
 
-- Không thay đổi mô hình này cho đến khi có yêu cầu rõ ràng.
+- Không mở thêm dữ liệu nhạy cảm ngoài các ngoại lệ vận hành đã ghi ở trên nếu
+  chưa có yêu cầu rõ ràng và kiểm thử quyền truy cập tương ứng.
 - Mọi cột mới phải đi qua review:
   - Có thuộc tính PII/sensitivity? nếu có => từ chối hoặc pseudonymize trước sync.
   - Có thể tạo row-level policy tương ứng cho `approved`, role, timeline.

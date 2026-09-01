@@ -20,6 +20,9 @@ describe("one-handed family planner", () => {
     expect(await screen.findByText("Đặt lịch khám")).toBeInTheDocument();
     expect(screen.getByText("0/1 việc đã xong")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mở Mẹ bầu" })).toHaveAttribute("href", "/me-bau");
+    expect(screen.getByRole("link", { name: "Thêm vào Calendar" })).toHaveAttribute(
+      "href", "/api/tasks/12/calendar?day=2026-09-03"
+    );
     expect(screen.getByRole("button", { name: "Đánh dấu Đặt lịch khám đã xong" })).toBeInTheDocument();
   });
 

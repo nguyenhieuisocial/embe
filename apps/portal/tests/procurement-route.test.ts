@@ -57,7 +57,7 @@ describe("private procurement endpoint", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify("accepted"), { status: 200 })));
     const response = await PATCH(new Request("https://embe.hieu.asia/api/procurement", {
       method: "PATCH",
-      headers: { cookie: sessionCookie(), "content-type": "application/json" },
+      headers: { cookie: sessionCookie(), "content-type": "application/json", origin: "https://embe.hieu.asia" },
       body: JSON.stringify({
         proposalId: "11111111-1111-4111-8111-111111111111",
         target: "REVIEWED",
@@ -78,11 +78,28 @@ describe("private procurement endpoint", () => {
     );
   });
 
+  it("rejects a foreign origin before storage", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const response = await PATCH(new Request("https://embe.hieu.asia/api/procurement", {
+      method: "PATCH",
+      headers: { cookie: sessionCookie(), "content-type": "application/json", origin: "https://attacker.example" },
+      body: JSON.stringify({
+        proposalId: "11111111-1111-4111-8111-111111111111",
+        target: "REVIEWED",
+        proposalHash: "a".repeat(64),
+        idempotencyKey: "22222222-2222-4222-8222-222222222222"
+      })
+    }));
+
+    expect(response.status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid state or stale-shaped hashes before storage", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const response = await PATCH(new Request("https://embe.hieu.asia/api/procurement", {
       method: "PATCH",
-      headers: { cookie: sessionCookie(), "content-type": "application/json" },
+      headers: { cookie: sessionCookie(), "content-type": "application/json", origin: "https://embe.hieu.asia" },
       body: JSON.stringify({ proposalId: "bad", target: "AUTO_ORDERED", proposalHash: "x", idempotencyKey: "bad" })
     }));
     expect(response.status).toBe(400);

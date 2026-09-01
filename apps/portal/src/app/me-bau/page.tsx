@@ -234,13 +234,6 @@ export default function PregnancyPage() {
           />
           <p>Nhập khi đã có ngày bác sĩ xác nhận để EmBe hiển thị đúng tuần. Nếu chưa có, cứ để trống.</p>
         </div>
-        <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
-          <a href="#viec-hom-nay">Việc hôm nay</a>
-          <a href="#suc-khoe">Sức khỏe</a>
-          <a href="#bua-an">Bữa ăn</a>
-          <a href="#cam-nang">Ăn &amp; kiêng</a>
-          <a href="#can-lien-he">Cần liên hệ</a>
-        </nav>
         <Image
           className="pregnancy-care-art"
           src="/illustrations/pregnancy-care.webp"
@@ -251,6 +244,23 @@ export default function PregnancyPage() {
           unoptimized
         />
       </section>
+
+      <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
+        <a href="#viec-hom-nay">Hôm nay</a>
+        <a href="#suc-khoe">Sức khỏe</a>
+        <a href="#bua-an">Bữa ăn</a>
+        <a href="#cam-nang">Ăn &amp; kiêng</a>
+        <a href="#can-lien-he">Cần liên hệ</a>
+      </nav>
+
+      <aside className="pregnancy-urgent-shortcut" aria-labelledby="urgent-shortcut-title">
+        <div>
+          <p className="panel-kicker">CẦN TÌM NHANH</p>
+          <h2 id="urgent-shortcut-title">Nếu có dấu hiệu bất thường</h2>
+          <p>Đừng chờ checklist hoặc trợ lý. Mở ngay danh sách dấu hiệu cần liên hệ nơi đang khám.</p>
+        </div>
+        <a href="#can-lien-he">Xem khi nào cần liên hệ</a>
+      </aside>
 
       <section className="trimester-section" aria-labelledby="trimester-title">
         <div className="section-heading-row">

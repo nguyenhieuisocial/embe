@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(75);
+SELECT plan(93);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -349,6 +349,171 @@ SELECT ok(
   has_function_privilege('service_role', 'public.embe_confirm_meal_analysis(uuid,jsonb,text)', 'EXECUTE'),
   'The portal server can store user-confirmed meal results'
 );
+
+-- A local worker can disappear after claiming work. Claims are leases: stale
+-- work is reclaimed, and an exhausted stale claim reaches a terminal state.
+SET ROLE service_role;
+DELETE FROM portal_read_model.photo_upload;
+INSERT INTO portal_read_model.photo_upload (
+  id, idempotency_key, author_role, original_filename, mime_type, byte_size,
+  storage_path, caption, captured_at, status
+) VALUES (
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'a1111111-1111-4111-8111-111111111111',
+  'mother', 'photo.jpg', 'image/jpeg', 1024,
+  'incoming/2099/01/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg',
+  '', timezone('utc', now()), 'uploaded'
+);
+SELECT is(
+  public.embe_claim_photo_upload() ->> 'id',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'A photo worker can claim ready work'
+);
+SELECT ok(
+  (SELECT attempts = 1 AND claimed_at IS NOT NULL
+   FROM portal_read_model.photo_upload
+   WHERE id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+  'A photo claim records its attempt and lease timestamp'
+);
+UPDATE portal_read_model.photo_upload
+SET claimed_at = timezone('utc', now()) - interval '16 minutes'
+WHERE id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+SELECT is(
+  public.embe_claim_photo_upload() ->> 'id',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  'An expired photo lease is reclaimed'
+);
+SELECT is(
+  (SELECT attempts FROM portal_read_model.photo_upload
+   WHERE id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+  2,
+  'Reclaiming a photo consumes another bounded attempt'
+);
+UPDATE portal_read_model.photo_upload
+SET attempts = 20, claimed_at = timezone('utc', now()) - interval '16 minutes'
+WHERE id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+SELECT is(
+  public.embe_claim_photo_upload(),
+  NULL::jsonb,
+  'An exhausted stale photo claim is not reclaimed again'
+);
+SELECT is(
+  (SELECT status || '|' || last_error_code || '|' || (claimed_at IS NULL)::text
+   FROM portal_read_model.photo_upload
+   WHERE id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+  'rejected|worker_timeout|true',
+  'An exhausted stale photo claim becomes a released terminal failure'
+);
+
+DELETE FROM portal_read_model.meal_analysis;
+INSERT INTO portal_read_model.meal_analysis (
+  id, idempotency_key, author_role, meal_type, eaten_at, note,
+  original_filename, mime_type, byte_size, storage_path, status
+) VALUES (
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  'b1111111-1111-4111-8111-111111111111',
+  'mother', 'lunch', timezone('utc', now()), '',
+  'meal.jpg', 'image/jpeg', 1024,
+  'incoming/2099/01/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.jpg',
+  'uploaded'
+);
+SELECT is(
+  public.embe_claim_meal_analysis() ->> 'id',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  'A meal worker can claim ready vision work'
+);
+SELECT ok(
+  (SELECT attempts = 1 AND claimed_at IS NOT NULL
+   FROM portal_read_model.meal_analysis
+   WHERE id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+  'A meal vision claim records its attempt and lease timestamp'
+);
+UPDATE portal_read_model.meal_analysis
+SET claimed_at = timezone('utc', now()) - interval '16 minutes'
+WHERE id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+SELECT is(
+  public.embe_claim_meal_analysis() ->> 'id',
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  'An expired meal vision lease is reclaimed'
+);
+SELECT is(
+  (SELECT attempts FROM portal_read_model.meal_analysis
+   WHERE id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+  2,
+  'Reclaiming meal vision work consumes another bounded attempt'
+);
+UPDATE portal_read_model.meal_analysis
+SET attempts = 10, claimed_at = timezone('utc', now()) - interval '16 minutes'
+WHERE id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+SELECT is(
+  public.embe_claim_meal_analysis(),
+  NULL::jsonb,
+  'Exhausted stale meal vision work is not reclaimed again'
+);
+SELECT is(
+  (SELECT status || '|' || last_error_code || '|' || (claimed_at IS NULL)::text
+   FROM portal_read_model.meal_analysis
+   WHERE id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+  'rejected|worker_timeout|true',
+  'Exhausted stale meal vision work becomes a released terminal failure'
+);
+
+DELETE FROM portal_read_model.meal_analysis;
+INSERT INTO portal_read_model.meal_analysis (
+  id, idempotency_key, author_role, meal_type, eaten_at, note,
+  original_filename, mime_type, byte_size, storage_path, status,
+  confirmed_analysis, confirmed_at
+) VALUES (
+  'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  'c1111111-1111-4111-8111-111111111111',
+  'mother', 'dinner', timezone('utc', now()), '',
+  'meal.jpg', 'image/jpeg', 1024,
+  'incoming/2099/01/cccccccc-cccc-4ccc-8ccc-cccccccccccc.jpg',
+  'nutrition_pending', '{"foods":[]}'::jsonb, timezone('utc', now())
+);
+SELECT is(
+  public.embe_claim_meal_nutrition() ->> 'id',
+  'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  'A meal worker can claim ready nutrition work'
+);
+SELECT ok(
+  (SELECT attempts = 1 AND claimed_at IS NOT NULL
+   FROM portal_read_model.meal_analysis
+   WHERE id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'),
+  'A nutrition claim records its attempt and lease timestamp'
+);
+UPDATE portal_read_model.meal_analysis
+SET claimed_at = timezone('utc', now()) - interval '16 minutes'
+WHERE id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+SELECT is(
+  public.embe_claim_meal_nutrition() ->> 'id',
+  'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  'An expired nutrition lease is reclaimed'
+);
+SELECT is(
+  (SELECT attempts FROM portal_read_model.meal_analysis
+   WHERE id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'),
+  2,
+  'Reclaiming nutrition work consumes another bounded attempt'
+);
+UPDATE portal_read_model.meal_analysis
+SET attempts = 10, claimed_at = timezone('utc', now()) - interval '16 minutes'
+WHERE id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+SELECT is(
+  public.embe_claim_meal_nutrition(),
+  NULL::jsonb,
+  'Exhausted stale nutrition work is not reclaimed again'
+);
+SELECT is(
+  (SELECT status || '|' || last_error_code || '|' ||
+          (confirmed_analysis -> 'nutrition' ->> 'status') || '|' ||
+          (claimed_at IS NULL)::text
+   FROM portal_read_model.meal_analysis
+   WHERE id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'),
+  'confirmed|worker_timeout|unavailable|true',
+  'Exhausted nutrition work preserves the meal with an unavailable marker'
+);
+SET ROLE postgres;
 
 SELECT ok(
   NOT has_table_privilege('anon', 'portal_read_model.family_task', 'SELECT'),

@@ -28,7 +28,7 @@ describe("private local assistant endpoint", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify("22222222-2222-4222-8222-222222222222"), { status: 200 })));
     const response = await POST(new Request("https://embe.hieu.asia/api/assistant", {
       method: "POST",
-      headers: { cookie: cookie(), "content-type": "application/json" },
+      headers: { cookie: cookie(), "content-type": "application/json", origin: "https://embe.hieu.asia" },
       body: JSON.stringify({ topic: "ngu", days: 7, idempotencyKey: "11111111-1111-4111-8111-111111111111" })
     }));
 
@@ -42,11 +42,27 @@ describe("private local assistant endpoint", () => {
     );
   });
 
+  it("rejects a foreign origin before storage", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const response = await POST(new Request("https://embe.hieu.asia/api/assistant", {
+      method: "POST",
+      headers: { cookie: cookie(), "content-type": "application/json", origin: "https://attacker.example" },
+      body: JSON.stringify({
+        topic: "ngu",
+        days: 7,
+        idempotencyKey: "11111111-1111-4111-8111-111111111111"
+      })
+    }));
+
+    expect(response.status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("rejects free-form or out-of-range requests before storage", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const response = await POST(new Request("https://embe.hieu.asia/api/assistant", {
       method: "POST",
-      headers: { cookie: cookie(), "content-type": "application/json" },
+      headers: { cookie: cookie(), "content-type": "application/json", origin: "https://embe.hieu.asia" },
       body: JSON.stringify({ topic: "medical-advice", days: 365, question: "private", idempotencyKey: "bad" })
     }));
     expect(response.status).toBe(400);

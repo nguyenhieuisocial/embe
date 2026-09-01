@@ -7,6 +7,7 @@ from typing import Protocol, Sequence
 
 MAX_RANGE_DAYS = 31
 MAX_RECORDS = 5_000
+FAMILY_TIMEZONE = timezone(timedelta(hours=7), name="Asia/Ho_Chi_Minh")
 
 
 @dataclass(frozen=True)
@@ -108,8 +109,8 @@ def _bounded_window(start_date: date, end_date: date) -> tuple[datetime, datetim
         raise ValueError("start_date must be on or before end_date")
     if (end_date - start_date).days >= MAX_RANGE_DAYS:
         raise ValueError("date range must not exceed 31 days")
-    start = datetime.combine(start_date, time.min, tzinfo=timezone.utc)
-    end = datetime.combine(end_date + timedelta(days=1), time.min, tzinfo=timezone.utc)
+    start = datetime.combine(start_date, time.min, tzinfo=FAMILY_TIMEZONE).astimezone(timezone.utc)
+    end = datetime.combine(end_date + timedelta(days=1), time.min, tzinfo=FAMILY_TIMEZONE).astimezone(timezone.utc)
     return start, end
 
 

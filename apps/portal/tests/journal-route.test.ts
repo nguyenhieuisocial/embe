@@ -5,11 +5,12 @@ import { POST } from "../src/app/api/journal/route";
 
 const originalEnvironment = { ...process.env };
 
-function requestWith(body: unknown, cookie?: string): Request {
+function requestWith(body: unknown, cookie?: string, origin = "https://embe.hieu.asia"): Request {
   return new Request("https://embe.hieu.asia/api/journal", {
     body: JSON.stringify(body),
     headers: {
       "content-type": "application/json",
+      origin,
       ...(cookie ? { cookie: `embe_session=${cookie}` } : {})
     },
     method: "POST"
@@ -47,6 +48,18 @@ describe("mobile journal endpoint", () => {
     }, cookie));
 
     expect(response.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects a foreign origin before storage", async () => {
+    const cookie = createSessionCookie("server-secret");
+    const response = await POST(requestWith({
+      content: "Một ngày vui",
+      authorRole: "father",
+      idempotencyKey: "11111111-1111-4111-8111-111111111111"
+    }, cookie, "https://attacker.example"));
+
+    expect(response.status).toBe(403);
     expect(fetch).not.toHaveBeenCalled();
   });
 

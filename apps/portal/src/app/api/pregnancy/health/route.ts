@@ -1,4 +1,5 @@
 import { verifySessionCookie } from "../../../../lib/portal-auth";
+import { authorizeMutation } from "../../../../lib/photo-upload-server";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ALLOWED_DAYS = new Set([7, 28, 90]);
@@ -154,7 +155,8 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function PATCH(request: Request): Promise<Response> {
-  if (!authorized(request)) return reply({ error: "unauthorized" }, 401);
+  const authorization = authorizeMutation(request);
+  if (authorization) return reply({ error: authorization === 401 ? "unauthorized" : "forbidden" }, authorization);
   const contentLength = Number(request.headers.get("content-length") ?? "0");
   if (Number.isFinite(contentLength) && contentLength > 4096) return reply({ error: "invalid_request" }, 413);
 

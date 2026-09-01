@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import InventoryPage from "../src/app/do-dung/page";
 
 describe("mobile inventory page", () => {
-  beforeEach(() => window.history.replaceState({}, "", "/do-dung"));
+  beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState({}, "", "/do-dung");
+  });
   afterEach(() => {
     window.history.replaceState({}, "", "/do-dung");
     vi.unstubAllGlobals();
@@ -66,5 +69,22 @@ describe("mobile inventory page", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Chưa cập nhật được");
     expect(screen.getByDisplayValue("Khăn ướt")).toBeInTheDocument();
+  });
+
+  it("shows the last valid inventory snapshot instead of a blank page while offline", async () => {
+    localStorage.setItem("embe:inventory:last-snapshot", JSON.stringify({
+      savedAt: "2026-09-01T00:00:00.000Z",
+      snapshot: {
+        items: [{ productId: 12, name: "Bỉm sơ sinh", quantity: 7, unit: "cái", minQuantity: 10, needsRestock: true }],
+        pending: 0
+      }
+    }));
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+    render(<InventoryPage />);
+
+    expect(await screen.findByText("Bỉm sơ sinh")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Đang xem danh sách đã lưu");
+    expect(screen.queryByText("Chưa cập nhật được đồ dùng")).not.toBeInTheDocument();
   });
 });

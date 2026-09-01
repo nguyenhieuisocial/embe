@@ -9,11 +9,12 @@ function sessionCookie(): string {
   return `embe_session=${createSessionCookie("server-secret")}`;
 }
 
-function patchRequest(body: unknown, authenticated = true): Request {
+function patchRequest(body: unknown, authenticated = true, origin = "https://embe.hieu.asia"): Request {
   return new Request("https://embe.hieu.asia/api/pregnancy", {
     body: JSON.stringify(body),
     headers: {
       "content-type": "application/json",
+      origin,
       ...(authenticated ? { cookie: sessionCookie() } : {})
     },
     method: "PATCH"
@@ -80,10 +81,21 @@ describe("private pregnancy state endpoint", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("rejects a foreign origin before storage", async () => {
+    const response = await PATCH(patchRequest(
+      { day: "2026-08-31", completed: [] },
+      true,
+      "https://attacker.example"
+    ));
+
+    expect(response.status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("rejects an oversized body even when content-length is absent", async () => {
     const response = await PATCH(new Request("https://embe.hieu.asia/api/pregnancy", {
       body: JSON.stringify({ day: "2026-08-31", padding: "x".repeat(5000) }),
-      headers: { cookie: sessionCookie(), "content-type": "application/json" },
+      headers: { cookie: sessionCookie(), "content-type": "application/json", origin: "https://embe.hieu.asia" },
       method: "PATCH"
     }));
 

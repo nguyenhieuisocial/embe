@@ -58,7 +58,9 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("GIAI ĐOẠN HIỆN TẠI")).toBeInTheDocument();
     expect(screen.getByText("Mới mang thai")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Việc hôm nay" })).toHaveAttribute("href", "#viec-hom-nay");
+    expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "#viec-hom-nay");
+    expect(screen.getByRole("heading", { name: "Nếu có dấu hiệu bất thường" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Xem khi nào cần liên hệ" })).toHaveAttribute("href", "#can-lien-he");
     expect(screen.getByText("Đã ăn sáng")).toBeInTheDocument();
     expect(screen.getByText("Đã ăn trưa")).toBeInTheDocument();
     expect(screen.getByText("Đã ăn tối")).toBeInTheDocument();
@@ -121,6 +123,32 @@ describe("pregnancy daily page", () => {
         wellbeing: 4
       })
     }));
+  });
+
+  it("does not overwrite a health value typed while the private history is loading", async () => {
+    let finishHealthLoad: ((response: Response) => void) | undefined;
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).includes("/api/pregnancy/health") && !init?.method) {
+        return new Promise<Response>((resolve) => { finishHealthLoad = resolve; });
+      }
+      if (String(input).includes("/api/pregnancy")) {
+        return Response.json({ dueDate: null, completed: [], hasProfile: false, hasDayState: false });
+      }
+      return Response.json({});
+    });
+
+    render(<PregnancyPage />);
+    fireEvent.change(screen.getByLabelText("Cân nặng (kg)"), { target: { value: "57.2" } });
+    expect(finishHealthLoad).toBeTypeOf("function");
+    await act(async () => {
+      finishHealthLoad?.(Response.json({
+        history: [{ day: "2026-08-30", weightKg: 55, systolic: null, diastolic: null, sleepMinutes: null, waterGlasses: null, movementMinutes: null, wellbeing: null, checklistPercent: 0 }]
+      }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByLabelText("Cân nặng (kg)")).toHaveValue(57.2);
   });
 
   it("keeps today's completion state on the device", () => {

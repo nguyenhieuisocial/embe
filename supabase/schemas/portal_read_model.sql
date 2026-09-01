@@ -1012,21 +1012,25 @@ CREATE TABLE portal_read_model.photo_upload (
   ),
   attempts integer NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 20),
   next_attempt_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
+  claimed_at timestamptz,
   immich_asset_id uuid,
   checksum_sha256 text CHECK (checksum_sha256 IS NULL OR checksum_sha256 ~ '^[0-9a-f]{64}$'),
   last_error_code text CHECK (last_error_code IS NULL OR last_error_code ~ '^[a-z0-9_]{1,48}$'),
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
   uploaded_at timestamptz,
   imported_at timestamptz,
-  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
+  CONSTRAINT photo_upload_claim_shape CHECK (
+    (status = 'importing') = (claimed_at IS NOT NULL)
+  )
 );
 
 COMMENT ON TABLE portal_read_model.photo_upload IS
   'Private server-only upload queue. Provider credentials and signed URLs are never stored here.';
 
 CREATE INDEX photo_upload_worker_idx
-  ON portal_read_model.photo_upload (status, next_attempt_at, created_at)
-  WHERE status IN ('uploaded', 'failed');
+  ON portal_read_model.photo_upload (status, next_attempt_at, claimed_at, created_at)
+  WHERE status IN ('uploaded', 'failed', 'importing');
 
 CREATE TRIGGER photo_upload_set_updated_at
 BEFORE UPDATE ON portal_read_model.photo_upload
@@ -1142,13 +1146,24 @@ AS $function$
 DECLARE
   claimed portal_read_model.photo_upload%ROWTYPE;
 BEGIN
+  UPDATE portal_read_model.photo_upload
+  SET status = 'rejected', claimed_at = NULL, last_error_code = 'worker_timeout'
+  WHERE status = 'importing'
+    AND attempts >= 20
+    AND claimed_at < timezone('utc', now()) - interval '15 minutes';
+
   UPDATE portal_read_model.photo_upload AS queue
-  SET status = 'importing', attempts = attempts + 1
+  SET status = 'importing', attempts = attempts + 1,
+      claimed_at = timezone('utc', now()), last_error_code = NULL
   WHERE queue.id = (
     SELECT candidate.id
     FROM portal_read_model.photo_upload AS candidate
-    WHERE candidate.status IN ('uploaded', 'failed')
-      AND candidate.next_attempt_at <= timezone('utc', now())
+    WHERE (
+        (candidate.status IN ('uploaded', 'failed')
+          AND candidate.next_attempt_at <= timezone('utc', now()))
+        OR (candidate.status = 'importing'
+          AND candidate.claimed_at < timezone('utc', now()) - interval '15 minutes')
+      )
       AND candidate.attempts < 20
     ORDER BY candidate.created_at
     FOR UPDATE SKIP LOCKED
@@ -1187,7 +1202,7 @@ BEGIN
   UPDATE portal_read_model.photo_upload
   SET status = 'imported', immich_asset_id = p_immich_asset_id,
       checksum_sha256 = p_checksum_sha256, imported_at = timezone('utc', now()),
-      last_error_code = NULL
+      claimed_at = NULL, last_error_code = NULL
   WHERE id = p_upload_id AND status = 'importing';
   IF NOT FOUND THEN RAISE EXCEPTION 'photo import is not claimed'; END IF;
 END;
@@ -1210,7 +1225,7 @@ BEGIN
   END IF;
   UPDATE portal_read_model.photo_upload
   SET status = CASE WHEN attempts >= 20 THEN 'rejected' ELSE 'failed' END,
-      last_error_code = p_error_code,
+      claimed_at = NULL, last_error_code = p_error_code,
       next_attempt_at = timezone('utc', now()) + make_interval(secs => p_retry_after_seconds)
   WHERE id = p_upload_id AND status = 'importing';
   IF NOT FOUND THEN RAISE EXCEPTION 'photo import is not claimed'; END IF;
@@ -1712,6 +1727,7 @@ CREATE TABLE portal_read_model.meal_analysis (
   ),
   attempts integer NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 10),
   next_attempt_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
+  claimed_at timestamptz,
   checksum_sha256 text CHECK (checksum_sha256 IS NULL OR checksum_sha256 ~ '^[0-9a-f]{64}$'),
   analysis jsonb,
   confirmed_analysis jsonb,
@@ -1722,12 +1738,15 @@ CREATE TABLE portal_read_model.meal_analysis (
   analyzed_at timestamptz,
   confirmed_at timestamptz,
   deleted_at timestamptz,
-  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+  updated_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
+  CONSTRAINT meal_analysis_claim_shape CHECK (
+    (status IN ('analyzing', 'nutrition_processing')) = (claimed_at IS NOT NULL)
+  )
 );
 
 CREATE INDEX meal_analysis_worker_idx
-  ON portal_read_model.meal_analysis (status, next_attempt_at, created_at)
-  WHERE status IN ('uploaded', 'failed');
+  ON portal_read_model.meal_analysis (status, next_attempt_at, claimed_at, created_at)
+  WHERE status IN ('uploaded', 'failed', 'analyzing', 'nutrition_pending', 'nutrition_processing');
 
 CREATE INDEX meal_analysis_history_idx
   ON portal_read_model.meal_analysis (eaten_at DESC)
@@ -1814,12 +1833,24 @@ CREATE OR REPLACE FUNCTION public.embe_claim_meal_analysis()
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
 DECLARE claimed portal_read_model.meal_analysis%ROWTYPE;
 BEGIN
+  UPDATE portal_read_model.meal_analysis
+  SET status = 'rejected', claimed_at = NULL, last_error_code = 'worker_timeout'
+  WHERE status = 'analyzing'
+    AND attempts >= 10
+    AND claimed_at < timezone('utc', now()) - interval '15 minutes';
+
   UPDATE portal_read_model.meal_analysis AS queue
-  SET status = 'analyzing', attempts = attempts + 1
+  SET status = 'analyzing', attempts = attempts + 1,
+      claimed_at = timezone('utc', now()), last_error_code = NULL
   WHERE queue.id = (
     SELECT candidate.id FROM portal_read_model.meal_analysis AS candidate
-    WHERE candidate.status IN ('uploaded', 'failed')
-      AND candidate.next_attempt_at <= timezone('utc', now()) AND candidate.attempts < 10
+    WHERE (
+        (candidate.status IN ('uploaded', 'failed')
+          AND candidate.next_attempt_at <= timezone('utc', now()))
+        OR (candidate.status = 'analyzing'
+          AND candidate.claimed_at < timezone('utc', now()) - interval '15 minutes')
+      )
+      AND candidate.attempts < 10
     ORDER BY candidate.created_at FOR UPDATE SKIP LOCKED LIMIT 1
   ) RETURNING queue.* INTO claimed;
   IF claimed.id IS NULL THEN RETURN NULL; END IF;
@@ -1840,7 +1871,8 @@ BEGIN
      OR jsonb_typeof(p_analysis) <> 'object' THEN RAISE EXCEPTION 'invalid meal analysis result'; END IF;
   UPDATE portal_read_model.meal_analysis
   SET status = 'review', checksum_sha256 = p_checksum_sha256, model_name = p_model_name,
-      analysis = p_analysis, analyzed_at = timezone('utc', now()), last_error_code = NULL
+      analysis = p_analysis, analyzed_at = timezone('utc', now()),
+      claimed_at = NULL, last_error_code = NULL
   WHERE id = p_id AND status = 'analyzing';
   IF NOT FOUND THEN RAISE EXCEPTION 'meal analysis is not claimed'; END IF;
 END;
@@ -1855,7 +1887,7 @@ BEGIN
     THEN RAISE EXCEPTION 'invalid meal analysis failure'; END IF;
   UPDATE portal_read_model.meal_analysis
   SET status = CASE WHEN attempts >= 10 THEN 'rejected' ELSE 'failed' END,
-      last_error_code = p_error_code,
+      claimed_at = NULL, last_error_code = p_error_code,
       next_attempt_at = timezone('utc', now()) + make_interval(secs => p_retry_after_seconds)
   WHERE id = p_id AND status = 'analyzing';
   IF NOT FOUND THEN RAISE EXCEPTION 'meal analysis is not claimed'; END IF;
@@ -1883,12 +1915,31 @@ CREATE OR REPLACE FUNCTION public.embe_claim_meal_nutrition()
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
 DECLARE claimed portal_read_model.meal_analysis%ROWTYPE;
 BEGIN
+  UPDATE portal_read_model.meal_analysis
+  SET status = 'confirmed', claimed_at = NULL,
+      confirmed_analysis = confirmed_analysis || jsonb_build_object(
+        'nutrition', jsonb_build_object(
+          'status', 'unavailable',
+          'notice', 'Chưa tra được dữ liệu dinh dưỡng; món và khẩu phần vẫn được lưu.'
+        )
+      ),
+      last_error_code = 'worker_timeout'
+  WHERE status = 'nutrition_processing'
+    AND attempts >= 10
+    AND claimed_at < timezone('utc', now()) - interval '15 minutes';
+
   UPDATE portal_read_model.meal_analysis AS queue
-  SET status = 'nutrition_processing', attempts = attempts + 1
+  SET status = 'nutrition_processing', attempts = attempts + 1,
+      claimed_at = timezone('utc', now()), last_error_code = NULL
   WHERE queue.id = (
     SELECT candidate.id FROM portal_read_model.meal_analysis AS candidate
-    WHERE candidate.status = 'nutrition_pending'
-      AND candidate.next_attempt_at <= timezone('utc', now()) AND candidate.attempts < 10
+    WHERE (
+        (candidate.status = 'nutrition_pending'
+          AND candidate.next_attempt_at <= timezone('utc', now()))
+        OR (candidate.status = 'nutrition_processing'
+          AND candidate.claimed_at < timezone('utc', now()) - interval '15 minutes')
+      )
+      AND candidate.attempts < 10
     ORDER BY candidate.confirmed_at FOR UPDATE SKIP LOCKED LIMIT 1
   ) RETURNING queue.* INTO claimed;
   IF claimed.id IS NULL THEN RETURN NULL; END IF;
@@ -1903,7 +1954,7 @@ BEGIN
   UPDATE portal_read_model.meal_analysis
   SET status = 'confirmed',
       confirmed_analysis = confirmed_analysis || jsonb_build_object('nutrition', p_nutrition),
-      last_error_code = NULL
+      claimed_at = NULL, last_error_code = NULL
   WHERE id = p_id AND status = 'nutrition_processing';
   IF NOT FOUND THEN RAISE EXCEPTION 'meal nutrition is not claimed'; END IF;
 END;
@@ -1919,7 +1970,7 @@ BEGIN
       confirmed_analysis = CASE WHEN attempts >= 10 THEN confirmed_analysis || jsonb_build_object(
         'nutrition', jsonb_build_object('status', 'unavailable', 'notice', 'Chưa tra được dữ liệu dinh dưỡng; món và khẩu phần vẫn được lưu.'))
         ELSE confirmed_analysis END,
-      last_error_code = p_error_code,
+      claimed_at = NULL, last_error_code = p_error_code,
       next_attempt_at = timezone('utc', now()) + make_interval(secs => p_retry_after_seconds)
   WHERE id = p_id AND status = 'nutrition_processing';
   IF NOT FOUND THEN RAISE EXCEPTION 'meal nutrition is not claimed'; END IF;
@@ -1941,7 +1992,8 @@ $function$;
 CREATE OR REPLACE FUNCTION public.embe_delete_meal_analysis(p_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
 BEGIN
-  UPDATE portal_read_model.meal_analysis SET status = 'deleted', deleted_at = timezone('utc', now())
+  UPDATE portal_read_model.meal_analysis
+  SET status = 'deleted', deleted_at = timezone('utc', now()), claimed_at = NULL
   WHERE id = p_id AND status NOT IN ('deleted', 'analyzing');
   IF NOT FOUND THEN RAISE EXCEPTION 'meal cannot be deleted'; END IF;
 END;

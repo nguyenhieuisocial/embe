@@ -53,7 +53,7 @@ describe("private inventory endpoint", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify("accepted"), { status: 200 })));
     const response = await POST(new Request("https://embe.hieu.asia/api/inventory", {
       method: "POST",
-      headers: { "content-type": "application/json", cookie: sessionCookie() },
+      headers: { "content-type": "application/json", cookie: sessionCookie(), origin: "https://embe.hieu.asia" },
       body: JSON.stringify({
         action: "set_amount",
         productId: 12,
@@ -80,11 +80,28 @@ describe("private inventory endpoint", () => {
     );
   });
 
+  it("rejects a foreign origin before storage", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const response = await POST(new Request("https://embe.hieu.asia/api/inventory", {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: sessionCookie(), origin: "https://attacker.example" },
+      body: JSON.stringify({
+        action: "set_amount",
+        productId: 12,
+        amount: 6,
+        idempotencyKey: "11111111-1111-4111-8111-111111111111"
+      })
+    }));
+
+    expect(response.status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("rejects malformed create actions before they reach storage", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const response = await POST(new Request("https://embe.hieu.asia/api/inventory", {
       method: "POST",
-      headers: { "content-type": "application/json", cookie: sessionCookie() },
+      headers: { "content-type": "application/json", cookie: sessionCookie(), origin: "https://embe.hieu.asia" },
       body: JSON.stringify({ action: "create", name: "", unit: "unknown", amount: -2, idempotencyKey: "bad" })
     }));
 
@@ -96,7 +113,7 @@ describe("private inventory endpoint", () => {
     vi.stubGlobal("fetch", vi.fn());
     const response = await POST(new Request("https://embe.hieu.asia/api/inventory", {
       method: "POST",
-      headers: { "content-type": "application/json", cookie: sessionCookie() },
+      headers: { "content-type": "application/json", cookie: sessionCookie(), origin: "https://embe.hieu.asia" },
       body: JSON.stringify({
         action: "create",
         name: "Bỉm\nẩn",

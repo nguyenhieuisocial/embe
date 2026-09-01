@@ -22,16 +22,16 @@ function ruleBody(css: string, selector: string): string {
 }
 
 describe("mobile family shell", () => {
-  it("offers the four everyday destinations as a compact navigation", () => {
+  it("offers the five everyday destinations as a compact navigation", () => {
     render(<FamilyNav />);
 
     expect(screen.getByRole("navigation", { name: "Điều hướng gia đình" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Kế hoạch" })).toHaveAttribute("href", "/ke-hoach");
     expect(screen.getByRole("link", { name: "Kế hoạch" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Mẹ bầu" })).toHaveAttribute("href", "/me-bau");
-    expect(screen.getByRole("link", { name: "Lịch" })).toHaveAttribute("href", "/lich");
-    expect(screen.getByRole("link", { name: "Đồ dùng" })).toHaveAttribute("href", "/do-dung");
+    expect(screen.getByRole("link", { name: "Hành trình" })).toHaveAttribute("href", "/me-bau");
+    expect(screen.getByRole("link", { name: "Kỷ niệm" })).toHaveAttribute("href", "/ky-niem");
+    expect(screen.getByRole("link", { name: "Nhà mình" })).toHaveAttribute("href", "/nha-minh");
   });
 
   it("reserves iPhone safe areas and prevents password-field zoom", () => {

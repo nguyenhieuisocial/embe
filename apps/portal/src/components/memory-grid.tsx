@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { groupByDay, groupIntoTrips } from "../lib/memory-groups";
 import type { MediaAlbum, MediaMemory } from "../lib/media";
@@ -39,9 +39,9 @@ function calendarHref(value: string): string {
 
 function calendarLink(memory: MediaMemory) {
   return (
-    <a className="memory-date-link" href={calendarHref(memory.eventAt)}>
+    <Link className="memory-date-link" href={calendarHref(memory.eventAt)}>
       <time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time>
-    </a>
+    </Link>
   );
 }
 
@@ -116,24 +116,47 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
   onMove: (direction: -1 | 1) => void;
 }) {
   const touchStart = useRef<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      if (event.key === "ArrowLeft") onMove(-1);
-      if (event.key === "ArrowRight") onMove(1);
-    };
-    window.addEventListener("keydown", onKeyDown);
+    closeRef.current?.focus();
     return () => {
       document.body.style.overflow = previous;
-      window.removeEventListener("keydown", onKeyDown);
+      previousFocus?.focus();
     };
-  }, [onClose, onMove]);
+  }, []);
+
+  function keepFocusInside(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (event.key === "ArrowLeft") onMove(-1);
+    if (event.key === "ArrowRight") onMove(1);
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(
+      dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), a[href]") ?? []
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
-    <div aria-label={memory.title} aria-modal="true" className="photo-viewer" role="dialog"
+    <div ref={dialogRef} aria-label={memory.title} aria-modal="true" className="photo-viewer" role="dialog"
+      onKeyDown={keepFocusInside}
       onTouchEnd={(event) => {
         if (touchStart.current == null) return;
         const distance = event.changedTouches[0].clientX - touchStart.current;
@@ -143,7 +166,7 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
       onTouchStart={(event) => { touchStart.current = event.touches[0].clientX; }}>
       <header>
         <span>{index + 1} / {total}</span>
-        <button aria-label="Đóng ảnh" onClick={onClose} type="button">×</button>
+        <button ref={closeRef} aria-label="Đóng ảnh" onClick={onClose} type="button">×</button>
       </header>
       <div className="photo-viewer-stage">
         {/* eslint-disable-next-line @next/next/no-img-element */}

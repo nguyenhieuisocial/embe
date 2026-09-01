@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
 import type { PregnancyHealthMetric } from "./pregnancy-health-charts";
@@ -74,7 +74,8 @@ export default function PregnancyHealthTracker() {
   const [today, setToday] = useState("");
   const [history, setHistory] = useState<PregnancyHealthMetric[]>([]);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [status, setStatus] = useState<"loading" | "idle" | "saving" | "saved" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "idle" | "saving" | "saved" | "invalid" | "error">("loading");
+  const dirtyRef = useRef(false);
 
   useEffect(() => {
     const day = localDateKey();
@@ -87,7 +88,9 @@ export default function PregnancyHealthTracker() {
         const payload = await response.json() as { history?: PregnancyHealthMetric[] };
         if (!active || !Array.isArray(payload.history)) return;
         setHistory(payload.history);
-        setForm(metricToForm(payload.history.find((metric) => metric.day === day)));
+        if (!dirtyRef.current) {
+          setForm(metricToForm(payload.history.find((metric) => metric.day === day)));
+        }
         setStatus("idle");
       } catch {
         if (active) setStatus("error");
@@ -100,11 +103,13 @@ export default function PregnancyHealthTracker() {
   const hasHealthValues = useMemo(() => history.some(metricHasValues), [history]);
 
   function setField<Key extends keyof FormState>(key: Key, value: FormState[Key]) {
+    dirtyRef.current = true;
     setForm((current) => ({ ...current, [key]: value }));
-    if (status === "saved") setStatus("idle");
+    if (status === "saved" || status === "invalid") setStatus("idle");
   }
 
-  async function save() {
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!today || status === "saving") return;
     setStatus("saving");
     const sleepHours = inputNumber(form.sleepHours);
@@ -124,6 +129,10 @@ export default function PregnancyHealthTracker() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body)
       });
+      if (response.status === 400) {
+        setStatus("invalid");
+        return;
+      }
       if (!response.ok) throw new Error("health save unavailable");
       const payload = await response.json() as { metric?: PregnancyHealthMetric };
       if (!payload.metric) throw new Error("health save malformed");
@@ -131,6 +140,7 @@ export default function PregnancyHealthTracker() {
         const next = current.filter((metric) => metric.day !== payload.metric?.day);
         return [...next, payload.metric as PregnancyHealthMetric].sort((a, b) => a.day.localeCompare(b.day));
       });
+      dirtyRef.current = false;
       setStatus("saved");
     } catch {
       setStatus("error");
@@ -147,7 +157,7 @@ export default function PregnancyHealthTracker() {
         <p>Chỉ nhập số Mẹ Ngân thực sự đo hoặc nhớ được. Để trống mục chưa có; EmBe không tự chẩn đoán.</p>
       </div>
 
-      <div className="health-entry-card">
+      <form className="health-entry-card" onSubmit={(event) => void save(event)}>
         <div className="health-fields">
           <label>Cân nặng (kg)<input inputMode="decimal" min="25" max="300" step="0.1" type="number" value={form.weightKg} onChange={(event) => setField("weightKg", event.target.value)} /></label>
           <fieldset className="pressure-fields">
@@ -178,13 +188,19 @@ export default function PregnancyHealthTracker() {
           </div>
         </fieldset>
 
-        <button className="health-save" type="button" disabled={!today || status === "saving"} onClick={() => void save()}>
+        <button className="health-save" type="submit" disabled={!today || status === "saving"}>
           {status === "saving" ? "Đang lưu…" : "Lưu sức khỏe hôm nay"}
         </button>
         <p className={`health-save-state is-${status}`} aria-live="polite">
-          {status === "saved" ? "Đã lưu riêng tư." : status === "error" ? "Chưa kết nối được. Số vừa nhập vẫn còn trên màn hình để thử lại." : "Không bắt buộc nhập đủ mọi mục."}
+          {status === "saved"
+            ? "Đã lưu riêng tư."
+            : status === "invalid"
+              ? "Có một số chưa đúng khoảng cho phép. Hãy kiểm tra trường được đánh dấu."
+              : status === "error"
+                ? "Chưa kết nối được. Số vừa nhập vẫn còn trên màn hình để thử lại."
+                : "Không bắt buộc nhập đủ mọi mục."}
         </p>
-      </div>
+      </form>
 
       <div className="health-chart-heading">
         <div>
