@@ -17,6 +17,10 @@ const PUBLIC_PATHS = new Set([
 ]);
 const PRIVATE_NO_STORE = "private, no-store";
 
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.has(pathname) || pathname.startsWith("/chia-se/") || pathname.startsWith("/api/public/media/");
+}
+
 function privateResponse(response: NextResponse): NextResponse {
   response.headers.set("cache-control", PRIVATE_NO_STORE);
   return response;
@@ -30,7 +34,7 @@ export function proxy(request: NextRequest): NextResponse {
     });
   }
 
-  if (PUBLIC_PATHS.has(request.nextUrl.pathname)) {
+  if (isPublicPath(request.nextUrl.pathname)) {
     return privateResponse(NextResponse.next());
   }
 

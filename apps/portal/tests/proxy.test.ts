@@ -55,6 +55,20 @@ describe("portal access gate", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it.each([
+    "/chia-se/signed.token",
+    "/api/public/media/signed.token"
+  ])("allows only the temporary public share surfaces: %s", (path) => {
+    const response = proxy(new NextRequest(`https://embe.hieu.asia${path}`));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("does not mistake a similar private path for a public share", () => {
+    const response = proxy(new NextRequest("https://embe.hieu.asia/chia-se-gia/anything"));
+    expect(response.status).toBe(307);
+  });
+
   it("blocks the direct Vercel hostname from bypassing Cloudflare protection", () => {
     const response = proxy(new NextRequest("https://embe-portal.vercel.app/api/auth/login"));
 

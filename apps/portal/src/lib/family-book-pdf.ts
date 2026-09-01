@@ -201,14 +201,40 @@ export function buildFamilyBookDocument({ data, days, generatedAt, week }: PdfIn
   };
 }
 
-export async function downloadFamilyBookPdf(input: PdfInput): Promise<void> {
+function familyBookFilename(input: PdfInput): string {
+  return `so-me-va-be-${new Date().toISOString().slice(0, 10)}-${input.days}-ngay.pdf`;
+}
+
+async function familyBookPdfBlob(input: PdfInput): Promise<Blob> {
   const [{ default: pdfMake }, { default: vfs }] = await Promise.all([
     import("pdfmake/build/pdfmake"),
     import("pdfmake/build/vfs_fonts")
   ]);
   pdfMake.addVirtualFileSystem(vfs);
-  const day = new Date().toISOString().slice(0, 10);
-  await pdfMake.createPdf(buildFamilyBookDocument(input)).download(`so-me-va-be-${day}-${input.days}-ngay.pdf`);
+  return pdfMake.createPdf(buildFamilyBookDocument(input)).getBlob();
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+}
+
+export async function downloadFamilyBookPdf(input: PdfInput): Promise<void> {
+  downloadBlob(await familyBookPdfBlob(input), familyBookFilename(input));
+}
+
+export async function shareFamilyBookPdf(input: PdfInput): Promise<void> {
+  const blob = await familyBookPdfBlob(input);
+  const file = new File([blob], familyBookFilename(input), { type: "application/pdf" });
+  if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+    await navigator.share({ files: [file], title: "Sổ Mẹ & Bé", text: "Sổ gia đình của Mẹ Ngân và Em Bé" });
+    return;
+  }
+  downloadBlob(blob, file.name);
 }
 
 export async function openFamilyBookPdf(input: PdfInput): Promise<void> {
@@ -216,12 +242,7 @@ export async function openFamilyBookPdf(input: PdfInput): Promise<void> {
   if (!pdfWindow) throw new Error("PDF window was blocked");
 
   try {
-    const [{ default: pdfMake }, { default: vfs }] = await Promise.all([
-      import("pdfmake/build/pdfmake"),
-      import("pdfmake/build/vfs_fonts")
-    ]);
-    pdfMake.addVirtualFileSystem(vfs);
-    const blob = await pdfMake.createPdf(buildFamilyBookDocument(input)).getBlob();
+    const blob = await familyBookPdfBlob(input);
     const url = URL.createObjectURL(blob);
     pdfWindow.location.replace(url);
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);

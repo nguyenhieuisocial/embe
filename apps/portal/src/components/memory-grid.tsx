@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { groupByDay, groupIntoTrips } from "../lib/memory-groups";
 import type { MediaAlbum, MediaMemory } from "../lib/media";
 import { readDeviceRole } from "../lib/device-preferences";
+import PhotoShareButton from "./photo-share-button";
 
 const PAGE_SIZE = 24;
 const REACTIONS = [
@@ -217,6 +218,7 @@ function PhotoViewer({ memory, index, total, onClose, onMove }: {
       <header>
         <span>Ảnh {index + 1} / {total}</span>
         <div className="photo-viewer-actions">
+          <PhotoShareButton memory={memory} />
           <a aria-label="In ảnh này" className="photo-viewer-print" href={`/in-anh/${memory.id}`}>
             <span aria-hidden="true">▣</span> In ảnh
           </a>

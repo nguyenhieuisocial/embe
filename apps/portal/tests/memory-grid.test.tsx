@@ -97,7 +97,7 @@ describe("mobile memory grid", () => {
 
     next.focus();
     fireEvent.keyDown(dialog, { key: "Tab" });
-    expect(screen.getByRole("link", { name: "In ảnh này" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Chia sẻ ảnh" })).toHaveFocus();
 
     fireEvent.click(close);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -111,5 +111,14 @@ describe("mobile memory grid", () => {
     expect(screen.getByText("Vuốt ngang để đổi ảnh")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "In ảnh này" }))
       .toHaveAttribute("href", "/in-anh/00000001-1111-4111-8111-111111111111");
+  });
+
+  it("offers native file sharing and a temporary friend link from the photo viewer", () => {
+    render(<MemoryGrid album="da-lat-2025" initial={[memory(1)]} initialView="album" />);
+    fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Chia sẻ ảnh" }));
+
+    expect(screen.getByRole("button", { name: "Gửi ảnh" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Gửi link xem 7 ngày" })).toBeInTheDocument();
   });
 });

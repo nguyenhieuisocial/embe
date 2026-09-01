@@ -132,6 +132,19 @@ export default function FamilyBookExport() {
     }
   }
 
+  async function sharePdf(): Promise<void> {
+    if (!data || status !== "ready") return;
+    setPdfStatus("loading");
+    try {
+      const { shareFamilyBookPdf } = await import("../lib/family-book-pdf");
+      await shareFamilyBookPdf({ data, days, generatedAt, week });
+      setPdfStatus("idle");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") setPdfStatus("idle");
+      else setPdfStatus("error");
+    }
+  }
+
   return (
     <section className="family-book-export" aria-labelledby="family-book-title">
       <div className="family-book-controls">
@@ -144,6 +157,9 @@ export default function FamilyBookExport() {
           {RANGE_OPTIONS.map((value) => <button key={value} aria-pressed={days === value} onClick={() => setDays(value)} type="button">{value} ngày</button>)}
         </div>
         <div className="family-book-actions">
+          <button className="family-book-print is-share" disabled={status !== "ready" || pdfStatus === "loading"} onClick={() => void sharePdf()} type="button">
+            <span aria-hidden="true">↗</span> {pdfStatus === "loading" ? "Đang chuẩn bị…" : "Chia sẻ PDF"}
+          </button>
           <button className="family-book-print" disabled={status !== "ready" || pdfStatus === "loading"} onClick={() => void downloadPdf()} type="button">
             <span aria-hidden="true">↓</span> {pdfStatus === "loading" ? "Đang tạo PDF…" : "Tải PDF"}
           </button>
@@ -151,7 +167,7 @@ export default function FamilyBookExport() {
             <span aria-hidden="true">▣</span> {pdfStatus === "loading" ? "Đang mở…" : "In"}
           </button>
         </div>
-        <p className="family-book-print-help">Tải PDF để lưu hoặc gửi. Chọn In để dùng AirPrint ngay trên iPhone.</p>
+        <p className="family-book-print-help">Chia sẻ PDF mở ngay Zalo, Messenger, Mail hoặc AirDrop. Chọn In để dùng AirPrint.</p>
         {pdfStatus === "error" ? <p className="family-book-warning" role="alert">Chưa mở được PDF. Hãy cho phép cửa sổ bật lên rồi thử lại.</p> : null}
         {data?.unavailable.length ? <p className="family-book-warning" role="status">Tạm thiếu: {data.unavailable.join(", ")}. Bản in vẫn giữ các phần đã tải được.</p> : null}
       </div>
