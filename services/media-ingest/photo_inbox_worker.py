@@ -98,8 +98,10 @@ def validate_image(body: bytes, claimed_mime: str) -> str:
         valid = len(body) >= 12 and body[4:8] == b"ftyp" and body[8:12] in {
             b"heic", b"heix", b"hevc", b"hevx", b"mif1", b"msf1"
         }
+    elif claimed_mime in {"video/mp4", "video/quicktime"}:
+        valid = len(body) >= 12 and body[4:8] == b"ftyp"
     if not valid:
-        raise ValueError("invalid_image_signature")
+        raise ValueError("invalid_media_signature")
     return claimed_mime
 
 

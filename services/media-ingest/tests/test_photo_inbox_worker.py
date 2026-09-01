@@ -62,9 +62,16 @@ def test_validates_magic_bytes_not_only_claimed_mime():
     try:
         validate_image(b"<svg onload=alert(1)>", "image/jpeg")
     except ValueError as error:
-        assert str(error) == "invalid_image_signature"
+        assert str(error) == "invalid_media_signature"
     else:
         raise AssertionError("spoofed image was accepted")
+
+
+def test_accepts_mp4_and_quicktime_container_signatures():
+    mp4 = b"\x00\x00\x00\x18ftypisom" + b"video"
+    assert validate_image(mp4, "video/mp4") == "video/mp4"
+    quicktime = b"\x00\x00\x00\x14ftypqt  " + b"video"
+    assert validate_image(quicktime, "video/quicktime") == "video/quicktime"
 
 
 def test_claim_download_validate_import_album_finish_and_cleanup():

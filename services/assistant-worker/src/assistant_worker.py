@@ -13,7 +13,7 @@ from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-ALLOWED_TOPICS = {"ngu", "bu", "moi-truong"}
+ALLOWED_TOPICS = {"ngu", "bu", "moi-truong", "hoi-dap"}
 ALLOWED_DAYS = {7, 14, 30}
 QUESTIONS = {
     "ngu": "Tóm tắt nhịp ngủ trong khoảng thời gian này bằng tiếng Việt dễ hiểu cho bố mẹ.",
@@ -48,10 +48,15 @@ class AssistantJob:
     id: str
     topic: str
     days: int
+    question: str | None = None
 
     @classmethod
     def from_raw(cls, value: dict[str, Any]) -> "AssistantJob":
-        return cls(str(value.get("id", "")), str(value.get("topic", "")), int(value.get("days", 0)))
+        question = value.get("question")
+        return cls(
+            str(value.get("id", "")), str(value.get("topic", "")), int(value.get("days", 0)),
+            question.strip() if isinstance(question, str) else None,
+        )
 
 
 class SupabaseAssistantQueue:
@@ -86,21 +91,25 @@ class SupabaseAssistantQueue:
 
 def process_jobs(
     queue: Any,
-    answer: Callable[[str, date, date], str],
+    answer: Callable[[str, date, date, str | None], str],
     *,
     today: date | None = None,
 ) -> dict[str, int]:
     result = {"claimed": 0, "completed": 0, "failed": 0}
     for job in queue.claim(5):
         result["claimed"] += 1
-        if not job.id or job.topic not in ALLOWED_TOPICS or job.days not in ALLOWED_DAYS:
+        invalid_question = (
+            (job.topic == "hoi-dap" and (not job.question or len(job.question) > 600))
+            or (job.topic != "hoi-dap" and job.question is not None)
+        )
+        if not job.id or job.topic not in ALLOWED_TOPICS or job.days not in ALLOWED_DAYS or invalid_question:
             queue.fail(job.id, "invalid_payload")
             result["failed"] += 1
             continue
         end_date = today or date.today()
         start_date = end_date - timedelta(days=job.days - 1)
         try:
-            response = answer(job.topic, start_date, end_date)
+            response = answer(job.topic, start_date, end_date, job.question)
             if not isinstance(response, str) or not 1 <= len(response.strip()) <= 4000:
                 raise RuntimeError("invalid local answer")
             queue.complete(job.id, response.strip())
@@ -145,7 +154,14 @@ def main(argv=None) -> int:
     repository = SQLiteReadOnlyRepository(args.database)
     assistant = LocalAggregateAssistant("http://127.0.0.1:11434", "qwen3:8b", timeout_seconds=45, retries=1)
 
-    def answer(topic: str, start_date: date, end_date: date) -> str:
+    def answer(topic: str, start_date: date, end_date: date, question: str | None) -> str:
+        if topic == "hoi-dap":
+            return assistant.generate(
+                "Trả lời câu hỏi của gia đình bằng tiếng Việt ngắn gọn, dễ hiểu. "
+                "Không chẩn đoán, không kê thuốc hoặc thay đổi liều. Nếu có dấu hiệu nguy hiểm hoặc câu hỏi cần khám, "
+                "hãy hướng dẫn liên hệ bác sĩ. Câu hỏi: " + (question or ""),
+                {"source": "family_question", "caution": "pregnancy_safety"},
+            )
         return answer_question(
             repository=repository, assistant=assistant, topic=topic, child_id=args.child_id,
             start_date=start_date, end_date=end_date, question=QUESTIONS[topic]

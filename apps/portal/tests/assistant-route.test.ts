@@ -37,7 +37,7 @@ describe("private local assistant endpoint", () => {
     expect(fetch).toHaveBeenCalledWith(
       "https://project.supabase.co/rest/v1/rpc/embe_submit_assistant_request",
       expect.objectContaining({ body: JSON.stringify({
-        p_idempotency_key: "11111111-1111-4111-8111-111111111111", p_topic: "ngu", p_days: 7
+        p_idempotency_key: "11111111-1111-4111-8111-111111111111", p_topic: "ngu", p_days: 7, p_question: null
       }) })
     );
   });
@@ -67,6 +67,20 @@ describe("private local assistant endpoint", () => {
     }));
     expect(response.status).toBe(400);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("accepts a bounded direct family question", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify("22222222-2222-4222-8222-222222222222"), { status: 200 })));
+    const response = await POST(new Request("https://embe.hieu.asia/api/assistant", {
+      method: "POST",
+      headers: { cookie: cookie(), "content-type": "application/json", origin: "https://embe.hieu.asia" },
+      body: JSON.stringify({ topic: "hoi-dap", days: 7, question: "Tôi nên chuẩn bị gì cho lần khám tới?", idempotencyKey: "11111111-1111-4111-8111-111111111111" })
+    }));
+    expect(response.status).toBe(202);
+    expect(fetch).toHaveBeenCalledWith(
+      "https://project.supabase.co/rest/v1/rpc/embe_submit_assistant_request",
+      expect.objectContaining({ body: expect.stringContaining("Tôi nên chuẩn bị gì") })
+    );
   });
 
   it("polls a single unguessable request without caching", async () => {

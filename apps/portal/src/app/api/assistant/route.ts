@@ -2,7 +2,7 @@ import { verifySessionCookie } from "../../../lib/portal-auth";
 import { authorizeMutation } from "../../../lib/photo-upload-server";
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const TOPICS = new Set(["ngu", "bu", "moi-truong"]);
+const TOPICS = new Set(["ngu", "bu", "moi-truong", "hoi-dap"]);
 const PERIODS = new Set([7, 14, 30]);
 
 function cookieValue(header: string | null, name: string): string | undefined {
@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
   let input: Record<string, unknown>;
   try {
     const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 512) return reply({ error: "invalid_request" }, 413);
+    if (new TextEncoder().encode(raw).byteLength > 2400) return reply({ error: "invalid_request" }, 413);
     input = JSON.parse(raw) as Record<string, unknown>;
   } catch {
     return reply({ error: "invalid_request" }, 400);
@@ -48,13 +48,18 @@ export async function POST(request: Request): Promise<Response> {
     typeof input.topic !== "string" || !TOPICS.has(input.topic) ||
     typeof input.days !== "number" || !Number.isInteger(input.days) || !PERIODS.has(input.days) ||
     typeof input.idempotencyKey !== "string" || !UUID_V4.test(input.idempotencyKey) ||
-    Object.keys(input).some((key) => !["topic", "days", "idempotencyKey"].includes(key))
+    (input.topic === "hoi-dap"
+      ? typeof input.question !== "string" || input.question.trim().length < 1 || input.question.trim().length > 600
+      : input.question !== undefined) ||
+    Object.keys(input).some((key) => !["topic", "days", "question", "idempotencyKey"].includes(key))
   ) return reply({ error: "invalid_request" }, 400);
   const config = configuration();
   if (!config) return reply({ error: "temporarily_unavailable" }, 503);
+  const question = input.topic === "hoi-dap" ? (input.question as string).trim() : null;
   try {
     const response = await rpc(config, "embe_submit_assistant_request", {
-      p_idempotency_key: input.idempotencyKey, p_topic: input.topic, p_days: input.days
+      p_idempotency_key: input.idempotencyKey, p_topic: input.topic, p_days: input.days,
+      p_question: question
     });
     if (!response.ok) return reply({ error: "temporarily_unavailable" }, 503);
     const id = await response.json();

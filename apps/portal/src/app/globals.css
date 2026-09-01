@@ -2450,6 +2450,39 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 /* ── Trợ lý ──────────────────────────────────────────────────── */
 
+.assistant-chat { background: color-mix(in srgb, var(--coral-soft) 28%, var(--surface)); border: 1px solid var(--line); border-radius: var(--radius-lg); display: grid; gap: 12px; margin-top: 18px; overflow: hidden; padding: 14px; }
+.assistant-chat-heading { align-items: start; display: flex; justify-content: space-between; }
+.assistant-chat-heading h2 { font-family: var(--font-display), Georgia, serif; font-size: 1.35rem; line-height: 1.15; }
+.assistant-chat-heading > span { align-items: center; color: var(--ink-soft); display: flex; font-size: .7rem; gap: 5px; padding-top: 4px; }
+.assistant-chat-heading > span i { background: #50a879; border-radius: 50%; display: block; height: 7px; width: 7px; }
+.assistant-messages { display: flex; flex-direction: column; gap: 8px; max-height: 48dvh; min-height: 128px; overflow-y: auto; overscroll-behavior: contain; padding: 2px; scroll-behavior: smooth; }
+.assistant-message { border-radius: 18px; font-size: .875rem; line-height: 1.5; max-width: 88%; overflow: hidden; padding: 10px 12px; }
+.assistant-message.is-assistant { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 6px; }
+.assistant-message.is-user { align-self: flex-end; background: var(--coral); border-bottom-right-radius: 6px; color: white; }
+.assistant-message img, .assistant-message video { border-radius: 11px; display: block; margin-bottom: 8px; max-height: 220px; object-fit: cover; width: 100%; }
+.assistant-message.is-typing { align-items: center; display: flex; gap: 5px; min-height: 42px; }
+.assistant-message.is-typing > span { animation: assistant-pulse 1s ease-in-out infinite; background: var(--coral); border-radius: 50%; height: 6px; opacity: .35; width: 6px; }
+.assistant-message.is-typing > span:nth-child(2) { animation-delay: .14s; }
+.assistant-message.is-typing > span:nth-child(3) { animation-delay: .28s; }
+.assistant-message.is-typing small { color: var(--ink-soft); margin-left: 3px; }
+@keyframes assistant-pulse { 50% { opacity: 1; transform: translateY(-2px); } }
+.assistant-media-preview { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; display: grid; gap: 8px; grid-template-columns: 42px minmax(0, 1fr) 44px; padding: 6px; }
+.assistant-media-preview img, .assistant-media-preview video { border-radius: 9px; height: 42px; object-fit: cover; width: 42px; }
+.assistant-media-preview span { font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-media-preview button { background: transparent; border: 0; color: var(--ink-soft); font-size: 1.4rem; min-height: 44px; min-width: 44px; }
+.assistant-composer { align-items: end; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 22px; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr) auto; padding: 7px 7px 7px 13px; }
+.assistant-composer textarea { background: transparent; border: 0; color: var(--ink); font: inherit; font-size: .9rem; line-height: 1.4; max-height: 110px; min-height: 42px; outline: 0; padding: 10px 0 7px; resize: none; width: 100%; }
+.assistant-compose-actions { align-items: center; display: flex; gap: 4px; }
+.assistant-attach, .assistant-voice, .assistant-send { align-items: center; border: 0; border-radius: 50%; display: inline-flex; height: 44px; justify-content: center; min-width: 44px; width: 44px; }
+.assistant-attach { color: var(--ink-soft); cursor: pointer; }
+.assistant-attach input { height: 1px; opacity: 0; position: absolute; width: 1px; }
+.assistant-voice { background: transparent; color: var(--coral); font-size: .85rem; }
+.assistant-voice.is-listening { animation: assistant-record 1.2s ease-in-out infinite; background: var(--coral-soft); }
+.assistant-send { background: var(--coral); color: white; }
+.assistant-send:disabled { opacity: .35; }
+.assistant-chat-note { color: var(--ink-soft); font-size: .7rem; line-height: 1.45; padding: 0 3px; }
+@keyframes assistant-record { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--coral) 12%, transparent); } }
+
 .assistant-period { display: flex; gap: 8px; margin-top: 24px; }
 .assistant-period button {
   background: var(--surface);
@@ -2524,6 +2557,10 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .future-assistant > summary strong { font-family: var(--font-display); font-size: 1.1rem; }
 .future-assistant > p { color: var(--ink-soft); font-size: .875rem; margin-top: 8px; }
 .future-assistant .assistant-period { margin-top: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-message.is-typing > span, .assistant-voice.is-listening { animation: none; }
+}
 
 /* ── Hướng dẫn ───────────────────────────────────────────────── */
 

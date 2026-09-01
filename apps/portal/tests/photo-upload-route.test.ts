@@ -87,6 +87,22 @@ describe("private camera upload API", () => {
     expect(createSignedUploadUrl).toHaveBeenCalledWith(path, { upsert: false });
   });
 
+  it("accepts a short iPhone video through the same private media inbox", async () => {
+    const videoPath = `incoming/2026/09/${uploadId}.mov`;
+    rpc.mockResolvedValueOnce({ data: { id: uploadId, status: "awaiting_upload", storage_path: videoPath }, error: null });
+    createSignedUploadUrl.mockResolvedValueOnce({
+      data: { path: videoPath, token: "short-token", signedUrl: `https://project.supabase.co/storage/v1/object/upload/sign/embe-photo-inbox/${videoPath}?token=short-token` },
+      error: null
+    });
+    const response = await createUpload(request("https://embe.hieu.asia/api/photo-uploads", {
+      authorRole: "mother", byteSize: 8_000_000, caption: "Video từ Trợ lý",
+      capturedAt: "2026-09-01T01:00:00.000Z", filename: "IMG_1.MOV",
+      idempotencyKey: uploadId, mimeType: "video/quicktime"
+    }));
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ uploadId, uploadUrl: expect.stringContaining("token=short-token") });
+  });
+
   it("verifies the stored object before accepting completion", async () => {
     rpc.mockResolvedValueOnce({ data: { storage_path: path, byte_size: 2048, mime_type: "image/jpeg", status: "awaiting_upload" }, error: null });
     info.mockResolvedValueOnce({ data: { size: 2048, contentType: "image/jpeg" }, error: null });

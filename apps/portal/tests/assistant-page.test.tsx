@@ -25,4 +25,19 @@ describe("mobile family assistant", () => {
     expect(await screen.findByText("Chưa có dữ liệu giấc ngủ trong 7 ngày qua.")).toBeInTheDocument();
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
   });
+
+  it("sends a direct pregnancy question as a chat conversation", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "11111111-1111-4111-8111-111111111111", status: "pending" }), { status: 202 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "completed", answer: "Hãy mang theo kết quả khám và các câu hỏi đã ghi." }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AssistantPage />);
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Câu hỏi cho EmBe" }), { target: { value: "Tôi nên chuẩn bị gì cho lần khám tới?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gửi câu hỏi" }));
+
+    expect(await screen.findByText("Hãy mang theo kết quả khám và các câu hỏi đã ghi.")).toBeInTheDocument();
+    const request = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body));
+    expect(request).toMatchObject({ topic: "hoi-dap", days: 7, question: "Tôi nên chuẩn bị gì cho lần khám tới?" });
+  });
 });

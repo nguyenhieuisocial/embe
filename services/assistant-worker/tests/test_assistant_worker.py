@@ -31,12 +31,12 @@ class AssistantWorkerTests(unittest.TestCase):
 
         result = process_jobs(
             queue,
-            lambda topic, start, end: calls.append((topic, start, end)) or "Bé ngủ đều.",
+            lambda topic, start, end, question: calls.append((topic, start, end, question)) or "Bé ngủ đều.",
             today=date(2026, 8, 31),
         )
 
         self.assertEqual(result, {"claimed": 1, "completed": 1, "failed": 0})
-        self.assertEqual(calls, [("ngu", date(2026, 8, 25), date(2026, 8, 31))])
+        self.assertEqual(calls, [("ngu", date(2026, 8, 25), date(2026, 8, 31), None)])
         self.assertEqual(queue.completed, [("job-1", "Bé ngủ đều.")])
 
     def test_invalid_payload_is_dead_lettered_without_calling_ai(self):
@@ -64,6 +64,25 @@ class AssistantWorkerTests(unittest.TestCase):
 
         self.assertEqual(result["failed"], 1)
         self.assertEqual(queue.failed, [("job-3", "local_ai_unavailable")])
+
+    def test_processes_a_bounded_direct_question(self):
+        queue = FakeQueue([AssistantJob("job-4", "hoi-dap", 7, "Tôi nên chuẩn bị gì cho lần khám tới?")])
+        calls = []
+
+        result = process_jobs(
+            queue,
+            lambda topic, start, end, question: calls.append((topic, question)) or "Hãy mang theo kết quả khám cũ.",
+            today=date(2026, 8, 31),
+        )
+
+        self.assertEqual(result["completed"], 1)
+        self.assertEqual(calls, [("hoi-dap", "Tôi nên chuẩn bị gì cho lần khám tới?")])
+
+    def test_rejects_direct_question_without_text(self):
+        queue = FakeQueue([AssistantJob("job-5", "hoi-dap", 7, None)])
+        result = process_jobs(queue, lambda *_args: "unexpected", today=date(2026, 8, 31))
+        self.assertEqual(result["failed"], 1)
+        self.assertEqual(queue.failed, [("job-5", "invalid_payload")])
 
 
 if __name__ == "__main__":
