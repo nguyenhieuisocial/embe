@@ -3579,3 +3579,229 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .segment-control{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;padding:.3rem;border-radius:999px;background:#f5edf0;margin:1rem 0}.segment-control button{min-height:44px;border:0;border-radius:999px;background:transparent;color:#735963}.segment-control button[aria-pressed=true]{background:#fff;color:#853c58;box-shadow:0 3px 12px rgba(86,43,60,.08)}.growth-table{display:grid;gap:.45rem;margin:1rem 0}.growth-table article{display:grid;grid-template-columns:1.2fr repeat(3,1fr);gap:.35rem;padding:.7rem;border-radius:.85rem;background:#fff8fa;font-size:.76rem;align-items:center}.growth-table time{font-weight:600}.check-line{display:flex!important;align-items:center;gap:.55rem}.check-line input{width:20px;height:20px}
 .stage-feature-link{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0;padding:.9rem 1rem;border-radius:1.15rem;background:#fff6f9;border:1px solid rgba(150,64,95,.12);color:#6f344a;text-decoration:none}.stage-feature-link span:first-child{display:grid;gap:.12rem}.stage-feature-link small{font-size:.7rem;color:#9b6d7e}.baby-hub-links{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin:1rem 0}.baby-hub-links a{display:grid;gap:.2rem;padding:.9rem;border-radius:1.1rem;background:#fff7fa;border:1px solid rgba(150,64,95,.12);color:#6f344a;text-decoration:none}.baby-hub-links span{font-size:.7rem;color:#927080}.baby-hub-links b{font-size:.86rem}
 .stage-today-actions{display:grid;gap:.5rem}.stage-today-actions a{display:grid;gap:.15rem;min-height:54px;padding:.75rem .85rem;border-radius:1rem;background:#fff7fa;color:#6f344a;text-decoration:none}.stage-today-actions span{font-size:.74rem;color:#8c707a}
+
+/* ── Mật độ mobile: sổ tay gọn, không biến thành bảng điều khiển ── */
+@media (max-width: 767px) {
+  :root {
+    --gutter: 14px;
+    --radius-sm: 10px;
+    --radius-md: 12px;
+    --radius: 14px;
+    --radius-lg: 18px;
+    --control: 44px;
+    --shadow-card: 0 5px 18px -18px rgba(86, 49, 63, .32);
+  }
+
+  body { line-height: 1.45; }
+  h1 { font-size: clamp(1.32rem, 5.5vw, 1.58rem); line-height: 1.14; }
+  h2 { font-size: clamp(1.02rem, 4.2vw, 1.18rem); }
+  h3 { font-size: .9375rem; }
+
+  .has-nav .page,
+  .has-nav .pregnancy-main,
+  .has-nav .journal-main,
+  .has-nav .memories-main,
+  .has-nav .calendar-main,
+  .has-nav .planner-main,
+  .has-nav .inventory-main,
+  .has-nav .assistant-main,
+  .has-nav .guide-main,
+  .family-home-main { padding-bottom: calc(102px + env(safe-area-inset-bottom)); }
+
+  .app-header,
+  .masthead { gap: 8px; min-height: calc(52px + env(safe-area-inset-top)); }
+  .wordmark { font-size: 1.05rem; gap: 6px; }
+  .wordmark-mark { border-radius: 7px; height: 24px; width: 24px; }
+  .privacy-note { font-size: .6875rem; gap: 5px; }
+
+  .intro { font-size: .875rem; line-height: 1.45; }
+  .section,
+  .day-thread,
+  .timeline-panel { margin-top: 16px; }
+  .section-head,
+  .section-heading-row { gap: 2px; margin-bottom: 8px; }
+  .section-head p:last-child,
+  .section-heading-row > p { font-size: .8125rem; line-height: 1.4; }
+  .card { padding: 12px; }
+  .boundary-note,
+  .medical-boundary,
+  .assistant-boundary,
+  .inventory-boundary,
+  .help-rule { border-radius: 12px; padding: 11px 12px; }
+
+  .btn { font-size: .875rem; padding: 8px 12px; }
+  .action-primary { font-size: .875rem; gap: 8px; min-height: 44px; padding: 8px 12px; }
+  .state-note { font-size: .8125rem; padding: 9px 11px; }
+  .empty-state { gap: 8px; padding: 14px 10px; }
+  .empty-mark { height: 44px; width: 44px; }
+
+  .thread-item { gap: 9px; grid-template-columns: 17px 1fr; padding-block: 8px; }
+  .thread-item::before { left: 8px; width: 1px; }
+  .thread-node { height: 17px; margin-top: 11px; width: 17px; }
+  .thread-node::after { box-shadow: 0 0 0 3px var(--thread-ring); height: 7px; width: 7px; }
+  .thread-item.is-now .thread-node::after { height: 9px; width: 9px; }
+  .thread-when,
+  .timeline-date { font-size: .6875rem; }
+  .thread-body strong { font-size: .9rem; }
+  .thread-body p { font-size: .8125rem; line-height: 1.4; }
+
+  .today-hero { border-radius: 18px 18px 18px 8px; gap: 7px; padding: 13px; }
+  .today-hero::after { display: none; }
+  .today-hero h1 { max-width: 18ch; }
+  .today-hero .intro { font-size: .8125rem; line-height: 1.4; }
+  .pregnancy-chapter { border-radius: 16px 16px 16px 8px; gap: 9px; padding: 12px; }
+  .pregnancy-chapter h2 + p { font-size: .8rem; line-height: 1.4; margin-top: 4px; }
+  .chapter-actions { gap: 6px; }
+  .chapter-actions a { font-size: .8rem; min-height: 44px; padding: 6px; }
+
+  .home-shortcuts { gap: 6px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .home-shortcuts-heading { margin-bottom: 2px; }
+  .home-shortcuts .shortcut {
+    align-content: center;
+    gap: 5px;
+    justify-items: center;
+    min-height: 68px;
+    padding: 7px 4px;
+    text-align: center;
+  }
+  .home-shortcuts .shortcut-mark { border-radius: 10px; height: 30px; width: 30px; }
+  .home-shortcuts .shortcut-mark .icon { height: 18px; width: 18px; }
+  .home-shortcuts .shortcut-text small,
+  .home-shortcuts .shortcut .icon-chevron { display: none; }
+  .home-shortcuts .shortcut-text strong { font-size: .72rem; line-height: 1.2; padding: 0; }
+  .privacy-line { display: none; }
+
+  .pregnancy-hero,
+  .journal-shell,
+  .memories-hero,
+  .inventory-hero,
+  .assistant-hero { gap: 5px; }
+  .pregnancy-main > section,
+  .pregnancy-main > aside,
+  .journal-main > section,
+  .journal-main > aside,
+  .memories-main > section,
+  .inventory-main > section,
+  .inventory-main > aside,
+  .assistant-main > section,
+  .assistant-main > aside,
+  .guide-main > section,
+  .guide-main > aside { margin-top: 16px; }
+  .week-card { border-radius: 16px 16px 16px 8px; gap: 6px; padding: 11px; }
+  .week-card::before { height: 64px; width: 64px; }
+  .week-number { font-size: 1.25rem; }
+  .stage-name { font-size: .6875rem; padding: 4px 8px; }
+  .stage-nudge { font-size: .8rem; line-height: 1.4; }
+  .stage-settings > summary { min-height: 44px; padding: 6px 10px; }
+  .pregnancy-jump { gap: 5px; padding-block: 4px; }
+  .pregnancy-jump a { font-size: .72rem; padding: 6px 10px; }
+
+  .health-tracker,
+  .meal-tracker { gap: 10px; }
+  .health-entry-card,
+  .meal-capture-card,
+  .meal-review,
+  .meal-dashboard,
+  .medical-form,
+  .medical-insights,
+  .care-quick,
+  .care-timeline,
+  .postpartum-form > section,
+  .postpartum-detail,
+  .postpartum-notes { border-radius: 14px; gap: 10px; padding: 11px; }
+  .health-fields,
+  .medical-form-grid,
+  .medical-record-metrics,
+  .meal-summary-row,
+  .meal-dashboard .meal-nutrients { gap: 6px; }
+  .meal-camera { min-height: 88px; padding: 10px; }
+  .meal-camera > span { font-size: 1.65rem; }
+  .meal-note textarea { min-height: 58px; }
+  .meal-summary-row span,
+  .meal-nutrients span { padding: 8px; }
+  .meal-chart-block,
+  .meal-history-list { gap: 7px; padding-top: 10px; }
+  .meal-history-card summary { min-height: 50px; padding: 8px 10px; }
+  .medical-timeline { gap: 7px; }
+  .medical-timeline > article { gap: 4px; padding: 10px; }
+
+  .photo-composer { margin-block: 10px 8px; }
+  .photo-window {
+    align-items: center;
+    border-radius: 14px;
+    gap: 9px;
+    grid-template-columns: minmax(70px, .72fr) minmax(0, 1.28fr);
+    padding: 10px;
+  }
+  .photo-window::after { display: none; }
+  .photo-window-copy { gap: 1px; }
+  .photo-window-copy h2 { font-size: .95rem; }
+  .photo-window-copy p { font-size: .6875rem; line-height: 1.3; }
+  .photo-window-actions { gap: 6px; grid-template-columns: 1fr 1fr; }
+  .photo-shutter,
+  .photo-library { font-size: .75rem; min-height: 44px; padding: 7px 8px; }
+  .photo-shutter { gap: 5px; }
+  .photo-shutter svg { height: 17px; width: 17px; }
+  .photo-batch-review { border-radius: 16px; gap: 10px; padding: 11px; }
+
+  .memory-view-switcher {
+    gap: 2px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin-top: 8px;
+    padding: 3px;
+    top: calc(4px + env(safe-area-inset-top));
+  }
+  .memory-view-switcher a,
+  .memory-view-switcher button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-pill);
+    color: var(--ink-soft);
+    display: flex;
+    font: inherit;
+    font-size: .7rem;
+    font-weight: 600;
+    justify-content: center;
+    min-height: 44px;
+    padding: 5px 2px;
+    text-decoration: none;
+  }
+  .memory-albums,
+  .memory-day-albums,
+  .memory-trips { gap: 10px; margin-top: 12px; }
+  .memory-album,
+  .memory-day-album,
+  .memory-trip { border-radius: 15px; }
+  .memory-album-copy { gap: 2px; padding: 10px 4px 10px 11px; }
+  .memory-album-copy strong { font-size: .95rem; }
+  .memory-album-detail { gap: 9px; margin-top: 12px; }
+  .memory-album-detail > header { align-items: center; gap: 8px; }
+  .memory-album-detail h2 { font-size: 1rem; }
+  .memory-album-detail p { font-size: .6875rem; }
+  .memory-album-grid { gap: 2px; }
+  .memory-trip-copy { gap: 3px; padding: 11px 12px 9px; }
+  .memory-trip-copy h2 { font-size: 1.08rem; }
+  .memory-trip-gallery { gap: 6px; padding-bottom: 9px; }
+  .memory-trip-gallery > header { padding-inline: 12px; }
+  .memory-trip-strip { gap: 6px; padding-inline: 10px; scroll-padding-inline: 10px; }
+  .memory-trip-slide { border-radius: 12px; }
+  .selected-date-card { border-radius: 13px; gap: 9px; padding: 10px 11px; }
+  .selected-date-card small { font-size: .72rem; }
+
+  .inventory-card,
+  .planner-card,
+  .assistant-answer,
+  .assistant-topics button,
+  .assistant-topics > a,
+  .memory-card,
+  .menu-day { border-radius: 13px; padding: 11px; }
+  .shortcut { gap: 9px; min-height: 50px; padding: 7px 10px; }
+  .shortcut-mark { height: 34px; width: 34px; }
+  .shortcut-text strong { font-size: .875rem; }
+
+  .family-nav a { gap: 2px; min-height: 54px; padding-block: 6px; }
+  .family-nav a[aria-current="page"] .nav-icon { margin-top: -2px; padding: 3px 10px; }
+  .nav-icon { height: 21px; width: 21px; }
+  .quick-trigger { border-radius: 18px 18px 15px 15px; min-height: 54px; width: 58px; }
+}

@@ -45,12 +45,11 @@ describe("family portal home", () => {
     expect(screen.queryByText("Hỏi về giấc ngủ và bú sữa")).not.toBeInTheDocument();
   });
 
-  it("explains that the portal is private and contains only family-approved content", async () => {
+  it("keeps the home screen free of repeated privacy copy", async () => {
     render(await Home());
 
-    expect(
-      screen.getByText("Ảnh, sức khỏe và nhật ký chỉ Mẹ Ngân và Ba Hiếu xem được.")
-    ).toBeInTheDocument();
+    expect(screen.queryByText("Ảnh, sức khỏe và nhật ký chỉ Mẹ Ngân và Ba Hiếu xem được."))
+      .not.toBeInTheDocument();
     expect(screen.queryByText("Được lưu giữ riêng tư cho gia đình.")).not.toBeInTheDocument();
   });
 });

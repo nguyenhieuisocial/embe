@@ -292,9 +292,10 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
   return (
     <>
       <nav className="memory-view-switcher" aria-label="Cách xem kỷ niệm">
+        <Link href="/lich">Lịch</Link>
         <button aria-pressed={view === "album"} onClick={() => selectView("album")} type="button">Album</button>
-        <button aria-pressed={view === "ngay-thang"} onClick={() => selectView("ngay-thang")} type="button">Ngày tháng</button>
-        <button aria-pressed={view === "chuyen-di"} onClick={() => selectView("chuyen-di")} type="button">Chuyến đi</button>
+        <button aria-label="Ngày tháng" aria-pressed={view === "ngay-thang"} onClick={() => selectView("ngay-thang")} type="button">Ngày</button>
+        <button aria-label="Chuyến đi" aria-pressed={view === "chuyen-di"} onClick={() => selectView("chuyen-di")} type="button">Chuyến</button>
         <button aria-pressed={view === "ban-do"} onClick={() => selectView("ban-do")} type="button">Bản đồ</button>
       </nav>
 

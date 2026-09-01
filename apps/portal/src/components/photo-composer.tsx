@@ -166,15 +166,14 @@ export default function PhotoComposer() {
       {!items.length ? (
         <div className="photo-window">
           <div className="photo-window-copy">
-            <span>Thêm kỷ niệm</span>
-            <h2>Chụp hoặc chọn ảnh</h2>
-            <p>Có thể chọn nhiều ảnh trong một lượt.</p>
+            <h2>Thêm ảnh</h2>
+            <p>Chụp mới hoặc chọn nhiều ảnh.</p>
           </div>
           <div className="photo-window-actions">
-            <button className="photo-shutter" type="button" onClick={() => camera.current?.click()}>
-              <CameraGlyph /><span>Chụp ngay</span>
+            <button aria-label="Chụp ảnh mới" className="photo-shutter" type="button" onClick={() => camera.current?.click()}>
+              <CameraGlyph /><span>Chụp</span>
             </button>
-            <button className="photo-library" type="button" onClick={() => library.current?.click()}>Chọn nhiều ảnh</button>
+            <button aria-label="Chọn nhiều ảnh" className="photo-library" type="button" onClick={() => library.current?.click()}>Chọn ảnh</button>
           </div>
           {message ? <p className="photo-message is-error" role="alert">{message}</p> : null}
         </div>

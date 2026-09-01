@@ -198,8 +198,6 @@ export default function Home() {
       <Suspense fallback={<TimelineLoading />}>
         <TimelinePanel />
       </Suspense>
-
-      <p className="privacy-line">Ảnh, sức khỏe và nhật ký chỉ Mẹ Ngân và Ba Hiếu xem được.</p>
     </main>
   );
 }
