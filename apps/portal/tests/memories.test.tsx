@@ -2,8 +2,10 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/lib/media", () => ({ getMediaAlbums: vi.fn(async () => []), getMediaMemories: vi.fn(async () => []) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 import MemoriesPage, { MemoryGallery, MemoryLoading } from "../src/app/ky-niem/page";
+import PhotoComposer from "../src/components/photo-composer";
 import { getMediaAlbums, getMediaMemories } from "../src/lib/media";
 
 describe("family memories", () => {
@@ -45,5 +47,18 @@ describe("family memories", () => {
 
     expect(container.querySelector(".skeleton-line.is-block")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("keeps programmatic camera inputs out of the accessibility tab order", () => {
+    const { container } = render(<PhotoComposer />);
+    const fileInputs = container.querySelectorAll<HTMLInputElement>('input[type="file"]');
+
+    expect(fileInputs).toHaveLength(2);
+    for (const input of fileInputs) {
+      expect(input).toHaveAttribute("aria-hidden", "true");
+      expect(input).toHaveAttribute("tabindex", "-1");
+    }
+    expect(screen.getByRole("button", { name: "Chụp ngay" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thư viện" })).toBeInTheDocument();
   });
 });

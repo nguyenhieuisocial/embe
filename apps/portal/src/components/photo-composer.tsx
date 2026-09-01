@@ -91,8 +91,8 @@ export default function PhotoComposer() {
 
   return (
     <section className="photo-composer" id="gui-anh" aria-label="Gửi khoảnh khắc mới">
-      <input ref={camera} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={choose} />
-      <input ref={library} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={choose} />
+      <input ref={camera} aria-hidden="true" tabIndex={-1} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={choose} />
+      <input ref={library} aria-hidden="true" tabIndex={-1} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={choose} />
 
       {state === "choose" || (state === "error" && !file) ? (
         <div className="photo-window">

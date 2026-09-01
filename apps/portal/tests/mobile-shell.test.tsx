@@ -61,12 +61,16 @@ describe("mobile family shell", () => {
     expect(css).toContain("--control: 54px");
     expect(css).toContain("--paper: #FBF8F1");
     expect(ruleBody(css, ".btn")).toMatch(/min-height:\s*var\(--control\)/);
+    expect(ruleBody(css, ".btn")).toMatch(/border-radius:\s*var\(--radius-sm\)/);
     expect(ruleBody(css, ".family-nav")).toMatch(/bottom:\s*0/);
     expect(ruleBody(css, '.family-nav a[aria-current="page"]')).toMatch(/background:\s*var\(--jade-soft\)/);
     expect(css).toMatch(/button,\s*\n?\s*\[role="button"\][^{]*\{[^}]*-webkit-tap-highlight-color:\s*transparent/s);
     expect(ruleBody(css, ":focus-visible")).toMatch(/outline:\s*3px solid var\(--sun\)/);
-    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*:has\([^)]*:focus[^)]*\)[^{]*\.family-nav[^{]*\{[^}]*display:\s*none/s);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.has-nav:has\([\s\S]*\) \.family-nav,[\s\S]*\.has-nav:has\([\s\S]*\) \.quick-trigger\s*\{\s*display:\s*none/s);
+    expect(css).toContain('input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus');
     expect(ruleBody(css, '.journal-form > button[type="submit"]')).toMatch(/position:\s*sticky/);
+    expect(css).toMatch(/input\[type="month"\],[\s\S]*textarea\s*\{[^}]*border-radius:\s*var\(--radius-sm\)/s);
+    expect(ruleBody(css, ".meal-camera:has(input:focus-visible)")).toMatch(/outline:\s*3px solid var\(--sun\)/);
   });
 
   it("stacks dense form rows on phones instead of squeezing two fields together", () => {
@@ -82,8 +86,7 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/\.rhythm-item a[^\{]*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.source-section a\s*\{[^}]*min-height:\s*44px/s);
     expect(ruleBody(css, ".app-store-link")).toMatch(/min-height:\s*44px/);
-    expect(css).toMatch(/@media \(max-width: 339px\)[\s\S]*\.family-calendar[^{]*\{[^}]*margin-inline:\s*calc\(-1 \* var\(--gutter\)\)/s);
-    expect(css).toMatch(/@media \(max-width: 339px\)[\s\S]*\.calendar-grid[^{]*\{[^}]*gap:\s*0/s);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.family-calendar[^{]*\{[^}]*margin-inline:\s*calc\(-1 \* var\(--gutter\)\)/s);
   });
 
   it("keeps the EmBe wordmark visible when the private note is long", () => {

@@ -305,7 +305,7 @@ ol, ul { margin: 0; padding: 0; }
   align-items: center;
   background: none;
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: inline-flex;
   font-size: 1rem;
@@ -487,6 +487,7 @@ label { font-size: .9375rem; font-weight: 600; }
 .field-hint { color: var(--ink-soft); font-size: .8125rem; font-weight: 400; }
 
 input[type="date"],
+input[type="month"],
 input[type="number"],
 input[type="password"],
 input[type="text"],
@@ -2286,6 +2287,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   text-align: center;
 }
 .meal-camera input { height: 1px; overflow: hidden; position: absolute; width: 1px; }
+.meal-camera:has(input:focus-visible) { outline: 3px solid var(--sun); outline-offset: 2px; }
 .meal-camera > span { color: var(--jade); font-size: 2.5rem; line-height: 1; }
 .meal-camera small, .meal-state, .meal-review small, .meal-history-summary small { color: var(--ink-soft); }
 .meal-note { display: grid; font-size: .875rem; font-weight: 600; gap: 6px; }
@@ -2412,19 +2414,6 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .family-nav a { font-size: .625rem; }
 }
 
-@media (max-width: 339px) {
-  .family-calendar {
-    border-left: 0;
-    border-radius: 0;
-    border-right: 0;
-    margin-inline: calc(-1 * var(--gutter));
-    padding-inline: 0;
-  }
-  .calendar-toolbar,
-  .calendar-jump { margin-inline: var(--gutter); }
-  .calendar-grid { gap: 0; }
-}
-
 /* ── iPad và desktop: điều hướng thành thanh dọc ─────────────── */
 
 @media (min-width: 768px) {
@@ -2528,8 +2517,18 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 /* ── Bàn phím, tương phản, chuyển động ───────────────────────── */
 
 @media (max-width: 767px) {
-  .has-nav:has(input:focus, select:focus, textarea:focus) .family-nav,
-  .has-nav:has(input:focus, select:focus, textarea:focus) .quick-trigger {
+  .family-calendar {
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: 0;
+  }
+  .calendar-toolbar,
+  .calendar-jump { margin-inline: var(--gutter); }
+
+  .has-nav:has(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, select:focus, textarea:focus) .family-nav,
+  .has-nav:has(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, select:focus, textarea:focus) .quick-trigger {
     display: none;
   }
 }
