@@ -19,7 +19,8 @@ Không liên quan và không được kế thừa bất kỳ thiết kế, asset
 
 ## Quy tắc mobile
 
-- Lề màn hình 20px; nhịp 4/8/12/16/20/24/32px
+- Lề màn hình 18px; nhịp gọn 4/8/12/16/24px; nội dung quan trọng xuất hiện sớm, không dùng khối trang trí quá lớn
+- Tiêu đề vừa phải, thẻ 16px padding, nút chính cao 48–52px; vùng chạm luôn tối thiểu 44px
 - Target tối thiểu 44×44px; input tối thiểu 16px
 - `100dvh`, safe-area đầy đủ; CTA form dùng sticky trong vùng cuộn khi bàn phím mở
 - Một vùng cuộn trên mỗi màn hình; không phụ thuộc hover

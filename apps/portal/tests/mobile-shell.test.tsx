@@ -58,7 +58,7 @@ describe("mobile family shell", () => {
   it("uses the Opus 5 tactile control system and active navigation", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
-    expect(css).toContain("--control: 54px");
+    expect(css).toContain("--control: 48px");
     expect(css).toContain("--paper: #FFF8FA");
     expect(css).toContain("--rose: #98405F");
     expect(ruleBody(css, ".eyebrow, .panel-kicker")).toMatch(/text-transform:\s*none/);
