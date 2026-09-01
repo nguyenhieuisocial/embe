@@ -1277,6 +1277,11 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .stage-settings label { font-size: .8125rem; }
 .stage-settings input { background: var(--surface); }
 .stage-settings p { color: var(--ink-soft); font-size: .75rem; line-height: 1.5; }
+.due-date-estimator { border-top: 1px solid var(--line); display: grid; gap: 7px; margin-top: 8px; padding-top: 10px; }
+.due-date-estimator > summary { color: var(--ink-soft); cursor: pointer; font-size: .8125rem; min-height: 44px; padding: 10px 0; }
+.due-date-estimator > button { background: var(--rose-strong); border: 0; border-radius: 999px; color: white; font: inherit; font-size: .8125rem; min-height: 44px; padding: 8px 14px; }
+.due-date-estimator > button:disabled { opacity: .45; }
+.due-date-estimator > small { color: var(--ink-soft); font-size: .72rem; line-height: 1.45; }
 
 .birth-transition {
   background: color-mix(in srgb, var(--surface) 94%, #f7dbe6);

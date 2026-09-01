@@ -37,6 +37,15 @@ export function calculatePregnancyWeek(dueDate: string, today = new Date()): num
   return Math.max(1, Math.floor(elapsedDays / 7));
 }
 
+export function estimateDueDateFromLmp(lmpDate: string, cycleLength = 28): string | null {
+  const lmp = parseLocalDate(lmpDate);
+  if (!lmp || !Number.isInteger(cycleLength) || cycleLength < 20 || cycleLength > 45) return null;
+
+  const due = new Date(lmp);
+  due.setDate(due.getDate() + PREGNANCY_DAYS + cycleLength - 28);
+  return localDateKey(due);
+}
+
 export function localDateKey(date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");

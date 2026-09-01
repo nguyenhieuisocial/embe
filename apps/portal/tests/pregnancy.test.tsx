@@ -4,12 +4,19 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import PregnancyPage from "../src/app/me-bau/page";
-import { calculatePregnancyWeek, localDateKey } from "../src/lib/pregnancy";
+import { calculatePregnancyWeek, estimateDueDateFromLmp, localDateKey } from "../src/lib/pregnancy";
 
 describe("pregnancy week calculation", () => {
   it("uses the clinician-provided due date within a plausible pregnancy window", () => {
     expect(calculatePregnancyWeek("2026-10-08", new Date("2026-08-30T00:00:00Z"))).toBe(34);
     expect(calculatePregnancyWeek("2026-09-01", new Date("2026-08-30T00:00:00Z"))).toBe(39);
+  });
+
+  it("estimates a due date from the first day of the last period and cycle length", () => {
+    expect(estimateDueDateFromLmp("2026-01-01", 28)).toBe("2026-10-08");
+    expect(estimateDueDateFromLmp("2026-01-01", 30)).toBe("2026-10-10");
+    expect(estimateDueDateFromLmp("2026-02-30", 28)).toBeNull();
+    expect(estimateDueDateFromLmp("2026-01-01", 60)).toBeNull();
   });
 
   it("returns null for a missing, invalid or implausible due date", () => {
@@ -230,6 +237,19 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Tuần 34")).toBeInTheDocument();
     expect(screen.getByText("Ba tháng cuối", { selector: ".stage-name" })).toBeInTheDocument();
     expect(localStorage.getItem("embe:pregnancy:due-date")).toBe("2026-10-08");
+  });
+
+  it("lets the family explicitly adopt an LMP estimate without replacing a clinician date silently", () => {
+    render(<PregnancyPage />);
+    fireEvent.change(screen.getByLabelText("Ngày đầu kỳ kinh cuối"), { target: { value: "2026-01-01" } });
+    fireEvent.change(screen.getByLabelText("Độ dài chu kỳ"), { target: { value: "30" } });
+
+    expect(screen.getByText("Ngày ước tính: 10/10/2026")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ngày dự sinh (bác sĩ xác nhận)")).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Dùng ngày ước tính" }));
+    expect(screen.getByLabelText("Ngày dự sinh (bác sĩ xác nhận)")).toHaveValue("2026-10-10");
+    expect(localStorage.getItem("embe:pregnancy:due-date")).toBe("2026-10-10");
   });
 
   it("hydrates private state saved by another signed-in device", async () => {

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import PregnancyCareTracker from "../src/components/pregnancy-care-tracker";
@@ -45,5 +45,33 @@ describe("iPhone health connection state", () => {
     expect(screen.getByText("112/72")).toBeInTheDocument();
     expect(screen.getAllByText(/đồng bộ/iu).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Lịch sử sức khỏe từ iPhone" })).toBeInTheDocument();
+  });
+
+  it("captures one reminder time for every planned daily dose", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).startsWith("/api/pregnancy/care") && init?.method === "PATCH") {
+        return Response.json({ snapshot: { profile: null, plans: [], iphone_health: null, iphone_health_history: [], iphone_devices: [] } });
+      }
+      if (String(input).startsWith("/api/pregnancy/care")) {
+        return Response.json({ snapshot: { profile: null, plans: [], iphone_health: null, iphone_health_history: [], iphone_devices: [] } });
+      }
+      return Response.json({ history: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "+ Thêm thuốc hoặc vi chất" })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "+ Thêm thuốc hoặc vi chất" }));
+    fireEvent.change(screen.getByLabelText("Tên"), { target: { value: "Viên theo đơn" } });
+    fireEvent.change(screen.getByLabelText("Liều ghi trên nhãn/đơn"), { target: { value: "1 viên" } });
+    fireEvent.change(screen.getByLabelText("Số lần mỗi ngày"), { target: { value: "2" } });
+    const times = screen.getAllByLabelText(/Giờ nhắc lần/);
+    expect(times).toHaveLength(2);
+    fireEvent.change(times[0], { target: { value: "08:00" } });
+    fireEvent.change(times[1], { target: { value: "20:00" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu kế hoạch" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
+      method: "PATCH",
+      body: expect.stringContaining('"reminderTimes":["08:00","20:00"]')
+    })));
   });
 });

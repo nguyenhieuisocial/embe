@@ -48,4 +48,18 @@ describe("private family push notification contract", () => {
     expect(workflow).toContain("/api/notifications/dispatch");
     expect(workflow).toContain("EMBE_PUSH_CRON_SECRET");
   });
+
+  it("keeps medication names private while scheduling each untaken dose", async () => {
+    const { existsSync, readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const path = join(process.cwd(), "..", "..", "supabase", "migrations", "20260902023000_add_care_reminder_times.sql");
+    expect(existsSync(path)).toBe(true);
+    if (!existsSync(path)) return;
+    const sql = readFileSync(path, "utf8");
+    expect(sql).toContain("reminder_times");
+    expect(sql).toContain("WITH ORDINALITY");
+    expect(sql).toContain("pregnancy_care_intake");
+    expect(sql).toContain("Thuốc/vi chất đang chờ");
+    expect(sql).not.toContain("plan.name");
+  });
 });

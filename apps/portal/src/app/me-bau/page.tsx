@@ -17,7 +17,7 @@ import {
   urgentCareReminders,
   weeklyMenu
 } from "../../lib/pregnancy-content";
-import { calculatePregnancyWeek, localDateKey } from "../../lib/pregnancy";
+import { calculatePregnancyWeek, estimateDueDateFromLmp, localDateKey } from "../../lib/pregnancy";
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
 const DUE_DATE_DIRTY_KEY = `${DUE_DATE_KEY}:dirty`;
@@ -60,6 +60,8 @@ function checklistDirtyKey(day: string): string {
 
 export default function PregnancyPage() {
   const [dueDate, setDueDate] = useState("");
+  const [lmpDate, setLmpDate] = useState("");
+  const [cycleLength, setCycleLength] = useState(28);
   const [completed, setCompleted] = useState<string[]>([]);
   const [todayKey, setTodayKey] = useState("");
   const [ready, setReady] = useState(false);
@@ -141,6 +143,10 @@ export default function PregnancyPage() {
   }, []);
 
   const week = useMemo(() => calculatePregnancyWeek(dueDate), [dueDate]);
+  const estimatedDueDate = useMemo(
+    () => estimateDueDateFromLmp(lmpDate, cycleLength),
+    [lmpDate, cycleLength]
+  );
   const stage = pregnancyStage(week);
   const trimesterIndex = week !== null && week >= 28 ? 2 : week !== null && week >= 14 ? 1 : 0;
   const stageTone = week === null ? "early" : `trimester-${trimesterIndex + 1}`;
@@ -260,6 +266,21 @@ export default function PregnancyPage() {
                 disabled={!ready}
                 onChange={(event) => updateDueDate(event.target.value)}
               />
+              <details className="due-date-estimator">
+                <summary>Chưa có ngày từ bác sĩ? Ước tính từ kỳ kinh cuối</summary>
+                <label htmlFor="lmp-date">Ngày đầu kỳ kinh cuối</label>
+                <input id="lmp-date" type="date" value={lmpDate} onChange={(event) => setLmpDate(event.target.value)} />
+                <label htmlFor="cycle-length">Độ dài chu kỳ</label>
+                <input id="cycle-length" type="number" inputMode="numeric" min="20" max="45" value={cycleLength}
+                  onChange={(event) => setCycleLength(Number(event.target.value))} />
+                {estimatedDueDate ? <p>Ngày ước tính: {new Intl.DateTimeFormat("vi-VN", {
+                  day: "2-digit", month: "2-digit", year: "numeric"
+                }).format(new Date(`${estimatedDueDate}T00:00:00`))}</p> : null}
+                <button type="button" disabled={!estimatedDueDate} onClick={() => {
+                  if (estimatedDueDate) updateDueDate(estimatedDueDate);
+                }}>Dùng ngày ước tính</button>
+                <small>Chỉ là ước tính theo kỳ kinh và độ dài chu kỳ. Ngày siêu âm/bác sĩ xác nhận luôn được ưu tiên.</small>
+              </details>
             </div>
           </details>
         </div>

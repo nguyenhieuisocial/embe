@@ -86,10 +86,15 @@ export async function PATCH(request: Request): Promise<Response> {
       ? Object.fromEntries(Object.entries(plan.nutrientAmounts as Record<string, unknown>)
           .filter(([key, value]) => NUTRIENTS.has(key) && typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100000))
       : {};
+    const reminderTimes = Array.isArray(plan.reminderTimes) ? plan.reminderTimes : [];
+    const validReminderTimes = reminderTimes.length === Number(plan.timesPerDay)
+      && reminderTimes.every((value) => typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value))
+      && reminderTimes.every((value, index) => index === 0 || value > reminderTimes[index - 1]);
     const valid = (plan.id === null || isUuidV4(plan.id)) && typeof plan.category === "string" && CATEGORIES.has(plan.category)
       && typeof plan.name === "string" && plan.name.trim().length >= 1 && plan.name.trim().length <= 80
       && typeof plan.doseDisplay === "string" && plan.doseDisplay.trim().length >= 1 && plan.doseDisplay.trim().length <= 80
       && Number.isInteger(plan.timesPerDay) && Number(plan.timesPerDay) >= 1 && Number(plan.timesPerDay) <= 6
+      && validReminderTimes
       && typeof plan.instructions === "string" && plan.instructions.trim().length <= 240
       && typeof plan.confirmedByClinician === "boolean" && typeof plan.active === "boolean";
     if (!valid) return privateReply({ error: "invalid_request" }, 400);
@@ -99,6 +104,7 @@ export async function PATCH(request: Request): Promise<Response> {
     const { error } = await store.rpc("embe_save_pregnancy_care_plan", {
       p_id: plan.id, p_category: plan.category, p_name: name.trim(),
       p_dose_display: doseDisplay.trim(), p_times_per_day: plan.timesPerDay,
+      p_reminder_times: reminderTimes,
       p_instructions: instructions.trim(), p_nutrient_amounts: nutrients,
       p_confirmed_by_clinician: plan.confirmedByClinician, p_active: plan.active
     });

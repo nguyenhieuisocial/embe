@@ -14,6 +14,7 @@ type CarePlan = {
   name: string;
   dose_display: string;
   times_per_day: number;
+  reminder_times: string[];
   instructions: string;
   nutrient_amounts: Partial<Record<NutrientKey, number>>;
   confirmed_by_clinician: boolean;
@@ -113,6 +114,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
   const [showPlan, setShowPlan] = useState(false);
+  const [planTimesPerDay, setPlanTimesPerDay] = useState(1);
   const [syncSecret, setSyncSecret] = useState<{ token: string; ingestUrl: string } | null>(null);
   const [copied, setCopied] = useState<"token" | "url" | null>(null);
 
@@ -159,18 +161,23 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
 
   async function addPlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     const nutrientAmounts = Object.fromEntries(PREGNANCY_NUTRIENTS.flatMap((nutrient) => {
       const value = numberValue(String(data.get(nutrient.key) ?? ""));
       return value === null ? [] : [[nutrient.key, value]];
     }));
+    const reminderTimes = Array.from({ length: planTimesPerDay }, (_, index) =>
+      String(data.get(`reminderTime${index + 1}`) ?? "")
+    ).sort();
     await mutate({ action: "plan", plan: {
       id: null, category: data.get("category"), name: data.get("name"),
-      doseDisplay: data.get("doseDisplay"), timesPerDay: Number(data.get("timesPerDay")),
+      doseDisplay: data.get("doseDisplay"), timesPerDay: planTimesPerDay, reminderTimes,
       instructions: data.get("instructions") ?? "", nutrientAmounts,
       confirmedByClinician: data.get("confirmedByClinician") === "on", active: true
     } });
-    event.currentTarget.reset();
+    form.reset();
+    setPlanTimesPerDay(1);
     setShowPlan(false);
   }
 
@@ -280,9 +287,10 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <div className="dose-slots" aria-label={`Đánh dấu ${plan.name}`}>
             {Array.from({ length: plan.times_per_day }, (_, index) => index + 1).map((slot) => {
               const taken = plan.taken_slots.includes(slot);
+              const reminderTime = plan.reminder_times?.[slot - 1]?.slice(0, 5);
               return <button key={slot} type="button" className={taken ? "is-taken" : ""} aria-pressed={taken}
                 onClick={() => void mutate({ action: "intake", planId: plan.id, slot, taken: !taken })}>
-                {taken ? "✓" : slot}<span className="sr-only">Lần {slot}</span>
+                {taken ? "✓" : reminderTime || slot}<span className="sr-only">Lần {slot}{reminderTime ? ` lúc ${reminderTime}` : ""}</span>
               </button>;
             })}
           </div>
@@ -297,7 +305,13 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <label>Loại<select name="category" defaultValue="supplement"><option value="supplement">Vitamin / khoáng chất</option><option value="medicine">Thuốc bác sĩ dặn</option></select></label>
           <label>Tên<input name="name" required maxLength={80} placeholder="Ví dụ: viên bổ sung đang dùng" /></label>
           <label>Liều ghi trên nhãn/đơn<input name="doseDisplay" required maxLength={80} placeholder="Ví dụ: 1 viên sau ăn" /></label>
-          <label>Số lần mỗi ngày<select name="timesPerDay" defaultValue="1">{[1, 2, 3, 4, 5, 6].map((value) => <option key={value}>{value}</option>)}</select></label>
+          <label>Số lần mỗi ngày<select name="timesPerDay" value={planTimesPerDay}
+            onChange={(event) => setPlanTimesPerDay(Number(event.target.value))}>
+            {[1, 2, 3, 4, 5, 6].map((value) => <option key={value}>{value}</option>)}</select></label>
+          {Array.from({ length: planTimesPerDay }, (_, index) => <label key={index}>
+            Giờ nhắc lần {index + 1}<input name={`reminderTime${index + 1}`} type="time" required
+              defaultValue={index === 0 ? "08:00" : ""} />
+          </label>)}
           <label className="care-wide">Ghi chú<input name="instructions" maxLength={240} placeholder="Giờ dùng, dùng cùng thức ăn…" /></label>
         </div>
         <label className="clinician-check"><input name="confirmedByClinician" type="checkbox" /> Kế hoạch này đã được bác sĩ/dược sĩ xác nhận</label>

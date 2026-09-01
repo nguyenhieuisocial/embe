@@ -69,20 +69,35 @@ describe("private pregnancy care and iPhone health APIs", () => {
       action: "plan", day: "2026-09-01", plan: {
         id: null, category: "supplement", name: "Prenatal theo đơn", doseDisplay: "1 viên",
         timesPerDay: 1, instructions: "Sau ăn", confirmedByClinician: true, active: true,
-        nutrientAmounts: { iron_mg: 27, folate_ug: 600, invented_drug: 999 }
+        reminderTimes: ["08:00"], nutrientAmounts: { iron_mg: 27, folate_ug: 600, invented_drug: 999 }
       }
     }));
     expect(response.status).toBe(200);
     expect(rpc).toHaveBeenNthCalledWith(1, "embe_save_pregnancy_care_plan", expect.objectContaining({
-      p_nutrient_amounts: { iron_mg: 27, folate_ug: 600 }
+      p_nutrient_amounts: { iron_mg: 27, folate_ug: 600 }, p_reminder_times: ["08:00"]
     }));
+  });
+
+  it("rejects missing, duplicate or unsorted dose reminder times", async () => {
+    const base = {
+      id: null, category: "supplement", name: "Prenatal theo đơn", doseDisplay: "1 viên",
+      timesPerDay: 2, instructions: "Sau ăn", confirmedByClinician: true, active: true,
+      nutrientAmounts: {}
+    };
+    for (const reminderTimes of [["08:00"], ["08:00", "08:00"], ["20:00", "08:00"]]) {
+      const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+        action: "plan", day: "2026-09-01", plan: { ...base, reminderTimes }
+      }));
+      expect(response.status).toBe(400);
+    }
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("rejects impossible doses before storage", async () => {
     const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
       action: "plan", day: "2026-09-01", plan: {
         id: null, category: "medicine", name: "", doseDisplay: "1 viên",
-        timesPerDay: 9, instructions: "", confirmedByClinician: false, active: true, nutrientAmounts: {}
+        timesPerDay: 9, reminderTimes: [], instructions: "", confirmedByClinician: false, active: true, nutrientAmounts: {}
       }
     }));
     expect(response.status).toBe(400);
