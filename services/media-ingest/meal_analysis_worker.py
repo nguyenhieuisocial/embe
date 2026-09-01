@@ -202,6 +202,14 @@ class MealAnalysisWorker:
             raise RuntimeError("meal queue operation failed")
         return json.loads(response.body) if response.body else None
 
+    def report_heartbeat(self, result: Mapping[str, object]) -> None:
+        status = str(result.get("status", "idle"))
+        self._rpc("embe_touch_worker_heartbeat", {
+            "p_worker_name": "meal-analysis",
+            "p_state": "degraded" if status == "retry" else "online",
+            "p_detail": status[:80],
+        })
+
     def _download(self, item: Mapping[str, object]) -> bytes:
         encoded = "/".join(quote(part, safe="") for part in str(item["storage_path"]).split("/"))
         response = self.transport("GET", f"{self.config.supabase_url}/storage/v1/object/authenticated/{self.config.bucket}/{encoded}",
@@ -473,7 +481,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--env", type=Path, required=True)
     parser.add_argument("--status", type=Path, default=Path(r"C:\EmBe\data\status\meal-analysis-worker.json"))
     args = parser.parse_args(argv)
-    result = MealAnalysisWorker(Config.from_env(_load_env(args.env))).run_once()
+    worker = MealAnalysisWorker(Config.from_env(_load_env(args.env)))
+    result = worker.run_once()
+    worker.report_heartbeat(result)
     _write_status(args.status, result)
     print(json.dumps(result, ensure_ascii=False))
     return 0

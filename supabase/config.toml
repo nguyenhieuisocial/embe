@@ -4,9 +4,24 @@ id = "embe-read-model"
 [api]
 # Only expose the minimal read-model schema to Supabase Data API.
 schemas = ["portal_read_model"]
+port = 55321
 
 [db]
 major_version = 17
+port = 55322
+shadow_port = 55320
 
 [db.migrations]
 schema_paths = ["./schemas/portal_read_model.sql"]
+
+[studio]
+port = 55323
+
+[local_smtp]
+port = 55324
+
+[analytics]
+port = 55327
+
+[db.pooler]
+port = 55329

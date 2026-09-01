@@ -96,6 +96,24 @@ def test_downloads_analyzes_stores_review_draft_and_removes_staging_image():
     assert transport.calls[-1][0] == "DELETE"
 
 
+def test_reports_a_bounded_health_signal_without_exposing_worker_details():
+    class HeartbeatTransport:
+        def __init__(self):
+            self.payload = None
+
+        def __call__(self, method, url, headers, body=None):
+            assert method == "POST"
+            assert url.endswith("/rest/v1/rpc/embe_touch_worker_heartbeat")
+            self.payload = json.loads(body)
+            return HttpResponse(204, {}, b"")
+
+    transport = HeartbeatTransport()
+    MealAnalysisWorker(config(), transport).report_heartbeat({"status": "retry", "error": "private-detail"})
+    assert transport.payload == {
+        "p_worker_name": "meal-analysis", "p_state": "degraded", "p_detail": "retry"
+    }
+
+
 def test_model_failure_is_retried_without_deleting_the_image():
     class Broken(FakeTransport):
         def __call__(self, method, url, headers, body=None):

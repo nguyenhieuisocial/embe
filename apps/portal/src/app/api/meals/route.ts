@@ -69,6 +69,20 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 type HistoryEntry = { id: string; mealType: string; eatenAt: string; note: string; analysis: ReturnType<typeof normalizeMealAnalysis> };
+type WorkerStatus = { status: "online" | "degraded" | "offline" | "unknown"; lastSeenAt?: string };
+
+function workerStatus(value: unknown): WorkerStatus {
+  if (!value || typeof value !== "object") return { status: "unknown" };
+  const heartbeat = value as Record<string, unknown>;
+  if (typeof heartbeat.last_seen_at !== "string") return { status: "unknown" };
+  const lastSeen = new Date(heartbeat.last_seen_at);
+  if (Number.isNaN(lastSeen.getTime())) return { status: "unknown" };
+  if (Date.now() - lastSeen.getTime() > 5 * 60_000) return { status: "offline", lastSeenAt: heartbeat.last_seen_at };
+  return {
+    status: heartbeat.state === "degraded" ? "degraded" : heartbeat.state === "online" ? "online" : "unknown",
+    lastSeenAt: heartbeat.last_seen_at
+  };
+}
 
 function suggestions(entries: HistoryEntry[]): string[] {
   if (entries.length < 3) return ["Ghi ít nhất 3 bữa để EmBe bắt đầu nhìn xu hướng; bữa chưa ghi không được xem là đã bỏ ăn."];
@@ -84,7 +98,7 @@ function suggestions(entries: HistoryEntry[]): string[] {
 export async function GET(request: Request): Promise<Response> {
   if (!authorized(request)) return privateReply({ error: "unauthorized" }, 401);
   const days = Number(new URL(request.url).searchParams.get("days") ?? "7");
-  if (!Number.isInteger(days) || ![7, 14, 30].includes(days)) return privateReply({ error: "invalid_request" }, 400);
+  if (!Number.isInteger(days) || ![7, 14, 28, 30].includes(days)) return privateReply({ error: "invalid_request" }, 400);
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
   try {
@@ -98,7 +112,11 @@ export async function GET(request: Request): Promise<Response> {
           || typeof value.eaten_at !== "string" || typeof value.note !== "string" || !analysis) return [];
       return [{ id: value.id, mealType: value.meal_type, eatenAt: value.eaten_at, note: value.note, analysis }];
     });
-    return privateReply({ history, suggestions: suggestions(history), notice: "Chỉ dựa trên bữa đã ghi; không chẩn đoán thiếu chất." }, 200);
+    const heartbeat = await store.rpc("embe_get_worker_heartbeat", { p_worker_name: "meal-analysis" });
+    return privateReply({
+      history, suggestions: suggestions(history), worker: workerStatus(heartbeat.error ? null : heartbeat.data),
+      notice: "Chỉ dựa trên bữa đã ghi; không chẩn đoán thiếu chất."
+    }, 200);
   } catch {
     return privateReply({ error: "temporarily_unavailable" }, 503);
   }
