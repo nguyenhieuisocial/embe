@@ -55,7 +55,8 @@ describe("pregnancy daily page", () => {
     render(<PregnancyPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Mẹ bầu hôm nay" })).toBeInTheDocument();
-    expect(screen.getByText("GIAI ĐOẠN HIỆN TẠI")).toBeInTheDocument();
+    expect(screen.getByText("Cài đặt giai đoạn")).toBeInTheDocument();
+    expect(screen.getByText("Giai đoạn hiện tại")).toBeInTheDocument();
     expect(screen.getByText("Mới mang thai")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "#viec-hom-nay");
@@ -222,7 +223,7 @@ describe("pregnancy daily page", () => {
     });
 
     expect(consoleError).not.toHaveBeenCalled();
-    expect(container).toHaveTextContent(`CHECKLIST ${localDateKey(new Date())}`);
+    expect(container).toHaveTextContent(`Checklist ${localDateKey(new Date())}`);
     await act(async () => root?.unmount());
     consoleError.mockRestore();
     container.remove();

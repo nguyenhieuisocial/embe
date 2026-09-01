@@ -151,7 +151,7 @@ export default function PregnancyHealthTracker() {
     <section className="health-tracker" aria-labelledby="health-title">
       <div className="section-heading-row">
         <div>
-          <p className="panel-kicker">GHI NHANH · CHỈ SỐ THỰC</p>
+          <p className="panel-kicker">Ghi nhanh · chỉ số thực</p>
           <h2 id="health-title">Nhật ký sức khỏe</h2>
         </div>
         <p>Chỉ nhập số Mẹ Ngân thực sự đo hoặc nhớ được. Để trống mục chưa có; EmBe không tự chẩn đoán.</p>
@@ -204,7 +204,7 @@ export default function PregnancyHealthTracker() {
 
       <div className="health-chart-heading">
         <div>
-          <p className="panel-kicker">XU HƯỚNG · KHÔNG PHẢI CHẨN ĐOÁN</p>
+          <p className="panel-kicker">Xu hướng · không phải chẩn đoán</p>
           <h2>Biểu đồ 28 ngày</h2>
         </div>
         <span>Vuốt ngang để xem</span>

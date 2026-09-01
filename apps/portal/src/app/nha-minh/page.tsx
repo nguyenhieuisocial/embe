@@ -69,7 +69,7 @@ export default function FamilyHomePage() {
 
       <section className="section family-connection" aria-labelledby="photo-connection-title">
         <div className="section-head">
-          <p className="panel-kicker">ẢNH GỐC Ở MÁY NHÀ</p>
+          <p className="panel-kicker">Ảnh gốc ở máy nhà</p>
           <h2 id="photo-connection-title">Thư viện ảnh riêng</h2>
         </div>
         <p>
@@ -86,7 +86,7 @@ export default function FamilyHomePage() {
 
       <section className="section family-privacy" aria-labelledby="family-privacy-title">
         <div className="section-head">
-          <p className="panel-kicker">RIÊNG TƯ THEO MẶC ĐỊNH</p>
+          <p className="panel-kicker">Riêng tư theo mặc định</p>
           <h2 id="family-privacy-title">Chỉ Hiếu và Ngân sử dụng</h2>
         </div>
         <p>Không có đăng ký công khai. Ảnh, sức khỏe và nhật ký không được đưa vào trang công khai hoặc cache dùng chung.</p>

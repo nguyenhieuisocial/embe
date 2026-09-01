@@ -2,25 +2,51 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
+import { calculatePregnancyWeek } from "../lib/pregnancy";
 import { Icon, type IconName } from "./embe-icon";
 
-const actions: Array<{
+const DUE_DATE_KEY = "embe:pregnancy:due-date";
+const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
+
+type QuickAction = {
   href: string;
   icon: IconName;
   title: string;
   detail: string;
-}> = [
-  { href: "/ke-hoach?them=1#them-viec", icon: "check", title: "Thêm việc cần làm", detail: "Giao cho mẹ, ba hoặc cả nhà" },
-  { href: "/ghi-lai#viet-nhat-ky", icon: "write", title: "Ghi một dòng", detail: "Lưu điều vừa xảy ra" },
-  { href: "/ky-niem#gui-anh", icon: "memory", title: "Chụp hoặc chọn ảnh", detail: "Gửi vào album gia đình" },
-  { href: "/me-bau#health-title", icon: "care", title: "Lưu sức khỏe", detail: "Cân nặng, ngủ, nước, vận động" },
-  { href: "/do-dung?them=1#them-do-dung", icon: "supply", title: "Thêm đồ dùng", detail: "Bỉm, sữa hoặc vật tư" }
-];
+};
+
+function actionsForStage(dueDate: string): QuickAction[] {
+  const week = calculatePregnancyWeek(dueDate);
+  const stageAction: QuickAction = week === null
+    ? { href: "/me-bau#cai-dat-giai-doan", icon: "care", title: "Cài giai đoạn thai kỳ", detail: "Nhập ngày dự sinh khi đã có" }
+    : week >= 28
+      ? { href: "/do-dung", icon: "supply", title: "Xem đồ cần chuẩn bị", detail: "Nhẹ nhàng rà lại trước ngày sinh" }
+      : { href: "/me-bau#health-title", icon: "care", title: "Lưu sức khỏe hôm nay", detail: "Cân nặng, ngủ, nước và vận động" };
+
+  return [
+    stageAction,
+    { href: "/ke-hoach?them=1#them-viec", icon: "check", title: "Thêm việc cần làm", detail: "Giao cho Mẹ Ngân, Ba Hiếu hoặc cả nhà" },
+    { href: "/ghi-lai#viet-nhat-ky", icon: "write", title: "Ghi một dòng", detail: "Lưu điều vừa xảy ra" },
+    { href: "/ky-niem#gui-anh", icon: "memory", title: "Chụp hoặc chọn ảnh", detail: "Gửi vào album gia đình" }
+  ];
+}
 
 export default function QuickActions() {
   const [open, setOpen] = useState(false);
+  const [dueDate, setDueDate] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const refreshStage = () => setDueDate(localStorage.getItem(DUE_DATE_KEY) ?? "");
+    refreshStage();
+    window.addEventListener("storage", refreshStage);
+    window.addEventListener(STAGE_CHANGE_EVENT, refreshStage);
+    return () => {
+      window.removeEventListener("storage", refreshStage);
+      window.removeEventListener(STAGE_CHANGE_EVENT, refreshStage);
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -69,7 +95,7 @@ export default function QuickActions() {
         onClick={() => setOpen(true)}
       >
         <Icon name="plus" />
-        <span>Làm nhanh</span>
+        <span>Ghi nhanh</span>
       </button>
 
       {open ? (
@@ -86,8 +112,8 @@ export default function QuickActions() {
             <span className="sheet-grip" aria-hidden="true" />
             <header className="sheet-head">
               <div>
-                <p className="panel-kicker">MỘT CHẠM ĐẾN ĐÚNG VIỆC</p>
-                <h2 id="quick-actions-title">Làm nhanh</h2>
+                <p className="panel-kicker">Một chạm đến đúng việc</p>
+                <h2 id="quick-actions-title">Ghi nhanh</h2>
                 <p>Chọn việc đang cần, EmBe mở thẳng đúng chỗ.</p>
               </div>
               <button ref={closeRef} className="sheet-close" type="button" aria-label="Đóng" onClick={close}>
@@ -95,7 +121,7 @@ export default function QuickActions() {
               </button>
             </header>
             <nav className="sheet-body quick-action-list" aria-label="Các thao tác nhanh">
-              {actions.map((action) => (
+              {actionsForStage(dueDate).map((action) => (
                 <a className="quick-action" href={action.href} key={action.href} onClick={() => setOpen(false)}>
                   <span className="quick-action-mark" aria-hidden="true"><Icon name={action.icon} /></span>
                   <span>

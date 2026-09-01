@@ -59,7 +59,7 @@ export default function GuidePage() {
 
       <section className="install-app" aria-labelledby="install-app-title">
         <div className="install-app-heading">
-          <p className="panel-kicker">DÙNG NHƯ MỘT ỨNG DỤNG</p>
+          <p className="panel-kicker">Dùng như một ứng dụng</p>
           <h2 id="install-app-title">Đặt EmBe lên màn hình chính</h2>
           <p>Không cần tải từ App Store. Sau khi cài, EmBe mở toàn màn hình và nằm cạnh các ứng dụng quen thuộc.</p>
         </div>
@@ -76,7 +76,7 @@ export default function GuidePage() {
 
       <section className="daily-rhythm" aria-labelledby="rhythm-title">
         <div className="rhythm-heading">
-          <p className="panel-kicker">MỖI NGÀY CHỈ BA NHỊP</p>
+          <p className="panel-kicker">Mỗi ngày chỉ ba nhịp</p>
           <h2 id="rhythm-title">Dùng như thế này là đủ</h2>
         </div>
         <div className="rhythm-list">
@@ -99,7 +99,7 @@ export default function GuidePage() {
       </section>
 
       <section className="current-stage-guide" aria-labelledby="current-stage-title">
-        <p className="panel-kicker">GIAI ĐOẠN HIỆN TẠI · ĐANG MANG THAI</p>
+        <p className="panel-kicker">Giai đoạn hiện tại · đang mang thai</p>
         <h2 id="current-stage-title">Lúc này chỉ cần ba việc</h2>
         <ol>
           <li><strong>Chăm Mẹ Ngân</strong><span>Tích việc hôm nay và ghi sức khỏe khi cần.</span></li>
@@ -110,7 +110,7 @@ export default function GuidePage() {
 
       <section className="iphone-setup" aria-labelledby="iphone-title">
         <div className="iphone-heading">
-          <p className="panel-kicker">ẢNH TỰ VỀ MÁY NHÀ</p>
+          <p className="panel-kicker">Ảnh tự về máy nhà</p>
           <h2 id="iphone-title">Đưa ảnh từ iPhone vào EmBe</h2>
           <p>Chỉ cần thiết lập một lần. Ảnh gốc không đi qua Vercel hay trang web công khai.</p>
         </div>
@@ -150,7 +150,7 @@ export default function GuidePage() {
 
       <section className="no-touch" aria-labelledby="no-touch-title">
         <div>
-          <p className="panel-kicker">SAU KHI EM BÉ CHÀO ĐỜI</p>
+          <p className="panel-kicker">Công cụ dành cho giai đoạn sau</p>
           <h2 id="no-touch-title">Bạn không phải mở sáu công cụ riêng</h2>
           <p className="stage-later-label">Sau khi em bé chào đời</p>
           <p>

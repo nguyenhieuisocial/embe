@@ -19,6 +19,7 @@ import { calculatePregnancyWeek, localDateKey } from "../../lib/pregnancy";
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
 const DUE_DATE_DIRTY_KEY = `${DUE_DATE_KEY}:dirty`;
+const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
 const checklistGroups = ["Ăn uống", "Chăm cơ thể"] as const;
 
 function pregnancyStage(week: number | null): string {
@@ -26,6 +27,13 @@ function pregnancyStage(week: number | null): string {
   if (week <= 13) return "Ba tháng đầu";
   if (week <= 27) return "Ba tháng giữa";
   return "Ba tháng cuối";
+}
+
+function stageNudge(week: number | null): string {
+  if (week === null) return "Mình chưa cần biết hết mọi thứ ngay. Hãy bắt đầu bằng một ngày thật nhẹ cho Mẹ Ngân.";
+  if (week <= 13) return "Ưu tiên nghỉ ngơi, ăn uống an toàn và ghi lại điều muốn hỏi trong lần khám tới.";
+  if (week <= 27) return "Theo dõi những thay đổi nhỏ của cơ thể, vận động nhẹ và lưu lại các khoảnh khắc đáng nhớ.";
+  return "Giữ lịch khám trong tầm tay và chuẩn bị những việc thật sự cần trước ngày đón em bé.";
 }
 
 type PregnancyState = {
@@ -108,6 +116,7 @@ export default function PregnancyPage() {
           setDueDate(remote.dueDate ?? "");
           if (remote.dueDate) localStorage.setItem(DUE_DATE_KEY, remote.dueDate);
           else localStorage.removeItem(DUE_DATE_KEY);
+          window.dispatchEvent(new Event(STAGE_CHANGE_EVENT));
         }
         if (remote.hasDayState) {
           setCompleted(validCompleted(remote.completed));
@@ -132,6 +141,7 @@ export default function PregnancyPage() {
   const week = useMemo(() => calculatePregnancyWeek(dueDate), [dueDate]);
   const stage = pregnancyStage(week);
   const trimesterIndex = week !== null && week >= 28 ? 2 : week !== null && week >= 14 ? 1 : 0;
+  const stageTone = week === null ? "early" : `trimester-${trimesterIndex + 1}`;
   const progress = Math.round((completed.length / dailyChecklist.length) * 100);
 
   function queueSave(
@@ -169,6 +179,7 @@ export default function PregnancyPage() {
       if (value) localStorage.setItem(DUE_DATE_KEY, value);
       else localStorage.removeItem(DUE_DATE_KEY);
       localStorage.setItem(DUE_DATE_DIRTY_KEY, "1");
+      window.dispatchEvent(new Event(STAGE_CHANGE_EVENT));
     } catch {
       // The page remains usable when private browsing blocks persistent storage.
     }
@@ -218,21 +229,38 @@ export default function PregnancyPage() {
             Chỉ những điều cần nhớ hôm nay — nhẹ nhàng, rõ ràng và không tạo áp lực.
           </p>
         </div>
-        <div className="week-card">
-          <p className="panel-kicker">GIAI ĐOẠN HIỆN TẠI</p>
+        <div className={`week-card is-${stageTone}`}>
+          <p className="panel-kicker">Giai đoạn hiện tại</p>
           <div className="stage-line">
             <p className="week-number" aria-live="polite">{week ? `Tuần ${week}` : "Chưa có tuần thai"}</p>
             <span className="stage-name">{stage}</span>
           </div>
-          <label htmlFor="due-date">Ngày dự sinh do bác sĩ xác nhận</label>
-          <input
-            id="due-date"
-            type="date"
-            value={dueDate}
-            disabled={!ready}
-            onChange={(event) => updateDueDate(event.target.value)}
-          />
-          <p>Nhập khi đã có ngày bác sĩ xác nhận để EmBe hiển thị đúng tuần. Nếu chưa có, cứ để trống.</p>
+          <div className="stage-petals" aria-label={week === null ? "Chưa xác định ba tháng thai kỳ" : `Đang ở giai đoạn ${stage}`}>
+            {[0, 1, 2].map((index) => (
+              <span className={week !== null && index <= trimesterIndex ? "is-reached" : ""} key={index} />
+            ))}
+          </div>
+          <p className="stage-nudge">{stageNudge(week)}</p>
+          <details className="stage-settings" id="cai-dat-giai-doan" open={!dueDate}>
+            <summary>
+              <span>
+                <strong>Cài đặt giai đoạn</strong>
+                <small>{dueDate ? "Đang tự tính theo ngày dự sinh" : "Cài khi đã có ngày dự sinh"}</small>
+              </span>
+              <i aria-hidden="true">⌄</i>
+            </summary>
+            <div>
+              <label htmlFor="due-date">Ngày dự sinh do bác sĩ xác nhận</label>
+              <input
+                id="due-date"
+                type="date"
+                value={dueDate}
+                disabled={!ready}
+                onChange={(event) => updateDueDate(event.target.value)}
+              />
+              <p>EmBe sẽ tự sắp xếp lời nhắc theo đúng giai đoạn. Nếu chưa có ngày xác nhận, cứ để trống.</p>
+            </div>
+          </details>
         </div>
         <Image
           className="pregnancy-care-art"
@@ -255,7 +283,7 @@ export default function PregnancyPage() {
 
       <aside className="pregnancy-urgent-shortcut" aria-labelledby="urgent-shortcut-title">
         <div>
-          <p className="panel-kicker">CẦN TÌM NHANH</p>
+          <p className="panel-kicker">Cần tìm nhanh</p>
           <h2 id="urgent-shortcut-title">Nếu có dấu hiệu bất thường</h2>
           <p>Đừng chờ checklist hoặc trợ lý. Mở ngay danh sách dấu hiệu cần liên hệ nơi đang khám.</p>
         </div>
@@ -265,14 +293,14 @@ export default function PregnancyPage() {
       <section className="trimester-section" aria-labelledby="trimester-title">
         <div className="section-heading-row">
           <div>
-            <p className="panel-kicker">NHẮC ĐÚNG VIỆC · KHÔNG TỰ CHẨN ĐOÁN</p>
+            <p className="panel-kicker">Nhắc đúng việc · không tự chẩn đoán</p>
             <h2 id="trimester-title">Điều nên ưu tiên theo giai đoạn</h2>
           </div>
           <p>Ngày dự sinh chỉ giúp hiển thị tuần thai. Mọi lịch khám, xét nghiệm và thuốc vẫn theo nơi Mẹ Ngân đang được chăm sóc.</p>
         </div>
         <div className="trimester-grid">
           <article className="is-current">
-            <small>ƯU TIÊN LÚC NÀY</small>
+            <small>Ưu tiên lúc này</small>
             <h3>{trimesterGuides[trimesterIndex].title}</h3>
             <p>{trimesterGuides[trimesterIndex].detail}</p>
           </article>
@@ -291,7 +319,7 @@ export default function PregnancyPage() {
       <section className="care-board" id="viec-hom-nay" aria-labelledby="daily-title">
         <div className="care-summary">
           <div>
-            <p className="panel-kicker">CHECKLIST {todayKey || "HÔM NAY"}</p>
+            <p className="panel-kicker">Checklist {todayKey || "hôm nay"}</p>
             <h2 id="daily-title">Việc của hôm nay</h2>
           </div>
           <div className="progress-stamp" aria-label={`${progress}% hoàn thành`}>
@@ -334,7 +362,7 @@ export default function PregnancyPage() {
       <section className="guidance-section" id="cam-nang" aria-labelledby="guidance-title">
         <div className="section-heading-row">
           <div>
-            <p className="panel-kicker">CẨM NANG THỰC HÀNH · CHẠM ĐỂ XEM CHI TIẾT</p>
+            <p className="panel-kicker">Cẩm nang thực hành · chạm để xem chi tiết</p>
             <h2 id="guidance-title">Nên ăn gì, hạn chế gì, kiêng gì?</h2>
           </div>
           <p>
@@ -387,7 +415,7 @@ export default function PregnancyPage() {
       <section className="menu-section" aria-labelledby="menu-title">
         <div className="section-heading-row">
           <div>
-            <p className="panel-kicker">GỢI Ý, KHÔNG PHẢI ĐƠN THUỐC</p>
+            <p className="panel-kicker">Gợi ý, không phải đơn thuốc</p>
             <h2 id="menu-title">Thực đơn 7 ngày tham khảo</h2>
           </div>
           <p>
@@ -420,7 +448,7 @@ export default function PregnancyPage() {
       </aside>
 
       <section className="urgent-care" id="can-lien-he" aria-labelledby="urgent-title">
-        <p className="panel-kicker">KHÔNG CHỜ CHECKLIST</p>
+        <p className="panel-kicker">Không chờ checklist</p>
         <h2 id="urgent-title">Khi nào cần liên hệ ngay</h2>
         <p>Nếu có một trong các dấu hiệu dưới đây, liên hệ cơ sở sản khoa đang theo dõi hoặc cấp cứu địa phương; không chờ EmBe trả lời.</p>
         <ul>

@@ -155,7 +155,7 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
 
       <section className="planner-panel" aria-labelledby="planner-day-title">
         <div className="planner-heading">
-          <div><p className="panel-kicker">KẾ HOẠCH CỦA CẢ NHÀ</p><h2 id="planner-day-title">{dateLabel(selectedDate)}</h2></div>
+          <div><p className="panel-kicker">Kế hoạch của cả nhà</p><h2 id="planner-day-title">{dateLabel(selectedDate)}</h2></div>
           <button className="planner-add" type="button" onClick={showCreate} aria-label="Thêm việc mới"><Icon name="plus" /> Thêm</button>
         </div>
         <div className="planner-progress" aria-label={`${completed} trên ${tasks.length} việc đã xong`}>
@@ -202,7 +202,7 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
         <button className="sheet-backdrop" type="button" aria-label="Đóng biểu mẫu" onClick={() => setOpen(false)} />
         <section className="sheet planner-sheet" id="them-viec" role="dialog" aria-modal="true" aria-labelledby="planner-form-title">
           <span className="sheet-grip" aria-hidden="true" />
-          <header className="sheet-head"><div><p className="panel-kicker">MỘT VIỆC RÕ RÀNG</p><h2 id="planner-form-title">{editingId ? "Sửa việc" : "Thêm việc"}</h2></div><button className="sheet-close" type="button" aria-label="Đóng" onClick={() => setOpen(false)}><Icon name="close" /></button></header>
+          <header className="sheet-head"><div><p className="panel-kicker">Một việc rõ ràng</p><h2 id="planner-form-title">{editingId ? "Sửa việc" : "Thêm việc"}</h2></div><button className="sheet-close" type="button" aria-label="Đóng" onClick={() => setOpen(false)}><Icon name="close" /></button></header>
           <form className="planner-form sheet-body" onSubmit={submit}>
             <label>Việc cần làm<input ref={titleRef} required maxLength={120} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
             <div className="planner-form-row"><label>Ngày<input type="date" required value={draft.dueOn} onChange={(event) => setDraft({ ...draft, dueOn: event.target.value })} /></label><label>Giờ (nếu có)<input type="time" value={draft.dueTime} onChange={(event) => setDraft({ ...draft, dueTime: event.target.value })} /></label></div>

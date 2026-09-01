@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/ke-hoach" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/me-bau" }));
 
 import FamilyNav from "../src/components/family-nav";
 import GuidePage from "../src/app/huong-dan/page";
@@ -22,14 +22,13 @@ function ruleBody(css: string, selector: string): string {
 }
 
 describe("mobile family shell", () => {
-  it("offers the five everyday destinations as a compact navigation", () => {
+  it("keeps four destinations around the central quick action", () => {
     render(<FamilyNav />);
 
     expect(screen.getByRole("navigation", { name: "Điều hướng gia đình" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Kế hoạch" })).toHaveAttribute("href", "/ke-hoach");
-    expect(screen.getByRole("link", { name: "Kế hoạch" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Hành trình" })).toHaveAttribute("href", "/me-bau");
+    expect(screen.getByRole("link", { name: "Mẹ bầu" })).toHaveAttribute("href", "/me-bau");
+    expect(screen.getByRole("link", { name: "Mẹ bầu" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Kỷ niệm" })).toHaveAttribute("href", "/ky-niem");
     expect(screen.getByRole("link", { name: "Nhà mình" })).toHaveAttribute("href", "/nha-minh");
   });
@@ -63,9 +62,9 @@ describe("mobile family shell", () => {
     expect(css).toContain("--rose: #96405F");
     expect(ruleBody(css, ".eyebrow, .panel-kicker")).toMatch(/text-transform:\s*none/);
     expect(ruleBody(css, ".btn")).toMatch(/min-height:\s*var\(--control\)/);
-    expect(ruleBody(css, ".btn")).toMatch(/border-radius:\s*var\(--radius-sm\)/);
+    expect(ruleBody(css, ".btn")).toMatch(/border-radius:\s*var\(--radius-md\)/);
     expect(ruleBody(css, ".family-nav")).toMatch(/bottom:\s*0/);
-    expect(ruleBody(css, '.family-nav a[aria-current="page"]')).toMatch(/background:\s*var\(--jade-soft\)/);
+    expect(ruleBody(css, '.family-nav a[aria-current="page"] .nav-icon')).toMatch(/background:\s*var\(--jade-soft\)/);
     expect(css).toMatch(/button,\s*\n?\s*\[role="button"\][^{]*\{[^}]*-webkit-tap-highlight-color:\s*transparent/s);
     expect(ruleBody(css, ":focus-visible")).toMatch(/outline:\s*3px solid var\(--sun\)/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.has-nav:has\([\s\S]*\) \.family-nav,[\s\S]*\.has-nav:has\([\s\S]*\) \.quick-trigger\s*\{\s*display:\s*none/s);

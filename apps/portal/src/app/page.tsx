@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import AppHeader from "../components/app-header";
 import { Icon } from "../components/embe-icon";
+import PregnancyChapter from "../components/pregnancy-chapter";
 import { getTimeline, getTimelineFreshness } from "../lib/timeline";
 import { dateInVietnam, LINK_DETAILS } from "../lib/family-task-contract";
 import { getFamilyTasks } from "../lib/family-tasks-server";
@@ -13,28 +14,28 @@ const shortcuts = [
   {
     href: "/ky-niem",
     icon: "album" as const,
-    kicker: "ALBUM GIA ĐÌNH",
+    kicker: "Album gia đình",
     title: "Khoảnh khắc",
     label: "Mở album kỷ niệm"
   },
   {
     href: "/do-dung",
     icon: "supply" as const,
-    kicker: "CHUẨN BỊ TỪNG CHÚT",
+    kicker: "Chuẩn bị từng chút",
     title: "Đồ cần cho mẹ và em bé",
     label: "Xem đồ dùng trong nhà"
   },
   {
     href: "/tro-ly",
     icon: "assistant" as const,
-    kicker: "ĐÚNG GIAI ĐOẠN HIỆN TẠI",
+    kicker: "Đúng giai đoạn hiện tại",
     title: "Mẹ Ngân cần gì lúc này?",
     label: "Hỏi trợ lý riêng của gia đình"
   },
   {
     href: "/huong-dan",
     icon: "guide" as const,
-    kicker: "DÀNH CHO CẢ NHÀ",
+    kicker: "Dành cho cả nhà",
     title: "Dùng EmBe thật đơn giản",
     label: "Xem cách sử dụng đơn giản"
   }
@@ -56,7 +57,7 @@ async function TimelinePanel() {
   return (
     <section className="section timeline-panel" aria-labelledby="timeline-title">
       <div className="section-head">
-        <p className="panel-kicker">THEO DÒNG THỜI GIAN</p>
+        <p className="panel-kicker">Theo dòng thời gian</p>
         <h2 id="timeline-title">Nhật ký</h2>
       </div>
 
@@ -93,7 +94,7 @@ function TimelineLoading() {
   return (
     <section className="section timeline-panel" aria-busy="true">
       <div className="section-head">
-        <p className="panel-kicker">THEO DÒNG THỜI GIAN</p>
+        <p className="panel-kicker">Theo dòng thời gian</p>
         <h2>Nhật ký</h2>
       </div>
       <div className="skeleton" role="status">
@@ -114,7 +115,7 @@ async function TodayPlanPanel() {
   return (
     <section className="section day-thread" aria-labelledby="day-thread-title">
       <div className="section-head">
-        <p className="panel-kicker">VIỆC NHÀ MÌNH HÔM NAY</p>
+        <p className="panel-kicker">Việc nhà mình hôm nay</p>
         <h2 id="day-thread-title">{tasks.length ? `${completed}/${tasks.length} việc đã xong` : "Một ngày đang thật nhẹ"}</h2>
       </div>
       {tasks.length ? <div className="thread">
@@ -158,18 +159,7 @@ export default function Home() {
 
       </section>
 
-      <section className="section pregnancy-chapter" aria-labelledby="pregnancy-chapter-title">
-        <div className="chapter-thread" aria-hidden="true"><span /></div>
-        <div>
-          <p className="panel-kicker">ĐANG MANG THAI</p>
-          <h2 id="pregnancy-chapter-title">Mới mang thai, mình đi từng tuần</h2>
-          <p>Ưu tiên sức khỏe Mẹ Ngân, việc cần làm hôm nay và những câu hỏi cho lần khám tới. Các công cụ chăm em bé sẽ xuất hiện đúng lúc sau sinh.</p>
-        </div>
-        <div className="chapter-actions">
-          <a href="/me-bau">Chăm sóc hôm nay</a>
-          <a href="/lich" aria-label="Mở lịch gia đình">Mở lịch</a>
-        </div>
-      </section>
+      <PregnancyChapter />
 
       <div className="section family-hero-art" aria-hidden="true">
         <Image

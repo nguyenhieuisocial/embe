@@ -87,7 +87,7 @@ export default function MealPhotoTracker() {
   return (
     <section className="meal-tracker" id="bua-an" aria-labelledby="meal-title">
       <div className="section-heading-row">
-        <div><p className="panel-kicker">CHỤP · XÁC NHẬN · LƯU</p><h2 id="meal-title">Nhật ký bữa ăn</h2></div>
+        <div><p className="panel-kicker">Chụp · xác nhận · lưu</p><h2 id="meal-title">Nhật ký bữa ăn</h2></div>
         <p>Ảnh được nhận diện trên máy nhà. EmBe chỉ lưu kết quả sau khi Mẹ xác nhận.</p>
       </div>
 
@@ -117,7 +117,7 @@ export default function MealPhotoTracker() {
       </div>
 
       {analysis ? <div className="meal-review" aria-label="Xác nhận kết quả nhận diện">
-        <div><p className="panel-kicker">CẦN MẸ KIỂM TRA</p><h3>Máy nhìn thấy</h3></div>
+        <div><p className="panel-kicker">Cần Mẹ kiểm tra</p><h3>Máy nhìn thấy</h3></div>
         {analysis.foods.map((food, index) => <div className="meal-food-row" key={`${food.nameVi}-${index}`}>
           <label>Tên món<input value={food.nameVi} maxLength={80} onChange={(event) => updateFood(index, "nameVi", event.target.value)} /></label>
           <label>Khẩu phần (g)<input inputMode="decimal" type="number" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateFood(index, "estimatedGrams", event.target.value)} /></label>

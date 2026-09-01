@@ -37,8 +37,8 @@ describe("family portal home", () => {
   it("puts the current pregnancy stage before postnatal tools", async () => {
     render(await Home());
 
-    expect(screen.getByText("ĐANG MANG THAI")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Mới mang thai, mình đi từng tuần" })).toBeInTheDocument();
+    expect(screen.getByText("Mới mang thai")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Mình bắt đầu thật nhẹ nhàng" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mở lịch gia đình" })).toHaveAttribute("href", "/lich");
     expect(screen.queryByText("Hỏi về giấc ngủ và bú sữa")).not.toBeInTheDocument();
   });
