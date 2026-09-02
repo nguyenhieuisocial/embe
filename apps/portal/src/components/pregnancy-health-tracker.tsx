@@ -99,6 +99,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "saved" | "invalid" | "error">("loading");
   const [validationError, setValidationError] = useState("");
   const [editing, setEditing] = useState(true);
+  const [insightsOpen, setInsightsOpen] = useState(false);
   const dirtyRef = useRef(false);
 
   useEffect(() => {
@@ -292,12 +293,12 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
         </p>
       </form>}
 
-      <details className="health-insights">
+      <details className="health-insights" onToggle={(event) => setInsightsOpen(event.currentTarget.open)}>
         <summary>
           <span><strong>Xem biểu đồ và lịch sử</strong><small>{hasHealthValues ? `${history.filter(metricHasValues).length} ngày đã ghi` : "Chưa có số liệu"}</small></span>
           <i aria-hidden="true">⌄</i>
         </summary>
-        <div className="health-insights-body">
+        {insightsOpen ? <div className="health-insights-body">
           <div className="health-chart-heading">
             <div>
               <p className="panel-kicker">Xu hướng · không phải chẩn đoán</p>
@@ -339,7 +340,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
         <button type="button" onClick={() => void copyVisitSummary()}>Sao chép tóm tắt</button>
         <small>Chỉ tổng hợp dữ liệu đã nhập; không đánh giá bình thường hay bất thường.</small>
           </section> : null}
-        </div>
+        </div> : null}
       </details>
     </section>
   );

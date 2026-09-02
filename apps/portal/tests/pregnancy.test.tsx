@@ -6,6 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PregnancyPage from "../src/app/me-bau/page";
 import { calculatePregnancyWeek, estimateDueDateFromLmp, localDateKey } from "../src/lib/pregnancy";
 
+function openHealthInsights() {
+  const details = screen.getByText("Xem biểu đồ và lịch sử").closest("details");
+  if (!details) throw new Error("Health insights details not found");
+  details.open = true;
+  fireEvent(details, new Event("toggle"));
+}
+
 describe("pregnancy week calculation", () => {
   it("uses the clinician-provided due date within a plausible pregnancy window", () => {
     expect(calculatePregnancyWeek("2026-10-08", new Date("2026-08-30T00:00:00Z"))).toBe(34);
@@ -95,6 +102,8 @@ describe("pregnancy daily page", () => {
     expect(screen.getByLabelText("Đường huyết (mg/dL)")).toBeInTheDocument();
     expect(screen.getByLabelText("Số cử động thai")).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Dấu hiệu cần ghi lại" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Biểu đồ 28 ngày" })).not.toBeInTheDocument();
+    openHealthInsights();
     expect(screen.getByRole("heading", { name: "Biểu đồ 28 ngày" })).toBeInTheDocument();
     expect(screen.getByText("Chưa có số liệu sức khỏe")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Khi nào cần liên hệ ngay" })).toBeInTheDocument();
@@ -190,6 +199,7 @@ describe("pregnancy daily page", () => {
     expect(screen.queryByRole("button", { name: "Lưu sức khỏe hôm nay" })).not.toBeInTheDocument();
     expect(screen.getByText("Đã lưu sức khỏe hôm nay")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sửa thông tin hôm nay" })).toBeInTheDocument();
+    openHealthInsights();
     expect(screen.getByRole("heading", { name: "Lịch sử sức khỏe chi tiết" })).toBeInTheDocument();
   });
 
@@ -215,6 +225,7 @@ describe("pregnancy daily page", () => {
 
     render(<PregnancyPage />);
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    openHealthInsights();
     const brief = screen.getByRole("heading", { name: "Tóm tắt 7 ngày để đi khám" }).closest("section");
     expect(brief).not.toBeNull();
     if (!brief) return;
