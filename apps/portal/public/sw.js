@@ -3,6 +3,7 @@ const OFFLINE_PAGE = "/offline";
 const OPTIONAL_PRECACHE = ["/icon-192.png", "/icon-512.png"];
 const ACTIVITY_DEDUP_MS = 10_000;
 const recentActivities = new Map();
+let sourceDeviceId = null;
 
 function familyActivityKind(pathname) {
   if (pathname.startsWith("/api/notifications/") || pathname.startsWith("/api/auth/")) return null;
@@ -30,6 +31,7 @@ async function reportFamilyActivity(pathname, kind) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         eventId: crypto.randomUUID(),
+        sourceDeviceId,
         sourceEndpoint: subscription?.endpoint ?? null,
         pathname,
         method: "POST"
@@ -107,6 +109,9 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data === "SKIP_WAITING") self.skipWaiting();
+  if (event.data?.type === "EMBE_DEVICE_CONTEXT" && /^[0-9a-f-]{36}$/i.test(event.data.deviceId || "")) {
+    sourceDeviceId = event.data.deviceId;
+  }
 });
 
 self.addEventListener("push", (event) => {

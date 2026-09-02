@@ -83,6 +83,14 @@ describe("private family push routes", () => {
     });
   });
 
+  it("reports whether both family phones can receive notifications without exposing push locators", async () => {
+    rpc.mockResolvedValueOnce({ data: { mother: 0, father: 1, family: 0 }, error: null });
+    const response = await subscriptionRoute.GET(request("https://embe.hieu.asia/api/notifications/subscriptions"));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ roles: { mother: false, father: true }, enabledDevices: 1 });
+    expect(rpc).toHaveBeenCalledWith("embe_push_family_status", {});
+  });
+
   it("immediately notifies the other person after a safe family update", async () => {
     const notification = {
       id: "22222222-2222-4222-8222-222222222222", endpoint: "https://push.example.test/device/2",
@@ -90,13 +98,15 @@ describe("private family push routes", () => {
       body: "Nhật ký bữa ăn có thông tin mới.", url: "/me-bau#bua-an",
       tag: "activity:33333333-3333-4333-8333-333333333333"
     };
-    rpc.mockResolvedValueOnce({ data: 1, error: null })
+    rpc.mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: 1, error: null })
       .mockResolvedValueOnce({ data: [notification], error: null })
       .mockResolvedValueOnce({ data: null, error: null });
     sendNotification.mockResolvedValueOnce({ statusCode: 201 });
 
     const response = await activityRoute.POST(request("https://embe.hieu.asia/api/notifications/activity", "POST", {
       eventId: "33333333-3333-4333-8333-333333333333",
+      sourceDeviceId: "44444444-4444-4444-8444-444444444444",
       sourceEndpoint: "https://push.example.test/device/1",
       pathname: "/api/meals",
       method: "POST"
@@ -104,16 +114,44 @@ describe("private family push routes", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ queued: 1, sent: 1, failed: 0 });
-    expect(rpc).toHaveBeenNthCalledWith(1, "embe_enqueue_family_activity", {
+    expect(rpc).toHaveBeenNthCalledWith(1, "embe_record_family_activity", {
+      p_event_id: "33333333-3333-4333-8333-333333333333",
+      p_source_device_id: "44444444-4444-4444-8444-444444444444",
+      p_activity_kind: "meal"
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "embe_enqueue_family_activity", {
       p_event_id: "33333333-3333-4333-8333-333333333333",
       p_source_endpoint: "https://push.example.test/device/1",
       p_activity_kind: "meal"
     });
-    expect(rpc).toHaveBeenNthCalledWith(2, "embe_claim_family_activity", {
+    expect(rpc).toHaveBeenNthCalledWith(3, "embe_claim_family_activity", {
       p_event_id: "33333333-3333-4333-8333-333333333333", p_limit: 20
     });
     expect(sendNotification.mock.calls[0][1]).toContain("Nhật ký bữa ăn có thông tin mới.");
     expect(sendNotification.mock.calls[0][1]).not.toContain("device/1");
+  });
+
+  it("returns recent activity from the other phone even when push is unavailable", async () => {
+    rpc.mockResolvedValueOnce({ data: [{
+      event_id: "33333333-3333-4333-8333-333333333333",
+      activity_kind: "meal", title: "Nhà mình vừa cập nhật",
+      target_url: "/me-bau#bua-an", created_at: "2026-09-02T15:00:00Z"
+    }], error: null });
+
+    const response = await activityRoute.GET(request(
+      "https://embe.hieu.asia/api/notifications/activity?deviceId=44444444-4444-4444-8444-444444444444&after=2026-09-02T14%3A00%3A00Z"
+    ));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ activities: [{
+      id: "33333333-3333-4333-8333-333333333333",
+      kind: "meal", title: "Nhà mình vừa cập nhật",
+      url: "/me-bau#bua-an", createdAt: "2026-09-02T15:00:00Z"
+    }] });
+    expect(rpc).toHaveBeenCalledWith("embe_list_family_activity", {
+      p_device_id: "44444444-4444-4444-8444-444444444444",
+      p_after: "2026-09-02T14:00:00.000Z", p_limit: 10
+    });
   });
 
   it("rejects unauthenticated or unrelated mutation reports", async () => {
@@ -123,7 +161,9 @@ describe("private family push routes", () => {
     expect(unauthorized.status).toBe(401);
 
     const unrelated = await activityRoute.POST(request("https://embe.hieu.asia/api/notifications/activity", "POST", {
-      eventId: "33333333-3333-4333-8333-333333333333", pathname: "/api/auth/login", method: "POST"
+      eventId: "33333333-3333-4333-8333-333333333333",
+      sourceDeviceId: "44444444-4444-4444-8444-444444444444",
+      pathname: "/api/auth/login", method: "POST"
     }));
     expect(unrelated.status).toBe(204);
     expect(rpc).not.toHaveBeenCalled();

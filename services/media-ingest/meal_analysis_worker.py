@@ -24,12 +24,17 @@ SAFETY_FLAGS = {
 }
 
 VIETNAMESE_FOOD_NAMES = (
+    ("roasted cauliflower", "Súp lơ nướng"),
+    ("roasted broccoli", "Bông cải xanh nướng"),
+    ("roasted carrots", "Cà rốt nướng"),
+    ("cucumber slices", "Dưa leo"),
     ("fried rice with egg", "Cơm chiên trứng"),
     ("egg fried rice", "Cơm chiên trứng"),
     ("fried rice", "Cơm chiên"),
     ("white rice", "Cơm trắng"),
     ("brown rice", "Cơm gạo lứt"),
     ("grilled chicken", "Gà nướng"),
+    ("grilled beef", "Thịt bò nướng"),
     ("fried chicken", "Gà chiên"),
     ("chicken breast", "Ức gà"),
     ("boiled egg", "Trứng luộc"),
@@ -38,6 +43,13 @@ VIETNAMESE_FOOD_NAMES = (
     ("shrimp", "Tôm"),
     ("tofu", "Đậu hũ"),
     ("vegetable soup", "Canh rau"),
+    ("bell pepper", "Ớt chuông"),
+    ("cauliflower", "Súp lơ"),
+    ("broccoli", "Bông cải xanh"),
+    ("cucumber", "Dưa leo"),
+    ("tomato", "Cà chua"),
+    ("carrot", "Cà rốt"),
+    ("dipping sauce", "Nước chấm"),
     ("salad", "Rau trộn"),
     ("banana", "Chuối"),
     ("apple", "Táo"),
@@ -64,6 +76,16 @@ VIETNAMESE_NUTRITION_QUERIES = (
     ("thịt bò xào", "stir fried beef"),
     ("bún cá", "fish noodle soup"),
     ("khoai lang", "sweet potato cooked"),
+    ("ớt chuông", "bell pepper"),
+    ("súp lơ", "cauliflower cooked"),
+    ("súp lơ nướng", "cauliflower cooked"),
+    ("bông cải xanh", "broccoli cooked"),
+    ("bông cải xanh nướng", "broccoli cooked"),
+    ("cà rốt", "carrots cooked"),
+    ("cà rốt nướng", "carrots cooked"),
+    ("dưa leo", "cucumber raw"),
+    ("cà chua", "tomato raw"),
+    ("thịt bò nướng", "beef cooked"),
 )
 
 

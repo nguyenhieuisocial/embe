@@ -13,6 +13,22 @@ async function body(request: Request): Promise<unknown> {
   } catch { return null; }
 }
 
+export async function GET(request: Request): Promise<Response> {
+  const authorization = authorizeMutation(new Request(request.url, {
+    method: "POST", headers: { cookie: request.headers.get("cookie") ?? "", origin: new URL(request.url).origin }
+  }));
+  if (authorization) return privateReply({ error: authorization === 401 ? "unauthorized" : "forbidden" }, authorization);
+  const store = photoStore();
+  if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
+  const result = await store.rpc("embe_push_family_status", {});
+  if (result.error || !result.data || typeof result.data !== "object") return privateReply({ error: "temporarily_unavailable" }, 503);
+  const value = result.data as Record<string, unknown>;
+  const mother = typeof value.mother === "number" ? value.mother : 0;
+  const father = typeof value.father === "number" ? value.father : 0;
+  const family = typeof value.family === "number" ? value.family : 0;
+  return privateReply({ roles: { mother: mother > 0, father: father > 0 }, enabledDevices: mother + father + family }, 200);
+}
+
 export async function POST(request: Request): Promise<Response> {
   const authorization = authorizeMutation(request);
   if (authorization) return privateReply({ error: authorization === 401 ? "unauthorized" : "forbidden" }, authorization);

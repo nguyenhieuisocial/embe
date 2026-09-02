@@ -390,8 +390,9 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         <strong>{activeIphoneDevices.length ? "Còn một bước trên iPhone" : "Kết nối một lần"}</strong>
         <p>{activeIphoneDevices.length
           ? "Mở Phím tắt, chạy EmBe rồi quay lại. Trang sẽ tự kiểm tra dữ liệu mới."
-          : "Sau khi cài, bước chân, giấc ngủ và cân nặng được gửi tự động mỗi ngày."}</p>
+          : "Apple không cho Safari tự đọc Sức khỏe. Có thể nhập nhanh ngay hoặc kết nối Phím tắt để gửi những chỉ số đã chọn."}</p>
         <div className="iphone-health-actions">
+          <a href="#suc-khoe">Nhập nhanh hôm nay</a>
           {activeIphoneDevices.length ? <a href="shortcuts://">Mở Phím tắt</a> : null}
           {!syncSecret ? <button type="button" onClick={() => void createIphoneConnection()}>
             {activeIphoneDevices.length ? "Tạo kết nối mới" : "Kết nối iPhone"}
@@ -403,7 +404,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         <strong>Kết nối đã sẵn sàng</strong>
         <ol className="iphone-setup-steps">
           <li><span>1</span><div><strong>Cài mẫu Phím tắt</strong><small>Mở liên kết và chọn Thêm phím tắt.</small></div></li>
-          <li><span>2</span><div><strong>Dán hai giá trị bên dưới</strong><small>Chép đúng Điểm nhận và Authorization khi Phím tắt hỏi.</small></div></li>
+          <li><span>2</span><div><strong>Mở sửa Phím tắt</strong><small>Dán Điểm nhận vào ô URL và Authorization vào header của yêu cầu mạng.</small></div></li>
           <li><span>3</span><div><strong>Chạy thử</strong><small>Cho phép chỉ số muốn chia sẻ rồi quay lại EmBe.</small></div></li>
         </ol>
         <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài Phím tắt</a>

@@ -16,6 +16,7 @@ describe("offline and failure states", () => {
     vi.unstubAllGlobals();
     Reflect.deleteProperty(navigator, "onLine");
     Reflect.deleteProperty(navigator, "serviceWorker");
+    localStorage.clear();
   });
 
   it("keeps the offline route free of a second main-content landmark", () => {
@@ -80,6 +81,33 @@ describe("offline and failure states", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Mẹ Ngân vừa cập nhật");
     fireEvent.click(action);
     expect(reload).toHaveBeenCalledWith(0);
+  });
+
+  it("shows another phone's update while the app is open without push permission", async () => {
+    setOnline(true);
+    const postMessage = vi.fn();
+    const serviceWorker = new EventTarget() as EventTarget & {
+      controller: { postMessage: ReturnType<typeof vi.fn> };
+      register: ReturnType<typeof vi.fn>;
+      getRegistrations: ReturnType<typeof vi.fn>;
+    };
+    serviceWorker.controller = { postMessage };
+    serviceWorker.register = vi.fn().mockResolvedValue({ update: vi.fn(), active: { postMessage } });
+    serviceWorker.getRegistrations = vi.fn().mockResolvedValue([]);
+    Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: serviceWorker });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith("/api/notifications/activity")) return new Response(JSON.stringify({ activities: [{
+        id: "33333333-3333-4333-8333-333333333333", kind: "meal",
+        title: "Nhà mình vừa cập nhật", url: "/me-bau#bua-an", createdAt: new Date().toISOString()
+      }] }), { status: 200 });
+      return new Response(JSON.stringify({ status: "ok", version: "development" }), { status: 200 });
+    }));
+
+    render(<PwaRuntime />);
+
+    expect(await screen.findByRole("button", { name: "Xem cập nhật" })).toBeInTheDocument();
+    expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "EMBE_DEVICE_CONTEXT" }));
   });
 
   it("offers a Vietnamese retry instead of the framework error page", () => {

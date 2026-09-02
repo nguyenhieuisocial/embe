@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from assistant_worker import AssistantJob, process_jobs  # noqa: E402
+from assistant_worker import AssistantJob, direct_question_prompt, process_jobs  # noqa: E402
 
 
 class FakeQueue:
@@ -25,6 +25,17 @@ class FakeQueue:
 
 
 class AssistantWorkerTests(unittest.TestCase):
+    def test_direct_question_prompt_includes_only_bounded_family_context(self):
+        prompt = direct_question_prompt(
+            "Tôi nên chuẩn bị gì cho lần khám tới?",
+            {"upcoming_appointments": [{"title": "Khám thai", "occurred_at": "2026-09-04T02:00:00Z"}]},
+        )
+
+        self.assertIn("Tôi nên chuẩn bị gì", prompt)
+        self.assertIn("Khám thai", prompt)
+        self.assertIn("không chẩn đoán", prompt.casefold())
+        self.assertLessEqual(len(prompt), 6000)
+
     def test_processes_only_bounded_topic_jobs(self):
         queue = FakeQueue([AssistantJob("job-1", "ngu", 7)])
         calls = []

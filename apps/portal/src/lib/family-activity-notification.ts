@@ -5,6 +5,7 @@ export type FamilyActivityKind = "meal" | "health" | "medical" | "journal" | "me
 
 export type FamilyActivityReport = {
   eventId: string;
+  sourceDeviceId: string;
   sourceEndpoint: string | null;
   kind: FamilyActivityKind | null;
 };
@@ -27,7 +28,8 @@ export function familyActivityKind(pathname: string): FamilyActivityKind | null 
 export function normalizeFamilyActivityReport(value: unknown): FamilyActivityReport | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const input = value as Record<string, unknown>;
-  if (!isUuidV4(input.eventId) || typeof input.pathname !== "string" || input.pathname.length > 256
+  if (!isUuidV4(input.eventId) || !isUuidV4(input.sourceDeviceId)
+      || typeof input.pathname !== "string" || input.pathname.length > 256
       || typeof input.method !== "string" || !mutationMethods.has(input.method.toUpperCase())) return null;
   let parsed: URL;
   try { parsed = new URL(input.pathname, "https://embe.invalid"); } catch { return null; }
@@ -36,5 +38,5 @@ export function normalizeFamilyActivityReport(value: unknown): FamilyActivityRep
     ? null
     : normalizeEndpoint(input.sourceEndpoint);
   if (input.sourceEndpoint !== null && input.sourceEndpoint !== undefined && !sourceEndpoint) return null;
-  return { eventId: input.eventId, sourceEndpoint, kind: familyActivityKind(parsed.pathname) };
+  return { eventId: input.eventId, sourceDeviceId: input.sourceDeviceId, sourceEndpoint, kind: familyActivityKind(parsed.pathname) };
 }

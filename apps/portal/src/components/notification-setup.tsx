@@ -22,9 +22,22 @@ function available(): boolean {
 export default function NotificationSetup({ role }: { role: DeviceRole | null }) {
   const [state, setState] = useState<State>("checking");
   const [notifyAt, setNotifyAt] = useState("08:00");
+  const [familyReady, setFamilyReady] = useState<{ mother: boolean; father: boolean } | null>(null);
+
+  async function refreshFamilyReady() {
+    try {
+      const response = await fetch("/api/notifications/subscriptions", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json() as { roles?: { mother?: boolean; father?: boolean } };
+      setFamilyReady({ mother: Boolean(data.roles?.mother), father: Boolean(data.roles?.father) });
+    } catch {
+      // The local device controls remain usable when the family status is temporarily unavailable.
+    }
+  }
 
   useEffect(() => {
     setNotifyAt(readNotifyAt(localStorage));
+    void refreshFamilyReady();
     if (!available()) { setState("unsupported"); return; }
     if (Notification.permission === "denied") { setState("blocked"); return; }
     void navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription())
@@ -54,6 +67,7 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
       subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: applicationKey(publicKey) });
       await saveSubscription(subscription);
       setState("on");
+      await refreshFamilyReady();
     } catch { setState("error"); }
   }
 
@@ -88,6 +102,7 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
         await subscription.unsubscribe();
       }
       setState("off");
+      await refreshFamilyReady();
     } catch { setState("error"); }
   }
 
@@ -102,6 +117,10 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
     {state === "on"
       ? <button type="button" onClick={() => void disable()}>Tắt thông báo</button>
       : <button type="button" disabled={state === "busy" || state === "checking"} onClick={() => void enable()}>{state === "busy" ? "Đang lưu…" : "Bật thông báo"}</button>}
+    {familyReady ? <div className="notification-family" aria-label="Điện thoại nhận thông báo">
+      <span data-ready={familyReady.mother}>{familyReady.mother ? "Mẹ Ngân đã bật" : "Mẹ Ngân chưa bật"}</span>
+      <span data-ready={familyReady.father}>{familyReady.father ? "Ba Hiếu đã bật" : "Ba Hiếu chưa bật"}</span>
+    </div> : null}
     <label className="notification-time"><span>Giờ nhắc hằng ngày</span><input aria-label="Giờ nhắc hằng ngày" disabled={state === "busy" || state === "checking"} type="time" value={notifyAt} onChange={(event) => void changeNotifyAt(event.target.value)} /></label>
   </div>;
 }

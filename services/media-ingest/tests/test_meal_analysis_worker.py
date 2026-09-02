@@ -335,6 +335,24 @@ def test_vision_result_localizes_common_english_food_names_for_vietnamese_ui():
     assert parsed["foods"][0]["name_vi"] == "Cơm chiên trứng"
 
 
+@pytest.mark.parametrize(("english_name", "vietnamese_name"), [
+    ("Grilled beef", "Thịt bò nướng"),
+    ("Bell pepper", "Ớt chuông"),
+    ("Roasted cauliflower", "Súp lơ nướng"),
+    ("Cucumber slices", "Dưa leo"),
+    ("Tomato", "Cà chua"),
+])
+def test_vision_result_localizes_common_meal_components(english_name, vietnamese_name):
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": english_name, "search_name_en": english_name,
+                   "estimated_grams": 100, "confidence": 0.8,
+                   "food_groups": ["vegetables"], "safety_flags": []}],
+        "needs_user_confirmation": [],
+    })
+
+    assert parsed["foods"][0]["name_vi"] == vietnamese_name
+
+
 def test_vision_result_never_exposes_an_unknown_english_name_as_vietnamese():
     parsed = parse_vision_result({
         "foods": [{"name_vi": "Unknown casserole", "search_name_en": "unknown casserole",
@@ -351,6 +369,8 @@ def test_vision_result_never_exposes_an_unknown_english_name_as_vietnamese():
 def test_user_corrected_vietnamese_food_uses_a_safe_usda_query_instead_of_the_old_dish():
     assert nutrition_search_query("Đậu hũ") == "tofu"
     assert nutrition_search_query("Cơm gạo lứt") == "brown rice cooked"
+    assert nutrition_search_query("Ớt chuông") == "bell pepper"
+    assert nutrition_search_query("Dưa leo") == "cucumber raw"
 
 
 def test_valid_detailed_vietnamese_food_name_is_preserved_verbatim():

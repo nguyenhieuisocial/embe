@@ -22,6 +22,19 @@ QUESTIONS = {
 }
 
 
+def direct_question_prompt(question: str, context: dict[str, Any] | None) -> str:
+    """Build a bounded, non-diagnostic prompt from family-entered aggregates."""
+    encoded_context = json.dumps(context or {}, ensure_ascii=False, separators=(",", ":"))[:4000]
+    return (
+        "Trả lời câu hỏi của gia đình bằng tiếng Việt ngắn gọn, dễ hiểu. "
+        "Chỉ dùng dữ liệu được cung cấp; nói rõ khi thiếu dữ liệu. Không chẩn đoán, không kê thuốc, "
+        "không đổi liều và không kết luận thiếu chất. Nếu có dấu hiệu nguy hiểm hoặc câu hỏi cần khám, "
+        "hãy hướng dẫn liên hệ bác sĩ.\n"
+        f"Dữ liệu gia đình đã ghi gần đây: {encoded_context}\n"
+        f"Câu hỏi: {question[:600]}"
+    )[:6000]
+
+
 def _request_json(url: str, headers: dict[str, str], body: dict[str, Any], timeout: int = 20) -> Any:
     payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
     for attempt, delay in enumerate((0, 1, 2, 4)):
@@ -87,6 +100,10 @@ class SupabaseAssistantQueue:
     def status(self) -> dict[str, int]:
         value = self._rpc("embe_assistant_queue_status", {}) or {}
         return {key: int(value.get(key, 0)) for key in ("pending", "processing", "dead_letters")}
+
+    def pregnancy_context(self, days: int) -> dict[str, Any]:
+        value = self._rpc("embe_assistant_pregnancy_context", {"p_days": max(7, min(days, 30))})
+        return value if isinstance(value, dict) else {}
 
 
 def process_jobs(
@@ -157,10 +174,8 @@ def main(argv=None) -> int:
     def answer(topic: str, start_date: date, end_date: date, question: str | None) -> str:
         if topic == "hoi-dap":
             return assistant.generate(
-                "Trả lời câu hỏi của gia đình bằng tiếng Việt ngắn gọn, dễ hiểu. "
-                "Không chẩn đoán, không kê thuốc hoặc thay đổi liều. Nếu có dấu hiệu nguy hiểm hoặc câu hỏi cần khám, "
-                "hãy hướng dẫn liên hệ bác sĩ. Câu hỏi: " + (question or ""),
-                {"source": "family_question", "caution": "pregnancy_safety"},
+                direct_question_prompt(question or "", queue.pregnancy_context(7)),
+                {"source": "family_question", "caution": "pregnancy_safety", "context": "recent_family_aggregates"},
             )
         return answer_question(
             repository=repository, assistant=assistant, topic=topic, child_id=args.child_id,

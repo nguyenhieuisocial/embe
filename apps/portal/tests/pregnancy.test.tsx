@@ -140,6 +140,8 @@ describe("pregnancy daily page", () => {
     expect(entry).toHaveAttribute("href", "#suc-khoe-iphone");
     expect(dailyBoard).not.toBeNull();
     expect(entry.compareDocumentPosition(dailyBoard as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Nhập nhanh hôm nay" })).toHaveAttribute("href", "#suc-khoe");
+    expect(screen.queryByText(/được gửi tự động mỗi ngày/i)).not.toBeInTheDocument();
   });
 
   it("keeps the mobile day compact and opens deeper information only when requested", () => {
