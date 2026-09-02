@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import AppHeader from "../../components/app-header";
 import JournalBrowser from "../../components/journal-browser";
 import { getTimeline } from "../../lib/timeline";
@@ -11,7 +13,7 @@ export default async function JournalPage() {
       <AppHeader note="Chỉ gia đình nhìn thấy" />
       <header className="journal-view-hero">
         <div><p className="eyebrow">Chuyện nhà mình</p><h1>Nhật ký</h1><p>Xem lại theo cách dễ nhớ nhất.</p></div>
-        <a href="/ghi-lai">＋ Ghi lại</a>
+        <Link href="/ghi-lai">＋ Ghi lại</Link>
       </header>
       <JournalBrowser events={events} />
     </main>

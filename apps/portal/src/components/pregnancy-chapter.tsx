@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { calculatePregnancyWeek } from "../lib/pregnancy";
 import { usePregnancyDueDate } from "../lib/use-pregnancy-due-date";
 
@@ -45,8 +47,8 @@ export default function PregnancyChapter() {
         <p>{chapter.detail}</p>
       </div>
       <div className="chapter-actions">
-        <a href="/me-bau">{chapter.action}</a>
-        <a href="/lich" aria-label="Mở lịch gia đình">Mở lịch</a>
+        <Link href="/me-bau">{chapter.action}</Link>
+        <Link href="/lich" aria-label="Mở lịch gia đình">Mở lịch</Link>
       </div>
     </section>
   );

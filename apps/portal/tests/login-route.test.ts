@@ -131,6 +131,28 @@ describe("password login endpoint", () => {
     expect(urls.some((url) => url.endsWith("/rpc/embe_reset_login_rate_limit"))).toBe(true);
   });
 
+  it("creates the session and clears the successful rate limit in parallel", async () => {
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const name = String(input).split("/").pop() ?? "";
+      calls.push(name);
+      if (name === "embe_check_login_rate_limit") {
+        return Response.json({ allowed: true, retry_after_seconds: 0 });
+      }
+      if (name === "embe_create_portal_session") return Response.json(sessionId);
+      return new Response(null, { status: 204 });
+    }));
+
+    const response = await POST(requestWith("family-secret"));
+
+    expect(response.status).toBe(303);
+    expect(calls).toEqual([
+      "embe_check_login_rate_limit",
+      "embe_create_portal_session",
+      "embe_reset_login_rate_limit"
+    ]);
+  });
+
   it("fails closed when the server-side session registry is unavailable", async () => {
     const fetchMock = vi.fn(async () => { throw new Error("offline"); });
     vi.stubGlobal("fetch", fetchMock);

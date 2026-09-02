@@ -69,12 +69,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     return failedLogin(origin, destination, failedRate?.retryAfterSeconds ?? 0);
   }
 
-  await resetLoginRate(rateKey);
-
   const expiresAt = new Date(now.getTime() + SESSION_LIFETIME_SECONDS * 1000);
-  const created = await sessionRpc("embe_create_portal_session", {
-    p_device_name: deviceName(request), p_auth_method: "password", p_expires_at: expiresAt.toISOString()
-  });
+  const [created] = await Promise.all([
+    sessionRpc("embe_create_portal_session", {
+      p_device_name: deviceName(request), p_auth_method: "password", p_expires_at: expiresAt.toISOString()
+    }),
+    resetLoginRate(rateKey)
+  ]);
   if (created.error || !isSessionId(created.data)) {
     return NextResponse.json({ error: "Authentication is unavailable" }, { status: 503, headers: { "cache-control": PRIVATE_NO_STORE } });
   }

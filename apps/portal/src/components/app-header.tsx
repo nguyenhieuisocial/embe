@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { EmBeMark } from "./embe-icon";
 
 type AppHeaderProps = {
@@ -9,10 +11,10 @@ type AppHeaderProps = {
 export default function AppHeader({ note, tone = "calm" }: AppHeaderProps) {
   return (
     <header className="app-header">
-      <a className="wordmark" href="/" aria-label="EmBe — về trang gia đình">
+      <Link className="wordmark" href="/" aria-label="EmBe — về trang gia đình">
         <EmBeMark />
         EmBe
-      </a>
+      </Link>
       <p className={tone === "wait" ? "privacy-note is-wait" : "privacy-note"}>
         <span className="dot" aria-hidden="true" />
         {note}

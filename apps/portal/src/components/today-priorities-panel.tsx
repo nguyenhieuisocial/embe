@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { TodayPriority } from "../lib/today-priorities";
 
 export default function TodayPrioritiesPanel({
@@ -23,9 +25,9 @@ export default function TodayPrioritiesPanel({
                 <strong>{priority.title}</strong>
                 <small>{priority.detail}</small>
               </span>
-              <a href={priority.href} aria-label={`${priority.actionLabel}: ${priority.title}`}>
+              <Link href={priority.href} aria-label={`${priority.actionLabel}: ${priority.title}`}>
                 {priority.actionLabel}
-              </a>
+              </Link>
             </li>
           ))}
         </ol>
@@ -38,9 +40,9 @@ export default function TodayPrioritiesPanel({
           Chưa tải được {unavailableSources.join(", ")}.
         </p>
       ) : null}
-      <a className="today-priority-plan-link" href="/ke-hoach" aria-label="Mở kế hoạch hôm nay">
+      <Link className="today-priority-plan-link" href="/ke-hoach" aria-label="Mở kế hoạch hôm nay">
         Xem toàn bộ kế hoạch
-      </a>
+      </Link>
     </section>
   );
 }
