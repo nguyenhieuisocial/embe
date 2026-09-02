@@ -129,6 +129,49 @@ describe("private review-first meal analysis API", () => {
     expect(await response.json()).toEqual({ id: entryId, status: "confirmed" });
   });
 
+  it("can turn a saved note into a food entry that receives nutrition", async () => {
+    const noteAnalysis = {
+      entry_mode: "note", foods: [], needs_user_confirmation: [], estimate_notice: "Chỉ ghi chú"
+    };
+    rpc.mockResolvedValueOnce({ data: {
+      id: entryId, status: "confirmed", analysis: noteAnalysis, confirmed_analysis: noteAnalysis
+    }, error: null });
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "nutrition_pending" }, error: null });
+
+    const response = await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "Một quả chuối", analysis: {
+        foods: [{ name_vi: "Chuối", search_name_en: "banana", estimated_grams: 100,
+          confidence: 1, food_groups: ["fruit"], safety_flags: [] }],
+        needs_user_confirmation: [], estimate_notice: "Mẹ đã bổ sung món"
+      }
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+
+    expect(response.status).toBe(202);
+    const confirmation = rpc.mock.calls.at(-1)?.[1] as { p_confirmed_analysis: Record<string, unknown> };
+    expect(confirmation.p_confirmed_analysis).not.toHaveProperty("entry_mode");
+  });
+
+  it("can turn a saved food entry into a note without reusing stale food metadata", async () => {
+    const confirmedAnalysis = {
+      ...rawAnalysis,
+      foods: [{ ...rawAnalysis.foods[0], safety_flags: ["raw_or_undercooked"], confidence: 0.5 }]
+    };
+    rpc.mockResolvedValueOnce({ data: {
+      id: entryId, status: "confirmed", analysis: rawAnalysis, confirmed_analysis: confirmedAnalysis
+    }, error: null });
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "confirmed" }, error: null });
+
+    const response = await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "Chỉ lưu ghi chú", analysis: {
+        entry_mode: "note", foods: [], needs_user_confirmation: [], estimate_notice: "Chỉ ghi chú"
+      }
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+
+    expect(response.status).toBe(202);
+    const confirmation = rpc.mock.calls.at(-1)?.[1] as { p_confirmed_analysis: Record<string, unknown> };
+    expect(confirmation.p_confirmed_analysis).toMatchObject({ entry_mode: "note", foods: [] });
+  });
+
   it("accepts foods corrected, added, or removed by the mother before confirmation", async () => {
     rpc.mockResolvedValueOnce({ data: { id: entryId, status: "review", analysis: rawAnalysis }, error: null });
     rpc.mockResolvedValueOnce({ data: { id: entryId, status: "nutrition_pending" }, error: null });
@@ -199,6 +242,28 @@ describe("private review-first meal analysis API", () => {
     confirmation = rpc.mock.calls.at(-1)?.[1] as { p_confirmed_analysis: { foods: Array<Record<string, unknown>> } };
     expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
       confidence: 0, safety_flags: expect.arrayContaining(["raw_or_undercooked", "unknown"])
+    }));
+  });
+
+  it("uses the latest confirmed safety metadata when editing a saved meal again", async () => {
+    const latest = {
+      ...rawAnalysis,
+      foods: [{ ...rawAnalysis.foods[0], safety_flags: ["raw_or_undercooked"], confidence: 0.55 }]
+    };
+    rpc.mockResolvedValueOnce({ data: {
+      id: entryId, status: "confirmed", analysis: rawAnalysis, confirmed_analysis: latest
+    }, error: null });
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "nutrition_pending" }, error: null });
+
+    await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "", analysis: latest
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+
+    const confirmation = rpc.mock.calls.at(-1)?.[1] as {
+      p_confirmed_analysis: { foods: Array<Record<string, unknown>> }
+    };
+    expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
+      confidence: 0.55, safety_flags: ["raw_or_undercooked"]
     }));
   });
 

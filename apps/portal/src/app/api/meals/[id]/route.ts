@@ -54,12 +54,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
   try {
     const draft = await store.rpc("embe_get_meal_analysis", { p_id: id });
-    const current = normalizeMealAnalysis((draft.data as Record<string, unknown> | null)?.analysis);
+    const stored = draft.data as Record<string, unknown> | null;
+    const current = normalizeMealAnalysis(stored?.confirmed_analysis)
+      ?? normalizeMealAnalysis(stored?.analysis);
     if (draft.error || !current) {
       return privateReply({ error: "not_found" }, 404);
     }
-    const confirmed = {
+    const confirmed = analysis.entryMode === "note" ? analysis : {
       ...current,
+      entryMode: undefined,
       foods: analysis.foods.map((food) => {
         const unchanged = current.foods.find((candidate) => candidate.searchNameEn === food.searchNameEn
           && candidate.nameVi === food.nameVi);
