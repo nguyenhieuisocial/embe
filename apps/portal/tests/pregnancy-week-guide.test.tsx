@@ -20,8 +20,15 @@ describe("pregnancy week journey", () => {
     render(<PregnancyWeekPage />);
 
     await waitFor(() => expect(screen.getByRole("heading", { name: /Tuần \d+/ })).toBeInTheDocument());
-    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(screen.getAllByRole("listitem")).toHaveLength(4);
     expect(screen.getByRole("link", { name: /NHS/ })).toHaveAttribute("href", expect.stringContaining("week-"));
     expect(screen.getByText("Không tự chẩn đoán từ nội dung theo tuần.")).toBeInTheDocument();
+  });
+
+  it("offers movement-pattern tracking only when the pregnancy reaches the relevant stage", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ dueDate: "2026-12-01" })));
+    render(<PregnancyWeekPage />);
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Tuần \d+/ })).toBeInTheDocument());
+    expect(screen.getByRole("link", { name: /Ghi nhịp thai máy/ })).toHaveAttribute("href", "/me-bau/thai-may");
   });
 });
