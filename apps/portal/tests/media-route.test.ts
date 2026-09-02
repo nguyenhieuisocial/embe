@@ -15,7 +15,7 @@ const SESSION_SECRET = "media-route-test-session-secret";
 
 function authorizedRequest(): Request {
   return new Request("https://embe.hieu.asia/api/media/id", {
-    headers: { cookie: `embe_session=${createSessionCookie(SESSION_SECRET)}` }
+    headers: { cookie: `embe_session=${createSessionCookie(SESSION_SECRET, new Date(), "11111111-1111-4111-8111-111111111111")}` }
   });
 }
 

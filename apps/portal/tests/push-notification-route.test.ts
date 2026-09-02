@@ -13,7 +13,7 @@ import * as subscriptionRoute from "../src/app/api/notifications/subscriptions/r
 import * as dispatchRoute from "../src/app/api/notifications/dispatch/route";
 
 const originalEnvironment = { ...process.env };
-function cookie() { return `embe_session=${createSessionCookie("server-secret")}`; }
+function cookie() { return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`; }
 function request(url: string, method = "GET", body?: unknown, authorized = true) {
   return new Request(url, { method, body: body === undefined ? undefined : JSON.stringify(body), headers: {
     ...(body === undefined ? {} : { "content-type": "application/json" }),

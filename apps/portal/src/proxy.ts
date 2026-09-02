@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { verifySessionCookie } from "./lib/portal-auth";
+import { readSessionCookie } from "./lib/portal-auth";
+import { activeSessionState } from "./lib/session-store";
 
 const PUBLIC_PATHS = new Set([
   "/login",
   "/api/auth/login",
+  "/api/auth/passkey/options",
+  "/api/auth/passkey/verify",
   "/api/health",
   "/offline",
   "/sw.js",
@@ -26,7 +29,7 @@ function privateResponse(response: NextResponse): NextResponse {
   return response;
 }
 
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   if (process.env.VERCEL === "1" && request.nextUrl.hostname !== "embe.hieu.asia") {
     return new NextResponse("Not found", {
       status: 404,
@@ -49,8 +52,16 @@ export function proxy(request: NextRequest): NextResponse {
 
   const session = request.cookies.get("embe_session")?.value;
 
-  if (verifySessionCookie(session, sessionSecret)) {
-    return privateResponse(NextResponse.next());
+  const parsed = readSessionCookie(session, sessionSecret);
+  if (parsed) {
+    const state = await activeSessionState(parsed.id);
+    if (state === "active") return privateResponse(NextResponse.next());
+    if (state === "unavailable") {
+      return new NextResponse("Session validation is temporarily unavailable", {
+        status: 503,
+        headers: { "cache-control": PRIVATE_NO_STORE, "retry-after": "5" }
+      });
+    }
   }
 
   const loginUrl = new URL("/login", request.url);

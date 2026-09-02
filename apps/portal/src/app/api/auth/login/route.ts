@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createSessionCookie, verifyPassword } from "../../../../lib/portal-auth";
 import { checkLoginRate, loginRateKey, recordLoginFailure, resetLoginRate } from "../../../../lib/login-rate-limit";
+import { deviceName, isSessionId, sessionRpc } from "../../../../lib/session-store";
 
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
 const PRIVATE_NO_STORE = "private, no-store";
@@ -70,8 +71,16 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   await resetLoginRate(rateKey);
 
+  const expiresAt = new Date(now.getTime() + SESSION_LIFETIME_SECONDS * 1000);
+  const created = await sessionRpc("embe_create_portal_session", {
+    p_device_name: deviceName(request), p_auth_method: "password", p_expires_at: expiresAt.toISOString()
+  });
+  if (created.error || !isSessionId(created.data)) {
+    return NextResponse.json({ error: "Authentication is unavailable" }, { status: 503, headers: { "cache-control": PRIVATE_NO_STORE } });
+  }
+
   const response = NextResponse.redirect(new URL(destination, origin), { status: 303 });
-  response.cookies.set("embe_session", createSessionCookie(sessionSecret), {
+  response.cookies.set("embe_session", createSessionCookie(sessionSecret, now, created.data), {
     httpOnly: true,
     maxAge: SESSION_LIFETIME_SECONDS,
     path: "/",

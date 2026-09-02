@@ -7,7 +7,7 @@ const originalEnvironment = { ...process.env };
 
 function request(day = "2026-09-03", authenticated = true): Request {
   return new Request(`https://embe.hieu.asia/api/tasks/12/calendar?day=${day}`, {
-    headers: authenticated ? { cookie: `embe_session=${createSessionCookie("server-secret")}` } : {}
+    headers: authenticated ? { cookie: `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}` } : {}
   });
 }
 

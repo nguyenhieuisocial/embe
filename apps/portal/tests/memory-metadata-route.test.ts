@@ -12,7 +12,7 @@ const id = "11111111-1111-4111-8111-111111111111";
 function request(body: unknown): Request {
   return new Request(`https://embe.hieu.asia/api/memories/${id}`, {
     method: "PATCH", body: JSON.stringify(body),
-    headers: { "content-type": "application/json", origin: "https://embe.hieu.asia", cookie: `embe_session=${createSessionCookie("secret")}` }
+    headers: { "content-type": "application/json", origin: "https://embe.hieu.asia", cookie: `embe_session=${createSessionCookie("secret", new Date(), "11111111-1111-4111-8111-111111111111")}` }
   });
 }
 

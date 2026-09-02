@@ -143,11 +143,11 @@ SELECT ok(
   'Authenticated clients cannot bypass the portal upload API'
 );
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.embe_create_photo_upload(uuid,text,text,text,bigint,text,timestamptz)', 'EXECUTE'),
+  NOT has_function_privilege('anon', 'public.embe_create_photo_upload(uuid,text,text,text,bigint,text,timestamptz,double precision,double precision,text)', 'EXECUTE'),
   'Anonymous clients cannot create photo upload sessions'
 );
 SELECT ok(
-  has_function_privilege('service_role', 'public.embe_create_photo_upload(uuid,text,text,text,bigint,text,timestamptz)', 'EXECUTE'),
+  has_function_privilege('service_role', 'public.embe_create_photo_upload(uuid,text,text,text,bigint,text,timestamptz,double precision,double precision,text)', 'EXECUTE'),
   'The portal server can create photo upload sessions'
 );
 SELECT ok(

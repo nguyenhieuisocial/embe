@@ -11,5 +11,6 @@ describe("family settings page", () => {
     expect(screen.getByRole("heading", { name: "Hiển thị trên điện thoại này" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ngày sinh của Ba & Mẹ" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mở cài đặt giai đoạn thai kỳ" })).toHaveAttribute("href", "/me-bau#cai-dat-giai-doan");
+    expect(screen.getByRole("heading", { name: "Dữ liệu của gia đình" })).toBeInTheDocument();
   });
 });

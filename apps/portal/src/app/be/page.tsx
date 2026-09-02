@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import AppHeader from "../../components/app-header";
 import { localDateKey } from "../../lib/pregnancy";
@@ -31,7 +31,7 @@ function clock(value: string): string {
 function eventDetail(event: CareEvent): string {
   if (event.kind === "feeding") {
     if (event.details.mode === "bottle") return `${event.details.amountMl ?? "—"} ml`;
-    return event.details.side === "left" ? "Bên trái" : event.details.side === "right" ? "Bên phải" : "Hai bên";
+    return event.details.side === "left" ? "Bên trái" : event.details.side === "right" ? "Bên phải" : event.details.side === "both" ? "Hai bên" : "Chưa chọn bên";
   }
   if (event.kind === "pumping") return `${event.details.amountMl ?? 0} ml`;
   if (event.kind === "diaper") return event.details.wet && event.details.solid ? "Ướt & bẩn" : event.details.wet ? "Ướt" : "Bẩn";
@@ -42,22 +42,27 @@ function eventDetail(event: CareEvent): string {
 export default function BabyDailyPage() {
   const [day, setDay] = useState("");
   const [events, setEvents] = useState<CareEvent[]>([]);
+  const [careLoaded, setCareLoaded] = useState(false);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
+  const quickActionHandled = useRef(false);
 
   useEffect(() => { setDay(localDateKey()); }, []);
   useEffect(() => {
     if (!day) return;
     let active = true;
+    setCareLoaded(false);
     void fetch(`/api/baby/care?day=${day}`, { cache: "no-store" })
       .then(async (response) => response.ok ? response.json() as Promise<{ events: CareEvent[] }> : null)
-      .then((result) => { if (active && result) setEvents(result.events); });
+      .then((result) => { if (active && result) setEvents(result.events); })
+      .catch(() => undefined)
+      .finally(() => { if (active) setCareLoaded(true); });
     return () => { active = false; };
   }, [day]);
 
   const activeTimers = useMemo(() => events.filter((event) => !event.endedAt && ["feeding", "sleep", "pumping"].includes(event.kind)), [events]);
 
-  async function create(kind: CareEvent["kind"], details: Record<string, unknown>, durationEvent = false) {
+  const create = useCallback(async (kind: CareEvent["kind"], details: Record<string, unknown>, durationEvent = false) => {
     const now = new Date();
     setBusy(kind);
     setMessage("");
@@ -75,7 +80,17 @@ export default function BabyDailyPage() {
       setMessage(`Đã ghi ${labels[kind].toLowerCase()}.`);
     } catch { setMessage("Chưa ghi được. Hãy thử lại sau một lát."); }
     finally { setBusy(""); }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!careLoaded || quickActionHandled.current) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("quick") !== "feeding") return;
+    quickActionHandled.current = true;
+    url.searchParams.delete("quick");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    void create("feeding", { mode: "breast", side: null, amountMl: null, milkType: "breast_milk", note: null }, true);
+  }, [careLoaded, create]);
 
   async function finish(event: CareEvent) {
     setBusy(event.id);

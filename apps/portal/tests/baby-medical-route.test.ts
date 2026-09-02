@@ -4,7 +4,7 @@ import { GET, POST } from "../src/app/api/baby/medical/route";
 import { createSessionCookie } from "../src/lib/portal-auth";
 
 const originalEnvironment = { ...process.env };
-const cookie = () => `embe_session=${createSessionCookie("server-secret")}`;
+const cookie = () => `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`;
 
 describe("private baby medical records", () => {
   beforeEach(() => {
@@ -35,7 +35,7 @@ describe("private baby medical records", () => {
   it("saves a clinician-led vaccination plan", async () => {
     const response = await POST(new Request("https://embe.hieu.asia/api/baby/medical", {
       method: "POST", headers: { cookie: cookie(), origin: "https://embe.hieu.asia", "content-type": "application/json" },
-      body: JSON.stringify({ kind: "vaccination", status: "planned", occurredAt: "2026-10-01T09:00:00+07:00",
+      body: JSON.stringify({ id: null, kind: "vaccination", status: "planned", occurredAt: "2026-10-01T09:00:00+07:00",
         title: "Mũi theo lịch cơ sở tiêm", provider: "Cơ sở tiêm", clinician: "", notes: "",
         nextDueAt: null, details: { vaccine: "Theo phiếu hẹn", dose: "1", reaction: null } })
     }));

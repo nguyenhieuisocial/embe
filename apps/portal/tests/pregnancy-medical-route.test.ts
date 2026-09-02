@@ -18,7 +18,7 @@ import { GET as viewDocument, POST as completeDocument } from "../src/app/api/pr
 const originalEnvironment = { ...process.env };
 const recordId = "11111111-1111-4111-8111-111111111111";
 const documentId = "22222222-2222-4222-8222-222222222222";
-function cookie() { return `embe_session=${createSessionCookie("server-secret")}`; }
+function cookie() { return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`; }
 function request(url: string, method = "GET", body?: unknown, authenticated = true) {
   return new Request(url, { method, body: body === undefined ? undefined : JSON.stringify(body), headers: {
     ...(body === undefined ? {} : { "content-type": "application/json" }),

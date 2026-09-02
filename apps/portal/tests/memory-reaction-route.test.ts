@@ -23,7 +23,7 @@ describe("private memory reactions", () => {
     const request = new Request(`https://embe.hieu.asia/api/memories/${id}/reactions`, {
       method: "POST",
       headers: {
-        cookie: `embe_session=${createSessionCookie("server-secret")}`,
+        cookie: `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`,
         "content-type": "application/json",
         origin: "https://embe.hieu.asia"
       },
@@ -38,7 +38,7 @@ describe("private memory reactions", () => {
     const request = new Request(`https://embe.hieu.asia/api/memories/${id}/reactions`, {
       method: "POST",
       headers: {
-        cookie: `embe_session=${createSessionCookie("server-secret")}`,
+        cookie: `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`,
         "content-type": "application/json",
         origin: "https://embe.hieu.asia"
       },

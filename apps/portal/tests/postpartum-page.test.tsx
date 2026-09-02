@@ -38,4 +38,19 @@ describe("mother postpartum page", () => {
     expect(fetch).toHaveBeenLastCalledWith("/api/postpartum/health", expect.objectContaining({ method: "PATCH" }));
     expect(screen.getByRole("status")).toHaveTextContent("Đã lưu nhật ký hồi phục");
   });
+
+  it("shows the recovery history returned for the last 42 days", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ history: [
+      { day: "2026-09-01", pain: 2, sleepMinutes: 360, mood: 4, temperatureC: 36.8 },
+      { day: "2026-08-31", pain: 4, sleepMinutes: 240, mood: 3, temperatureC: 37.1 }
+    ] })));
+
+    render(<MotherPostpartumPage />);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+    expect(screen.getByRole("heading", { name: "42 ngày gần nhất" })).toBeInTheDocument();
+    expect(screen.getByText("31/08")).toBeInTheDocument();
+    expect(screen.getByText("Ngủ 4 giờ")).toBeInTheDocument();
+    expect(screen.getByText("Đau 4/10")).toBeInTheDocument();
+  });
 });

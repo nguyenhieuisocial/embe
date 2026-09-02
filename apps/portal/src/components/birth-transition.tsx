@@ -183,6 +183,10 @@ export default function BirthTransition() {
         </details>
         <button className="primary-action" type="submit" disabled={loading || saving}>{saving ? "Đang lưu…" : "Lưu thông tin sinh"}</button>
         {message ? <p className="form-message" role="status">{message}</p> : null}
+        {record.hasBirthRecord ? <nav className="birth-next-actions" aria-label="Bắt đầu chăm sóc sau sinh">
+          <a href="/me">Ghi hồi phục của Mẹ</a>
+          <a href="/be?quick=feeding">Bắt đầu cữ bú đầu tiên</a>
+        </nav> : null}
         <p className="form-boundary">Chỉ chép lại thông tin trong hồ sơ bệnh viện; EmBe không tự đánh giá tình trạng của Mẹ hoặc Bé.</p>
       </form> : null}
     </section>

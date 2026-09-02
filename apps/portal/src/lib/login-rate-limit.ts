@@ -18,9 +18,9 @@ function trustedClientIp(request: Request): string {
   return "unknown";
 }
 
-export function loginRateKey(request: Request, secret: string): string {
+export function loginRateKey(request: Request, secret: string, scope = "login"): string {
   return createHmac("sha256", secret)
-    .update(`login-ip\0${trustedClientIp(request)}`)
+    .update(`${scope}-ip\0${trustedClientIp(request)}`)
     .digest("hex");
 }
 

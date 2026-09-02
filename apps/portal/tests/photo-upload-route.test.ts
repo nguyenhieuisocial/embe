@@ -20,7 +20,7 @@ const uploadId = "11111111-1111-4111-8111-111111111111";
 const path = `incoming/2026/09/${uploadId}.jpg`;
 
 function request(url: string, body: unknown, authenticated = true): Request {
-  const cookie = authenticated ? createSessionCookie("server-secret") : undefined;
+  const cookie = authenticated ? createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111") : undefined;
   return new Request(url, {
     body: JSON.stringify(body),
     headers: {

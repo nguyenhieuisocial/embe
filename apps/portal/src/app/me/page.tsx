@@ -20,6 +20,7 @@ function stringOrNull(form: FormData, name: string): string | null {
 export default function MotherPostpartumPage() {
   const [today, setToday] = useState("");
   const [current, setCurrent] = useState<Recovery | null>(null);
+  const [history, setHistory] = useState<Recovery[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -34,6 +35,7 @@ export default function MotherPostpartumPage() {
       .then(async (response) => response.ok ? response.json() as Promise<{ history: Recovery[] }> : null)
       .then((result) => {
         if (!active || !result) return;
+        setHistory(result.history);
         setCurrent(result.history.find((item) => item.day === today) ?? null);
       });
     return () => { active = false; };
@@ -78,6 +80,7 @@ export default function MotherPostpartumPage() {
       if (!response.ok) throw new Error("save failed");
       const result = await response.json() as { health: Recovery };
       setCurrent(result.health);
+      setHistory((items) => [result.health, ...items.filter((item) => item.day !== result.health.day)]);
       setMessage("Đã lưu nhật ký hồi phục hôm nay.");
     } catch {
       setMessage("Chưa lưu được. Nội dung trên màn hình vẫn còn để thử lại.");
@@ -146,6 +149,32 @@ export default function MotherPostpartumPage() {
         <button className="primary-action" type="submit" disabled={!today || saving}>{saving ? "Đang lưu…" : "Lưu sức khỏe hôm nay"}</button>
         {message ? <p role="status" className="form-message">{message}</p> : null}
       </form>
+
+      {history.length > 0 ? (
+        <section className="recovery-history" aria-labelledby="recovery-history-title">
+          <div className="section-heading-row">
+            <div><p className="panel-kicker">Nhìn lại nhẹ nhàng</p><h2 id="recovery-history-title">42 ngày gần nhất</h2></div>
+            <span>{history.length} ngày đã ghi</span>
+          </div>
+          <div className="recovery-history-list">
+            {history.map((entry) => {
+              const sleep = typeof entry.sleepMinutes === "number" ? entry.sleepMinutes : null;
+              return (
+                <article key={entry.day} className="recovery-history-row">
+                  <time dateTime={entry.day}>{entry.day.slice(8, 10)}/{entry.day.slice(5, 7)}</time>
+                  <div>
+                    {typeof entry.mood === "number" ? <span>Tâm trạng {entry.mood}/5</span> : null}
+                    {typeof entry.pain === "number" ? <span>Đau {entry.pain}/10</span> : null}
+                    {sleep !== null ? <span>Ngủ {Number.isInteger(sleep / 60) ? sleep / 60 : (sleep / 60).toFixed(1)} giờ</span> : null}
+                    {typeof entry.temperatureC === "number" ? <span>{entry.temperatureC}°C</span> : null}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <p className="screening-note">Đây là lịch sử tự ghi để trao đổi khi tái khám, không phải kết luận y khoa.</p>
+        </section>
+      ) : null}
 
       <section className="postpartum-care-links">
         <h2>Việc chăm sóc tiếp theo</h2>

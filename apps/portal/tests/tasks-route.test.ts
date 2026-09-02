@@ -6,7 +6,7 @@ import { DELETE, GET, PATCH, POST } from "../src/app/api/tasks/route";
 const originalEnvironment = { ...process.env };
 
 function cookie(): string {
-  return `embe_session=${createSessionCookie("server-secret")}`;
+  return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`;
 }
 
 function request(method: string, body?: unknown, authenticated = true): Request {

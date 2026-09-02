@@ -11,7 +11,7 @@ import { estimatedEnergyTarget, PREGNANCY_NUTRIENTS } from "../src/lib/pregnancy
 const originalEnvironment = { ...process.env };
 const planId = "11111111-1111-4111-8111-111111111111";
 
-function cookie(): string { return `embe_session=${createSessionCookie("server-secret")}`; }
+function cookie(): string { return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`; }
 function request(url: string, method: string, body?: unknown, authenticated = true): Request {
   return new Request(url, {
     method, body: body === undefined ? undefined : JSON.stringify(body),

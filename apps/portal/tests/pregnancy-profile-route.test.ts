@@ -16,7 +16,7 @@ function request(method: string, body?: unknown, authenticated = true): Request 
     headers: {
       "content-type": "application/json",
       origin: "https://embe.hieu.asia",
-      ...(authenticated ? { cookie: `embe_session=${createSessionCookie("server-secret")}` } : {})
+      ...(authenticated ? { cookie: `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}` } : {})
     }
   });
 }

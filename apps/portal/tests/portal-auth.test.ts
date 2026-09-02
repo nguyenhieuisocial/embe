@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createSessionCookie,
+  readSessionCookie,
   verifyPassword,
   verifySessionCookie
 } from "../src/lib/portal-auth";
@@ -22,25 +23,37 @@ describe("portal authentication", () => {
     expect(verifyPassword("anything", "not-a-valid-hash")).toBe(false);
   });
 
-  it("creates a signed session that expires after thirty days", () => {
+  it("creates a signed server-side session reference that expires after thirty days", () => {
     const now = new Date("2026-08-30T00:00:00.000Z");
+    const id = "11111111-1111-4111-8111-111111111111";
     const expiresAt = Math.floor(now.getTime() / 1000) + 60 * 60 * 24 * 30;
     const signature = createHmac("sha256", "server-secret")
-      .update(String(expiresAt))
+      .update(`${id}.${expiresAt}`)
       .digest("hex");
 
-    expect(createSessionCookie("server-secret", now)).toBe(`${expiresAt}.${signature}`);
+    expect(createSessionCookie("server-secret", now, id)).toBe(`${id}.${expiresAt}.${signature}`);
   });
 
-  it("accepts an intact unexpired session and rejects tampering or expiry", () => {
+  it("rejects legacy two-part session cookies", () => {
     const expiresAt = 1_800_000_000;
     const signature = createHmac("sha256", "server-secret")
       .update(String(expiresAt))
       .digest("hex");
     const cookie = `${expiresAt}.${signature}`;
 
-    expect(verifySessionCookie(cookie, "server-secret", expiresAt - 1)).toBe(true);
-    expect(verifySessionCookie(`${expiresAt}.${"0".repeat(64)}`, "server-secret", expiresAt - 1)).toBe(false);
-    expect(verifySessionCookie(cookie, "server-secret", expiresAt)).toBe(false);
+    expect(verifySessionCookie(cookie, "server-secret", expiresAt - 1)).toBe(false);
+    expect(readSessionCookie(cookie, "server-secret", expiresAt - 1)).toBeNull();
+  });
+
+  it("does not create a session cookie without a server-side session id", () => {
+    expect(() => createSessionCookie("server-secret", new Date(), undefined as unknown as string)).toThrow("session id");
+  });
+
+  it("binds a signed cookie to an opaque server-side session id", () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    const cookie = createSessionCookie("server-secret", new Date("2026-08-30T00:00:00Z"), id);
+    expect(cookie.startsWith(`${id}.`)).toBe(true);
+    expect(readSessionCookie(cookie, "server-secret", 1_788_000_001)).toMatchObject({ id });
+    expect(readSessionCookie(cookie.replace(id, "22222222-2222-4222-8222-222222222222"), "server-secret", 1_788_000_001)).toBeNull();
   });
 });

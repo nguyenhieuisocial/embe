@@ -26,7 +26,7 @@ describe("create temporary image share link", () => {
 
   it("returns only a same-site, expiring viewer link", async () => {
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
-    const session = createSessionCookie("server-secret");
+    const session = createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111");
     const response = await POST(new Request(`https://embe.hieu.asia/api/share/media/${ID}`, {
       method: "POST",
       headers: { cookie: `embe_session=${session}`, origin: "https://embe.hieu.asia" }

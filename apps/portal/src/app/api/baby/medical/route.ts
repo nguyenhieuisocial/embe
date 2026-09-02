@@ -104,7 +104,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!value || !exact(value, ["id", "kind", "status", "occurredAt", "title", "provider", "clinician", "notes", "nextDueAt", "details"])) return reply({ error: "invalid_request" }, 400);
   const occurredAt = timestamp(value.occurredAt);
   const nextDueAt = timestamp(value.nextDueAt, true);
-  if (value.id !== undefined && (typeof value.id !== "string" || !UUID.test(value.id))
+  if (value.id !== undefined && value.id !== null && (typeof value.id !== "string" || !UUID.test(value.id))
     || typeof value.kind !== "string" || !KINDS.has(value.kind)
     || typeof value.status !== "string" || !STATUSES.has(value.status)
     || !occurredAt || nextDueAt === undefined || textValue(value.title, 120, true) === undefined

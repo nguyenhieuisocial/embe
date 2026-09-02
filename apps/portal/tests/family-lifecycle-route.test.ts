@@ -6,7 +6,7 @@ import { createSessionCookie } from "../src/lib/portal-auth";
 const originalEnvironment = { ...process.env };
 
 function sessionCookie(): string {
-  return `embe_session=${createSessionCookie("server-secret")}`;
+  return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`;
 }
 
 function patchRequest(body: unknown, origin = "https://embe.hieu.asia"): Request {

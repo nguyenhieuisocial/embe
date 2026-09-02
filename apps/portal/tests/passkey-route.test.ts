@@ -23,7 +23,9 @@ import { POST as verify } from "../src/app/api/auth/passkey/verify/route";
 import { DELETE as removeDevice, GET as listDevices } from "../src/app/api/auth/passkey/devices/route";
 
 const originalEnvironment = { ...process.env };
-const familyCookie = () => `embe_session=${createSessionCookie("server-secret")}`;
+const sessionId = "11111111-1111-4111-8111-111111111111";
+const challengeId = "22222222-2222-4222-8222-222222222222";
+const familyCookie = () => `embe_session=${createSessionCookie("server-secret", new Date(), sessionId)}`;
 
 function jsonRequest(path: string, body: unknown, authenticated = false, extraHeaders: Record<string, string> = {}) {
   return new Request(`https://embe.hieu.asia${path}`, {
@@ -48,9 +50,15 @@ describe("passkey API", () => {
     mocks.generateAuthenticationOptions.mockReset();
     mocks.verifyRegistrationResponse.mockReset();
     mocks.verifyAuthenticationResponse.mockReset();
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      return Response.json(url.includes("login_rate_limit")
+        ? { allowed: true, retry_after_seconds: 0 }
+        : true);
+    }));
   });
 
-  afterEach(() => { process.env = { ...originalEnvironment }; });
+  afterEach(() => { vi.unstubAllGlobals(); process.env = { ...originalEnvironment }; });
 
   it("requires the family session before creating a registration ceremony", async () => {
     const response = await options(jsonRequest("/api/auth/passkey/options", { purpose: "register" }));
@@ -59,12 +67,17 @@ describe("passkey API", () => {
   });
 
   it("creates short-lived registration options for Face ID without exposing family PII", async () => {
-    mocks.rpc.mockResolvedValueOnce({ data: [], error: null });
+    mocks.rpc
+      .mockResolvedValueOnce({ data: [], error: null })
+      .mockResolvedValueOnce({ data: challengeId, error: null });
     mocks.generateRegistrationOptions.mockResolvedValueOnce({ challenge: "register-challenge" });
     const response = await options(jsonRequest("/api/auth/passkey/options", { purpose: "register" }, true));
     expect(response.status).toBe(200);
     expect(response.headers.get("set-cookie")).toContain("embe_passkey_challenge=");
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, "embe_create_passkey_challenge", expect.objectContaining({
+      p_purpose: "register"
+    }));
     expect(mocks.generateRegistrationOptions).toHaveBeenCalledWith(expect.objectContaining({
       rpID: "embe.hieu.asia",
       userName: "Gia đình EmBe",
@@ -78,7 +91,9 @@ describe("passkey API", () => {
   });
 
   it("offers registered credentials for passkey login", async () => {
-    mocks.rpc.mockResolvedValueOnce({ data: [{ credential_id: "credential-1", transports: ["internal"] }], error: null });
+    mocks.rpc
+      .mockResolvedValueOnce({ data: [{ credential_id: "credential-1", transports: ["internal"] }], error: null })
+      .mockResolvedValueOnce({ data: challengeId, error: null });
     mocks.generateAuthenticationOptions.mockResolvedValueOnce({ challenge: "login-challenge" });
     const response = await options(jsonRequest("/api/auth/passkey/options", { purpose: "login" }));
     expect(response.status).toBe(200);
@@ -86,6 +101,14 @@ describe("passkey API", () => {
       rpID: "embe.hieu.asia", userVerification: "required",
       allowCredentials: [{ id: "credential-1", transports: ["internal"] }]
     }));
+  });
+
+  it("rate-limits public passkey challenge creation before touching the challenge store", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ allowed: false, retry_after_seconds: 300 })));
+    const response = await options(jsonRequest("/api/auth/passkey/options", { purpose: "login" }));
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("300");
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("verifies a registration and stores only the public credential", async () => {
@@ -96,9 +119,11 @@ describe("passkey API", () => {
         credentialDeviceType: "multiDevice", credentialBackedUp: true
       }
     });
-    mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
+    mocks.rpc
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
     const challenge = await import("../src/lib/passkey").then(({ createPasskeyChallenge }) =>
-      createPasskeyChallenge("register-challenge", "register", "server-secret")
+      createPasskeyChallenge(challengeId, "register-challenge", "register", "server-secret")
     );
     const response = await verify(jsonRequest("/api/auth/passkey/verify", {
       purpose: "register", label: "iPhone của Mẹ Ngân", response: { id: "credential-1" }
@@ -108,7 +133,10 @@ describe("passkey API", () => {
       expectedChallenge: "register-challenge", expectedOrigin: "https://embe.hieu.asia",
       expectedRPID: "embe.hieu.asia", requireUserVerification: true
     }));
-    expect(mocks.rpc).toHaveBeenCalledWith("embe_save_passkey", expect.objectContaining({
+    expect(mocks.rpc).toHaveBeenNthCalledWith(1, "embe_consume_passkey_challenge", expect.objectContaining({
+      p_id: challengeId, p_purpose: "register"
+    }));
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, "embe_save_passkey", expect.objectContaining({
       p_credential_id: "credential-1", p_public_key: "AQID", p_label: "iPhone của Mẹ Ngân"
     }));
   });
@@ -116,10 +144,12 @@ describe("passkey API", () => {
   it("logs in with a verified passkey and advances its replay counter", async () => {
     mocks.rpc
       .mockResolvedValueOnce({ data: { credential_id: "credential-1", public_key: "AQID", counter: 2, transports: ["internal"] }, error: null })
-      .mockResolvedValueOnce({ data: null, error: null });
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: sessionId, error: null });
     mocks.verifyAuthenticationResponse.mockResolvedValueOnce({ verified: true, authenticationInfo: { newCounter: 3 } });
     const challenge = await import("../src/lib/passkey").then(({ createPasskeyChallenge }) =>
-      createPasskeyChallenge("login-challenge", "login", "server-secret")
+      createPasskeyChallenge(challengeId, "login-challenge", "login", "server-secret")
     );
     const response = await verify(jsonRequest("/api/auth/passkey/verify", {
       purpose: "login", response: { id: "credential-1" }
@@ -130,7 +160,49 @@ describe("passkey API", () => {
       credential: expect.objectContaining({ id: "credential-1", counter: 2 }),
       requireUserVerification: true
     }));
-    expect(mocks.rpc).toHaveBeenLastCalledWith("embe_touch_passkey", { p_credential_id: "credential-1", p_counter: 3 });
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, "embe_consume_passkey_challenge", expect.objectContaining({ p_id: challengeId }));
+    expect(mocks.rpc).toHaveBeenNthCalledWith(3, "embe_touch_passkey", {
+      p_credential_id: "credential-1", p_expected_counter: 2, p_new_counter: 3
+    });
+    expect(mocks.rpc).toHaveBeenNthCalledWith(4, "embe_create_portal_session", expect.objectContaining({ p_auth_method: "passkey" }));
+  });
+
+  it("does not update a credential or create a session when a verified challenge was already consumed", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: { credential_id: "credential-1", public_key: "AQID", counter: 0, transports: ["internal"] }, error: null })
+      .mockResolvedValueOnce({ data: false, error: null });
+    mocks.verifyAuthenticationResponse.mockResolvedValueOnce({ verified: true, authenticationInfo: { newCounter: 0 } });
+    const challenge = await import("../src/lib/passkey").then(({ createPasskeyChallenge }) =>
+      createPasskeyChallenge(challengeId, "login-challenge", "login", "server-secret")
+    );
+
+    const response = await verify(jsonRequest("/api/auth/passkey/verify", {
+      purpose: "login", response: { id: "credential-1" }
+    }, false, { cookie: `embe_passkey_challenge=${challenge}` }));
+
+    expect(response.status).toBe(401);
+    expect(mocks.rpc).toHaveBeenCalledTimes(2);
+  });
+
+  it("accepts a zero counter only after consuming its one-time challenge", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: { credential_id: "credential-1", public_key: "AQID", counter: 0, transports: ["internal"] }, error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: sessionId, error: null });
+    mocks.verifyAuthenticationResponse.mockResolvedValueOnce({ verified: true, authenticationInfo: { newCounter: 0 } });
+    const challenge = await import("../src/lib/passkey").then(({ createPasskeyChallenge }) =>
+      createPasskeyChallenge(challengeId, "login-challenge", "login", "server-secret")
+    );
+
+    const response = await verify(jsonRequest("/api/auth/passkey/verify", {
+      purpose: "login", response: { id: "credential-1" }
+    }, false, { cookie: `embe_passkey_challenge=${challenge}` }));
+
+    expect(response.status).toBe(200);
+    expect(mocks.rpc).toHaveBeenNthCalledWith(3, "embe_touch_passkey", {
+      p_credential_id: "credential-1", p_expected_counter: 0, p_new_counter: 0
+    });
   });
 
   it("lists and removes passkey devices only for an authenticated family session", async () => {

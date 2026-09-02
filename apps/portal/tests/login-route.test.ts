@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "../src/app/api/auth/login/route";
 
 const originalEnvironment = { ...process.env };
+const sessionId = "11111111-1111-4111-8111-111111111111";
 
 function requestWith(password: string, next = "/", headers: Record<string, string> = {}): Request {
   return new Request("https://embe.hieu.asia/api/auth/login", {
@@ -24,9 +25,8 @@ describe("password login endpoint", () => {
     process.env.SUPABASE_SECRET_KEY = "server-only-key";
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const name = String(input).split("/").pop();
-      return name === "embe_check_login_rate_limit"
-        ? Response.json({ allowed: true, retry_after_seconds: 0 })
-        : new Response(null, { status: 204 });
+      return name === "embe_check_login_rate_limit" ? Response.json({ allowed: true, retry_after_seconds: 0 })
+        : name === "embe_create_portal_session" ? Response.json(sessionId) : new Response(null, { status: 204 });
     }));
   });
 
@@ -121,9 +121,8 @@ describe("password login endpoint", () => {
     const urls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       urls.push(String(input));
-      return String(input).endsWith("embe_check_login_rate_limit")
-        ? Response.json({ allowed: true, retry_after_seconds: 0 })
-        : new Response(null, { status: 204 });
+      return String(input).endsWith("embe_check_login_rate_limit") ? Response.json({ allowed: true, retry_after_seconds: 0 })
+        : String(input).endsWith("embe_create_portal_session") ? Response.json(sessionId) : new Response(null, { status: 204 });
     }));
 
     const response = await POST(requestWith("family-secret"));
@@ -132,14 +131,15 @@ describe("password login endpoint", () => {
     expect(urls.some((url) => url.endsWith("/rpc/embe_reset_login_rate_limit"))).toBe(true);
   });
 
-  it("does not lock the family out when the rate-limit store is unavailable", async () => {
+  it("fails closed when the server-side session registry is unavailable", async () => {
     const fetchMock = vi.fn(async () => { throw new Error("offline"); });
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await POST(requestWith("family-secret"));
 
     expect(fetchMock).toHaveBeenCalled();
-    expect(response.headers.get("set-cookie")).toContain("embe_session=");
+    expect(response.status).toBe(503);
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 
   it("allows the same private session on loopback HTTP for local visual verification", async () => {

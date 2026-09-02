@@ -23,7 +23,7 @@ function request(method: string, body?: unknown, authenticated = true, origin = 
     headers: {
       ...(body === undefined ? {} : { "content-type": "application/json" }),
       ...(method === "GET" ? {} : { origin }),
-      ...(authenticated ? { cookie: `embe_session=${createSessionCookie("server-secret")}` } : {})
+      ...(authenticated ? { cookie: `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}` } : {})
     }
   });
 }
@@ -70,7 +70,7 @@ describe("private pregnancy symptom journal API", () => {
   it("returns a bounded saved history without caching it", async () => {
     rpc.mockResolvedValueOnce({ data: [entry], error: null });
     const response = await GET(new Request("https://embe.hieu.asia/api/pregnancy/symptoms?limit=20", {
-      headers: { cookie: `embe_session=${createSessionCookie("server-secret")}` }
+      headers: { cookie: `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}` }
     }));
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");

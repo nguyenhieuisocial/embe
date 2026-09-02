@@ -6,7 +6,7 @@ import { GET, POST } from "../src/app/api/inventory/route";
 const originalEnvironment = { ...process.env };
 
 function sessionCookie(): string {
-  return `embe_session=${createSessionCookie("server-secret")}`;
+  return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`;
 }
 
 describe("private inventory endpoint", () => {

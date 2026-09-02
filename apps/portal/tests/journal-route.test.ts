@@ -40,7 +40,7 @@ describe("mobile journal endpoint", () => {
   });
 
   it("validates short text, role and idempotency key before storage", async () => {
-    const cookie = createSessionCookie("server-secret");
+    const cookie = createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111");
     const response = await POST(requestWith({
       content: "  ",
       authorRole: "admin",
@@ -52,7 +52,7 @@ describe("mobile journal endpoint", () => {
   });
 
   it("rejects a foreign origin before storage", async () => {
-    const cookie = createSessionCookie("server-secret");
+    const cookie = createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111");
     const response = await POST(requestWith({
       content: "Một ngày vui",
       authorRole: "father",
@@ -64,7 +64,7 @@ describe("mobile journal endpoint", () => {
   });
 
   it("stores a bounded server-side request without exposing credentials", async () => {
-    const cookie = createSessionCookie("server-secret");
+    const cookie = createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111");
     const response = await POST(requestWith({
       content: "  Hôm nay cả nhà cùng đi dạo.  ",
       authorRole: "father",
@@ -91,7 +91,7 @@ describe("mobile journal endpoint", () => {
 
   it("fails closed when the private store is unavailable", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response("unavailable", { status: 503 }));
-    const cookie = createSessionCookie("server-secret");
+    const cookie = createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111");
     const response = await POST(requestWith({
       content: "Một ngày vui",
       authorRole: "mother",

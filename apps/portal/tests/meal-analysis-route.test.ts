@@ -23,7 +23,7 @@ const rawAnalysis = {
   estimate_notice: "Ước lượng từ ảnh; cần xác nhận món và khẩu phần trước khi lưu."
 };
 
-function cookie(): string { return `embe_session=${createSessionCookie("server-secret")}`; }
+function cookie(): string { return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`; }
 function request(url: string, body: unknown, method = "POST", authenticated = true): Request {
   return new Request(url, {
     method, body: body === undefined ? undefined : JSON.stringify(body),

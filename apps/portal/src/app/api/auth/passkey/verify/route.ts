@@ -2,9 +2,11 @@ import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simpl
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from "@simplewebauthn/server";
 import { NextResponse } from "next/server";
 
-import { createSessionCookie, verifySessionCookie } from "../../../../../lib/portal-auth";
-import { cookieValue, hasExpectedOrigin, passkeySite, readPasskeyChallenge, validCredentialId } from "../../../../../lib/passkey";
+import { createSessionCookie } from "../../../../../lib/portal-auth";
+import { cookieValue, hasExpectedOrigin, passkeyChallengeHash, passkeySite, readPasskeyChallenge, validCredentialId } from "../../../../../lib/passkey";
 import { onePasskey, passkeyStore } from "../../../../../lib/passkey-store";
+import { loginRateKey, resetLoginRate } from "../../../../../lib/login-rate-limit";
+import { activeRequestSession, isSessionId } from "../../../../../lib/session-store";
 
 const PRIVATE_HEADERS = { "cache-control": "private, no-store" };
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
@@ -18,7 +20,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const body = await request.json().catch(() => null) as { purpose?: unknown; label?: unknown; response?: unknown } | null;
   const purpose = body?.purpose;
   if (purpose !== "login" && purpose !== "register") return NextResponse.json({ error: "invalid" }, { status: 400, headers: PRIVATE_HEADERS });
-  if (purpose === "register" && !verifySessionCookie(cookieValue(request, "embe_session"), secret)) {
+  if (purpose === "register" && !await activeRequestSession(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: PRIVATE_HEADERS });
   }
   const challenge = readPasskeyChallenge(cookieValue(request, "embe_passkey_challenge"), purpose, secret);
@@ -41,12 +43,19 @@ export async function POST(request: Request): Promise<NextResponse> {
       if (label.length < 1 || label.length > 60) return NextResponse.json({ error: "invalid" }, { status: 400, headers: PRIVATE_HEADERS });
       const verified = await verifyRegistrationResponse({
         response: ceremonyResponse as RegistrationResponseJSON,
-        expectedChallenge: challenge,
+        expectedChallenge: challenge.challenge,
         expectedOrigin: site.origin,
         expectedRPID: site.rpID,
         requireUserVerification: true
       });
       if (!verified.verified) return NextResponse.json({ error: "invalid" }, { status: 401, headers: PRIVATE_HEADERS });
+      const consumed = await store.rpc("embe_consume_passkey_challenge", {
+        p_id: challenge.id,
+        p_challenge_hash: passkeyChallengeHash(challenge.challenge, purpose),
+        p_purpose: purpose
+      });
+      if (consumed.error) return NextResponse.json({ error: "unavailable" }, { status: 503, headers: PRIVATE_HEADERS });
+      if (consumed.data !== true) return NextResponse.json({ error: "invalid" }, { status: 401, headers: PRIVATE_HEADERS });
       const credential = verified.registrationInfo.credential;
       const { error } = await store.rpc("embe_save_passkey", {
         p_credential_id: credential.id,
@@ -66,7 +75,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!stored) return NextResponse.json({ error: "invalid" }, { status: 401, headers: PRIVATE_HEADERS });
     const verified = await verifyAuthenticationResponse({
       response: ceremonyResponse as AuthenticationResponseJSON,
-      expectedChallenge: challenge,
+      expectedChallenge: challenge.challenge,
       expectedOrigin: site.origin,
       expectedRPID: site.rpID,
       credential: {
@@ -78,15 +87,30 @@ export async function POST(request: Request): Promise<NextResponse> {
       requireUserVerification: true
     });
     if (!verified.verified) return NextResponse.json({ error: "invalid" }, { status: 401, headers: PRIVATE_HEADERS });
+    const consumed = await store.rpc("embe_consume_passkey_challenge", {
+      p_id: challenge.id,
+      p_challenge_hash: passkeyChallengeHash(challenge.challenge, purpose),
+      p_purpose: purpose
+    });
+    if (consumed.error) return NextResponse.json({ error: "unavailable" }, { status: 503, headers: PRIVATE_HEADERS });
+    if (consumed.data !== true) return NextResponse.json({ error: "invalid" }, { status: 401, headers: PRIVATE_HEADERS });
     const touched = await store.rpc("embe_touch_passkey", {
       p_credential_id: stored.credential_id,
-      p_counter: verified.authenticationInfo.newCounter
+      p_expected_counter: stored.counter,
+      p_new_counter: verified.authenticationInfo.newCounter
     });
     if (touched.error) return NextResponse.json({ error: "unavailable" }, { status: 503, headers: PRIVATE_HEADERS });
-    result.cookies.set("embe_session", createSessionCookie(secret), {
+    const now = new Date();
+    const session = await store.rpc("embe_create_portal_session", {
+      p_device_name: stored.label ? `Face ID · ${stored.label}`.slice(0, 80) : "Face ID trên iPhone",
+      p_auth_method: "passkey", p_expires_at: new Date(now.getTime() + SESSION_LIFETIME_SECONDS * 1000).toISOString()
+    });
+    if (session.error || !isSessionId(session.data)) return NextResponse.json({ error: "unavailable" }, { status: 503, headers: PRIVATE_HEADERS });
+    result.cookies.set("embe_session", createSessionCookie(secret, now, session.data), {
       httpOnly: true, secure: site.origin.startsWith("https://"), sameSite: "lax",
       maxAge: SESSION_LIFETIME_SECONDS, path: "/"
     });
+    await resetLoginRate(loginRateKey(request, secret, "passkey"));
     return result;
   } catch {
     return NextResponse.json({ error: "invalid" }, { status: 401, headers: PRIVATE_HEADERS });

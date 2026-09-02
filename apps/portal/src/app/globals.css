@@ -474,6 +474,15 @@ ol, ul { margin: 0; padding: 0; }
 .settings-family > a { align-items: center; border-top: 1px solid var(--line); color: var(--rose); display: flex; font-size: .8rem; font-weight: 650; justify-content: space-between; min-height: 50px; text-decoration: none; }
 .settings-family > a .icon { height: 18px; width: 18px; }
 .settings-family > p { color: var(--ink-soft); font-size: .69rem; line-height: 1.55; padding-top: 8px; }
+.family-trash { display: grid; gap: 8px; }
+.family-trash-empty { color: var(--ink-soft); font-size: .74rem; line-height: 1.5; }
+.family-trash-list { display: grid; list-style: none; margin: 0; padding: 0; }
+.family-trash-list li { align-items: center; border-top: 1px solid var(--line); display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) auto; min-height: 58px; }
+.family-trash-list span { display: grid; gap: 2px; min-width: 0; }
+.family-trash-list strong { font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.family-trash-list small { color: var(--ink-soft); font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trash-restore { background: transparent; border: 0; color: var(--rose); font: inherit; font-size: .73rem; font-weight: 700; min-height: 44px; padding-inline: 8px; }
+.trash-restore:disabled { opacity: .55; }
 
 html[data-embe-text="large"] body { font-size: 1.0625rem; }
 html[data-embe-motion="reduced"] *,
@@ -1368,6 +1377,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .discharge-fields > summary { cursor: pointer; font-size: .8125rem; font-weight: 600; min-height: 44px; padding: 12px 0; }
 .discharge-fields fieldset { padding-top: 8px; }
 .birth-form .primary-action { min-height: 48px; }
+.birth-next-actions { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
+.birth-next-actions a { align-items: center; border: 1px solid var(--line); border-radius: 12px; display: flex; font-size: .78rem; font-weight: 600; justify-content: center; min-height: 48px; padding: 8px; text-align: center; }
 .form-message { color: var(--jade); font-size: .8125rem; line-height: 1.5; }
 .form-boundary { color: var(--ink-soft); font-size: .6875rem; line-height: 1.5; }
 
@@ -1381,6 +1392,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .postpartum-hero > p:last-child { color: var(--ink-soft); font-size: .875rem; line-height: 1.55; }
 .postpartum-urgent,
 .postpartum-form,
+.recovery-history,
 .postpartum-care-links { margin-inline: 16px; }
 .postpartum-urgent {
   background: #fff5f6;
@@ -1435,6 +1447,14 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .postpartum-check { align-items: center; display: flex; font-size: .8125rem; gap: 9px; min-height: 44px; padding-top: 10px; }
 .postpartum-check input { height: 20px; width: 20px; }
 .screening-note { background: #fbf4f7; border-radius: 11px; color: var(--ink-soft); font-size: .72rem; line-height: 1.55; margin-top: 10px; padding: 10px; }
+.recovery-history { background: var(--surface); border: 1px solid var(--line); border-radius: 17px; padding: 14px; }
+.recovery-history .section-heading-row > span { color: var(--ink-soft); font-size: .7rem; }
+.recovery-history h2 { font-size: 1.05rem; }
+.recovery-history-list { display: grid; margin-top: 9px; }
+.recovery-history-row { align-items: center; border-top: 1px solid var(--line); display: grid; gap: 10px; grid-template-columns: 48px 1fr; min-height: 48px; }
+.recovery-history-row time { color: var(--rose); font-size: .75rem; font-weight: 700; }
+.recovery-history-row div { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.recovery-history-row span { color: var(--ink-soft); font-size: .72rem; }
 .postpartum-care-links { background: var(--surface); border: 1px solid var(--line); border-radius: 17px; display: grid; gap: 4px; padding: 14px; }
 .postpartum-care-links a { align-items: center; border-top: 1px solid var(--line); display: flex; font-size: .8125rem; min-height: 46px; }
 
@@ -1759,6 +1779,57 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .health-save-state { color: var(--ink-soft); font-size: .8125rem; margin-top: -8px; text-align: center; }
 .health-save-state.is-saved { color: var(--jade); }
 .health-save-state.is-error { color: var(--coral); }
+.pregnancy-private-tools { display: flex; gap: 8px; }
+.pregnancy-private-tools a { flex: 1; text-align: center; }
+.mental-health-main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.mental-hero { padding-bottom: 4px; }
+.mental-checkin-form { gap: 14px; }
+.mental-choice-grid { border: 0; margin: 0; padding: 0; }
+.mental-choice-grid legend { color: var(--ink); font-size: .875rem; font-weight: 650; margin-bottom: 8px; padding: 0; }
+.mental-choice-grid > div { display: grid; gap: 6px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.mental-choice-grid button {
+  align-items: center; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+  color: var(--ink-soft); display: flex; flex-direction: column; gap: 4px; justify-content: center;
+  min-height: 58px; padding: 6px 2px;
+}
+.mental-choice-grid button span { font-size: 1.25rem; line-height: 1; }
+.mental-choice-grid button strong { font-size: .9rem; }
+.mental-choice-grid button small { font-size: .61rem; line-height: 1.15; }
+.mental-choice-grid button[aria-pressed="true"] { background: #fff0f4; border-color: #c56c87; color: #91435c; font-weight: 650; }
+.mental-choice-grid button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+.mental-screening { background: #fffafb; border: 1px solid #f0dce3; border-radius: 16px; overflow: clip; }
+.mental-screening > summary, .mental-history > summary { align-items: center; cursor: pointer; display: flex; justify-content: space-between; list-style: none; min-height: 54px; padding: 10px 13px; }
+.mental-screening > summary::-webkit-details-marker, .mental-history > summary::-webkit-details-marker { display: none; }
+.mental-screening > summary span, .mental-history > summary span { display: grid; gap: 2px; }
+.mental-screening > summary strong, .mental-history > summary strong { font-size: .82rem; }
+.mental-screening > summary small, .mental-history > summary small { color: var(--ink-soft); font-size: .68rem; }
+.mental-screening > summary i, .mental-history > summary i { color: var(--rose); font-style: normal; }
+.mental-screening[open] > summary i, .mental-history[open] > summary i { transform: rotate(180deg); }
+.mental-screening > div { border-top: 1px solid #f0dce3; display: grid; gap: 10px; padding: 12px; }
+.mental-screening h3, .mental-screening p { margin: 0; }
+.mental-screening h3 { font-size: .82rem; margin-top: 4px; }
+.mental-screening label { color: var(--ink-soft); display: grid; font-size: .72rem; gap: 5px; }
+.mental-screening select { min-height: 44px; }
+.mental-trends > div { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mental-trends > p { color: var(--ink-soft); font-size: .7rem; line-height: 1.45; margin: 8px 0 0; }
+.mental-trend { background: linear-gradient(145deg, #fff4f7, #fff); border: 1px solid #f0dce3; border-radius: 16px; display: grid; gap: 2px; padding: 12px; }
+.mental-trend span, .mental-trend small { color: var(--ink-soft); font-size: .66rem; line-height: 1.35; }
+.mental-trend strong { color: #91435c; font-size: 1.2rem; }
+.mental-history { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: clip; }
+.mental-history > div { border-top: 1px solid var(--line); display: grid; }
+.mental-history article { display: grid; gap: 4px; padding: 11px 13px; }
+.mental-history article + article { border-top: 1px solid var(--line); }
+.mental-history article > div { align-items: baseline; display: flex; gap: 8px; justify-content: space-between; }
+.mental-history article strong { font-size: .8rem; }
+.mental-history article time, .mental-history article small { color: var(--ink-soft); font-size: .66rem; }
+.mental-history article p { color: var(--ink-soft); font-size: .73rem; line-height: 1.45; margin: 2px 0 0; }
+.mental-history article details summary { color: #91435c; cursor: pointer; font-size: .7rem; min-height: 44px; padding-top: 10px; }
+.mental-urgent { margin: 0 var(--page-gutter); }
+.mental-urgent details { background: #fff7f4; border: 1px solid #f0d8cf; border-radius: 16px; overflow: clip; }
+.mental-urgent summary { color: #8a4938; cursor: pointer; font-size: .78rem; font-weight: 650; list-style-position: inside; min-height: 44px; padding: 12px; }
+.mental-urgent details > div { border-top: 1px solid #f0d8cf; padding: 0 12px 12px; }
+.mental-urgent p { color: var(--ink-soft); font-size: .72rem; line-height: 1.5; }
+.mental-urgent a { align-items: center; background: #a44d38; border-radius: 999px; color: white; display: inline-flex; font-size: .78rem; font-weight: 700; justify-content: center; min-height: 44px; padding: 8px 16px; text-decoration: none; }
 .health-chart-heading {
   align-items: end;
   display: flex;
@@ -3994,9 +4065,11 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   body:has(.family-book-preview) .family-book-records > article,
   body:has(.family-book-preview) .family-book-plans > article { break-inside: avoid; }
 }
-.baby-medical-page{padding-bottom:calc(7rem + env(safe-area-inset-bottom))}.baby-medical-panel{margin:1rem 0;padding:1rem;border-radius:1.35rem;background:var(--surface,#fff);box-shadow:0 10px 32px rgba(94,50,70,.08)}.baby-next-care{display:grid;gap:.18rem;margin:.8rem 0;padding:.85rem 1rem;border:1px solid rgba(150,64,95,.15);border-radius:1.1rem;background:#fff7fa;color:inherit;text-decoration:none}.baby-next-care small,.baby-medical-timeline small{color:#9a5570}.baby-next-care span,.baby-medical-timeline time{font-size:.8rem;color:#76656c}.baby-medical-timeline{display:grid;gap:.75rem;margin-top:1rem}.baby-medical-timeline article{display:grid;gap:.28rem;padding:.9rem;border-radius:1rem;background:#fff9fb;border:1px solid rgba(150,64,95,.1)}.baby-medical-timeline article a{width:max-content;max-width:100%;font-size:.82rem;color:#8d3d5c}.baby-medical-timeline article p{margin:0;font-size:.86rem}.empty-state{padding:1rem;border-radius:1rem;background:#fbf7f8;color:#74666c}
+.baby-medical-page{padding-bottom:calc(7rem + env(safe-area-inset-bottom))}.baby-medical-panel{margin:1rem 0;padding:1rem;border-radius:1.35rem;background:var(--surface,#fff);box-shadow:0 10px 32px rgba(94,50,70,.08)}.baby-next-care{display:grid;gap:.18rem;margin:.8rem 0;padding:.85rem 1rem;border:1px solid rgba(150,64,95,.15);border-radius:1.1rem;background:#fff7fa;color:inherit;text-decoration:none}.baby-next-care small,.baby-medical-timeline small{color:#9a5570}.baby-next-care span,.baby-medical-timeline time{font-size:.8rem;color:#76656c}.baby-medical-timeline{display:grid;gap:.75rem;margin-top:1rem}.baby-medical-timeline article{display:grid;gap:.28rem;padding:.9rem;border-radius:1rem;background:#fff9fb;border:1px solid rgba(150,64,95,.1)}.baby-medical-timeline article a{width:max-content;max-width:100%;font-size:.82rem;color:#8d3d5c}.baby-medical-timeline article p{margin:0;font-size:.86rem}.medical-edit{align-items:center;align-self:end;background:transparent;border:0;border-radius:.75rem;color:#8d3d5c;display:flex;font:inherit;font-size:.78rem;font-weight:650;justify-content:center;justify-self:end;min-height:44px;min-width:52px;padding:.45rem .65rem}.empty-state{padding:1rem;border-radius:1rem;background:#fbf7f8;color:#74666c}
 .labor-card{display:grid;gap:.75rem;margin:1rem 0;padding:1rem;border-radius:1.4rem;background:linear-gradient(145deg,#fff3f7,#fff);border:1px solid rgba(150,64,95,.12);text-align:center}.labor-card>strong{font:600 2.1rem var(--font-display);color:#873c59}.labor-card>button{min-height:52px;border:0;border-radius:999px;background:#96405f;color:#fff;font-weight:600}.labor-card>small{font-size:.76rem;color:#75656b;text-align:left}.contraction-history{display:flex;gap:.4rem;overflow:auto}.contraction-history span{flex:none;padding:.45rem .65rem;border-radius:999px;background:#fff;font-size:.72rem}.birth-contact-actions,.birth-prep-links{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:.8rem 0}.birth-contact-actions a,.birth-prep-links a{display:grid;place-items:center;min-height:48px;padding:.45rem;border-radius:1rem;background:#fff;border:1px solid rgba(150,64,95,.14);color:#74334d;text-align:center;text-decoration:none;font-size:.78rem;font-weight:600}
 .segment-control{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;padding:.3rem;border-radius:999px;background:#f5edf0;margin:1rem 0}.segment-control button{min-height:44px;border:0;border-radius:999px;background:transparent;color:#735963}.segment-control button[aria-pressed=true]{background:#fff;color:#853c58;box-shadow:0 3px 12px rgba(86,43,60,.08)}.growth-table{display:grid;gap:.45rem;margin:1rem 0}.growth-table article{display:grid;grid-template-columns:1.2fr repeat(3,1fr);gap:.35rem;padding:.7rem;border-radius:.85rem;background:#fff8fa;font-size:.76rem;align-items:center}.growth-table time{font-weight:600}.check-line{display:flex!important;align-items:center;gap:.55rem}.check-line input{width:20px;height:20px}
+.baby-growth-card{overflow:hidden}.baby-growth-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem}.baby-growth-heading h2{margin:0}.baby-growth-heading p{margin:.15rem 0 0;color:#806a73;font-size:.78rem}.baby-growth-heading>span{padding:.25rem .5rem;border-radius:999px;background:#fff2f6;color:#8a4660;font-size:.72rem;font-weight:700}.baby-growth-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.25rem;margin:.75rem 0}.baby-growth-tabs button{min-height:44px;padding:.35rem;border:0;border-radius:.75rem;background:#f8f1f3;color:#715a63;font:inherit;font-size:.76rem}.baby-growth-tabs button[aria-pressed=true]{background:#9d536d;color:#fff}.baby-growth-svg{display:block;width:100%;height:auto;min-height:154px}.baby-growth-svg text{fill:#816d74;font-size:9px}.growth-band{fill:#f6dce5;stroke:none}.growth-median{fill:none;stroke:#c9899f;stroke-width:1.5;stroke-dasharray:3 3}.growth-observation-line{fill:none;stroke:#754358;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.growth-observation{fill:#754358;stroke:#fff;stroke-width:2}.baby-growth-legend{display:flex;flex-wrap:wrap;gap:.55rem 1rem;color:#765f68;font-size:.7rem}.baby-growth-legend span{display:flex;align-items:center;gap:.3rem}.baby-growth-legend i{display:inline-block;width:.8rem;height:.45rem;border-radius:999px}.who-band-swatch{background:#f0cbd8}.baby-dot-swatch{background:#754358}.baby-growth-note,.baby-growth-source,.baby-growth-empty{margin:.65rem 0 0;font-size:.76rem;line-height:1.45}.baby-growth-note{padding:.55rem .65rem;border-radius:.7rem;background:#fff5e8;color:#73562e}.baby-growth-source{color:#76616a}.baby-growth-source a{color:#874660;font-weight:650}.baby-growth-card>small{display:block;margin-top:.55rem;color:#735f67;line-height:1.45}
+@media(max-width:390px){.growth-table article{grid-template-columns:1fr 1fr}.growth-table time{grid-column:1/-1}.baby-growth-tabs button{font-size:.7rem}}
 .stage-feature-link{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0;padding:.9rem 1rem;border-radius:1.15rem;background:#fff6f9;border:1px solid rgba(150,64,95,.12);color:#6f344a;text-decoration:none}.stage-feature-link span:first-child{display:grid;gap:.12rem}.stage-feature-link small{font-size:.7rem;color:#9b6d7e}.baby-hub-links{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin:1rem 0}.baby-hub-links a{display:grid;gap:.2rem;padding:.9rem;border-radius:1.1rem;background:#fff7fa;border:1px solid rgba(150,64,95,.12);color:#6f344a;text-decoration:none}.baby-hub-links span{font-size:.7rem;color:#927080}.baby-hub-links b{font-size:.86rem}
 .stage-today-actions{display:grid;gap:.5rem}.stage-today-actions a{display:grid;gap:.15rem;min-height:54px;padding:.75rem .85rem;border-radius:1rem;background:#fff7fa;color:#6f344a;text-decoration:none}.stage-today-actions span{font-size:.74rem;color:#8c707a}
 
@@ -4174,6 +4247,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .birth-transition { border-radius: 13px; margin: 8px 0 0; }
   .birth-transition > summary,
   .birth-transition-summary { min-height: 44px; padding: 7px 10px; }
+  .birth-next-actions { grid-template-columns: 1fr; }
   .stage-feature-link { margin: 8px 0; min-height: 44px; padding: 7px 10px; }
   .pregnancy-jump { gap: 5px; padding-block: 4px; }
   .pregnancy-jump a { font-size: .72rem; padding: 6px 10px; }

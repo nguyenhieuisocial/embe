@@ -2,7 +2,10 @@ import AdvancedDeviceSettings from "../../components/advanced-device-settings";
 import AppHeader from "../../components/app-header";
 import DeviceSetup from "../../components/device-setup";
 import FamilyProfile from "../../components/family-profile";
+import FamilyDataExport from "../../components/family-data-export";
+import FamilyTrash from "../../components/family-trash";
 import PasskeySettings from "../../components/passkey-settings";
+import SessionSettings from "../../components/session-settings";
 import { Icon } from "../../components/embe-icon";
 
 export default function SettingsPage() {
@@ -18,8 +21,11 @@ export default function SettingsPage() {
 
       <DeviceSetup />
       <PasskeySettings />
+      <SessionSettings />
       <AdvancedDeviceSettings />
       <FamilyProfile />
+      <FamilyDataExport />
+      <FamilyTrash />
 
       <section className="section settings-family" aria-labelledby="settings-family-title">
         <div className="section-head">

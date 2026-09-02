@@ -2,7 +2,7 @@
 -- Reference nutrient targets stay versioned in application code; this schema only
 -- stores family-entered facts and selected HealthKit aggregates.
 
-CREATE TABLE portal_read_model.pregnancy_wellness_profile (
+CREATE TABLE IF NOT EXISTS portal_read_model.pregnancy_wellness_profile (
   singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
   birth_date date CHECK (birth_date IS NULL OR birth_date BETWEEN DATE '1940-01-01' AND CURRENT_DATE),
   height_cm numeric(5,1) CHECK (height_cm IS NULL OR height_cm BETWEEN 120 AND 220),
@@ -42,7 +42,7 @@ CREATE INDEX pregnancy_care_intake_day_idx
 CREATE INDEX pregnancy_care_plan_active_idx
   ON portal_read_model.pregnancy_care_plan (active, category) WHERE active;
 
-CREATE TABLE portal_read_model.iphone_health_device (
+CREATE TABLE IF NOT EXISTS portal_read_model.iphone_health_device (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   token_hash text NOT NULL UNIQUE CHECK (token_hash ~ '^[0-9a-f]{64}$'),
   label text NOT NULL CHECK (char_length(btrim(label)) BETWEEN 1 AND 60),
@@ -51,7 +51,7 @@ CREATE TABLE portal_read_model.iphone_health_device (
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
 );
 
-CREATE TABLE portal_read_model.iphone_health_daily (
+CREATE TABLE IF NOT EXISTS portal_read_model.iphone_health_daily (
   device_id uuid NOT NULL REFERENCES portal_read_model.iphone_health_device(id) ON DELETE CASCADE,
   day date NOT NULL CHECK (day BETWEEN DATE '2020-01-01' AND DATE '2100-12-31'),
   steps integer CHECK (steps IS NULL OR steps BETWEEN 0 AND 200000),

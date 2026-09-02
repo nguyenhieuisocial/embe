@@ -52,13 +52,17 @@ CREATE OR REPLACE FUNCTION public.embe_claim_photo_upload()
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
 DECLARE claimed portal_read_model.photo_upload%ROWTYPE;
 BEGIN
-  UPDATE portal_read_model.photo_upload SET status = 'failed', claimed_at = NULL
-  WHERE status = 'importing' AND claimed_at < timezone('utc', now()) - interval '15 minutes';
+  UPDATE portal_read_model.photo_upload
+  SET status = 'rejected', claimed_at = NULL, last_error_code = 'worker_timeout'
+  WHERE status = 'importing' AND attempts >= 20
+    AND claimed_at < timezone('utc', now()) - interval '15 minutes';
   UPDATE portal_read_model.photo_upload AS queue
-  SET status = 'importing', attempts = attempts + 1, claimed_at = timezone('utc', now())
+  SET status = 'importing', attempts = attempts + 1,
+      claimed_at = timezone('utc', now()), last_error_code = NULL
   WHERE queue.id = (
     SELECT candidate.id FROM portal_read_model.photo_upload AS candidate
-    WHERE candidate.status IN ('uploaded', 'failed') AND candidate.next_attempt_at <= timezone('utc', now())
+    WHERE ((candidate.status IN ('uploaded', 'failed') AND candidate.next_attempt_at <= timezone('utc', now()))
+      OR (candidate.status = 'importing' AND candidate.claimed_at < timezone('utc', now()) - interval '15 minutes'))
       AND candidate.attempts < 20 ORDER BY candidate.created_at FOR UPDATE SKIP LOCKED LIMIT 1
   ) RETURNING queue.* INTO claimed;
   IF claimed.id IS NULL THEN RETURN NULL; END IF;

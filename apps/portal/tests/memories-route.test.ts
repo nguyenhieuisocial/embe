@@ -26,7 +26,7 @@ describe("private paginated memories", () => {
   it("passes bounded pagination to the private read model", async () => {
     process.env.EMBE_PORTAL_SESSION_SECRET = SECRET;
     const request = new Request("https://embe.hieu.asia/api/memories?offset=48&limit=24", {
-      headers: { cookie: `embe_session=${createSessionCookie(SECRET)}` }
+      headers: { cookie: `embe_session=${createSessionCookie(SECRET, new Date(), "11111111-1111-4111-8111-111111111111")}` }
     });
     const response = await GET(request);
     expect(response.status).toBe(200);
@@ -36,7 +36,7 @@ describe("private paginated memories", () => {
 
   it("filters one Vietnamese calendar day and rejects malformed dates", async () => {
     process.env.EMBE_PORTAL_SESSION_SECRET = SECRET;
-    const cookie = `embe_session=${createSessionCookie(SECRET)}`;
+    const cookie = `embe_session=${createSessionCookie(SECRET, new Date(), "11111111-1111-4111-8111-111111111111")}`;
     const response = await GET(new Request("https://embe.hieu.asia/api/memories?date=2026-08-30", {
       headers: { cookie }
     }));
@@ -57,7 +57,7 @@ describe("private paginated memories", () => {
 
   it("passes a validated folder album filter", async () => {
     process.env.EMBE_PORTAL_SESSION_SECRET = SECRET;
-    const cookie = `embe_session=${createSessionCookie(SECRET)}`;
+    const cookie = `embe_session=${createSessionCookie(SECRET, new Date(), "11111111-1111-4111-8111-111111111111")}`;
     const response = await GET(new Request("https://embe.hieu.asia/api/memories?album=da-lat-2025", { headers: { cookie } }));
 
     expect(response.status).toBe(200);

@@ -299,7 +299,10 @@ export default function PregnancyPage() {
         <a href="#cam-nang">Cẩm nang</a>
       </nav>
 
-      <div className="pregnancy-reference-label"><a href="/me-bau/trieu-chung">Ghi triệu chứng &amp; tâm trạng</a></div>
+      <div className="pregnancy-reference-label pregnancy-private-tools">
+        <a href="/me-bau/tam-trang">Ghi tâm trạng</a>
+        <a href="/me-bau/trieu-chung">Ghi triệu chứng</a>
+      </div>
 
       <a className="iphone-health-entry" href="#suc-khoe-iphone">
         <span className="iphone-health-entry-mark" aria-hidden="true"><Icon name="care" /></span>

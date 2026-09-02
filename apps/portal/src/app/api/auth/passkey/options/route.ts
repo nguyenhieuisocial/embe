@@ -3,9 +3,10 @@ import { createHash } from "node:crypto";
 import { generateAuthenticationOptions, generateRegistrationOptions } from "@simplewebauthn/server";
 import { NextResponse } from "next/server";
 
-import { verifySessionCookie } from "../../../../../lib/portal-auth";
-import { cookieValue, createPasskeyChallenge, hasExpectedOrigin, passkeySite } from "../../../../../lib/passkey";
+import { createPasskeyChallenge, hasExpectedOrigin, passkeyChallengeHash, passkeySite, validChallengeId } from "../../../../../lib/passkey";
 import { passkeyList, passkeyStore } from "../../../../../lib/passkey-store";
+import { checkLoginRate, loginRateKey, recordLoginFailure } from "../../../../../lib/login-rate-limit";
+import { activeRequestSession } from "../../../../../lib/session-store";
 
 const PRIVATE_HEADERS = { "cache-control": "private, no-store" };
 
@@ -20,8 +21,26 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (purpose !== "login" && purpose !== "register") {
     return NextResponse.json({ error: "invalid" }, { status: 400, headers: PRIVATE_HEADERS });
   }
-  if (purpose === "register" && !verifySessionCookie(cookieValue(request, "embe_session"), secret)) {
+  if (purpose === "register" && !await activeRequestSession(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: PRIVATE_HEADERS });
+  }
+  if (purpose === "login") {
+    const rateKey = loginRateKey(request, secret, "passkey");
+    const now = new Date();
+    const current = await checkLoginRate(rateKey, now);
+    if (current && !current.allowed) {
+      return NextResponse.json({ error: "rate_limited" }, {
+        status: 429,
+        headers: { ...PRIVATE_HEADERS, "retry-after": String(current.retryAfterSeconds) }
+      });
+    }
+    const recorded = await recordLoginFailure(rateKey, now);
+    if (recorded && !recorded.allowed) {
+      return NextResponse.json({ error: "rate_limited" }, {
+        status: 429,
+        headers: { ...PRIVATE_HEADERS, "retry-after": String(recorded.retryAfterSeconds) }
+      });
+    }
   }
 
   const store = passkeyStore();
@@ -51,8 +70,18 @@ export async function POST(request: Request): Promise<NextResponse> {
       allowCredentials: credentials.map((credential) => ({ id: credential.credential_id, transports: credential.transports }))
     });
 
+  const now = new Date();
+  const created = await store.rpc("embe_create_passkey_challenge", {
+    p_challenge_hash: passkeyChallengeHash(options.challenge, purpose),
+    p_purpose: purpose,
+    p_expires_at: new Date(now.getTime() + 5 * 60 * 1000).toISOString()
+  });
+  if (created.error || !validChallengeId(created.data)) {
+    return NextResponse.json({ error: "unavailable" }, { status: 503, headers: PRIVATE_HEADERS });
+  }
+
   const response = NextResponse.json(options, { headers: PRIVATE_HEADERS });
-  response.cookies.set("embe_passkey_challenge", createPasskeyChallenge(options.challenge, purpose, secret), {
+  response.cookies.set("embe_passkey_challenge", createPasskeyChallenge(created.data, options.challenge, purpose, secret, now), {
     httpOnly: true, secure: site.origin.startsWith("https://"), sameSite: "strict", maxAge: 300,
     path: "/api/auth/passkey"
   });

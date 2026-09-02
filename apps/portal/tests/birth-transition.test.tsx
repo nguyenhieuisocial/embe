@@ -36,6 +36,8 @@ describe("birth transition", () => {
 
     expect(fetch).toHaveBeenLastCalledWith("/api/family/lifecycle", expect.objectContaining({ method: "PATCH" }));
     expect(screen.getByRole("status")).toHaveTextContent("chuyển sang chế độ sau sinh");
+    expect(screen.getByRole("link", { name: "Ghi hồi phục của Mẹ" })).toHaveAttribute("href", "/me");
+    expect(screen.getByRole("link", { name: "Bắt đầu cữ bú đầu tiên" })).toHaveAttribute("href", "/be?quick=feeding");
     expect(localStorage.getItem("embe:family:birth-occurred-at")).toContain("2026-08-30");
     const request = vi.mocked(fetch).mock.calls.at(-1)?.[1];
     expect(JSON.parse(String(request?.body))).toMatchObject({ babySex: "female" });

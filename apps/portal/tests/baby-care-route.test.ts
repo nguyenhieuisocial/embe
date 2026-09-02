@@ -4,7 +4,7 @@ import { GET, PATCH, POST } from "../src/app/api/baby/care/route";
 import { createSessionCookie } from "../src/lib/portal-auth";
 
 const originalEnvironment = { ...process.env };
-const cookie = () => `embe_session=${createSessionCookie("server-secret")}`;
+const cookie = () => `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`;
 const headers = () => ({ cookie: cookie(), origin: "https://embe.hieu.asia", "content-type": "application/json" });
 
 const row = {
