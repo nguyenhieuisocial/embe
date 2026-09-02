@@ -3,7 +3,9 @@ type CacheEntry = {
   response: Promise<Response>;
 };
 
-const CACHE_MS = 10_000;
+// Long enough to make returning to a page instant, short enough that changes
+// made on the other family phone appear without a manual refresh.
+const CACHE_MS = 60_000;
 const entries = new Map<string, CacheEntry>();
 
 /**

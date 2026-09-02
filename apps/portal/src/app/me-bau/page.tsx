@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
@@ -291,9 +292,9 @@ export default function PregnancyPage() {
       </section>
 
       <BirthTransition />
-      <a className="stage-feature-link" href="/me-bau/tuan-nay"><span><small>Tự đổi theo ngày dự sinh</small><strong>Tuần này của Mẹ và Bé</strong></span><span aria-hidden="true">›</span></a>
-      <a className="stage-feature-link" href="/me-bau/ho-so"><span><small>Dùng chung cho lịch và hồ sơ khám</small><strong>Hồ sơ thai kỳ</strong></span><span aria-hidden="true">›</span></a>
-      <a className="stage-feature-link" href="/chuan-bi-sinh"><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></a>
+      <Link className="stage-feature-link" href="/me-bau/tuan-nay"><span><small>Tự đổi theo ngày dự sinh</small><strong>Tuần này của Mẹ và Bé</strong></span><span aria-hidden="true">›</span></Link>
+      <Link className="stage-feature-link" href="/me-bau/ho-so"><span><small>Dùng chung cho lịch và hồ sơ khám</small><strong>Hồ sơ thai kỳ</strong></span><span aria-hidden="true">›</span></Link>
+      <Link className="stage-feature-link" href="/chuan-bi-sinh"><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></Link>
 
       <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
         <a href="#viec-hom-nay">Hôm nay</a>
@@ -303,8 +304,8 @@ export default function PregnancyPage() {
       </nav>
 
       <div className="pregnancy-reference-label pregnancy-private-tools">
-        <a href="/me-bau/tam-trang">Ghi tâm trạng</a>
-        <a href="/me-bau/trieu-chung">Ghi triệu chứng</a>
+        <Link href="/me-bau/tam-trang">Ghi tâm trạng</Link>
+        <Link href="/me-bau/trieu-chung">Ghi triệu chứng</Link>
       </div>
 
       <a className="iphone-health-entry" href="#suc-khoe-iphone">

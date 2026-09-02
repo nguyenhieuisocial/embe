@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { calculatePregnancyWeek } from "../lib/pregnancy";
@@ -120,14 +121,14 @@ export default function QuickActions() {
                 { href: "/me", icon: "care" as const, title: "Mẹ hồi phục hôm nay", detail: "Ghi thật nhanh các dấu hiệu cần theo dõi" },
                 { href: "/ky-niem#gui-anh", icon: "memory" as const, title: "Chụp một khoảnh khắc", detail: "Gửi vào album gia đình" }
               ] : actionsForStage(dueDate)).map((action) => (
-                <a className="quick-action" href={action.href} key={action.href} onClick={() => setOpen(false)}>
+                <Link className="quick-action" href={action.href} key={action.href} onClick={() => setOpen(false)}>
                   <span className="quick-action-mark" aria-hidden="true"><Icon name={action.icon} /></span>
                   <span>
                     <strong>{action.title}</strong>
                     <small>{action.detail}</small>
                   </span>
                   <Icon name="arrow" className="icon icon-chevron" />
-                </a>
+                </Link>
               ))}
             </nav>
           </section>

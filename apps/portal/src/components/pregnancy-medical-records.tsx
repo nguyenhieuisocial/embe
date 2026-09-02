@@ -10,6 +10,7 @@ import {
   type MedicalMedicine,
   type MedicalRecord
 } from "../lib/pregnancy-medical";
+import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 
 const kinds: Record<string, string> = {
   appointment: "Khám thai", ultrasound: "Siêu âm", laboratory: "Xét nghiệm",
@@ -63,7 +64,7 @@ export default function PregnancyMedicalRecords() {
 
   async function load() {
     try {
-      const response = await fetch("/api/pregnancy/records", { cache: "no-store" });
+      const response = await cachedPrivateGet("/api/pregnancy/records");
       if (!response.ok) throw new Error("records unavailable");
       const payload = await response.json() as { records?: MedicalRecord[] };
       setRecords(payload.records ?? []); setStatus("idle");
@@ -111,6 +112,7 @@ export default function PregnancyMedicalRecords() {
       if (!response.ok) throw new Error("save_failed");
       const result = await response.json() as { id?: string };
       if (!result.id) throw new Error("save_failed");
+      clearPrivateGetCache("/api/pregnancy/records");
       for (const file of files.slice(0, 6)) await uploadDocument(result.id, file);
       form.reset(); setKind("appointment"); setMedicines([{ name: "", dose: "", frequency: "", instructions: "" }]);
       setEditingRecord(null); setFormMode("new"); setShowForm(false); await load();
@@ -127,6 +129,7 @@ export default function PregnancyMedicalRecords() {
     try {
       const response = await fetch(`/api/pregnancy/records/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("delete_failed");
+      clearPrivateGetCache("/api/pregnancy/records");
       await load();
     } catch { setStatus("error"); }
   }

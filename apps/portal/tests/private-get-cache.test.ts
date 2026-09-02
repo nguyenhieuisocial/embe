@@ -33,4 +33,37 @@ describe("short-lived private GET cache", () => {
     expect((await cachedPrivateGet("/api/pregnancy")).status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it("keeps successful private data in memory for one minute", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-02T08:00:00Z"));
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ value: 1 }))
+      .mockResolvedValueOnce(Response.json({ value: 2 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await (await cachedPrivateGet("/api/pregnancy/records")).json()).toEqual({ value: 1 });
+    vi.advanceTimersByTime(59_000);
+    expect(await (await cachedPrivateGet("/api/pregnancy/records")).json()).toEqual({ value: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1_001);
+    expect(await (await cachedPrivateGet("/api/pregnancy/records")).json()).toEqual({ value: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("invalidates only the matching private data group after a write", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ records: 1 }))
+      .mockResolvedValueOnce(Response.json({ health: 1 }))
+      .mockResolvedValueOnce(Response.json({ records: 2 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await cachedPrivateGet("/api/pregnancy/records");
+    await cachedPrivateGet("/api/pregnancy/health?days=28");
+    clearPrivateGetCache("/api/pregnancy/records");
+    expect(await (await cachedPrivateGet("/api/pregnancy/records")).json()).toEqual({ records: 2 });
+    expect(await (await cachedPrivateGet("/api/pregnancy/health?days=28")).json()).toEqual({ health: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
 });

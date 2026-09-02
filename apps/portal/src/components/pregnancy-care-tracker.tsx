@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
-import { cachedPrivateGet } from "../lib/private-get-cache";
+import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 import {
   estimatedEnergyTarget, PREGNANCY_NUTRIENTS,
   type EnergyProfile, type NutrientKey
@@ -133,7 +133,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   async function load(currentDay: string) {
     try {
       const [careResponse, mealsResponse] = await Promise.all([
-        fetch(`/api/pregnancy/care?day=${currentDay}&days=0`, { cache: "no-store" }),
+        cachedPrivateGet(`/api/pregnancy/care?day=${currentDay}&days=0`),
         cachedPrivateGet("/api/meals?days=7")
       ]);
       if (!careResponse.ok) throw new Error("care unavailable");
@@ -205,6 +205,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       if (!response.ok) throw new Error("save unavailable");
       const payload = await response.json() as { snapshot?: Snapshot };
       if (!payload.snapshot) throw new Error("malformed snapshot");
+      clearPrivateGetCache("/api/pregnancy/care?");
       const nextSnapshot = payload.snapshot;
       setSnapshot((current) => ({
         ...nextSnapshot,
@@ -268,6 +269,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       if (!response.ok) throw new Error("connection unavailable");
       const value = await response.json() as { token: string; ingestUrl: string };
       setSyncSecret(value);
+      clearPrivateGetCache("/api/pregnancy/care?");
       await load(day);
     } catch { setStatus("error"); }
   }

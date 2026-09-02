@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 
+import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+
 const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
 const FAMILY_STAGE_EVENT = "embe:family-stage-change";
 const BIRTH_DATE_KEY = "embe:family:birth-occurred-at";
@@ -68,7 +70,7 @@ export default function BirthTransition() {
 
   useEffect(() => {
     let active = true;
-    void fetch("/api/family/lifecycle", { cache: "no-store" })
+    void cachedPrivateGet("/api/family/lifecycle")
       .then(async (response) => response.ok ? response.json() as Promise<BirthRecord> : null)
       .then((value) => {
         if (!active || !value) return;
@@ -114,6 +116,7 @@ export default function BirthTransition() {
       });
       if (!response.ok) throw new Error("save failed");
       const saved = await response.json() as BirthRecord;
+      clearPrivateGetCache("/api/family/lifecycle");
       setRecord(saved);
       if (saved.birthOccurredAt) localStorage.setItem(BIRTH_DATE_KEY, saved.birthOccurredAt);
       window.dispatchEvent(new Event(STAGE_CHANGE_EVENT));

@@ -3,6 +3,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
+import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 import type { PregnancyHealthMetric } from "./pregnancy-health-charts";
 
 const PregnancyHealthCharts = lazy(() => import("./pregnancy-health-charts"));
@@ -108,7 +109,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
     let active = true;
     async function load() {
       try {
-        const response = await fetch(`/api/pregnancy/health?end=${day}&days=28`, { cache: "no-store" });
+        const response = await cachedPrivateGet(`/api/pregnancy/health?end=${day}&days=28`);
         if (!response.ok) throw new Error("health unavailable");
         const payload = await response.json() as { history?: PregnancyHealthMetric[] };
         if (!active || !Array.isArray(payload.history)) return;
@@ -182,6 +183,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
       if (!response.ok) throw new Error("health save unavailable");
       const payload = await response.json() as { metric?: PregnancyHealthMetric };
       if (!payload.metric) throw new Error("health save malformed");
+      clearPrivateGetCache("/api/pregnancy/health?");
       setHistory((current) => {
         const next = current.filter((metric) => metric.day !== payload.metric?.day);
         return [...next, payload.metric as PregnancyHealthMetric].sort((a, b) => a.day.localeCompare(b.day));
