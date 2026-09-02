@@ -12,6 +12,7 @@ function setOnline(value: boolean) {
 
 describe("offline and failure states", () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     Reflect.deleteProperty(navigator, "onLine");
   });
@@ -39,6 +40,22 @@ describe("offline and failure states", () => {
     render(<PwaRuntime />);
 
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("announces a newer release and reloads it without closing the app", async () => {
+    setOnline(true);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: "ok",
+      version: "release-2"
+    }), { status: 200, headers: { "content-type": "application/json" } })));
+    const reload = vi.spyOn(window.history, "go").mockImplementation(() => undefined);
+
+    render(<PwaRuntime version="release-1" />);
+
+    const update = await screen.findByRole("button", { name: "Cập nhật ngay" });
+    expect(screen.getByRole("status")).toHaveTextContent("EmBe có bản mới");
+    fireEvent.click(update);
+    expect(reload).toHaveBeenCalledWith(0);
   });
 
   it("offers a Vietnamese retry instead of the framework error page", () => {

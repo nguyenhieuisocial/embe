@@ -4,6 +4,7 @@ import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
 import AppShell from "../components/app-shell";
 import DevicePreferencesRuntime from "../components/device-preferences-runtime";
 import PwaRuntime from "../components/pwa-runtime";
+import { currentAppVersion } from "../lib/app-version";
 import "./globals.css";
 
 const body = Be_Vietnam_Pro({
@@ -48,7 +49,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className={`${body.variable} ${display.variable}`}>
         <DevicePreferencesRuntime />
         <AppShell>{children}</AppShell>
-        <PwaRuntime />
+        <PwaRuntime version={currentAppVersion()} />
       </body>
     </html>
   );

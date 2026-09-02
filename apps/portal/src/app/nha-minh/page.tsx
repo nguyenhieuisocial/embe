@@ -1,4 +1,5 @@
 import AppHeader from "../../components/app-header";
+import AppRefreshControl from "../../components/app-refresh-control";
 import { Icon, type IconName } from "../../components/embe-icon";
 
 const familyTools: Array<{
@@ -84,6 +85,8 @@ export default function FamilyHomePage() {
           </a>
         ))}
       </nav>
+
+      <AppRefreshControl />
 
       <section className="section family-connection" aria-labelledby="photo-connection-title">
         <div className="section-head">

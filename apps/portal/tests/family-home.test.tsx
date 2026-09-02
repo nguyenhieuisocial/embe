@@ -1,10 +1,11 @@
-import { render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import FamilyHomePage from "../src/app/nha-minh/page";
 
 describe("family home hub", () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     delete process.env.EMBE_PHOTO_SERVER_URL;
     delete process.env.EMBE_PHOTO_ACCOUNT;
   });
@@ -27,5 +28,14 @@ describe("family home hub", () => {
 
     expect(screen.getByText("Thư viện ảnh riêng")).toBeInTheDocument();
     expect(screen.getByText("Địa chỉ kết nối chỉ hiện khi máy nhà sẵn sàng.")).toBeInTheDocument();
+  });
+
+  it("reloads EmBe from inside the app instead of requiring it to be closed", () => {
+    const reload = vi.spyOn(window.history, "go").mockImplementation(() => undefined);
+    render(<FamilyHomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Tải lại EmBe" }));
+
+    expect(reload).toHaveBeenCalledWith(0);
   });
 });
