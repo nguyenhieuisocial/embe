@@ -50,6 +50,19 @@ describe("private installable portal", () => {
     expect(headers["X-Robots-Tag"]).toContain("noindex");
   });
 
+  it("allows signed browser uploads only to the EmBe Supabase project", async () => {
+    const rules = await nextConfig.headers?.();
+    const everyRoute = rules?.find((rule) => rule.source === "/(.*)");
+    const headers = Object.fromEntries((everyRoute?.headers ?? []).map(({ key, value }) => [key, value]));
+    const connectSource = headers["Content-Security-Policy"]
+      ?.split(";")
+      .map((directive) => directive.trim())
+      .find((directive) => directive.startsWith("connect-src "));
+
+    expect(connectSource).toContain("https://tpqqzowhndbkmkckpbgv.supabase.co");
+    expect(connectSource).not.toContain("https://*.supabase.co");
+  });
+
   it("lets the browser revalidate the service worker on every launch", async () => {
     const rules = await nextConfig.headers?.();
     const worker = rules?.find((rule) => rule.source === "/sw.js");
