@@ -20,6 +20,10 @@ khẩu dùng chung của ứng dụng hoạt động trên cả custom domain v�
 Cloudflare hiện giữ vai trò DNS/proxy/WAF; không được tạo bypass hoặc public
 route tới các ứng dụng quản trị local.
 
+Rate limit dùng chung của gói Free cho `POST /api/auth/login` và các API tốn
+chi phí là 5 request/10 giây/IP, block 10 giây. Đây chỉ là lớp chặn burst ở
+edge; giới hạn đăng nhập sai chi tiết thuộc về ứng dụng.
+
 A Cloudflare Tunnel is intentionally deferred until local services are running.
 The Vercel-hosted portal does not need a Tunnel. Tunnel tương lai chỉ dành cho
 Local BFF, phải có service authentication riêng và fallback 404.
