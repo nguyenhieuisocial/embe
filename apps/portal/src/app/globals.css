@@ -1871,7 +1871,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .health-save-state.is-saved { color: var(--jade); }
 .health-save-state.is-error { color: var(--coral); }
 .pregnancy-private-tools { display: flex; gap: 8px; }
-.pregnancy-private-tools a { flex: 1; text-align: center; }
+.pregnancy-private-tools a { align-items: center; display: inline-flex; flex: 1; justify-content: center; min-height: 44px; padding: 8px 10px; text-align: center; }
 .mental-health-main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 .mental-hero { padding-bottom: 4px; }
 .mental-checkin-form { gap: 14px; }
@@ -3694,7 +3694,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   color: var(--ink-soft);
   font: inherit;
   font-size: .75rem;
-  min-height: 38px;
+  min-height: 44px;
   padding: 7px 10px;
   white-space: nowrap;
 }
