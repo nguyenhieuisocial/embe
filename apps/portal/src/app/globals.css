@@ -168,7 +168,7 @@
 .nutrient-list { overflow: hidden; border: 1px solid #efe3e7; border-radius: 18px; background: #fff; }
 .nutrient-row { padding: .7rem .8rem; border-bottom: 1px solid #f2e9ec; }
 .nutrient-row:last-child { border-bottom: 0; }
-.nutrient-row summary { display: flex; justify-content: space-between; gap: .8rem; list-style: none; cursor: pointer; }
+.nutrient-row summary { align-items: center; cursor: pointer; display: flex; gap: .8rem; justify-content: space-between; list-style: none; min-height: 44px; }
 .nutrient-row summary::-webkit-details-marker { display: none; }
 .nutrient-row summary > span { display: grid; gap: .08rem; }
 .nutrient-row summary strong { font-size: .82rem; }
