@@ -1,5 +1,6 @@
 import { EmBeMark } from "../../components/embe-icon";
 import PasswordField from "../../components/password-field";
+import PasskeyLogin from "../../components/passkey-login";
 import PublicAnalytics from "../../components/public-analytics";
 
 type LoginPageProps = {
@@ -35,6 +36,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           ) : null}
           <button className="btn btn-primary btn-block" type="submit">Vào sổ gia đình</button>
         </form>
+        <PasskeyLogin destination={params.next ?? "/"} />
 
         <p className="login-privacy">Nội dung không được hiển thị cho người chưa đăng nhập.</p>
       </section>

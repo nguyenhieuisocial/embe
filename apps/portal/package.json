@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@lichta/core": "^2.2.1",
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.0.0",
     "@supabase/supabase-js": "2.112.4",
     "@svg-maps/vietnam": "^2.0.0",
     "exifr": "^7.1.3",

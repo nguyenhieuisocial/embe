@@ -2,6 +2,7 @@ import AdvancedDeviceSettings from "../../components/advanced-device-settings";
 import AppHeader from "../../components/app-header";
 import DeviceSetup from "../../components/device-setup";
 import FamilyProfile from "../../components/family-profile";
+import PasskeySettings from "../../components/passkey-settings";
 import { Icon } from "../../components/embe-icon";
 
 export default function SettingsPage() {
@@ -16,6 +17,7 @@ export default function SettingsPage() {
       </section>
 
       <DeviceSetup />
+      <PasskeySettings />
       <AdvancedDeviceSettings />
       <FamilyProfile />
 
