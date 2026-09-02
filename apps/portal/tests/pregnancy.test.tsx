@@ -117,6 +117,20 @@ describe("pregnancy daily page", () => {
     expect(position("Hồ sơ khám thai")).toBeLessThan(position("Điều nên ưu tiên theo giai đoạn"));
   });
 
+  it("exposes iPhone health import before the long daily content", () => {
+    render(<PregnancyPage />);
+
+    const jump = screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" });
+    expect(within(jump).getByRole("link", { name: "Từ iPhone" })).toHaveAttribute("href", "#suc-khoe-iphone");
+    expect(within(jump).getByRole("link", { name: "Nhập tay" })).toHaveAttribute("href", "#suc-khoe");
+
+    const entry = screen.getByRole("link", { name: /Kết nối sức khỏe iPhone/i });
+    const dailyBoard = document.querySelector<HTMLElement>("#viec-hom-nay");
+    expect(entry).toHaveAttribute("href", "#suc-khoe-iphone");
+    expect(dailyBoard).not.toBeNull();
+    expect(entry.compareDocumentPosition(dailyBoard as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("keeps the mobile day compact and opens deeper information only when requested", () => {
     render(<PregnancyPage />);
 

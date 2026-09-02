@@ -1471,7 +1471,28 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   padding: 8px 14px;
   text-decoration: none;
 }
-#viec-hom-nay, #suc-khoe, #ho-so-kham, #vi-chat-thuoc, #bua-an, #cam-nang, #can-lien-he { scroll-margin-top: calc(72px + env(safe-area-inset-top)); }
+.iphone-health-entry {
+  align-items: center;
+  background: color-mix(in srgb, var(--lavender-soft) 62%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--lavender) 18%, var(--line));
+  border-radius: 16px;
+  color: var(--ink);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 36px minmax(0, 1fr) 16px;
+  margin: 8px auto 0;
+  max-width: var(--content);
+  min-height: 58px;
+  padding: 8px 11px;
+  text-decoration: none;
+}
+.iphone-health-entry-mark { align-items: center; background: var(--surface); border-radius: 12px; color: var(--rose); display: flex; height: 36px; justify-content: center; width: 36px; }
+.iphone-health-entry-mark .icon { height: 19px; width: 19px; }
+.iphone-health-entry > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; }
+.iphone-health-entry strong { font-size: .84rem; font-weight: 650; }
+.iphone-health-entry small { color: var(--ink-soft); font-size: .68rem; line-height: 1.35; }
+.iphone-health-entry > span:last-child { color: var(--lavender); font-size: 1.2rem; }
+#viec-hom-nay, #suc-khoe, #suc-khoe-iphone, #ho-so-kham, #vi-chat-thuoc, #bua-an, #cam-nang, #can-lien-he { scroll-margin-top: calc(72px + env(safe-area-inset-top)); }
 .pregnancy-main > #suc-khoe { margin-top: 24px; }
 .pregnancy-urgent-shortcut {
   align-items: center;

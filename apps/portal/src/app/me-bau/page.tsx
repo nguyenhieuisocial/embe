@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
 import BirthTransition from "../../components/birth-transition";
+import { Icon } from "../../components/embe-icon";
 import PregnancyCareTracker from "../../components/pregnancy-care-tracker";
 import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
 import PregnancyMedicalRecords from "../../components/pregnancy-medical-records";
@@ -291,11 +292,18 @@ export default function PregnancyPage() {
 
       <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
         <a href="#viec-hom-nay">Hôm nay</a>
+        <a href="#suc-khoe-iphone">Từ iPhone</a>
         <a href="#vi-chat-thuoc">Thuốc</a>
         <a href="#bua-an">Chụp món</a>
-        <a href="#suc-khoe">Ghi sức khỏe</a>
+        <a href="#suc-khoe">Nhập tay</a>
         <a href="#ho-so-kham">Lịch khám</a>
       </nav>
+
+      <a className="iphone-health-entry" href="#suc-khoe-iphone">
+        <span className="iphone-health-entry-mark" aria-hidden="true"><Icon name="care" /></span>
+        <span><strong>Kết nối sức khỏe iPhone</strong><small>Cài Phím tắt một lần để tự gửi bước chân, giấc ngủ và cân nặng.</small></span>
+        <span aria-hidden="true">›</span>
+      </a>
 
       <aside className="pregnancy-urgent-shortcut" aria-labelledby="urgent-shortcut-title">
         <div>
