@@ -244,6 +244,9 @@ Chỉ trích xuất món có căn cứ trực tiếp từ ảnh hoặc ghi chú.
 không tự đặt mục tiêu calorie. Trường name_vi bắt buộc là tiếng Việt tự nhiên có dấu, ví dụ
 "Cơm chiên trứng", "Cá hồi áp chảo"; tuyệt đối không điền tên tiếng Anh vào trường này.
 Trường search_name_en mới dùng cụm tìm kiếm nguyên liệu tương đương bằng tiếng Anh.
+Ưu tiên tên món Việt Nam quen dùng (phở, bún, cơm tấm, bánh mì, canh, món kho/xào/luộc) thay vì dịch từng nguyên liệu.
+Nhìn toàn bộ khay hoặc đĩa trước, tách các món nhìn thấy rõ nhưng không tách gia vị và đồ trang trí thành món riêng.
+Ghi chú của người dùng là gợi ý để phân biệt món; không dùng ghi chú để bịa món trái với ảnh.
 Ước lượng gram thận trọng; nếu không đủ căn cứ thì dùng null. Mỗi món chỉ xuất hiện
 một lần, không lặp và không điền thêm cho đủ số lượng. Đánh dấu an toàn chỉ khi có dấu hiệu thực sự
 hoặc cần người dùng xác nhận. Trả về đúng JSON theo schema, tối đa 8 món phân biệt."""
@@ -276,6 +279,16 @@ class MealAnalysisWorker:
             "p_state": "degraded" if status == "retry" else "online",
             "p_detail": status[:80],
         })
+
+    def prewarm(self) -> None:
+        response = self.transport(
+            "POST", f"{self.config.ollama_url}/api/chat", {"content-type": "application/json"},
+            json.dumps({
+                "model": self.config.ollama_model, "stream": False, "keep_alive": "24h",
+            }).encode(),
+        )
+        if response.status != 200:
+            raise WorkerFailure("vision_unavailable")
 
     def _download(self, item: Mapping[str, object]) -> bytes:
         encoded = "/".join(quote(part, safe="") for part in str(item["storage_path"]).split("/"))
@@ -319,7 +332,7 @@ class MealAnalysisWorker:
             message["images"] = [base64.b64encode(body).decode()]
         payload = {
             "model": self.config.ollama_model, "stream": False, "think": False, "format": schema,
-            "options": {"temperature": 0},
+            "keep_alive": "24h", "options": {"temperature": 0, "num_predict": 512},
             "messages": [message],
         }
         response = self.transport("POST", f"{self.config.ollama_url}/api/chat",
@@ -569,12 +582,46 @@ def _write_status(path: Path, result: Mapping[str, object]) -> None:
     os.replace(temporary, path)
 
 
+def run_worker_loop(worker: MealAnalysisWorker, status_path: Path, poll_interval: float = 2,
+                    heartbeat_interval: float = 60, sleep: Callable[[float], None] = time.sleep,
+                    monotonic: Callable[[], float] = time.monotonic,
+                    max_iterations: int | None = None) -> None:
+    last_heartbeat = monotonic() - heartbeat_interval
+    try:
+        worker.prewarm()
+    except WorkerFailure:
+        pass
+    iteration = 0
+    while max_iterations is None or iteration < max_iterations:
+        iteration += 1
+        try:
+            result = worker.run_once()
+        except Exception:
+            result = {"status": "retry", "error": "worker_unavailable"}
+        now = monotonic()
+        heartbeat_due = now - last_heartbeat >= heartbeat_interval
+        if heartbeat_due:
+            try:
+                worker.report_heartbeat(result)
+                last_heartbeat = now
+            except Exception:
+                result = {"status": "retry", "error": "heartbeat_unavailable"}
+        if result.get("status") != "idle" or heartbeat_due:
+            _write_status(status_path, result)
+        if result.get("status") in {"idle", "retry"} and (max_iterations is None or iteration < max_iterations):
+            sleep(poll_interval)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Create private, review-first food-photo drafts with loopback Ollama.")
     parser.add_argument("--env", type=Path, required=True)
     parser.add_argument("--status", type=Path, default=Path(r"C:\EmBe\data\status\meal-analysis-worker.json"))
+    parser.add_argument("--watch", action="store_true")
     args = parser.parse_args(argv)
     worker = MealAnalysisWorker(Config.from_env(_load_env(args.env)))
+    if args.watch:
+        run_worker_loop(worker, args.status)
+        return 0
     result = worker.run_once()
     worker.report_heartbeat(result)
     _write_status(args.status, result)

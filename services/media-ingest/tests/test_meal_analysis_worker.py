@@ -16,6 +16,7 @@ from meal_analysis_worker import (  # noqa: E402
     MealAnalysisWorker,
     nutrition_search_query,
     parse_vision_result,
+    run_worker_loop,
 )
 
 
@@ -46,6 +47,8 @@ class FakeTransport:
             request = json.loads(body)
             assert request["model"] == "qwen3-vl:4b-instruct"
             assert request["messages"][0]["images"] == [base64.b64encode(JPEG).decode()]
+            assert request["keep_alive"] == "24h"
+            assert request["options"]["num_predict"] == 512
             return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
                 "foods": [
                     {"name_vi": "Cơm trắng", "search_name_en": "white rice cooked", "estimated_grams": 120,
@@ -97,6 +100,53 @@ def test_downloads_analyzes_stores_review_draft_and_removes_staging_image():
     assert payload["p_analysis"]["estimate_notice"].startswith("Ước lượng từ ảnh")
     assert payload["p_analysis"]["foods"][1]["safety_flags"] == ["high_mercury_possible"]
     assert transport.calls[-1][0] == "DELETE"
+
+
+def test_prewarms_the_vision_model_without_sending_user_data():
+    class PrewarmTransport:
+        def __init__(self):
+            self.request = None
+
+        def __call__(self, method, url, headers, body=None):
+            assert method == "POST"
+            assert url.endswith("/api/chat")
+            self.request = json.loads(body)
+            return HttpResponse(200, {}, b'{}')
+
+    transport = PrewarmTransport()
+    MealAnalysisWorker(config(), transport).prewarm()
+
+    assert transport.request == {
+        "model": "qwen3-vl:4b-instruct", "stream": False, "keep_alive": "24h"
+    }
+
+
+def test_resident_worker_polls_quickly_without_restarting_the_process(tmp_path):
+    class ResidentWorker:
+        def __init__(self):
+            self.prewarmed = 0
+            self.runs = 0
+            self.heartbeats = []
+
+        def prewarm(self):
+            self.prewarmed += 1
+
+        def run_once(self):
+            self.runs += 1
+            return {"status": "idle"}
+
+        def report_heartbeat(self, result):
+            self.heartbeats.append(result)
+
+    sleeps = []
+    worker = ResidentWorker()
+    run_worker_loop(worker, tmp_path / "status.json", poll_interval=2, heartbeat_interval=60,
+                    sleep=sleeps.append, monotonic=iter([0.0, 0.0, 2.0, 4.0]).__next__, max_iterations=3)
+
+    assert worker.prewarmed == 1
+    assert worker.runs == 3
+    assert worker.heartbeats == [{"status": "idle"}]
+    assert sleeps == [2, 2]
 
 
 def test_analyzes_a_written_meal_without_downloading_or_deleting_an_image():

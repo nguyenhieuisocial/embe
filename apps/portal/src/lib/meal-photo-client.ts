@@ -13,14 +13,14 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 export async function prepareMealPhoto(file: File): Promise<File> {
   if ((file.type && !file.type.startsWith("image/")) || file.size < 1) throw new Error("invalid_image");
   const image = await loadImage(file);
-  const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+  const scale = Math.min(1, 1280 / Math.max(image.naturalWidth, image.naturalHeight));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
   canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
   const context = canvas.getContext("2d");
   if (!context) throw new Error("invalid_image");
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.78));
   if (!blob || blob.size > 12_000_000) throw new Error("image_too_large");
   return new File([blob], "bua-an.jpg", { type: "image/jpeg", lastModified: file.lastModified || Date.now() });
 }

@@ -5,6 +5,7 @@ $directFiles = @(
     "scripts/install-inventory-worker.ps1",
     "scripts/install-procurement-worker.ps1",
     "scripts/install-assistant-worker.ps1",
+    "scripts/install-meal-analysis-worker.ps1",
     "scripts/install-telegram-secondary-task.ps1",
     "services/analytics-ingest/install-scheduled.ps1",
     "scripts/health/install-uptime-monitor-probe.ps1",
@@ -16,6 +17,10 @@ foreach ($relative in $directFiles) {
     if ($source -notmatch 'pythonw\.exe' -or $source -match '-Execute\s+"powershell\.exe"') {
         throw "Frequent scheduled action must run directly without PowerShell: $relative"
     }
+}
+$mealInstaller = Get-Content -LiteralPath (Join-Path $projectRoot "scripts/install-meal-analysis-worker.ps1") -Raw
+foreach ($contract in @("--watch", "New-ScheduledTaskTrigger -AtLogOn")) {
+    if (-not $mealInstaller.Contains($contract)) { throw "Meal recognition must stay resident without minute-by-minute process churn: $contract" }
 }
 $telegramInstaller = Get-Content -LiteralPath (Join-Path $projectRoot "scripts/install-telegram-secondary-task.ps1") -Raw
 foreach ($contract in @("sys._base_executable", "MultipleInstances IgnoreNew")) {

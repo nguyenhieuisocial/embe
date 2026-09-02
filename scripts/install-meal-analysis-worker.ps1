@@ -6,12 +6,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 $python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+$pythonw = Join-Path $ProjectRoot ".venv\Scripts\pythonw.exe"
 $worker = Join-Path $ProjectRoot "services\media-ingest\meal_analysis_worker.py"
 $nutritionBuilder = Join-Path $ProjectRoot "scripts\food\build_usda_local_db.py"
 $nutritionDatabase = Join-Path $ProjectRoot "data\cache\fooddata-sr-legacy.sqlite"
 $envFile = Join-Path $ProjectRoot "secrets\runtime\photo-inbox-worker.env"
 $status = Join-Path $ProjectRoot "data\status\meal-analysis-worker.json"
-foreach ($path in @($python, $worker, $nutritionBuilder, $envFile)) {
+foreach ($path in @($python, $pythonw, $worker, $nutritionBuilder, $envFile)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Meal analysis worker dependency is missing" }
 }
 if (-not (Test-Path -LiteralPath $nutritionDatabase -PathType Leaf)) {
@@ -20,29 +21,27 @@ if (-not (Test-Path -LiteralPath $nutritionDatabase -PathType Leaf)) {
 }
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-$arguments = "`"$worker`" --env `"$envFile`" --status `"$status`""
-$action = New-ScheduledTaskAction -Execute $python -Argument $arguments -WorkingDirectory $ProjectRoot
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
-    -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 3650)
+$arguments = "`"$worker`" --env `"$envFile`" --status `"$status`" --watch"
+$action = New-ScheduledTaskAction -Execute $pythonw -Argument $arguments -WorkingDirectory $ProjectRoot
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $identity
 $settings = New-ScheduledTaskSettingsSet -Hidden -StartWhenAvailable -MultipleInstances IgnoreNew `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 1)
+    -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
     -Description "Creates review-only food-photo drafts with local Ollama and USDA data; never diagnoses or auto-confirms." -Force | Out-Null
 
 if ($VerifyNow) {
     Start-ScheduledTask -TaskName $TaskName
-    $deadline = (Get-Date).AddMinutes(3)
+    $deadline = (Get-Date).AddSeconds(30)
     do {
         Start-Sleep -Milliseconds 500
         $task = Get-ScheduledTask -TaskName $TaskName
-        $info = Get-ScheduledTaskInfo -TaskName $TaskName
-    } while ($task.State -eq "Running" -and (Get-Date) -lt $deadline)
-    if ($task.State -eq "Running" -or $info.LastTaskResult -ne 0) { throw "Meal analysis worker verification failed" }
+    } while ($task.State -ne "Running" -and (Get-Date) -lt $deadline)
+    if ($task.State -ne "Running") { throw "Meal analysis worker verification failed" }
 }
 
 $installed = Get-ScheduledTask -TaskName $TaskName
-if ($installed.Settings.Hidden -ne $true -or $installed.Actions.Execute -ne $python) {
+if ($installed.Settings.Hidden -ne $true -or $installed.Actions.Execute -ne $pythonw) {
     throw "Meal analysis worker is not installed as a hidden direct-Python task"
 }
 Write-Output "Meal analysis worker installed as a hidden direct-Python task."
