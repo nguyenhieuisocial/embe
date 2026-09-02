@@ -1,9 +1,19 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const { sendFamilyPhoto } = vi.hoisted(() => ({ sendFamilyPhoto: vi.fn() }));
+
+vi.mock("../src/lib/photo-upload-client", () => ({ sendFamilyPhoto }));
 
 import JournalPage from "../src/app/ghi-lai/page";
 
 describe("one-handed family journal", () => {
+  beforeEach(() => {
+    sendFamilyPhoto.mockReset().mockResolvedValue({
+      uploadId: "22222222-2222-4222-8222-222222222222"
+    });
+  });
+
   afterEach(() => {
     localStorage.clear();
     vi.unstubAllGlobals();
@@ -156,5 +166,92 @@ describe("one-handed family journal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Một cột mốc nhỏ" }));
     expect(screen.getByLabelText("Điều đáng nhớ")).toHaveValue("Một cột mốc nhỏ: ");
+  });
+
+  it("lets an iPhone attach a new photo or choose several photos before saving", async () => {
+    vi.stubGlobal("crypto", { randomUUID: vi.fn()
+      .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
+      .mockReturnValueOnce("22222222-2222-4222-8222-222222222222")
+      .mockReturnValue("33333333-3333-4333-8333-333333333333") });
+    const NativeURL = URL;
+    vi.stubGlobal("URL", class extends NativeURL {
+      static createObjectURL = vi.fn(() => "blob:journal-photo");
+      static revokeObjectURL = vi.fn();
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 202 })));
+    const { container } = render(<JournalPage />);
+    const fileInputs = container.querySelectorAll<HTMLInputElement>('input[type="file"]');
+
+    expect(fileInputs).toHaveLength(2);
+    expect(fileInputs[0]).toHaveAttribute("capture", "environment");
+    expect(fileInputs[1]).toHaveAttribute("multiple");
+
+    fireEvent.change(fileInputs[0], { target: { files: [
+      new File([new Uint8Array([0xff, 0xd8, 0xff])], "IMG_1.JPG", {
+        type: "image/jpeg", lastModified: Date.parse("2026-09-02T06:00:00Z")
+      })
+    ] } });
+
+    expect(await screen.findByRole("img", { name: "Ảnh 1 đính kèm nhật ký" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Lưu vào nhật ký" }));
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Đã lưu"));
+    expect(sendFamilyPhoto).toHaveBeenCalledWith(expect.objectContaining({
+      authorRole: "mother",
+      caption: "Một khoảnh khắc hôm nay."
+    }));
+  });
+
+  it("adds a deliberate check-in to Google Maps and applies it to attached photos", async () => {
+    vi.stubGlobal("crypto", { randomUUID: vi.fn()
+      .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
+      .mockReturnValueOnce("22222222-2222-4222-8222-222222222222")
+      .mockReturnValue("33333333-3333-4333-8333-333333333333") });
+    const NativeURL = URL;
+    vi.stubGlobal("URL", class extends NativeURL {
+      static createObjectURL = vi.fn(() => "blob:journal-photo");
+      static revokeObjectURL = vi.fn();
+    });
+    vi.stubGlobal("navigator", {
+      onLine: true,
+      geolocation: {
+        getCurrentPosition: (success: PositionCallback) => success({
+          coords: { latitude: 10.7769, longitude: 106.7009, accuracy: 12 } as GeolocationCoordinates,
+          timestamp: Date.now()
+        } as GeolocationPosition)
+      }
+    });
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = render(<JournalPage />);
+    const camera = container.querySelector<HTMLInputElement>('input[type="file"][capture="environment"]')!;
+
+    fireEvent.change(screen.getByLabelText("Điều đáng nhớ"), {
+      target: { value: "Buổi chiều cả nhà đi dạo." }
+    });
+    fireEvent.change(camera, { target: { files: [
+      new File([new Uint8Array([0xff, 0xd8, 0xff])], "IMG_2.JPG", { type: "image/jpeg" })
+    ] } });
+    await screen.findByRole("img", { name: "Ảnh 1 đính kèm nhật ký" });
+    fireEvent.click(screen.getByRole("button", { name: "Check-in" }));
+
+    const mapsLink = await screen.findByRole("link", { name: "Mở Google Maps" });
+    expect(mapsLink).toHaveAttribute(
+      "href",
+      "https://www.google.com/maps/search/?api=1&query=10.7769%2C106.7009"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Lưu vào nhật ký" }));
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Đã lưu"));
+    expect(sendFamilyPhoto).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        latitude: 10.7769,
+        longitude: 106.7009,
+        locationName: "Vị trí hiện tại"
+      })
+    }));
+    const journalCall = fetchMock.mock.calls.find(([url]) => url === "/api/journal");
+    const body = JSON.parse(String(journalCall?.[1]?.body));
+    expect(body.content).toContain("https://www.google.com/maps/search/?api=1&query=10.7769%2C106.7009");
   });
 });

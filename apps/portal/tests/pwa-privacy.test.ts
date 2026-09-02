@@ -46,7 +46,9 @@ describe("private installable portal", () => {
     expect(headers["X-Frame-Options"]).toBe("DENY");
     expect(headers["X-Content-Type-Options"]).toBe("nosniff");
     expect(headers["Referrer-Policy"]).toBe("no-referrer");
-    expect(headers["Permissions-Policy"]).toContain("camera=()");
+    expect(headers["Permissions-Policy"]).toContain("camera=(self)");
+    expect(headers["Permissions-Policy"]).toContain("geolocation=(self)");
+    expect(headers["Permissions-Policy"]).toContain("microphone=()");
     expect(headers["X-Robots-Tag"]).toContain("noindex");
   });
 
