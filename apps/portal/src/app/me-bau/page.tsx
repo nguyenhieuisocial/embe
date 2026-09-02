@@ -309,7 +309,7 @@ export default function PregnancyPage() {
 
       <a className="iphone-health-entry" href="#suc-khoe-iphone">
         <span className="iphone-health-entry-mark" aria-hidden="true"><Icon name="care" /></span>
-        <span><strong>Kết nối sức khỏe iPhone</strong><small>Cài Phím tắt một lần để tự gửi bước chân, giấc ngủ và cân nặng.</small></span>
+        <span><strong>Sức khỏe từ iPhone</strong><small>Xem, đồng bộ và kiểm tra dữ liệu Apple Health.</small></span>
         <span aria-hidden="true">›</span>
       </a>
 

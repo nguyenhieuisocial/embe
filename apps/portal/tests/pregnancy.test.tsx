@@ -135,7 +135,7 @@ describe("pregnancy daily page", () => {
     expect(within(jump).getByRole("link", { name: "Sức khỏe" })).toHaveAttribute("href", "#suc-khoe");
     expect(within(jump).getByRole("link", { name: "Hồ sơ" })).toHaveAttribute("href", "/me-bau/ho-so");
 
-    const entry = screen.getByRole("link", { name: /Kết nối sức khỏe iPhone/i });
+    const entry = screen.getByRole("link", { name: /Sức khỏe từ iPhone/i });
     const dailyBoard = document.querySelector<HTMLElement>("#viec-hom-nay");
     expect(entry).toHaveAttribute("href", "#suc-khoe-iphone");
     expect(dailyBoard).not.toBeNull();
