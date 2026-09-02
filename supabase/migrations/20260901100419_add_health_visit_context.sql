@@ -78,3 +78,5 @@ REVOKE ALL ON FUNCTION public.embe_save_pregnancy_health_v2(date,numeric,integer
 GRANT EXECUTE ON FUNCTION public.embe_save_pregnancy_health_v2(date,numeric,integer,integer,integer,integer,integer,integer,numeric,integer,text[],text,text) TO service_role;
 
 COMMIT;
+
+;

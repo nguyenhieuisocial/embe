@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 describe("uploaded photo metadata migration", () => {
   it("stores capture time, exact coordinates and an editable place label privately", () => {
-    const sql = readFileSync("../../supabase/migrations/20260902043000_add_uploaded_photo_metadata.sql", "utf8");
+    const sql = readFileSync("../../supabase/migrations/20260901125059_add_uploaded_photo_metadata.sql", "utf8");
     expect(sql).toContain("location_name");
     expect(sql).toContain("latitude");
     expect(sql).toContain("longitude");

@@ -52,7 +52,7 @@ describe("private family push notification contract", () => {
   it("keeps medication names private while scheduling each untaken dose", async () => {
     const { existsSync, readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const path = join(process.cwd(), "..", "..", "supabase", "migrations", "20260902023000_add_care_reminder_times.sql");
+    const path = join(process.cwd(), "..", "..", "supabase", "migrations", "20260901103851_add_care_reminder_times.sql");
     expect(existsSync(path)).toBe(true);
     if (!existsSync(path)) return;
     const sql = readFileSync(path, "utf8");

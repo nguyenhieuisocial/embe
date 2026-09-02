@@ -140,3 +140,5 @@ REVOKE ALL ON FUNCTION public.embe_claim_due_push_notifications(timestamptz,inte
 GRANT EXECUTE ON FUNCTION public.embe_get_pregnancy_care(date) TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_save_pregnancy_care_plan(uuid,text,text,text,smallint,time[],text,jsonb,boolean,boolean) TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_claim_due_push_notifications(timestamptz,integer) TO service_role;
+
+;

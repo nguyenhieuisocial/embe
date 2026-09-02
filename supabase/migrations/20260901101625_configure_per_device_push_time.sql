@@ -38,3 +38,5 @@ REVOKE ALL ON FUNCTION public.embe_upsert_push_subscription(text,text,text,text,
 REVOKE ALL ON FUNCTION public.embe_update_push_schedule(text,time) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.embe_upsert_push_subscription(text,text,text,text,text,time) TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_update_push_schedule(text,time) TO service_role;
+
+;

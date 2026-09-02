@@ -288,15 +288,14 @@ export default function PregnancyPage() {
       </section>
 
       <BirthTransition />
+      <a className="stage-feature-link" href="/me-bau/ho-so"><span><small>Dùng chung cho lịch và hồ sơ khám</small><strong>Hồ sơ thai kỳ</strong></span><span aria-hidden="true">›</span></a>
       <a className="stage-feature-link" href="/chuan-bi-sinh"><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></a>
 
       <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
         <a href="#viec-hom-nay">Hôm nay</a>
-        <a href="#suc-khoe-iphone">Từ iPhone</a>
-        <a href="#vi-chat-thuoc">Thuốc</a>
-        <a href="#bua-an">Chụp món</a>
-        <a href="#suc-khoe">Nhập tay</a>
-        <a href="#ho-so-kham">Lịch khám</a>
+        <a href="#suc-khoe">Sức khỏe</a>
+        <a href="/me-bau/ho-so">Hồ sơ</a>
+        <a href="#cam-nang">Cẩm nang</a>
       </nav>
 
       <a className="iphone-health-entry" href="#suc-khoe-iphone">

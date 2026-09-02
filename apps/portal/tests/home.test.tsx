@@ -18,14 +18,13 @@ describe("family portal home", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Hôm nay, mình cần làm gì?"
+        name: "Hôm nay"
       })
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nhật ký" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Mở nhanh" })).toBeInTheDocument();
     expect(container.querySelector(".family-hero-art")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mở album kỷ niệm" })).toHaveAttribute("href", "/ky-niem");
-    expect(screen.getByRole("link", { name: "Mở kế hoạch hôm nay" })).toHaveAttribute("href", "/ke-hoach");
     expect(screen.getByRole("link", { name: "Xem cách sử dụng đơn giản" })).toHaveAttribute(
       "href",
       "/huong-dan"

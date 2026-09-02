@@ -67,6 +67,7 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Mới mang thai")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "#viec-hom-nay");
+    expect(screen.getByRole("link", { name: /Hồ sơ thai kỳ/i })).toHaveAttribute("href", "/me-bau/ho-so");
     expect(screen.getByRole("heading", { name: "Có dấu hiệu bất thường?" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Xem ngay" })).toHaveAttribute("href", "#can-lien-he");
     expect(screen.getByText("Đã ăn sáng")).toBeInTheDocument();
@@ -121,8 +122,9 @@ describe("pregnancy daily page", () => {
     render(<PregnancyPage />);
 
     const jump = screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" });
-    expect(within(jump).getByRole("link", { name: "Từ iPhone" })).toHaveAttribute("href", "#suc-khoe-iphone");
-    expect(within(jump).getByRole("link", { name: "Nhập tay" })).toHaveAttribute("href", "#suc-khoe");
+    expect(within(jump).getAllByRole("link")).toHaveLength(4);
+    expect(within(jump).getByRole("link", { name: "Sức khỏe" })).toHaveAttribute("href", "#suc-khoe");
+    expect(within(jump).getByRole("link", { name: "Hồ sơ" })).toHaveAttribute("href", "/me-bau/ho-so");
 
     const entry = screen.getByRole("link", { name: /Kết nối sức khỏe iPhone/i });
     const dailyBoard = document.querySelector<HTMLElement>("#viec-hom-nay");

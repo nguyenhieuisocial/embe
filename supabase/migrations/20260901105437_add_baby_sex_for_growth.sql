@@ -91,3 +91,5 @@ REVOKE ALL ON FUNCTION public.embe_get_family_lifecycle() FROM PUBLIC,anon,authe
 REVOKE ALL ON FUNCTION public.embe_save_family_lifecycle(timestamptz,text,text,smallint,smallint,integer,numeric,numeric,text,text,boolean,boolean,boolean,text,timestamptz,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.embe_get_family_lifecycle() TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_save_family_lifecycle(timestamptz,text,text,smallint,smallint,integer,numeric,numeric,text,text,boolean,boolean,boolean,text,timestamptz,text) TO service_role;
+
+;

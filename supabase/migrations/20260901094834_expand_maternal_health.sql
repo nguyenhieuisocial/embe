@@ -220,3 +220,5 @@ GRANT EXECUTE ON FUNCTION public.embe_get_iphone_health_history(date,integer) TO
 GRANT EXECUTE ON FUNCTION public.embe_save_pregnancy_health(date,numeric,integer,integer,integer,integer,integer,integer,numeric,integer,text[]) TO service_role;
 
 COMMIT;
+
+;

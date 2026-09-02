@@ -3974,6 +3974,63 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .stage-feature-link{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0;padding:.9rem 1rem;border-radius:1.15rem;background:#fff6f9;border:1px solid rgba(150,64,95,.12);color:#6f344a;text-decoration:none}.stage-feature-link span:first-child{display:grid;gap:.12rem}.stage-feature-link small{font-size:.7rem;color:#9b6d7e}.baby-hub-links{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin:1rem 0}.baby-hub-links a{display:grid;gap:.2rem;padding:.9rem;border-radius:1.1rem;background:#fff7fa;border:1px solid rgba(150,64,95,.12);color:#6f344a;text-decoration:none}.baby-hub-links span{font-size:.7rem;color:#927080}.baby-hub-links b{font-size:.86rem}
 .stage-today-actions{display:grid;gap:.5rem}.stage-today-actions a{display:grid;gap:.15rem;min-height:54px;padding:.75rem .85rem;border-radius:1rem;background:#fff7fa;color:#6f344a;text-decoration:none}.stage-today-actions span{font-size:.74rem;color:#8c707a}
 
+/* Hôm nay & hồ sơ thai kỳ: danh sách sợi chỉ, không thêm dashboard card. */
+.today-priorities { display: grid; gap: 6px; }
+.today-priority-list { display: grid; list-style: none; margin: 0; padding: 0; }
+.today-priority {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  min-height: 58px;
+  padding: 6px 0;
+}
+.today-priority:first-child { background: linear-gradient(90deg, var(--rose-soft), transparent 82%); border-radius: 12px 4px 4px 12px; padding-inline: 8px 0; }
+.today-priority-thread { background: var(--surface); border: 2px solid var(--line-strong); border-radius: 50%; height: 12px; width: 12px; }
+.today-priority:first-child .today-priority-thread { background: var(--rose); border-color: var(--rose); box-shadow: 0 0 0 3px var(--rose-soft); }
+.today-priority-copy { display: grid; gap: 1px; min-width: 0; }
+.today-priority-copy strong { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today-priority-copy small { color: var(--ink-soft); font-size: .75rem; }
+.today-priority > a,
+.today-priority-plan-link { align-items: center; color: var(--rose); display: inline-flex; font-size: .75rem; font-weight: 600; justify-content: center; min-height: 44px; padding-inline: 10px; text-decoration: none; }
+.today-priority-plan-link { justify-self: end; margin-top: 2px; }
+.today-priority-empty,
+.today-priority-source-state { color: var(--ink-soft); font-size: .8125rem; margin: 0; padding: 8px 0; }
+.today-priority-source-state { color: var(--coral); }
+
+.pregnancy-profile-page { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+.pregnancy-profile-intro { display: grid; gap: 3px; margin-top: 10px; }
+.pregnancy-profile-intro > a { align-items: center; color: var(--rose); display: inline-flex; font-size: .8125rem; font-weight: 600; min-height: 44px; text-decoration: none; width: max-content; }
+.pregnancy-profile-editor { display: grid; gap: 18px; margin-top: 16px; }
+.pregnancy-profile-form > section,
+.pregnancy-care-team { border-top: 1px solid var(--line); display: grid; gap: 10px; padding-top: 14px; }
+.pregnancy-profile-form label,
+.pregnancy-contact-form label { color: var(--ink-soft); display: grid; font-size: .75rem; font-weight: 600; gap: 4px; }
+.pregnancy-profile-form input,
+.pregnancy-profile-form select,
+.pregnancy-profile-form textarea,
+.pregnancy-contact-form input,
+.pregnancy-contact-form select,
+.pregnancy-contact-form textarea {
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: 11px;
+  color: var(--ink); font: inherit; font-size: 1rem; min-height: 44px; padding: 8px 10px; width: 100%;
+}
+.pregnancy-profile-form textarea,
+.pregnancy-contact-form textarea { min-height: 64px; resize: vertical; }
+.pregnancy-profile-grid { display: grid; gap: 9px; grid-template-columns: 1fr 1fr; }
+.pregnancy-care-team ul { display: grid; list-style: none; margin: 0; padding: 0; }
+.pregnancy-care-team li { align-items: center; border-bottom: 1px solid var(--line); display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr) auto; min-height: 58px; padding-block: 6px; }
+.pregnancy-care-team li > span { display: grid; gap: 1px; min-width: 0; }
+.pregnancy-care-team li small,
+.pregnancy-care-team li em { color: var(--ink-soft); font-size: .75rem; font-style: normal; }
+.pregnancy-care-team li > a { align-items: center; color: var(--rose); display: inline-flex; font-size: .8125rem; font-weight: 700; justify-content: center; min-height: 44px; padding-inline: 12px; text-decoration: none; }
+.pregnancy-contact-form { background: var(--surface-soft); border-radius: 14px; display: grid; gap: 9px; padding: 11px; }
+
+@media (max-width: 359px) {
+  .pregnancy-profile-grid { grid-template-columns: 1fr; }
+}
+
 /* ── Mật độ mobile: sổ tay gọn, không biến thành bảng điều khiển ── */
 @media (max-width: 767px) {
   :root {

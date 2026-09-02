@@ -4,9 +4,10 @@ import AppHeader from "../components/app-header";
 import { Icon } from "../components/embe-icon";
 import JournalCaption from "../components/journal-caption";
 import StageToday from "../components/stage-today";
+import TodayPrioritiesPanel from "../components/today-priorities-panel";
 import { getTimeline, getTimelineFreshness } from "../lib/timeline";
-import { dateInVietnam, LINK_DETAILS } from "../lib/family-task-contract";
-import { getFamilyTasks } from "../lib/family-tasks-server";
+import { dateInVietnam } from "../lib/family-task-contract";
+import { getTodaySnapshot } from "../lib/today-server";
 
 export const dynamic = "force-dynamic";
 
@@ -107,37 +108,9 @@ function TimelineLoading() {
   );
 }
 
-async function TodayPlanPanel() {
-  const today = dateInVietnam();
-  const tasks = (await getFamilyTasks(today, today).catch(() => [])).sort((left, right) => {
-    if (left.completed !== right.completed) return left.completed ? 1 : -1;
-    const priority = (category: string) => category === "appointment" ? 0 : category === "health" ? 1 : category === "pregnancy" ? 2 : 3;
-    const categoryOrder = priority(left.category) - priority(right.category);
-    return categoryOrder || (left.dueTime ?? "99:99").localeCompare(right.dueTime ?? "99:99");
-  });
-  const completed = tasks.filter((task) => task.completed).length;
-
-  return (
-    <section className="section day-thread" aria-labelledby="day-thread-title">
-      <div className="section-head">
-        <p className="panel-kicker">Việc nhà mình hôm nay</p>
-        <h2 id="day-thread-title">{tasks.length ? `${completed}/${tasks.length} việc đã xong` : "Hôm nay chưa có việc"}</h2>
-      </div>
-      {tasks.length ? <div className="thread">
-        {tasks.slice(0, 3).map((task) => {
-          const target = LINK_DETAILS[task.linkTarget];
-          return <div className={`thread-item${task.completed ? " is-complete" : ""}`} key={task.id}>
-            <span className="thread-node" aria-hidden="true" />
-            <div className="thread-body">
-              <p className="thread-when">{task.dueTime ?? "Cả ngày"}</p>
-              <a href={target.href || "/ke-hoach"}>{task.title}</a>
-            </div>
-          </div>;
-        })}
-      </div> : null}
-      <a className="btn btn-quiet btn-block" href="/ke-hoach">{tasks.length ? "Mở kế hoạch" : "Thêm việc hoặc lịch khám"}</a>
-    </section>
-  );
+async function SmartTodayPanel() {
+  const snapshot = await getTodaySnapshot();
+  return <TodayPrioritiesPanel priorities={snapshot.priorities} unavailableSources={snapshot.unavailableSources} />;
 }
 
 export default function Home() {
@@ -157,25 +130,16 @@ export default function Home() {
           <p className="eyebrow">Sổ nhà Ngân &amp; Hiếu</p>
           <time dateTime={dateInVietnam()}>{todayLabel}</time>
         </div>
-        <h1 aria-label="Hôm nay, mình cần làm gì?">
-          Hôm nay,<br /><em>mình cần làm gì?</em>
-        </h1>
-        <p className="intro">
-          Việc ưu tiên, lịch sắp tới và điều đáng nhớ.
-        </p>
-
-        <a className="action-primary" href="/ke-hoach" aria-label="Mở kế hoạch hôm nay">
-          Xem việc ưu tiên
-          <Icon name="arrow" className="icon" />
-        </a>
+        <h1 aria-label="Hôm nay">Hôm nay</h1>
+        <p className="intro">Mình chỉ cần để ý vài điều quan trọng.</p>
 
       </section>
 
-      <StageToday />
-
-      <Suspense fallback={<section className="section day-thread skeleton" aria-label="Đang mở kế hoạch hôm nay"><span className="skeleton-line" /><span className="skeleton-line" /></section>}>
-        <TodayPlanPanel />
+      <Suspense fallback={<section className="section today-priorities skeleton" aria-label="Đang mở những việc cần để ý"><span className="skeleton-line" /><span className="skeleton-line" /></section>}>
+        <SmartTodayPanel />
       </Suspense>
+
+      <StageToday />
 
       <nav className="section shortcut-list home-shortcuts" aria-label="Lối tắt của gia đình">
         <div className="home-shortcuts-heading">

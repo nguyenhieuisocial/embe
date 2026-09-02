@@ -181,3 +181,5 @@ GRANT EXECUTE ON FUNCTION public.embe_update_uploaded_media_metadata(uuid,timest
 GRANT EXECUTE ON FUNCTION public.embe_claim_photo_metadata_update() TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_finish_photo_metadata_update(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_fail_photo_metadata_update(uuid) TO service_role;
+
+;

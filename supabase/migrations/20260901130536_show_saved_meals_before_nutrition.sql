@@ -15,4 +15,4 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $func
 $function$;
 
 COMMENT ON FUNCTION public.embe_list_meal_history(integer) IS
-  'Server-only meal history; saved meals remain visible while nutrition enrichment runs.';
+  'Server-only meal history; saved meals remain visible while nutrition enrichment runs.';;
