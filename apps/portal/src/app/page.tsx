@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import AppHeader from "../components/app-header";
 import { Icon } from "../components/embe-icon";
+import JournalCaption from "../components/journal-caption";
 import StageToday from "../components/stage-today";
 import { getTimeline, getTimelineFreshness } from "../lib/timeline";
 import { dateInVietnam, LINK_DETAILS } from "../lib/family-task-contract";
@@ -70,7 +71,7 @@ async function TimelinePanel() {
                   <time dateTime={item.eventAt}>{vietnameseDate(item.eventAt)}</time>
                 </p>
                 <strong>{item.title}</strong>
-                <p>{item.caption}</p>
+                <JournalCaption caption={item.caption} />
               </div>
             </div>
           ))}
