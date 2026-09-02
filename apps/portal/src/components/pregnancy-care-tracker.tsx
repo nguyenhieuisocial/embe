@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
 import { cachedPrivateGet } from "../lib/private-get-cache";
@@ -126,11 +126,14 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [syncSecret, setSyncSecret] = useState<{ token: string; ingestUrl: string } | null>(null);
   const [copied, setCopied] = useState<"token" | "url" | null>(null);
   const [iphoneHistoryDays, setIphoneHistoryDays] = useState<IphoneHealthHistoryDays>(7);
+  const [iphoneHistoryOpen, setIphoneHistoryOpen] = useState(false);
+  const [iphoneRefreshStatus, setIphoneRefreshStatus] = useState<"idle" | "checking" | "updated" | "error">("idle");
+  const lastIphoneRefreshRef = useRef(0);
 
   async function load(currentDay: string) {
     try {
       const [careResponse, mealsResponse] = await Promise.all([
-        fetch(`/api/pregnancy/care?day=${currentDay}&days=30`, { cache: "no-store" }),
+        fetch(`/api/pregnancy/care?day=${currentDay}&days=0`, { cache: "no-store" }),
         cachedPrivateGet("/api/meals?days=7")
       ]);
       if (!careResponse.ok) throw new Error("care unavailable");
@@ -138,6 +141,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       const mealPayload = mealsResponse.ok ? await mealsResponse.json() as { history?: MealEntry[] } : {};
       setSnapshot(care.snapshot ?? EMPTY_SNAPSHOT);
       setMeals(Array.isArray(mealPayload.history) ? mealPayload.history : []);
+      lastIphoneRefreshRef.current = Date.now();
       setStatus("idle");
     } catch { setStatus("error"); }
   }
@@ -147,6 +151,48 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     setDay(currentDay);
     void load(currentDay);
   }, []);
+
+  async function refreshIphoneHealth(historyDays: 0 | IphoneHealthHistoryDays = 0, silent = false) {
+    if (!day) return;
+    if (!silent) setIphoneRefreshStatus("checking");
+    try {
+      const response = await fetch(`/api/pregnancy/care?day=${day}&days=${historyDays}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("health unavailable");
+      const payload = await response.json() as { snapshot?: Snapshot };
+      if (!payload.snapshot) throw new Error("malformed snapshot");
+      const nextSnapshot = payload.snapshot;
+      setSnapshot((current) => ({
+        ...nextSnapshot,
+        iphone_health_history: historyDays
+          ? nextSnapshot.iphone_health_history ?? []
+          : current.iphone_health_history
+      }));
+      lastIphoneRefreshRef.current = Date.now();
+      setIphoneRefreshStatus("updated");
+    } catch {
+      if (!silent) setIphoneRefreshStatus("error");
+    }
+  }
+
+  useEffect(() => {
+    if (!day || !snapshot.iphone_devices.some((device) => device.active)) return;
+    const refreshOnReturn = () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastIphoneRefreshRef.current < 15_000) return;
+      void refreshIphoneHealth(0, true);
+    };
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    window.addEventListener("focus", refreshOnReturn);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshOnReturn);
+      window.removeEventListener("focus", refreshOnReturn);
+    };
+  }, [day, snapshot.iphone_devices]);
+
+  async function showIphoneHistory(days: IphoneHealthHistoryDays) {
+    setIphoneHistoryDays(days);
+    setIphoneHistoryOpen(true);
+    await refreshIphoneHealth(days);
+  }
 
   async function mutate(body: Record<string, unknown>) {
     if (!day) return;
@@ -275,7 +321,102 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
             ? "Đã tạo điểm nhận, iPhone chưa gửi dữ liệu"
             : "Chưa kết nối Apple Health";
 
-  return (
+  return (<>
+    <section className="iphone-health-hub" id="suc-khoe-iphone" aria-labelledby="iphone-health-title">
+      <header className="iphone-health-hub-heading">
+        <div>
+          <h2 id="iphone-health-title">Sức khỏe từ iPhone</h2>
+          <p className={latestIphoneHealth ? "is-connected" : ""}><span aria-hidden="true" />{iphoneConnectionLabel}</p>
+        </div>
+        <button type="button" disabled={iphoneRefreshStatus === "checking"} onClick={() => void refreshIphoneHealth(0)}>
+          {iphoneRefreshStatus === "checking" ? "Đang kiểm tra…" : "Làm mới"}
+        </button>
+      </header>
+
+      {latestIphoneHealth ? <>
+        <div className="iphone-health-glance" aria-label="Chỉ số gần nhất từ iPhone">
+          <span><small>Ngủ</small><strong>{latestIphoneHealth.sleep_minutes ? `${(latestIphoneHealth.sleep_minutes / 60).toFixed(1)}h` : "—"}</strong></span>
+          <span><small>Bước chân</small><strong>{latestIphoneHealth.steps?.toLocaleString("vi-VN") ?? "—"}</strong></span>
+          <span><small>Cân nặng</small><strong>{latestIphoneHealth.weight_kg ? `${latestIphoneHealth.weight_kg} kg` : "—"}</strong></span>
+          <span><small>Chiều cao</small><strong>{latestIphoneHealth.height_cm ? `${latestIphoneHealth.height_cm} cm` : "—"}</strong></span>
+        </div>
+        <div className="iphone-health-actions">
+          <a href="shortcuts://">Mở Phím tắt</a>
+          <button type="button" onClick={() => void refreshIphoneHealth(0)}>Kiểm tra dữ liệu mới</button>
+        </div>
+        <details className="iphone-health-more" onToggle={(event) => {
+          const open = event.currentTarget.open;
+          setIphoneHistoryOpen(open);
+          if (open && !iphoneHistory.length) void showIphoneHistory(7);
+        }}>
+          <summary>Xem đầy đủ và lịch sử <span>⌄</span></summary>
+          {iphoneHistoryOpen ? <>
+            <div className="iphone-metrics iphone-metrics-complete">
+              <span><strong>{latestIphoneHealth.resting_heart_rate_bpm ?? "—"}</strong>nhịp tim nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingHeartRateBpm")}</small></span>
+              <span><strong>{latestIphoneHealth.distance_m ? `${(latestIphoneHealth.distance_m / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km` : "—"}</strong>quãng đường<small>{metricSyncLabel(latestIphoneHealth, "distanceM")}</small></span>
+              <span><strong>{latestIphoneHealth.active_energy_kcal ?? "—"}</strong>kcal vận động<small>{metricSyncLabel(latestIphoneHealth, "activeEnergyKcal")}</small></span>
+              <span><strong>{latestIphoneHealth.resting_energy_kcal ?? "—"}</strong>kcal nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingEnergyKcal")}</small></span>
+              <span><strong>{latestIphoneHealth.systolic && latestIphoneHealth.diastolic ? `${latestIphoneHealth.systolic}/${latestIphoneHealth.diastolic}` : "—"}</strong>huyết áp<small>{metricSyncLabel(latestIphoneHealth, "systolic")}</small></span>
+              <span><strong>{latestIphoneHealth.respiratory_rate ?? "—"}</strong>nhịp thở<small>{metricSyncLabel(latestIphoneHealth, "respiratoryRate")}</small></span>
+              <span><strong>{latestIphoneHealth.oxygen_saturation_percent ? `${latestIphoneHealth.oxygen_saturation_percent}%` : "—"}</strong>SpO₂<small>{metricSyncLabel(latestIphoneHealth, "oxygenSaturationPercent")}</small></span>
+              <span><strong>{latestIphoneHealth.body_temperature_c ?? latestIphoneHealth.wrist_temperature_c ?? "—"}</strong>°C<small>{metricSyncLabel(latestIphoneHealth, latestIphoneHealth.body_temperature_c ? "bodyTemperatureC" : "wristTemperatureC")}</small></span>
+              <span><strong>{latestIphoneHealth.hrv_ms ?? "—"}</strong>HRV ms<small>{metricSyncLabel(latestIphoneHealth, "hrvMs")}</small></span>
+              <span><strong>{latestIphoneHealth.exercise_minutes ?? "—"}</strong>phút tập<small>{metricSyncLabel(latestIphoneHealth, "exerciseMinutes")}</small></span>
+              <span><strong>{latestIphoneHealth.mindfulness_minutes ?? "—"}</strong>phút thư giãn<small>{metricSyncLabel(latestIphoneHealth, "mindfulnessMinutes")}</small></span>
+              <span><strong>{latestIphoneHealth.water_ml ?? "—"}</strong>ml nước<small>{metricSyncLabel(latestIphoneHealth, "waterMl")}</small></span>
+            </div>
+            <p className="iphone-metric-sync">Cập nhật gần nhất {new Date(latestIphoneHealth.updated_at).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}</p>
+            <div className="iphone-health-history">
+              <div className="iphone-health-history-heading">
+                <h3>Lịch sử</h3>
+                <span role="group" aria-label="Khoảng lịch sử sức khỏe">
+                  <button type="button" aria-pressed={iphoneHistoryDays === 7} onClick={() => void showIphoneHistory(7)}>7 ngày</button>
+                  <button type="button" aria-pressed={iphoneHistoryDays === 30} onClick={() => void showIphoneHistory(30)}>30 ngày</button>
+                </span>
+              </div>
+              {iphoneRefreshStatus === "checking" && !iphoneHistory.length ? <p>Đang lấy lịch sử…</p> : null}
+              <div>{iphoneHistory.slice(-iphoneHistoryDays).reverse().map((item) => <article key={item.day}>
+                <time>{item.day ? new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : "—"}</time>
+                <span>{item.steps?.toLocaleString("vi-VN") ?? "—"} bước</span>
+                <span>{item.sleep_minutes ? `${(item.sleep_minutes / 60).toFixed(1)}h ngủ` : "—"}</span>
+                <span>{item.weight_kg ? `${item.weight_kg} kg` : "—"}</span>
+              </article>)}</div>
+            </div>
+          </> : null}
+        </details>
+      </> : <div className="iphone-health-empty">
+        <strong>{activeIphoneDevices.length ? "Còn một bước trên iPhone" : "Kết nối một lần"}</strong>
+        <p>{activeIphoneDevices.length
+          ? "Mở Phím tắt, chạy EmBe rồi quay lại. Trang sẽ tự kiểm tra dữ liệu mới."
+          : "Sau khi cài, bước chân, giấc ngủ và cân nặng được gửi tự động mỗi ngày."}</p>
+        <div className="iphone-health-actions">
+          {activeIphoneDevices.length ? <a href="shortcuts://">Mở Phím tắt</a> : null}
+          {!syncSecret ? <button type="button" onClick={() => void createIphoneConnection()}>
+            {activeIphoneDevices.length ? "Tạo kết nối mới" : "Kết nối iPhone"}
+          </button> : null}
+        </div>
+      </div>}
+
+      {syncSecret ? <div className="sync-secret" role="status">
+        <strong>Kết nối đã sẵn sàng</strong>
+        <ol className="iphone-setup-steps">
+          <li><span>1</span><div><strong>Cài mẫu Phím tắt</strong><small>Mở liên kết và chọn Thêm phím tắt.</small></div></li>
+          <li><span>2</span><div><strong>Dán hai giá trị bên dưới</strong><small>Chép đúng Điểm nhận và Authorization khi Phím tắt hỏi.</small></div></li>
+          <li><span>3</span><div><strong>Chạy thử</strong><small>Cho phép chỉ số muốn chia sẻ rồi quay lại EmBe.</small></div></li>
+        </ol>
+        <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài Phím tắt</a>
+        <div className="iphone-setup-value"><small>Điểm nhận</small><code>{syncSecret.ingestUrl}</code><button type="button" onClick={() => void copySetupValue("url", syncSecret.ingestUrl)}>{copied === "url" ? "Đã chép" : "Chép"}</button></div>
+        <div className="iphone-setup-value"><small>Authorization</small><code>Bearer {syncSecret.token}</code><button type="button" onClick={() => void copySetupValue("token", `Bearer ${syncSecret.token}`)}>{copied === "token" ? "Đã chép" : "Chép"}</button></div>
+      </div> : null}
+
+      <p className={`iphone-health-feedback is-${iphoneRefreshStatus}`} aria-live="polite">
+        {iphoneRefreshStatus === "checking" ? "Đang kiểm tra dữ liệu mới…"
+          : iphoneRefreshStatus === "updated" ? "Đã kiểm tra xong."
+            : iphoneRefreshStatus === "error" ? "Chưa kiểm tra được. Chạm Làm mới khi có mạng."
+              : "Dữ liệu tổng hợp được giữ riêng cho gia đình."}
+      </p>
+    </section>
+
     <section className="care-tracker" id="vi-chat-thuoc" aria-labelledby="care-tracker-title">
       <div className="section-heading-row">
         <div>
@@ -392,74 +533,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         <p className="formula-note">Mốc tự tính dùng phương trình DRI 2023 theo hồ sơ và cộng khoảng 340 kcal ở ba tháng giữa, 450 kcal ở ba tháng cuối. Đây là điểm bắt đầu để theo dõi, không phải chỉ định giảm/tăng cân; mốc chuyên môn đã nhập luôn được ưu tiên.</p>
       </details>
 
-      <details className="iphone-health-card" id="suc-khoe-iphone" open={!latestIphoneHealth}>
-        <summary><span><strong>Sức khỏe từ iPhone</strong><small>{iphoneConnectionLabel}</small></span><i>⌄</i></summary>
-        {latestIphoneHealth && <>
-          <div className="iphone-metrics iphone-metrics-complete">
-            <span><strong>{latestIphoneHealth.height_cm ? `${latestIphoneHealth.height_cm} cm` : "—"}</strong>chiều cao<small>{metricSyncLabel(latestIphoneHealth, "heightCm")}</small></span>
-            <span><strong>{latestIphoneHealth.weight_kg ? `${latestIphoneHealth.weight_kg} kg` : "—"}</strong>cân nặng<small>{metricSyncLabel(latestIphoneHealth, "weightKg")}</small></span>
-            <span><strong>{latestIphoneHealth.sleep_minutes ? `${(latestIphoneHealth.sleep_minutes / 60).toFixed(1)}h` : "—"}</strong>ngủ<small>{metricSyncLabel(latestIphoneHealth, "sleepMinutes")}</small></span>
-            <span><strong>{latestIphoneHealth.resting_heart_rate_bpm ?? "—"}</strong>nhịp tim nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingHeartRateBpm")}</small></span>
-            <span><strong>{latestIphoneHealth.steps?.toLocaleString("vi-VN") ?? "—"}</strong>bước<small>{metricSyncLabel(latestIphoneHealth, "steps")}</small></span>
-            <span><strong>{latestIphoneHealth.distance_m ? `${(latestIphoneHealth.distance_m / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km` : "—"}</strong>quãng đường<small>{metricSyncLabel(latestIphoneHealth, "distanceM")}</small></span>
-            <span><strong>{latestIphoneHealth.active_energy_kcal ?? "—"}</strong>kcal vận động<small>{metricSyncLabel(latestIphoneHealth, "activeEnergyKcal")}</small></span>
-            <span><strong>{latestIphoneHealth.resting_energy_kcal ?? "—"}</strong>kcal nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingEnergyKcal")}</small></span>
-          </div>
-          <details className="iphone-health-more">
-            <summary>Chỉ số khác khi thiết bị có ghi nhận <span>⌄</span></summary>
-            <div className="iphone-metrics iphone-metrics-complete">
-              <span><strong>{latestIphoneHealth.systolic && latestIphoneHealth.diastolic ? `${latestIphoneHealth.systolic}/${latestIphoneHealth.diastolic}` : "—"}</strong>huyết áp<small>{metricSyncLabel(latestIphoneHealth, "systolic")}</small></span>
-              <span><strong>{latestIphoneHealth.respiratory_rate ?? "—"}</strong>nhịp thở<small>{metricSyncLabel(latestIphoneHealth, "respiratoryRate")}</small></span>
-              <span><strong>{latestIphoneHealth.oxygen_saturation_percent ? `${latestIphoneHealth.oxygen_saturation_percent}%` : "—"}</strong>SpO₂<small>{metricSyncLabel(latestIphoneHealth, "oxygenSaturationPercent")}</small></span>
-              <span><strong>{latestIphoneHealth.body_temperature_c ?? latestIphoneHealth.wrist_temperature_c ?? "—"}</strong>°C<small>{metricSyncLabel(latestIphoneHealth, latestIphoneHealth.body_temperature_c ? "bodyTemperatureC" : "wristTemperatureC")}</small></span>
-              <span><strong>{latestIphoneHealth.hrv_ms ?? "—"}</strong>HRV ms<small>{metricSyncLabel(latestIphoneHealth, "hrvMs")}</small></span>
-              <span><strong>{latestIphoneHealth.exercise_minutes ?? "—"}</strong>phút tập<small>{metricSyncLabel(latestIphoneHealth, "exerciseMinutes")}</small></span>
-              <span><strong>{latestIphoneHealth.mindfulness_minutes ?? "—"}</strong>phút thư giãn<small>{metricSyncLabel(latestIphoneHealth, "mindfulnessMinutes")}</small></span>
-              <span><strong>{latestIphoneHealth.water_ml ?? "—"}</strong>ml nước<small>{metricSyncLabel(latestIphoneHealth, "waterMl")}</small></span>
-            </div>
-          </details>
-          <p className="iphone-metric-sync">Mỗi chỉ số giữ thời điểm đồng bộ riêng · cập nhật gần nhất {new Date(latestIphoneHealth.updated_at).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}</p>
-          <div className="iphone-health-history">
-            <div className="iphone-health-history-heading">
-              <h3>Lịch sử sức khỏe từ iPhone</h3>
-              <span role="group" aria-label="Khoảng lịch sử sức khỏe">
-                <button type="button" aria-pressed={iphoneHistoryDays === 7} onClick={() => setIphoneHistoryDays(7)}>7 ngày</button>
-                <button type="button" aria-pressed={iphoneHistoryDays === 30} onClick={() => setIphoneHistoryDays(30)}>30 ngày</button>
-              </span>
-            </div>
-            <div>{iphoneHistory.slice(-iphoneHistoryDays).reverse().map((item) => <article key={item.day}>
-              <time>{item.day ? new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : "—"}</time>
-              <span>{item.steps?.toLocaleString("vi-VN") ?? "—"} bước</span>
-              <span>{item.sleep_minutes ? `${(item.sleep_minutes / 60).toFixed(1)}h ngủ` : "—"}</span>
-              <span>{item.weight_kg ? `${item.weight_kg} kg` : "—"}</span>
-            </article>)}</div>
-          </div>
-        </>}
-        <p>Safari không thể tự đọc Apple Health. EmBe cần một Phím tắt trên chính iPhone để gửi các tổng số đã chọn; không lấy vị trí, hồ sơ khám hay dữ liệu thô.</p>
-        {!syncSecret && <>
-          {activeIphoneDevices.length > 0 && !lastIphoneSync && <p className="iphone-connection-warning">Lần trước mới tạo điểm nhận nhưng chưa cài cầu nối, nên chưa có dữ liệu nào được gửi.</p>}
-          <button className="care-add-button" type="button" onClick={() => void createIphoneConnection()}>
-            {activeIphoneDevices.length ? "Làm lại kết nối" : "Bắt đầu kết nối"}
-          </button>
-        </>}
-        {syncSecret && <div className="sync-secret" role="status">
-          <strong>Điểm nhận đã sẵn sàng</strong>
-          <p>Việc còn lại phải thực hiện một lần trên iPhone vì Apple chỉ cho ứng dụng Phím tắt xin quyền đọc Sức khỏe.</p>
-          <ol className="iphone-setup-steps">
-            <li><span>1</span><div><strong>Cài mẫu đã kiểm tra</strong><small>Khi được hỏi URL, dán “Điểm nhận” ở bên dưới.</small></div></li>
-            <li><span>2</span><div><strong>Thêm khóa riêng</strong><small>Mở bước “Lấy nội dung của URL”, thêm tiêu đề Authorization rồi dán giá trị bên dưới.</small></div></li>
-            <li><span>3</span><div><strong>Chạy thử một lần</strong><small>Chỉ cho phép các chỉ số Mẹ Ngân muốn chia sẻ; sau đó quay lại EmBe để xem kết quả.</small></div></li>
-            <li><span>4</span><div><strong>Cho chạy mỗi ngày</strong><small>Trong Tự động hóa, chọn một giờ hằng ngày và “Chạy ngay”.</small></div></li>
-          </ol>
-          <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài mẫu Phím tắt miễn phí</a>
-          <div className="iphone-setup-value"><small>Điểm nhận</small><code>{syncSecret.ingestUrl}</code><button type="button" onClick={() => void copySetupValue("url", syncSecret.ingestUrl)}>{copied === "url" ? "Đã chép" : "Chép"}</button></div>
-          <div className="iphone-setup-value"><small>Authorization</small><code>Bearer {syncSecret.token}</code><button type="button" onClick={() => void copySetupValue("token", `Bearer ${syncSecret.token}`)}>{copied === "token" ? "Đã chép" : "Chép"}</button></div>
-          <p className="formula-note">Mẫu cài nhanh gửi bước chân và năng lượng vận động. Điểm nhận mới đã hỗ trợ đầy đủ các chỉ số hiển thị ở trên khi Phím tắt có gửi và Apple Health có dữ liệu. Khóa chỉ hiện lần này.</p>
-        </div>}
-        <p className="formula-note">Chỉ bấm “Cho phép” trong Apple Health là chưa đủ: Phím tắt còn phải chạy và gửi dữ liệu về EmBe. iOS có thể hoãn tự động hóa khi máy khóa, bật tiết kiệm pin hoặc không có mạng.</p>
-      </details>
-
       <p className={`care-status is-${status}`} aria-live="polite">{status === "saving" ? "Đang lưu riêng tư…" : status === "error" ? "Chưa đồng bộ được; hãy thử lại khi có mạng." : "Dữ liệu sức khỏe được giữ riêng cho gia đình."}</p>
     </section>
-  );
+  </>);
 }

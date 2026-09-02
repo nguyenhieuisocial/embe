@@ -41,10 +41,11 @@ export async function GET(request: Request): Promise<Response> {
   const params = new URL(request.url).searchParams;
   const day = params.get("day") ?? "";
   const daysValue = params.get("days") ?? "7";
-  const days = daysValue === "7" ? 7 : daysValue === "30" ? 30 : null;
-  if (!ISO_DAY.test(day) || !days) return privateReply({ error: "invalid_request" }, 400);
+  const days = daysValue === "0" ? 0 : daysValue === "7" ? 7 : daysValue === "30" ? 30 : null;
+  if (!ISO_DAY.test(day) || days === null) return privateReply({ error: "invalid_request" }, 400);
   const snapshot = await refresh(day);
   if (!snapshot) return privateReply({ error: "temporarily_unavailable" }, 503);
+  if (days === 0) return privateReply({ snapshot }, 200);
   const store = photoStore();
   const history = store ? await store.rpc("embe_get_iphone_health_history", { p_end_day: day, p_days: days }) : null;
   return history && !history.error && Array.isArray(history.data)

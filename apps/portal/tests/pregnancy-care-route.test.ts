@@ -58,6 +58,15 @@ describe("private pregnancy care and iPhone health APIs", () => {
     expect(rpc).toHaveBeenCalledTimes(2);
   });
 
+  it("skips the history query for the compact initial iPhone snapshot", async () => {
+    rpc.mockResolvedValueOnce({ data: snapshot, error: null });
+    const response = await GET(request("https://embe.hieu.asia/api/pregnancy/care?day=2026-09-01&days=0", "GET"));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ snapshot });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("embe_get_pregnancy_care", { p_day: "2026-09-01" });
+  });
+
   it("saves a bounded profile and returns a refreshed snapshot", async () => {
     rpc.mockResolvedValueOnce({ data: null, error: null }).mockResolvedValueOnce({ data: snapshot, error: null });
     const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
