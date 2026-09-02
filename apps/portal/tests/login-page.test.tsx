@@ -14,9 +14,9 @@ describe("family password page", () => {
     expect(document.querySelector('input[name="next"]')).toHaveValue("/family");
   });
 
-  it("explains when the submitted password was incorrect", async () => {
+  it("uses the same neutral copy for a failed or delayed login", async () => {
     render(await LoginPage({ searchParams: Promise.resolve({ error: "1" }) }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Mật khẩu chưa đúng");
+    expect(screen.getByRole("alert")).toHaveTextContent("Chưa vào được. Đợi một chút rồi thử lại.");
   });
 });

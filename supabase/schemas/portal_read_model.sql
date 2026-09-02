@@ -2337,3 +2337,211 @@ REVOKE ALL ON FUNCTION public.embe_get_family_profile() FROM PUBLIC, anon, authe
 REVOKE ALL ON FUNCTION public.embe_save_family_profile(date,date) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.embe_get_family_profile() TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_save_family_profile(date,date) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.embe_save_pregnancy_medical_record_with_task(
+  p_id uuid, p_kind text, p_status text, p_occurred_at timestamptz, p_title text,
+  p_provider text, p_clinician text, p_notes text, p_gestational_week integer,
+  p_next_appointment_at timestamptz, p_measurements jsonb, p_medicines jsonb
+)
+RETURNS uuid LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+DECLARE result_id uuid := COALESCE(p_id, gen_random_uuid());
+BEGIN
+  IF p_kind NOT IN ('appointment', 'ultrasound', 'laboratory', 'prescription', 'other')
+     OR p_status NOT IN ('planned', 'completed')
+     OR p_occurred_at IS NULL
+     OR char_length(trim(COALESCE(p_title, ''))) NOT BETWEEN 1 AND 100
+     OR char_length(COALESCE(p_provider, '')) > 120
+     OR char_length(COALESCE(p_clinician, '')) > 100
+     OR char_length(COALESCE(p_notes, '')) > 2000
+     OR (p_gestational_week IS NOT NULL AND p_gestational_week NOT BETWEEN 1 AND 42)
+     OR jsonb_typeof(COALESCE(p_measurements, '{}'::jsonb)) <> 'object'
+     OR jsonb_typeof(COALESCE(p_medicines, '[]'::jsonb)) <> 'array' THEN
+    RAISE EXCEPTION 'invalid pregnancy medical record';
+  END IF;
+
+  INSERT INTO portal_read_model.pregnancy_medical_record (
+    id, kind, status, occurred_at, title, provider, clinician, notes, gestational_week,
+    next_appointment_at, measurements, medicines
+  ) VALUES (
+    result_id, p_kind, p_status, p_occurred_at, trim(p_title), trim(COALESCE(p_provider, '')),
+    trim(COALESCE(p_clinician, '')), trim(COALESCE(p_notes, '')), p_gestational_week,
+    p_next_appointment_at, COALESCE(p_measurements, '{}'::jsonb), COALESCE(p_medicines, '[]'::jsonb)
+  ) ON CONFLICT (id) DO UPDATE SET
+    kind = EXCLUDED.kind, status = EXCLUDED.status, occurred_at = EXCLUDED.occurred_at,
+    title = EXCLUDED.title, provider = EXCLUDED.provider, clinician = EXCLUDED.clinician,
+    notes = EXCLUDED.notes, gestational_week = EXCLUDED.gestational_week,
+    next_appointment_at = EXCLUDED.next_appointment_at, measurements = EXCLUDED.measurements,
+    medicines = EXCLUDED.medicines, updated_at = timezone('utc', now())
+  WHERE portal_read_model.pregnancy_medical_record.deleted_at IS NULL;
+
+  IF p_kind = 'appointment' AND p_status = 'planned' THEN
+    INSERT INTO portal_read_model.family_task (
+      idempotency_key, title, note, owner_role, category, link_target,
+      due_on, due_time, repeat_rule
+    ) VALUES (
+      result_id, 'Lịch khám: ' || trim(p_title), trim(COALESCE(p_provider, '')),
+      'family', 'appointment', 'calendar',
+      (p_occurred_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date,
+      date_trunc('minute', p_occurred_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::time,
+      'none'
+    ) ON CONFLICT (idempotency_key) DO UPDATE SET
+      title = EXCLUDED.title, note = EXCLUDED.note, owner_role = EXCLUDED.owner_role,
+      category = EXCLUDED.category, link_target = EXCLUDED.link_target,
+      due_on = EXCLUDED.due_on, due_time = EXCLUDED.due_time,
+      repeat_rule = EXCLUDED.repeat_rule, deleted_at = NULL,
+      updated_at = timezone('utc', now());
+  ELSE
+    UPDATE portal_read_model.family_task
+    SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+    WHERE idempotency_key = result_id AND deleted_at IS NULL;
+  END IF;
+
+  RETURN result_id;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.embe_delete_pregnancy_medical_record_with_task(p_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+BEGIN
+  UPDATE portal_read_model.pregnancy_medical_record
+  SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+  WHERE id = p_id AND deleted_at IS NULL;
+
+  UPDATE portal_read_model.family_task
+  SET deleted_at = timezone('utc', now()), updated_at = timezone('utc', now())
+  WHERE idempotency_key = p_id AND deleted_at IS NULL;
+END;
+$function$;
+CREATE OR REPLACE FUNCTION public.embe_save_pregnancy_medical_record(
+  p_id uuid, p_kind text, p_status text, p_occurred_at timestamptz, p_title text,
+  p_provider text, p_clinician text, p_notes text, p_gestational_week integer,
+  p_next_appointment_at timestamptz, p_measurements jsonb, p_medicines jsonb
+)
+RETURNS uuid LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+BEGIN
+  RETURN public.embe_save_pregnancy_medical_record_with_task(
+    p_id, p_kind, p_status, p_occurred_at, p_title, p_provider, p_clinician,
+    p_notes, p_gestational_week, p_next_appointment_at, p_measurements, p_medicines
+  );
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.embe_delete_pregnancy_medical_record(p_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+BEGIN
+  PERFORM public.embe_delete_pregnancy_medical_record_with_task(p_id);
+END;
+$function$;
+
+
+REVOKE ALL ON FUNCTION public.embe_save_pregnancy_medical_record_with_task(uuid,text,text,timestamptz,text,text,text,text,integer,timestamptz,jsonb,jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.embe_delete_pregnancy_medical_record_with_task(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.embe_save_pregnancy_medical_record_with_task(uuid,text,text,timestamptz,text,text,text,text,integer,timestamptz,jsonb,jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION public.embe_delete_pregnancy_medical_record_with_task(uuid) TO service_role;
+
+CREATE TABLE portal_read_model.login_rate_limit (
+  key_hash text PRIMARY KEY CHECK (key_hash ~ '^[0-9a-f]{64}$'),
+  failure_count smallint NOT NULL CHECK (failure_count BETWEEN 1 AND 50),
+  window_started_at timestamptz NOT NULL,
+  blocked_until timestamptz,
+  updated_at timestamptz NOT NULL
+);
+
+CREATE INDEX login_rate_limit_updated_idx
+  ON portal_read_model.login_rate_limit (updated_at);
+
+ALTER TABLE portal_read_model.login_rate_limit ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portal_read_model.login_rate_limit FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE portal_read_model.login_rate_limit FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE portal_read_model.login_rate_limit TO service_role;
+CREATE POLICY login_rate_limit_deny_clients ON portal_read_model.login_rate_limit
+  FOR ALL TO anon, authenticated USING (false) WITH CHECK (false);
+
+CREATE OR REPLACE FUNCTION public.embe_check_login_rate_limit(p_key_hash text, p_now timestamptz)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path = '' AS $function$
+DECLARE entry portal_read_model.login_rate_limit%ROWTYPE;
+DECLARE retry_after integer := 0;
+BEGIN
+  IF p_key_hash !~ '^[0-9a-f]{64}$' OR p_now IS NULL THEN
+    RAISE EXCEPTION 'invalid login rate key';
+  END IF;
+
+  SELECT * INTO entry FROM portal_read_model.login_rate_limit WHERE key_hash = p_key_hash;
+  IF entry.key_hash IS NULL OR entry.window_started_at <= p_now - interval '15 minutes'
+     OR entry.blocked_until IS NULL OR entry.blocked_until <= p_now THEN
+    RETURN jsonb_build_object('allowed', true, 'retry_after_seconds', 0);
+  END IF;
+
+  retry_after := greatest(1, ceil(extract(epoch FROM entry.blocked_until - p_now))::integer);
+  RETURN jsonb_build_object('allowed', false, 'retry_after_seconds', least(retry_after, 900));
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.embe_record_login_failure(p_key_hash text, p_now timestamptz)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+DECLARE entry portal_read_model.login_rate_limit%ROWTYPE;
+DECLARE next_count smallint;
+DECLARE delay_seconds integer;
+BEGIN
+  IF p_key_hash !~ '^[0-9a-f]{64}$' OR p_now IS NULL THEN
+    RAISE EXCEPTION 'invalid login rate key';
+  END IF;
+
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_key_hash, 0));
+  DELETE FROM portal_read_model.login_rate_limit WHERE updated_at < p_now - interval '24 hours';
+  SELECT * INTO entry FROM portal_read_model.login_rate_limit WHERE key_hash = p_key_hash FOR UPDATE;
+
+  IF entry.key_hash IS NULL OR entry.window_started_at <= p_now - interval '15 minutes' THEN
+    next_count := 1;
+    INSERT INTO portal_read_model.login_rate_limit (
+      key_hash, failure_count, window_started_at, blocked_until, updated_at
+    ) VALUES (p_key_hash, next_count, p_now, NULL, p_now)
+    ON CONFLICT (key_hash) DO UPDATE SET
+      failure_count = next_count, window_started_at = p_now,
+      blocked_until = NULL, updated_at = p_now;
+  ELSE
+    next_count := least(entry.failure_count + 1, 50);
+  END IF;
+
+  delay_seconds := CASE
+    WHEN next_count <= 4 THEN 0
+    WHEN next_count = 5 THEN 30
+    WHEN next_count = 6 THEN 60
+    WHEN next_count = 7 THEN 120
+    WHEN next_count = 8 THEN 300
+    ELSE 900
+  END;
+
+  IF entry.key_hash IS NOT NULL AND entry.window_started_at > p_now - interval '15 minutes' THEN
+    UPDATE portal_read_model.login_rate_limit SET
+      failure_count = next_count,
+      blocked_until = CASE WHEN delay_seconds = 0 THEN NULL ELSE p_now + make_interval(secs => delay_seconds) END,
+      updated_at = p_now
+    WHERE key_hash = p_key_hash;
+  ELSIF delay_seconds > 0 THEN
+    UPDATE portal_read_model.login_rate_limit
+    SET blocked_until = p_now + make_interval(secs => delay_seconds), updated_at = p_now
+    WHERE key_hash = p_key_hash;
+  END IF;
+
+  RETURN jsonb_build_object('allowed', delay_seconds = 0, 'retry_after_seconds', delay_seconds);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.embe_reset_login_rate_limit(p_key_hash text)
+RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+BEGIN
+  IF p_key_hash !~ '^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'invalid login rate key'; END IF;
+  DELETE FROM portal_read_model.login_rate_limit WHERE key_hash = p_key_hash;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.embe_check_login_rate_limit(text,timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.embe_record_login_failure(text,timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.embe_reset_login_rate_limit(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.embe_check_login_rate_limit(text,timestamptz) TO service_role;
+GRANT EXECUTE ON FUNCTION public.embe_record_login_failure(text,timestamptz) TO service_role;
+GRANT EXECUTE ON FUNCTION public.embe_reset_login_rate_limit(text) TO service_role;
+
+COMMENT ON TABLE portal_read_model.login_rate_limit IS
+  'Short-lived login backoff keyed only by a server-side HMAC; raw client addresses are never stored.';

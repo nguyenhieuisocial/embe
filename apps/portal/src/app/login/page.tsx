@@ -30,7 +30,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
           {params.error === "1" ? (
             <p className="login-error" role="alert">
-              Mật khẩu chưa đúng. Vui lòng thử lại.
+              Chưa vào được. Đợi một chút rồi thử lại.
             </p>
           ) : null}
           <button className="btn btn-primary btn-block" type="submit">Vào sổ gia đình</button>
