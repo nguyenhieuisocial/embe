@@ -12,6 +12,7 @@ import * as configRoute from "../src/app/api/notifications/config/route";
 import * as subscriptionRoute from "../src/app/api/notifications/subscriptions/route";
 import * as dispatchRoute from "../src/app/api/notifications/dispatch/route";
 import * as activityRoute from "../src/app/api/notifications/activity/route";
+import { familyActivityKind } from "../src/lib/family-activity-notification";
 
 const originalEnvironment = { ...process.env };
 function cookie() { return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`; }
@@ -126,5 +127,15 @@ describe("private family push routes", () => {
     }));
     expect(unrelated.status).toBe(204);
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("covers family updates but ignores technical API operations", () => {
+    expect(familyActivityKind("/api/pregnancy/iphone-health")).toBe("health");
+    expect(familyActivityKind("/api/pregnancy/records/record-id/documents")).toBe("medical");
+    expect(familyActivityKind("/api/memories/memory-id/reactions")).toBe("memory");
+    expect(familyActivityKind("/api/baby/medical/record-id/documents")).toBe("baby");
+    expect(familyActivityKind("/api/trash")).toBe("profile");
+    expect(familyActivityKind("/api/family/export")).toBeNull();
+    expect(familyActivityKind("/api/share/media/media-id")).toBeNull();
   });
 });

@@ -7,14 +7,14 @@ const recentActivities = new Map();
 function familyActivityKind(pathname) {
   if (pathname.startsWith("/api/notifications/") || pathname.startsWith("/api/auth/")) return null;
   if (pathname === "/api/meals" || /^\/api\/meals\/[^/]+(?:\/complete)?$/.test(pathname)) return "meal";
-  if (/^\/api\/pregnancy\/(?:care|health|mental-health|symptoms)$/.test(pathname) || pathname === "/api/postpartum/health") return "health";
-  if (pathname === "/api/pregnancy/records" || /^\/api\/pregnancy\/records\/[^/]+$/.test(pathname)) return "medical";
+  if (/^\/api\/pregnancy\/(?:care|health|iphone-health|mental-health|symptoms)$/.test(pathname) || pathname === "/api/postpartum/health") return "health";
+  if (pathname === "/api/pregnancy/records" || pathname.startsWith("/api/pregnancy/records/") || pathname.startsWith("/api/pregnancy/documents/")) return "medical";
   if (pathname === "/api/journal") return "journal";
-  if (pathname === "/api/memories" || /^\/api\/memories\/[^/]+$/.test(pathname) || /^\/api\/photo-uploads\/[^/]+\/complete$/.test(pathname)) return "memory";
+  if (pathname === "/api/memories" || pathname.startsWith("/api/memories/") || /^\/api\/photo-uploads\/[^/]+\/complete$/.test(pathname)) return "memory";
   if (pathname === "/api/tasks" || /^\/api\/tasks\/[^/]+$/.test(pathname) || pathname.startsWith("/api/birth-prep")) return "task";
   if (pathname === "/api/inventory" || pathname === "/api/procurement") return "inventory";
-  if (/^\/api\/(?:family\/(?:lifecycle|profile)|pregnancy\/profile)$/.test(pathname)) return "profile";
-  if (/^\/api\/baby\/(?:care|development|medical)(?:\/[^/]+)?$/.test(pathname)) return "baby";
+  if (pathname === "/api/pregnancy" || pathname === "/api/trash" || /^\/api\/(?:family\/(?:lifecycle|profile)|pregnancy\/profile)$/.test(pathname)) return "profile";
+  if (/^\/api\/baby\/(?:care|development|medical)(?:\/.*)?$/.test(pathname)) return "baby";
   return null;
 }
 
