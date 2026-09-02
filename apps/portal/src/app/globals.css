@@ -2252,6 +2252,61 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .folk-safety { background: var(--coral-soft); border-radius: var(--radius); display: grid; gap: 3px; padding: 11px 12px; }
 .folk-safety strong { color: var(--coral); font-size: .8375rem; }
 .folk-safety p { color: var(--ink-soft); font-size: .78rem; line-height: 1.45; }
+.folk-guide-entry {
+  align-items: center;
+  background: color-mix(in srgb, var(--rose-soft) 48%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--rose) 16%, var(--line));
+  border-radius: var(--radius);
+  color: var(--ink);
+  display: flex;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 9px 11px;
+  text-decoration: none;
+}
+.folk-guide-entry > span:first-child { display: grid; gap: 2px; }
+.folk-guide-entry strong { font-size: .85rem; }
+.folk-guide-entry small { color: var(--ink-soft); font-size: .72rem; }
+.folk-guide-entry > span:last-child { color: var(--rose); font-size: 1.25rem; }
+.folk-guide-page { gap: 12px; }
+.folk-guide-key { background: var(--rose-soft); border-radius: var(--radius); display: grid; gap: 3px; padding: 11px 12px; }
+.folk-guide-key strong { color: var(--rose); font-size: .85rem; }
+.folk-guide-key p { color: var(--ink-soft); font-size: .78rem; line-height: 1.45; }
+.folk-search {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 0 7px 0 12px;
+}
+.folk-search > span { color: var(--rose); }
+.folk-search input { appearance: none; background: transparent; border: 0; color: var(--ink); font: inherit; font-size: 1rem; min-height: 46px; min-width: 0; outline: 0; padding: 8px; width: 100%; }
+.folk-search input::placeholder { color: var(--ink-soft); opacity: .78; }
+.folk-search input::-webkit-search-cancel-button { display: none; }
+.folk-search button { background: transparent; border: 0; color: var(--ink-soft); font-size: 1.25rem; min-height: 44px; min-width: 44px; }
+.folk-search:focus-within { border-color: color-mix(in srgb, var(--rose) 58%, var(--line)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rose-soft) 72%, transparent); }
+.folk-filter { display: flex; gap: 6px; margin-inline: -16px; overflow-x: auto; padding-inline: 16px; scrollbar-width: none; }
+.folk-filter::-webkit-scrollbar { display: none; }
+.folk-filter button { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-pill); color: var(--ink-soft); flex: none; font: inherit; font-size: .75rem; font-weight: 650; min-height: 44px; padding: 7px 12px; }
+.folk-filter button[aria-pressed="true"] { background: var(--rose-soft); border-color: color-mix(in srgb, var(--rose) 28%, var(--line)); color: var(--rose); }
+.folk-result-count { color: var(--ink-soft); font-size: .72rem; margin: -3px 2px 0; }
+.folk-guide-list { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+.folk-guide-card + .folk-guide-card { border-top: 1px solid var(--line); }
+.folk-guide-card > summary { align-items: center; background: var(--surface); cursor: pointer; display: flex; justify-content: space-between; list-style: none; min-height: 58px; padding: 10px 12px; }
+.folk-guide-card > summary::-webkit-details-marker { display: none; }
+.folk-guide-card > summary > span { display: grid; gap: 3px; padding-right: 8px; }
+.folk-guide-card > summary small { color: var(--ink-soft); font-size: .68rem; font-weight: 650; }
+.folk-guide-card > summary strong { font-size: .84rem; line-height: 1.35; }
+.folk-guide-card > summary i { color: var(--rose); flex: none; font-style: normal; transition: transform 160ms ease; }
+.folk-guide-card[open] > summary { background: var(--paper); }
+.folk-guide-card[open] > summary i { transform: rotate(180deg); }
+.folk-guide-card > div { background: var(--surface); display: grid; gap: 5px; padding: 0 12px 11px; }
+.folk-guide-card > div p { color: var(--ink-soft); font-size: .8rem; line-height: 1.5; }
+.folk-guide-card > div a, .folk-safety a { align-items: center; color: var(--jade); display: inline-flex; font-size: .74rem; font-weight: 650; min-height: 44px; text-decoration: none; }
+.folk-guide-card.is-avoid > summary small { color: var(--coral); }
+.folk-guide-card.is-keep > summary small { color: var(--jade); }
 
 .menu-scroll {
   display: grid;

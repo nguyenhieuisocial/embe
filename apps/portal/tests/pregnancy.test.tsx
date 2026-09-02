@@ -98,6 +98,7 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Không tự dùng thuốc, thảo dược hoặc vi chất")).toBeInTheDocument();
     expect(screen.getByText(/Không cần “kiêng” mọi món theo truyền miệng/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Mẹo dân gian: điều nào nên tin?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Tra nhanh mẹo & dân gian/i })).toHaveAttribute("href", "/me-bau/meo-dan-gian");
     expect(screen.getByText("Có thể giữ")).toBeInTheDocument();
     expect(screen.getByText("Chỉ để vui")).toBeInTheDocument();
     expect(screen.getByText("Không nên làm")).toBeInTheDocument();
@@ -130,7 +131,7 @@ describe("pregnancy daily page", () => {
     const sources = screen.getByText("Nguồn đã đối chiếu").closest("details");
     expect(sources).not.toHaveAttribute("open");
     if (sources) fireEvent.click(within(sources).getByText("Nguồn đã đối chiếu"));
-    expect(screen.getByRole("link", { name: /WHO/ })).toHaveAttribute("href", expect.stringContaining("who.int"));
+    expect(screen.getAllByRole("link", { name: /WHO/ })[0]).toHaveAttribute("href", expect.stringContaining("who.int"));
     expect(screen.getAllByRole("link", { name: /ACOG/ })[0]).toHaveAttribute("href", expect.stringContaining("acog.org"));
   }, 10_000);
 

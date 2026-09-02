@@ -529,6 +529,7 @@ export default function PregnancyPage() {
           </summary>
           <div className="reference-disclosure-body folk-body">
             <p className="reference-intro">Mẹo chỉ nên giúp Mẹ Ngân dễ chịu hơn, không thay khám thai, thuốc đã kê hoặc hướng dẫn riêng của bác sĩ.</p>
+            <Link className="folk-guide-entry" href="/me-bau/meo-dan-gian"><span><strong>Tra nhanh mẹo & dân gian</strong><small>Tìm theo món ăn, sinh hoạt, làm đẹp hoặc thảo dược</small></span><span aria-hidden="true">›</span></Link>
             <div className="folk-levels">
               {folkPracticeLevels.map((level) => (
                 <article className={`folk-level is-${level.id}`} key={level.id}>

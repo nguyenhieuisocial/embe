@@ -340,6 +340,8 @@ export const folkPracticeLevels = [
 export const pregnancyMyths = [
   {
     id: "eat-for-two",
+    category: "Ăn uống",
+    verdict: "myth",
     question: "Phải “ăn cho hai”?",
     answer: "Không. Mục tiêu là ăn đa dạng và vừa sức, không tăng gấp đôi khẩu phần. Nhu cầu cụ thể thay đổi theo giai đoạn và hồ sơ sức khỏe.",
     sourceLabel: "ACOG — ăn uống lành mạnh",
@@ -347,6 +349,8 @@ export const pregnancyMyths = [
   },
   {
     id: "blanket-food-bans",
+    category: "Ăn uống",
+    verdict: "myth",
     question: "Phải kiêng mọi món chua, cay, dứa, nước dừa và các loại hạt?",
     answer: "Không có một lệnh cấm chung như vậy trong hướng dẫn thực phẩm chính thống. Giảm món làm Mẹ khó chịu; các loại hạt dùng được nếu không dị ứng. Vẫn ưu tiên danh sách an toàn thực phẩm và dặn riêng của nơi khám.",
     sourceLabel: "NHS — thực phẩm cần tránh",
@@ -354,13 +358,17 @@ export const pregnancyMyths = [
   },
   {
     id: "miscarriage-blame",
-    question: "Đi làm, vận động hoặc quan hệ gây sảy thai?",
-    answer: "Những sinh hoạt này không phải nguyên nhân của sảy thai sớm. Nếu đang ra máu, đau, có biến chứng hoặc được nơi khám dặn hạn chế, cần làm theo chỉ dẫn riêng.",
+    category: "Vận động",
+    verdict: "myth",
+    question: "Đi làm hoặc vận động nhẹ gây sảy thai?",
+    answer: "Không phải với thai kỳ bình thường. Vận động phù hợp không làm tăng nguy cơ sảy thai, sinh non hoặc bé nhẹ cân. Nếu đang ra máu, đau, có biến chứng hoặc được nơi khám dặn hạn chế, cần làm theo chỉ dẫn riêng.",
     sourceLabel: "ACOG — sảy thai sớm",
     sourceHref: "https://www.acog.org/womens-health/faqs/early-pregnancy-loss"
   },
   {
     id: "cat",
+    category: "Sinh hoạt",
+    verdict: "personal",
     question: "Có mèo thì phải cho đi?",
     answer: "Không. Trọng tâm là tránh trực tiếp dọn phân mèo, đeo găng khi làm vườn hoặc tiếp xúc đất và rửa tay kỹ; đồng thời ăn thịt chín và rửa rau quả.",
     sourceLabel: "CDC — phòng toxoplasmosis",
@@ -368,6 +376,8 @@ export const pregnancyMyths = [
   },
   {
     id: "bed-rest",
+    category: "Vận động",
+    verdict: "avoid",
     question: "Phải nằm yên để giữ thai?",
     answer: "Không nên tự nằm bất động kéo dài. Nghỉ khi mệt là hợp lý, nhưng hạn chế hoạt động hoặc nằm nghỉ tuyệt đối chỉ theo chỉ định cá nhân của bác sĩ.",
     sourceLabel: "ACOG — nghỉ tuyệt đối và thai kỳ nguy cơ cao",
@@ -375,6 +385,8 @@ export const pregnancyMyths = [
   },
   {
     id: "herbal-is-safe",
+    category: "Thuốc & thảo dược",
+    verdict: "avoid",
     question: "Thuốc nam và thảo dược luôn an toàn?",
     answer: "Không. “Tự nhiên” không đồng nghĩa an toàn, sản phẩm có thể tương tác với thuốc hoặc không rõ thành phần. Hỏi bác sĩ, nữ hộ sinh hay dược sĩ trước khi dùng.",
     sourceLabel: "NHS — thuốc trong thai kỳ",
@@ -382,6 +394,8 @@ export const pregnancyMyths = [
   },
   {
     id: "heat",
+    category: "Sinh hoạt",
+    verdict: "avoid",
     question: "Xông nóng hoặc ngâm bồn thật nóng giúp khỏe hơn?",
     answer: "Không nên. Sauna, bồn nước nóng và xông làm tăng thân nhiệt, đặc biệt cần tránh ở đầu thai kỳ. Chọn tắm ấm vừa phải và dừng nếu chóng mặt hoặc khó chịu.",
     sourceLabel: "ACOG — sauna và bồn nước nóng",
@@ -389,10 +403,102 @@ export const pregnancyMyths = [
   },
   {
     id: "travel",
+    category: "Sinh hoạt",
+    verdict: "personal",
     question: "Mang thai là phải kiêng đi xa hoàn toàn?",
     answer: "Không phải với mọi thai kỳ. Khi thai kỳ bình thường, đi lại thường vẫn được; thời điểm, quãng đường và biện pháp phòng huyết khối cần được cá nhân hóa với nơi khám.",
     sourceLabel: "ACOG — đi lại khi mang thai",
     sourceHref: "https://www.acog.org/womens-health/faqs/travel-during-pregnancy"
+  },
+  {
+    id: "ginger-nausea",
+    category: "Khó chịu thường gặp",
+    verdict: "keep",
+    question: "Gừng có thể giúp giảm nghén?",
+    answer: "Có thể thử lượng gừng dùng như thực phẩm hoặc đồ uống nếu Mẹ hợp. Không tự dùng viên chiết xuất hay liều đậm đặc. Nếu không giữ được thức ăn hoặc nước, tiểu ít, chóng mặt hay sụt cân, cần liên hệ nơi khám.",
+    sourceLabel: "WHO — xử trí buồn nôn trong thai kỳ",
+    sourceHref: "https://www.who.int/publications/i/item/9789241549912"
+  },
+  {
+    id: "sleep-side",
+    category: "Giấc ngủ",
+    verdict: "keep",
+    question: "Sau 28 tuần nên bắt đầu giấc ngủ ở tư thế nghiêng?",
+    answer: "Có. Có thể nghiêng trái hoặc phải. Nếu thức dậy thấy mình nằm ngửa thì không cần hoảng; chỉ cần xoay lại nằm nghiêng.",
+    sourceLabel: "NHS — giấc ngủ trong thai kỳ",
+    sourceHref: "https://www.nhs.uk/pregnancy/common-symptoms/tiredness/"
+  },
+  {
+    id: "hair-care",
+    category: "Làm đẹp",
+    verdict: "personal",
+    question: "Có thai phải kiêng cắt hoặc nhuộm tóc?",
+    answer: "Cắt tóc không ảnh hưởng thai kỳ. Phần lớn nghiên cứu cho thấy nhuộm tóc đúng hướng dẫn có mức phơi nhiễm thấp; Mẹ có thể chọn đợi qua 12 tuần, thử phản ứng da, đeo găng và dùng nơi thoáng khí.",
+    sourceLabel: "NHS — nhuộm tóc khi mang thai",
+    sourceHref: "https://www.nhs.uk/best-start-in-life/pregnancy/using-hair-dye-in-pregnancy-is-it-safe/"
+  },
+  {
+    id: "dental-care",
+    category: "Chăm sóc cơ thể",
+    verdict: "keep",
+    question: "Mang thai phải hoãn khám và chữa răng?",
+    answer: "Không. Chăm sóc răng định kỳ và điều trị khi khẩn cấp được xem là an toàn trong thai kỳ. Hãy báo cho nha sĩ biết đang mang thai và đừng trì hoãn khi đau, sưng hoặc chảy máu lợi kéo dài.",
+    sourceLabel: "CDC — sức khỏe răng miệng khi mang thai",
+    sourceHref: "https://www.cdc.gov/oral-health/data-research/facts-stats/fast-facts-pregnancy-and-oral-health.html"
+  },
+  {
+    id: "vaccines",
+    category: "Phòng bệnh",
+    verdict: "personal",
+    question: "Có thai thì phải tránh mọi loại vắc-xin?",
+    answer: "Không. Một số vắc-xin được khuyến nghị trong thai kỳ, trong khi một số vắc-xin sống cần tránh hoặc hoãn. Lịch cụ thể phải theo nơi khám và chương trình tiêm chủng tại Việt Nam; không tự quyết chỉ từ danh sách trên mạng.",
+    sourceLabel: "CDC — thai kỳ và vắc-xin",
+    sourceHref: "https://www.cdc.gov/vaccine-safety/about/pregnancy.html"
+  },
+  {
+    id: "sex",
+    category: "Quan hệ",
+    verdict: "personal",
+    question: "Quan hệ luôn làm hại em bé?",
+    answer: "Không phải với thai kỳ không biến chứng. Cần hỏi nơi khám nếu có ra máu, đau, rỉ ối, nhau tiền đạo, nguy cơ sinh non hoặc đã được dặn kiêng; dừng lại khi khó chịu.",
+    sourceLabel: "NHS — hỏi đáp chăm sóc thai kỳ",
+    sourceHref: "https://www.leedsth.nhs.uk/services/maternity/pregnancy/faq/"
+  },
+  {
+    id: "essential-oils",
+    category: "Thuốc & thảo dược",
+    verdict: "avoid",
+    question: "Tinh dầu “tự nhiên” thì có thể uống, bôi hoặc xông tùy ý?",
+    answer: "Không. Nguồn gốc tự nhiên không bảo đảm an toàn; tinh dầu có thể gây kích ứng, dị ứng hoặc có tuyên bố điều trị chưa được kiểm chứng. Không uống tinh dầu và hỏi bác sĩ hoặc dược sĩ trước khi dùng trong thai kỳ.",
+    sourceLabel: "FDA — an toàn của liệu pháp hương thơm",
+    sourceHref: "https://www.fda.gov/cosmetics/cosmetic-products/aromatherapy"
+  },
+  {
+    id: "folk-tonics",
+    category: "Thuốc & thảo dược",
+    verdict: "avoid",
+    question: "Nước lá, rượu thuốc hoặc bài thuốc truyền miệng giúp an thai, dễ sinh?",
+    answer: "Không nên tự dùng. Thành phần, nồng độ, tương tác thuốc và tạp chất có thể không rõ. Nếu gia đình gợi ý một sản phẩm, hãy chụp nhãn hoặc ghi đủ thành phần để hỏi nơi khám trước.",
+    sourceLabel: "WHO — an toàn y học cổ truyền",
+    sourceHref: "https://www.who.int/news-room/questions-and-answers/item/traditional-medicine"
+  },
+  {
+    id: "gender-guess",
+    category: "Chuyện vui gia đình",
+    verdict: "myth",
+    question: "Dáng bụng, món thèm hoặc nhịp tim đoán được giới tính Bé?",
+    answer: "Không có cơ sở để dùng các dấu hiệu này xác định giới tính. Có thể giữ như một trò vui của gia đình, nhưng không dùng để đổi chế độ ăn, thuốc, xét nghiệm hoặc cách chăm sóc.",
+    sourceLabel: "NHS — siêu âm trong thai kỳ",
+    sourceHref: "https://www.nhs.uk/pregnancy/your-pregnancy-care/ultrasound-scans/"
+  },
+  {
+    id: "family-rituals",
+    category: "Chuyện vui gia đình",
+    verdict: "keep",
+    question: "Có cần bỏ mọi nghi thức hoặc điều kiêng của gia đình?",
+    answer: "Không cần nếu điều đó khiến Mẹ thấy được nâng đỡ, không ép buộc, không hạn chế ăn uống cần thiết, không trì hoãn khám và không gây tốn kém hoặc nguy hiểm. Mẹ có quyền nói không với điều làm mình lo hay khó chịu.",
+    sourceLabel: "WHO — chăm sóc thai kỳ tôn trọng và lấy người mẹ làm trung tâm",
+    sourceHref: "https://www.who.int/publications/i/item/9789241549912"
   }
 ] as const;
 

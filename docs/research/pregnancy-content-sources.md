@@ -1,6 +1,6 @@
 # Nguồn nội dung “Mẹ bầu hôm nay”
 
-**Ngày rà soát:** 2026-09-02
+**Ngày rà soát:** 2026-09-03
 **Phạm vi:** Checklist hằng ngày, thực đơn Việt Nam tham khảo, cẩm nang nên làm
 – nên hạn chế – nên tránh, an toàn thực phẩm và lựa chọn phần mềm miễn phí/mã
 nguồn mở.
@@ -15,6 +15,9 @@ nguồn mở.
 - Cẩm nang phân biệt điều cần tránh có bằng chứng với kiêng khem truyền miệng.
   Không mặc định cấm đồ cay, chua hay các loại hạt; chỉ giảm khi gây khó chịu,
   có dị ứng hoặc nhân viên y tế yêu cầu. Không cổ vũ “ăn cho hai”.
+- Mẹo dân gian được gắn bốn mức: có thể áp dụng, không có cơ sở, cần hỏi nơi
+  khám và nên tránh. Một thực hành văn hóa vô hại có thể giữ nếu Mẹ tự nguyện,
+  nhưng không được làm thiếu chất, trì hoãn khám, thay thuốc hoặc gây nguy hiểm.
 - Gợi ý theo ba tam cá nguyệt không tạo ba chế độ ăn cứng. Quy tắc an toàn thực
   phẩm áp dụng suốt thai kỳ; nội dung theo giai đoạn chủ yếu thay đổi theo triệu
   chứng và khả năng ăn uống: bữa nhỏ khi nghén ở đầu thai kỳ, bữa đa dạng giàu
@@ -107,6 +110,26 @@ nguồn mở.
 - [Medicines in pregnancy](https://www.nhs.uk/pregnancy/keeping-well/medicines/),
   NHS, cập nhật 23-09-2025: “tự nhiên” không đồng nghĩa an toàn; không tự dừng
   thuốc đã kê và trị liệu bổ sung không thay chăm sóc trước sinh.
+- [Morning sickness](https://www.nhs.uk/best-start-in-life/pregnancy/morning-sickness/),
+  NHS: một số người thấy gừng dạng thực phẩm hoặc đồ uống giúp giảm nghén; không
+  giữ được thức ăn/nước cần được đánh giá vì nguy cơ mất nước và suy dinh dưỡng.
+- [Tiredness and sleep problems](https://www.nhs.uk/pregnancy/common-symptoms/tiredness/),
+  NHS: sau 28 tuần nên bắt đầu giấc ngủ ở tư thế nghiêng trái hoặc phải; nếu tỉnh
+  dậy ở tư thế ngửa chỉ cần xoay nghiêng lại.
+- [Using hair dye in pregnancy](https://www.nhs.uk/best-start-in-life/pregnancy/using-hair-dye-in-pregnancy-is-it-safe/),
+  NHS: mức phơi nhiễm từ nhuộm tóc đúng hướng dẫn thấp; có thể chủ động đợi qua
+  12 tuần, thử phản ứng, đeo găng và thông gió.
+- [Pregnancy and Oral Health Facts](https://www.cdc.gov/oral-health/data-research/facts-stats/fast-facts-pregnancy-and-oral-health.html),
+  CDC: chăm sóc răng định kỳ và khẩn cấp an toàn ở mọi giai đoạn thai kỳ.
+- [Pregnancy and Vaccines](https://www.cdc.gov/vaccine-safety/about/pregnancy.html),
+  CDC: không phải mọi vắc-xin đều bị cấm; chỉ định cụ thể cần theo nhân viên y tế
+  và chương trình tiêm chủng áp dụng tại nơi sống.
+- [Aromatherapy](https://www.fda.gov/cosmetics/cosmetic-products/aromatherapy),
+  FDA: “tự nhiên” hoặc “hữu cơ” không tự chứng minh an toàn; tinh dầu có thể gây
+  độc, kích ứng hoặc dị ứng tùy chất và cách dùng.
+- [Traditional medicine](https://www.who.int/news-room/questions-and-answers/item/traditional-medicine),
+  WHO, 28-11-2025: y học truyền thống cần cùng tiêu chuẩn đánh giá hiệu quả, an
+  toàn, chất lượng và theo dõi phản ứng có hại như các hình thức chăm sóc khác.
 
 ## Công cụ và dữ liệu đã đánh giá
 
@@ -118,6 +141,7 @@ nguồn mở.
 | [Mealie](https://github.com/mealie-recipes/mealie) | AGPL-3.0 | Recipe/meal planner | Không cài vì trùng Grocy |
 | [Yuvomi/Oikos](https://github.com/ulsklyc/yuvomi) | MIT | Task, calendar, meal, shopping | Không cài vì trùng Portal + Grocy |
 | [Vikunja](https://github.com/go-vikunja/vikunja) | AGPL-3.0 | Checklist/task đa người dùng | Chưa cần; checklist thai kỳ nhỏ hơn nhiều |
+| [WHO SMART ANC](https://github.com/WorldHealthOrganization/smart-anc) | CC BY-NC-SA | Hướng dẫn ANC dạng FHIR/CQL có thể tính toán | Học cấu trúc và nguồn; không kéo cả FHIR stack chỉ để hiển thị cẩm nang |
 
 ## Giới hạn
 
@@ -142,3 +166,9 @@ quốc gia và có thể được cập nhật; cần rà soát nguồn mỗi qu
 | Thuốc nam/thảo dược không mặc nhiên an toàn | NHS Medicines in Pregnancy | Cao; thành phần và tương tác phải được kiểm tra |
 | Tránh sauna, bồn nước nóng và xông làm tăng thân nhiệt | ACOG Sauna/Hot Tub | Trung bình–cao; đặc biệt quan trọng đầu thai kỳ |
 | Dáng bụng, món thèm không dùng để dự đoán đặc điểm em bé | Không có trong khuyến cáo y tế được đối chiếu | Chỉ ghi là quan niệm vui; không dùng để quyết định chăm sóc |
+| Gừng dạng thực phẩm/đồ uống có thể giúp một số người giảm nghén | WHO ANC; NHS Morning Sickness | Trung bình; không thay đánh giá khi nôn nhiều/mất nước và không suy rộng sang chiết xuất liều cao |
+| Sau 28 tuần nên bắt đầu giấc ngủ ở tư thế nghiêng | NHS Tiredness and Sleep Problems | Cao; trái hoặc phải đều được, không gây hoảng sợ nếu tỉnh dậy nằm ngửa |
+| Không cần hoãn chăm sóc răng vì mang thai | CDC Pregnancy and Oral Health | Cao; vẫn báo nha sĩ biết đang mang thai |
+| Nhuộm tóc đúng hướng dẫn có mức phơi nhiễm thấp | NHS Hair Dye in Pregnancy | Trung bình; có thể đợi qua 12 tuần và cần thử phản ứng da/thông gió |
+| Không phải mọi vắc-xin đều bị cấm trong thai kỳ | CDC Pregnancy and Vaccines; Bộ Y tế Việt Nam | Cao ở nguyên tắc; lịch và loại cụ thể phải theo nơi khám tại Việt Nam |
+| Tinh dầu, nước lá và bài thuốc “tự nhiên” không mặc nhiên an toàn | WHO Traditional Medicine; FDA Aromatherapy; NHS Medicines | Cao ở nguyên tắc an toàn; từng sản phẩm cần đánh giá thành phần và cách dùng |
