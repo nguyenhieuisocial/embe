@@ -3,9 +3,12 @@ param()
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $runner = Join-Path $projectRoot "scripts\backup\export-supabase-read-model.ps1"
+$runnerSource = Get-Content -LiteralPath $runner -Raw
+if (-not $runnerSource.Contains('Move-Item -LiteralPath $temporary -Destination $statusPath -Force')) {
+    throw "Supabase export status must be replaced atomically"
+}
 $testRoot = Join-Path $env:TEMP ("embe-supabase-backup-" + [guid]::NewGuid().ToString("N"))
 $token = "token-must-not-leak"
-$password = "password-must-not-leak"
 
 try {
     $output = Join-Path $testRoot "exports\backup-staging\session"
@@ -17,7 +20,6 @@ try {
     @(
         "SUPABASE_PROJECT_REF=test-project-ref"
         "SUPABASE_ACCESS_TOKEN=$token"
-        "SUPABASE_DB_PASSWORD=$password"
     ) | Set-Content -LiteralPath $config -Encoding UTF8
 
     $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -28,9 +30,8 @@ try {
     @'
 param([Parameter(ValueFromRemainingArguments = $true)] [string[]]$Arguments)
 $log = [Environment]::GetEnvironmentVariable("EMBE_FAKE_SUPABASE_LOG", "Process")
-if (-not $env:SUPABASE_ACCESS_TOKEN -or -not $env:SUPABASE_DB_PASSWORD) { exit 11 }
+if (-not $env:SUPABASE_ACCESS_TOKEN) { exit 11 }
 Write-Output $env:SUPABASE_ACCESS_TOKEN
-[Console]::Error.WriteLine($env:SUPABASE_DB_PASSWORD)
 $Arguments | ConvertTo-Json -Compress | Add-Content -LiteralPath $log
 $fileIndex = [Array]::IndexOf($Arguments, "--file")
 if ($fileIndex -lt 0 -or $fileIndex -ge ($Arguments.Count - 1)) { exit 12 }
@@ -44,12 +45,17 @@ exit 0
     $raw = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $runner `
         -ProjectRoot $testRoot -OutputDirectory $output -ConfigFile $config -SupabaseCliPath $fakeCli 2>&1
     if ($LASTEXITCODE -ne 0) { throw "Supabase exporter failed: $raw" }
-    if (($raw | Out-String) -match [regex]::Escape($token) -or ($raw | Out-String) -match [regex]::Escape($password)) {
+    if (($raw | Out-String) -match [regex]::Escape($token)) {
         throw "Supabase exporter leaked a secret"
     }
 
     $result = ($raw | Out-String).Trim() | ConvertFrom-Json
     if ($result.status -ne "ok" -or @($result.artifacts).Count -ne 2) { throw "Unexpected exporter result" }
+    $exportStatusPath = Join-Path $testRoot "exports\backup-manifests\supabase-export-run-status-v2.json"
+    $exportStatus = Get-Content -LiteralPath $exportStatusPath -Raw | ConvertFrom-Json
+    if ($exportStatus.status -ne "ok" -or $exportStatus.phase -ne "complete") {
+        throw "Successful Supabase export status is invalid"
+    }
     foreach ($name in @("supabase-portal-schema.sql", "supabase-portal-data.sql")) {
         $artifact = @($result.artifacts | Where-Object name -eq $name)
         if ($artifact.Count -ne 1 -or $artifact[0].size_bytes -le 0 -or $artifact[0].sha256 -notmatch '^[a-f0-9]{64}$') {
@@ -68,7 +74,7 @@ exit 0
     foreach ($call in $calls) {
         if ($call -notcontains "portal_read_model" -or $call -notcontains "--project-ref") { throw "Dump is not bounded to portal_read_model/project ref" }
         $joined = $call -join " "
-        if ($joined.Contains($token) -or $joined.Contains($password)) { throw "Secret appeared in CLI arguments" }
+        if ($joined.Contains($token)) { throw "Secret appeared in CLI arguments" }
     }
     if (@($calls | Where-Object { $_ -contains "--data-only" }).Count -ne 1) { throw "Expected one data-only dump" }
 

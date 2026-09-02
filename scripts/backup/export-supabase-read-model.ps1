@@ -9,6 +9,31 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$phase = "preflight"
+$startedUtc = (Get-Date).ToUniversalTime().ToString("o")
+$statusDirectory = Join-Path $ProjectRoot "exports\backup-manifests"
+$statusPath = Join-Path $statusDirectory "supabase-export-run-status-v2.json"
+
+function Write-ExportStatus {
+    param(
+        [Parameter(Mandatory = $true)][string]$Status,
+        [Parameter(Mandatory = $true)][string]$Phase,
+        [string]$FailureType
+    )
+
+    New-Item -ItemType Directory -Path $statusDirectory -Force | Out-Null
+    $payload = [ordered]@{
+        status = $Status
+        phase = $Phase
+        failure_type = $FailureType
+        started_utc = $startedUtc
+        finished_utc = (Get-Date).ToUniversalTime().ToString("o")
+    } | ConvertTo-Json -Compress
+    $temporary = "$statusPath.tmp"
+    [IO.File]::WriteAllText($temporary, $payload, [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $temporary -Destination $statusPath -Force
+}
+
 if ([string]::IsNullOrWhiteSpace($ConfigFile)) {
     $ConfigFile = Join-Path $ProjectRoot "secrets\supabase-backup.env"
 }
@@ -62,6 +87,7 @@ function Invoke-SupabaseDump {
     }
 }
 
+try {
 $stagingRoot = Join-Path $ProjectRoot "exports\backup-staging"
 $secretsRoot = Join-Path $ProjectRoot "secrets"
 foreach ($requiredDirectory in @($ProjectRoot, $stagingRoot, $secretsRoot, $OutputDirectory)) {
@@ -88,31 +114,30 @@ foreach ($line in Get-Content -LiteralPath $ConfigFile) {
     }
     $settings[$parts[0].Trim()] = $parts[1]
 }
-foreach ($name in @("SUPABASE_PROJECT_REF", "SUPABASE_ACCESS_TOKEN", "SUPABASE_DB_PASSWORD")) {
+foreach ($name in @("SUPABASE_PROJECT_REF", "SUPABASE_ACCESS_TOKEN")) {
     if (-not $settings.ContainsKey($name) -or [string]::IsNullOrWhiteSpace([string]$settings[$name])) {
         throw "Supabase backup config is missing required setting: $name"
     }
 }
 
 $previousToken = [Environment]::GetEnvironmentVariable("SUPABASE_ACCESS_TOKEN", "Process")
-$previousPassword = [Environment]::GetEnvironmentVariable("SUPABASE_DB_PASSWORD", "Process")
 $schemaPath = Join-Path $OutputDirectory "supabase-portal-schema.sql"
 $dataPath = Join-Path $OutputDirectory "supabase-portal-data.sql"
 try {
     [Environment]::SetEnvironmentVariable("SUPABASE_ACCESS_TOKEN", [string]$settings.SUPABASE_ACCESS_TOKEN, "Process")
-    [Environment]::SetEnvironmentVariable("SUPABASE_DB_PASSWORD", [string]$settings.SUPABASE_DB_PASSWORD, "Process")
 
+    $phase = "schema"
     Invoke-SupabaseDump -Arguments @(
         "db", "dump", "--project-ref", [string]$settings.SUPABASE_PROJECT_REF,
         "--schema", "portal_read_model", "--file", $schemaPath
     )
+    $phase = "data"
     Invoke-SupabaseDump -Arguments @(
         "db", "dump", "--project-ref", [string]$settings.SUPABASE_PROJECT_REF,
         "--schema", "portal_read_model", "--data-only", "--use-copy", "--file", $dataPath
     )
 } finally {
     [Environment]::SetEnvironmentVariable("SUPABASE_ACCESS_TOKEN", $previousToken, "Process")
-    [Environment]::SetEnvironmentVariable("SUPABASE_DB_PASSWORD", $previousPassword, "Process")
 }
 
 $entries = foreach ($path in @($schemaPath, $dataPath)) {
@@ -126,4 +151,10 @@ $entries = foreach ($path in @($schemaPath, $dataPath)) {
     }
 }
 
+$phase = "complete"
+Write-ExportStatus -Status "ok" -Phase $phase
 [ordered]@{ status = "ok"; artifacts = @($entries) } | ConvertTo-Json -Depth 6 -Compress
+} catch {
+    Write-ExportStatus -Status "failed" -Phase $phase -FailureType $_.Exception.GetType().Name
+    throw
+}

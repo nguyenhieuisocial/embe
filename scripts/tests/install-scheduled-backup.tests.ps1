@@ -30,6 +30,11 @@ foreach ($required in @(
     '$installStep = "batch_logon_right"',
     'data\evidence',
     'secrets\supabase-backup.env',
+    'Unable to grant backup secret directory access',
+    'Unable to protect private backup file',
+    'Unable to protect private backup directory',
+    'Unable to protect private backup directory child',
+    '/inheritance:r',
     'Unable to grant operational evidence access'
 )) {
     if (-not $source.Contains($required)) { throw "Scheduled backup installer is missing: $required" }

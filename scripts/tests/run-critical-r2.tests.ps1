@@ -3,6 +3,13 @@ param()
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $runner = Join-Path $projectRoot "scripts\backup\run-critical-r2.ps1"
+$runnerSource = Get-Content -LiteralPath $runner -Raw
+if (-not $runnerSource.Contains('Move-Item -LiteralPath $temporary -Destination $statusPath -Force')) {
+    throw "Critical backup status must be replaced atomically"
+}
+if (([regex]::Matches($runnerSource, '& powershell -NoProfile -NonInteractive')).Count -ne 2) {
+    throw "Every child PowerShell backup process must be non-interactive"
+}
 
 function New-TestProject([bool]$BackupSucceeds) {
     $root = Join-Path $env:TEMP ("embe-critical-r2-test-" + [guid]::NewGuid().ToString("N"))
@@ -64,11 +71,47 @@ foreach ($succeeds in @($true, $false)) {
             $failed = $true
         }
         if (-not $succeeds -and -not $failed) { throw "Failure path was not exercised" }
+        $statusPath = Join-Path $root "exports\backup-manifests\backup-run-status-v2.json"
+        if (-not (Test-Path -LiteralPath $statusPath -PathType Leaf)) {
+            throw "Critical backup did not write its safe status record"
+        }
+        $status = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+        $expectedStatus = if ($succeeds) { "ok" } else { "failed" }
+        if ($status.status -ne $expectedStatus) {
+            throw "Unexpected critical backup status: $($status.status)"
+        }
+        if (-not $succeeds -and $status.phase -ne "restic") {
+            throw "Failure status did not identify the restic phase"
+        }
+        $statusText = Get-Content -LiteralPath $statusPath -Raw
+        if ($statusText -match "test-secret|test-password") {
+            throw "Critical backup status leaked a secret"
+        }
         $leftovers = @(Get-ChildItem -LiteralPath (Join-Path $root "exports\backup-staging") -Directory)
         if ($leftovers.Count -ne 0) { throw "Plaintext snapshot session was not cleaned" }
     } finally {
         Remove-Item -LiteralPath $root -Recurse -Force
     }
+}
+
+$staleRoot = New-TestProject $true
+try {
+    $stale = Join-Path $staleRoot "exports\backup-staging\interrupted-session"
+    New-Item -ItemType Directory -Path $stale -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $stale "plaintext.sql") -Value "sensitive"
+    (Get-Item -LiteralPath $stale).LastWriteTimeUtc = (Get-Date).ToUniversalTime().AddHours(-4)
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $runner -ProjectRoot $staleRoot 2>$null | Out-Null
+        $staleExit = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $previousPreference }
+    if ($staleExit -eq 0) { throw "Stale plaintext staging did not block backup" }
+    if (-not (Test-Path -LiteralPath $stale -PathType Container)) { throw "Runner deleted stale staging without operator review" }
+    $status = Get-Content -LiteralPath (Join-Path $staleRoot "exports\backup-manifests\backup-run-status-v2.json") -Raw | ConvertFrom-Json
+    if ($status.status -ne "failed" -or $status.phase -ne "preflight") { throw "Stale staging failure was not reported safely" }
+} finally {
+    Remove-Item -LiteralPath $staleRoot -Recurse -Force
 }
 
 Write-Output "PASS: critical R2 runner cleans plaintext snapshots after success and failure"

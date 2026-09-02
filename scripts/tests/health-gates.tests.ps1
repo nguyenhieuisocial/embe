@@ -32,6 +32,9 @@ foreach ($taskName in @(
 if (-not $healthSource.Contains('System32\Tasks') -or -not $healthSource.Contains('UnauthorizedAccessException')) {
     throw "Service-account health must distinguish an ACL-hidden task from a deleted task"
 }
+if (-not $healthSource.Contains("'^\d{8}T\d{6}Z\.json$'")) {
+    throw "Backup freshness must ignore status JSON files beside Restic manifests"
+}
 foreach ($immichAccountContract in @('compose-immich-postgres-1', 'NOT "isAdmin"', 'NOT "shouldChangePassword"', '"deletedAt" IS NULL')) {
     if (-not $healthSource.Contains($immichAccountContract)) {
         throw "Immich family-account health must have a secret-free database fallback: $immichAccountContract"
@@ -69,6 +72,7 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
         shell_leak_guard_task_ready = $true
         shell_leak_guard_last_result = 0
         backup_created_utc = $now.AddHours(-$BackupAgeHours).ToString("o")
+        backup_last_status = "ok"
         restore = @{ status = "pass"; verified_at = $now.AddDays(-1).ToString("o") }
         integrity = @{ status = "pass"; checked_at = $now.AddDays(-1).ToString("o") }
         deadletters = 0
@@ -153,6 +157,17 @@ try {
     if ($critical.status -ne "critical") { throw "Critical report is invalid" }
     if (@($critical.checks | Where-Object id -eq "disk_headroom")[0].status -ne "critical") { throw "Disk gate did not block" }
     if (@($critical.checks | Where-Object id -eq "backup_freshness")[0].status -ne "critical") { throw "Backup gate did not block" }
+
+    $failedBackupFixture = Join-Path $testRoot "failed-backup.json"
+    Write-Fixture $failedBackupFixture 40 2
+    $failedBackup = Get-Content $failedBackupFixture -Raw | ConvertFrom-Json
+    $failedBackup.backup_last_status = "failed"
+    $failedBackup | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $failedBackupFixture -Encoding utf8
+    $failedBackupReport = Join-Path $testRoot "failed-backup-report.json"
+    $null = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $failedBackupFixture -OutputPath $failedBackupReport
+    if ($LASTEXITCODE -ne 2) { throw "A failed latest backup run must block health" }
+    $failedBackupHealth = Get-Content $failedBackupReport -Raw | ConvertFrom-Json
+    if (@($failedBackupHealth.checks | Where-Object id -eq "backup_freshness")[0].status -ne "critical") { throw "Failed backup status did not block" }
 
     $missingDiskTaskFixture = Join-Path $testRoot "missing-disk-task.json"
     Write-Fixture $missingDiskTaskFixture 40 2

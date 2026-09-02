@@ -5,6 +5,10 @@ $root = Join-Path $env:TEMP ("embe-snapshot-test-" + [guid]::NewGuid().ToString(
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $python = Join-Path $projectRoot ".venv\Scripts\python.exe"
 $script = Join-Path $projectRoot "scripts\backup\prepare-snapshots.ps1"
+$scriptSource = Get-Content -LiteralPath $script -Raw
+if (-not $scriptSource.Contains('Move-Item -LiteralPath $temporary -Destination $statusPath -Force')) {
+    throw "Snapshot status must be replaced atomically"
+}
 $fixture = Join-Path $projectRoot "scripts\tests\create-sqlite-fixture.py"
 
 try {
@@ -23,7 +27,6 @@ try {
     @(
         "SUPABASE_PROJECT_REF=test-project-ref"
         "SUPABASE_ACCESS_TOKEN=test-token"
-        "SUPABASE_DB_PASSWORD=test-password"
     ) | Set-Content -LiteralPath (Join-Path $secretDirectory "supabase-backup.env") -Encoding UTF8
     $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
     & icacls $secretDirectory /inheritance:r /grant:r "*${currentSid}:(OI)(CI)F" | Out-Null
@@ -41,6 +44,11 @@ Set-Content -LiteralPath $Arguments[$fileIndex + 1] -Value "non-empty dump"
         -ProjectRoot $root -AppDataRoot (Join-Path $root "appdata") -OutputRoot $outputRoot `
         -PythonPath $python -SupabaseCliPath $fakeSupabase -SkipImmich | ConvertFrom-Json
     if ($result.status -ne "ok" -or $result.artifact_count -ne 5) { throw "Snapshot result is invalid" }
+    $snapshotStatusPath = Join-Path $root "exports\backup-manifests\snapshot-run-status-v2.json"
+    $snapshotStatus = Get-Content -LiteralPath $snapshotStatusPath -Raw | ConvertFrom-Json
+    if ($snapshotStatus.status -ne "ok" -or $snapshotStatus.phase -ne "complete") {
+        throw "Successful snapshot status is invalid"
+    }
     $manifest = Get-Content -LiteralPath $result.manifest -Raw | ConvertFrom-Json
     if ($manifest.artifacts.Count -ne 5) { throw "Snapshot manifest is incomplete" }
     foreach ($artifact in $manifest.artifacts) {
@@ -68,6 +76,10 @@ Set-Content -LiteralPath $Arguments[$fileIndex + 1] -Value "non-empty dump"
     }
     if ($failureExitCode -eq 0) { throw "Expected Supabase snapshot failure" }
     if (@(Get-ChildItem -LiteralPath $outputRoot -Directory).Count -ne 0) { throw "Failed snapshot left plaintext staging behind" }
+    $snapshotStatus = Get-Content -LiteralPath $snapshotStatusPath -Raw | ConvertFrom-Json
+    if ($snapshotStatus.status -ne "failed" -or $snapshotStatus.phase -ne "supabase") {
+        throw "Failed snapshot status did not identify the Supabase phase"
+    }
 
     Write-Output "PASS: consistent SQLite/Supabase snapshots, manifest, and failure cleanup"
 } finally {

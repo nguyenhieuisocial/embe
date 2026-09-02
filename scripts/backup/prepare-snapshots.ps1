@@ -13,6 +13,31 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$phase = "preflight"
+$startedUtc = (Get-Date).ToUniversalTime().ToString("o")
+$statusDirectory = Join-Path $ProjectRoot "exports\backup-manifests"
+$statusPath = Join-Path $statusDirectory "snapshot-run-status-v2.json"
+
+function Write-SnapshotStatus {
+    param(
+        [Parameter(Mandatory = $true)][string]$Status,
+        [Parameter(Mandatory = $true)][string]$Phase,
+        [string]$FailureType
+    )
+
+    New-Item -ItemType Directory -Path $statusDirectory -Force | Out-Null
+    $payload = [ordered]@{
+        status = $Status
+        phase = $Phase
+        failure_type = $FailureType
+        started_utc = $startedUtc
+        finished_utc = (Get-Date).ToUniversalTime().ToString("o")
+    } | ConvertTo-Json -Compress
+    $temporary = "$statusPath.tmp"
+    [IO.File]::WriteAllText($temporary, $payload, [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $temporary -Destination $statusPath -Force
+}
+
 $helper = Join-Path $PSScriptRoot "sqlite-backup.py"
 foreach ($required in @($AppDataRoot, $PythonPath, $helper)) {
     if (-not (Test-Path -LiteralPath $required)) {
@@ -39,6 +64,7 @@ $artifacts = @()
 try {
 New-Item -ItemType Directory -Path $session -Force | Out-Null
 $sessionCreated = $true
+$phase = "sqlite"
 foreach ($item in $databases.GetEnumerator()) {
     if (-not (Test-Path -LiteralPath $item.Value -PathType Leaf)) {
         throw "Database is missing: $($item.Value)"
@@ -52,6 +78,7 @@ foreach ($item in $databases.GetEnumerator()) {
 }
 
 if (-not $SkipSupabase) {
+    $phase = "supabase"
     $supabaseExporter = Join-Path $PSScriptRoot "export-supabase-read-model.ps1"
     if (-not (Test-Path -LiteralPath $supabaseExporter -PathType Leaf)) { throw "Supabase exporter is missing" }
     $arguments = @(
@@ -70,6 +97,7 @@ if (-not $SkipSupabase) {
 }
 
 if (-not $SkipImmich) {
+    $phase = "immich"
     $containerStatus = (& docker inspect --format '{{.State.Running}}' $ImmichContainer 2>$null).Trim()
     if ($LASTEXITCODE -ne 0 -or $containerStatus -ne "true") {
         throw "Immich PostgreSQL container is not running: $ImmichContainer"
@@ -107,7 +135,10 @@ $manifestPath = Join-Path $session "snapshot-manifest.json"
     manifest = $manifestPath
     artifact_count = $entries.Count
 } | ConvertTo-Json -Compress
+$phase = "complete"
+Write-SnapshotStatus -Status "ok" -Phase $phase
 } catch {
+    Write-SnapshotStatus -Status "failed" -Phase $phase -FailureType $_.Exception.GetType().Name
     if ($sessionCreated -and (Test-Path -LiteralPath $session)) {
         $resolvedSession = [IO.Path]::GetFullPath($session)
         $resolvedRoot = [IO.Path]::GetFullPath($OutputRoot).TrimEnd('\') + '\'

@@ -128,6 +128,7 @@ if ($FixturePath) {
     $shellLeakGuardTaskReady = [bool]$fixture.shell_leak_guard_task_ready
     $shellLeakGuardLastResult = [int]$fixture.shell_leak_guard_last_result
     $backupCreated = $fixture.backup_created_utc
+    $backupLastStatus = [string]$fixture.backup_last_status
     $restoreStatus = [string]$fixture.restore.status
     $restoreVerified = $fixture.restore.verified_at
     $integrityStatus = [string]$fixture.integrity.status
@@ -202,9 +203,18 @@ if ($FixturePath) {
     $shellLeakGuardLastResult = if ($null -ne $shellLeakGuardStatus -and [string]$shellLeakGuardStatus.status -eq "pass" -and $shellLeakGuardStatusAge -le (5 / 60)) { 0 } else { -1 }
 
     $latestManifest = Get-ChildItem (Join-Path $ProjectRoot "exports\backup-manifests") -Filter "*.json" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^\d{8}T\d{6}Z\.json$' } |
         Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
     $backupCreated = if ($latestManifest) { (Get-Content $latestManifest.FullName -Raw | ConvertFrom-Json).created_utc } else { "" }
-    $restorePath = Join-Path $ProjectRoot "exports\r2-restore-report.json"
+    $backupStatusPath = Join-Path $ProjectRoot "exports\backup-manifests\backup-run-status-v2.json"
+    $backupStatus = if (Test-Path -LiteralPath $backupStatusPath -PathType Leaf) {
+        Get-Content -LiteralPath $backupStatusPath -Raw | ConvertFrom-Json
+    } else { $null }
+    $backupLastStatus = if ($null -ne $backupStatus) { [string]$backupStatus.status } else { "missing" }
+    $restorePath = Join-Path $ProjectRoot "data\evidence\restore-drill-latest.json"
+    if (-not (Test-Path -LiteralPath $restorePath -PathType Leaf)) {
+        $restorePath = Join-Path $ProjectRoot "exports\r2-restore-report.json"
+    }
     $restore = if (Test-Path $restorePath) { Get-Content $restorePath -Raw | ConvertFrom-Json } else { $null }
     $restoreStatus = if ($restore) { [string]$restore.status } else { "missing" }
     $restoreVerified = if ($restore) { $restore.verified_at } else { "" }
@@ -605,7 +615,8 @@ Add-Check "shell_leak_guard" $(if ($shellLeakGuardPass) { "pass" } else { "criti
 }
 
 $backupAge = if ($backupCreated) { Get-AgeHours $backupCreated } else { [double]::PositiveInfinity }
-Add-Check "backup_freshness" $(if ($backupAge -le $BackupMaxAgeHours) { "pass" } else { "critical" }) "Backup dữ liệu có cấu trúc gần nhất" @{ age_hours = if ([double]::IsInfinity($backupAge)) { $null } else { [math]::Round($backupAge, 2) }; maximum_hours = $BackupMaxAgeHours }
+$backupPass = $backupLastStatus -eq "ok" -and $backupAge -le $BackupMaxAgeHours
+Add-Check "backup_freshness" $(if ($backupPass) { "pass" } else { "critical" }) "Backup dữ liệu có cấu trúc gần nhất" @{ age_hours = if ([double]::IsInfinity($backupAge)) { $null } else { [math]::Round($backupAge, 2) }; maximum_hours = $BackupMaxAgeHours; last_run = $backupLastStatus }
 
 $restoreAge = if ($restoreVerified) { Get-AgeHours $restoreVerified } else { [double]::PositiveInfinity }
 $restorePass = $restoreStatus -eq "pass" -and $restoreAge -le ($RestoreMaxAgeDays * 24)

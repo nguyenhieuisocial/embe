@@ -186,6 +186,9 @@ if (-not (Get-LocalGroupMember -Group "docker-users" -Member $ServiceAccountName
 }
 
 $serviceIdentity = "$env:COMPUTERNAME\$ServiceAccountName"
+$secretsPath = Join-Path $ProjectRoot "secrets"
+& icacls.exe $secretsPath /grant:r "${serviceIdentity}:(RX)" | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "Unable to grant backup secret directory access" }
 $readPaths = @(
     (Join-Path $ProjectRoot "infra"),
     (Join-Path $ProjectRoot "embe"),
@@ -209,6 +212,31 @@ $exportsPath = Join-Path $ProjectRoot "exports"
 New-Item -ItemType Directory -Path $exportsPath -Force | Out-Null
 & icacls.exe $exportsPath /grant:r "${serviceIdentity}:(OI)(CI)M" /T /C | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Unable to grant backup staging access" }
+
+$operatorSid = $identity.User.Value
+foreach ($privateFile in @(
+    (Join-Path $ProjectRoot "infra\compose\storage-poc.env"),
+    (Join-Path $ProjectRoot "secrets\restic-r2-password.txt"),
+    (Join-Path $ProjectRoot "secrets\supabase-backup.env")
+)) {
+    & icacls.exe $privateFile /inheritance:r /grant:r "*${operatorSid}:F" "*S-1-5-18:F" "*S-1-5-32-544:F" "*${serviceAccountSid}:R" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Unable to protect private backup file" }
+}
+foreach ($privateDirectory in @(
+    (Join-Path $ProjectRoot "exports\backup-staging"),
+    (Join-Path $ProjectRoot "exports\backup-manifests"),
+    (Join-Path $ProjectRoot "exports\restore-drills")
+)) {
+    New-Item -ItemType Directory -Path $privateDirectory -Force | Out-Null
+    & icacls.exe $privateDirectory /inheritance:r /grant:r "*${operatorSid}:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F" "*${serviceAccountSid}:(OI)(CI)M" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Unable to protect private backup directory" }
+    foreach ($child in @(Get-ChildItem -LiteralPath $privateDirectory -Recurse -Force)) {
+        $operatorGrant = if ($child.PSIsContainer) { "(OI)(CI)F" } else { "F" }
+        $serviceGrant = if ($child.PSIsContainer) { "(OI)(CI)M" } else { "M" }
+        & icacls.exe $child.FullName /inheritance:r /grant:r "*${operatorSid}:$operatorGrant" "*S-1-5-18:$operatorGrant" "*S-1-5-32-544:$operatorGrant" "*${serviceAccountSid}:$serviceGrant" | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "Unable to protect private backup directory child" }
+    }
+}
 $statusPath = Join-Path $ProjectRoot "data\status"
 New-Item -ItemType Directory -Path $statusPath -Force | Out-Null
 & icacls.exe $statusPath /grant:r "${serviceIdentity}:(OI)(CI)M" /T /C | Out-Null

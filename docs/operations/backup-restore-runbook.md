@@ -12,7 +12,7 @@
 ## Tạo snapshot ứng dụng
 
 Chạy `scripts\install-toolchain.ps1` để cài bản Supabase CLI đã pin và kiểm tra
-SHA-256. Tạo `secrets\supabase-backup.env` từ password manager với ba khóa được
+SHA-256. Tạo `secrets\supabase-backup.env` từ password manager với hai khóa được
 ghi trong `secrets\README.md`, sau đó bỏ quyền kế thừa và chỉ giữ Administrators,
 SYSTEM, người vận hành. Không đặt token hoặc mật khẩu trong Scheduled Task hay
 profile PowerShell. Chạy lại `install-scheduled-backup.ps1` để cấp riêng quyền đọc
