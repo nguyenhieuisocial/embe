@@ -13,9 +13,14 @@ export const dynamic = "force-dynamic";
 export async function MemoryGallery({ album, date, view = "album" }: { album?: string; date?: string; view?: MemoryView } = {}) {
   try {
     const range = date ? dayRange(date) : null;
-    const albums = await getMediaAlbums();
+    const [albums, requestedMemories] = await Promise.all([
+      getMediaAlbums(),
+      getMediaMemories({ album, limit: 24, ...range })
+    ]);
     const selectedAlbum = album && albums.some((item) => item.key === album) ? album : undefined;
-    const memories = await getMediaMemories({ album: selectedAlbum, limit: 24, ...range });
+    const memories = album && !selectedAlbum
+      ? await getMediaMemories({ limit: 24, ...range })
+      : requestedMemories;
 
     return memories.length || (albums.length && !date) ? (
       <MemoryGrid
