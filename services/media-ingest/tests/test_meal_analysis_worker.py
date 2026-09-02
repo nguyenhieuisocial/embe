@@ -99,6 +99,75 @@ def test_downloads_analyzes_stores_review_draft_and_removes_staging_image():
     assert transport.calls[-1][0] == "DELETE"
 
 
+def test_analyzes_a_written_meal_without_downloading_or_deleting_an_image():
+    class TextTransport:
+        def __init__(self):
+            self.calls = []
+
+        def __call__(self, method, url, headers, body=None):
+            self.calls.append((method, url, headers, body))
+            if url.endswith("/rest/v1/rpc/embe_claim_meal_analysis"):
+                return HttpResponse(200, {}, json.dumps({
+                    "id": ENTRY_ID, "storage_path": None, "mime_type": None, "byte_size": None,
+                    "note": "Một ly sữa và một quả chuối", "meal_type": "snack",
+                    "eaten_at": "2026-09-02T06:00:00+00:00", "attempts": 1,
+                }).encode())
+            if url.endswith("/api/chat"):
+                request = json.loads(body)
+                assert "images" not in request["messages"][0]
+                assert "Một ly sữa và một quả chuối" in request["messages"][0]["content"]
+                return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
+                    "foods": [
+                        {"name_vi": "Sữa", "search_name_en": "milk", "estimated_grams": 240,
+                         "confidence": 0.75, "food_groups": ["dairy"], "safety_flags": []},
+                        {"name_vi": "Chuối", "search_name_en": "banana", "estimated_grams": 100,
+                         "confidence": 0.8, "food_groups": ["fruit"], "safety_flags": []},
+                    ], "needs_user_confirmation": []
+                })}}).encode())
+            if url.endswith("/rest/v1/rpc/embe_finish_meal_analysis"):
+                return HttpResponse(204, {}, b"")
+            raise AssertionError((method, url))
+
+    transport = TextTransport()
+    result = MealAnalysisWorker(config(), transport).run_once()
+
+    assert result == {"status": "review", "entry_id": ENTRY_ID, "food_count": 2}
+    finish = next(call for call in transport.calls if call[1].endswith("embe_finish_meal_analysis"))
+    payload = json.loads(finish[3])
+    assert payload["p_checksum_sha256"] == hashlib.sha256("Một ly sữa và một quả chuối".encode()).hexdigest()
+    assert not any("/storage/v1/object/" in call[1] for call in transport.calls)
+
+
+def test_keeps_an_ambiguous_written_note_without_inventing_food():
+    class AmbiguousTextTransport:
+        def __call__(self, method, url, headers, body=None):
+            if url.endswith("/api/chat"):
+                return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
+                    "foods": [], "needs_user_confirmation": []
+                })}}).encode())
+            raise AssertionError((method, url))
+
+    result = MealAnalysisWorker(config(), AmbiguousTextTransport())._analyze(None, "Hôm nay ăn ngon")
+    assert result["entry_mode"] == "note"
+    assert result["foods"] == []
+    assert "không tự đoán" in result["estimate_notice"]
+
+
+def test_accepts_a_safe_clarification_question_for_an_ambiguous_written_note():
+    class ClarificationTransport:
+        def __call__(self, method, url, headers, body=None):
+            if url.endswith("/api/chat"):
+                return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
+                    "foods": [], "needs_user_confirmation": ["Mẹ đã ăn món gì?"]
+                })}}).encode())
+            raise AssertionError((method, url))
+
+    result = MealAnalysisWorker(config(), ClarificationTransport())._analyze(None, "Hôm nay ăn ngon")
+    assert result["entry_mode"] == "note"
+    assert result["foods"] == []
+    assert result["needs_user_confirmation"] == ["Mẹ đã ăn món gì?"]
+
+
 def test_reports_a_bounded_health_signal_without_exposing_worker_details():
     class HeartbeatTransport:
         def __init__(self):

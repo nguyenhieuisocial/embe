@@ -5,7 +5,7 @@ export type MealHistoryEntry = {
   mealType: string;
   eatenAt: string;
   note: string;
-  status?: "ready" | "processing";
+  status?: "ready" | "processing" | "analyzing" | "needs_review" | "failed";
   analysis: MealAnalysis;
 };
 

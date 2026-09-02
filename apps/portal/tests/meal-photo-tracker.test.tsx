@@ -50,24 +50,53 @@ describe("mobile meal journal", () => {
     expect(screen.getByText("Đã lưu · đang bổ sung dinh dưỡng")).toBeInTheDocument();
   });
 
-  it("saves a written meal when no photo is selected", async () => {
+  it("recognizes a written meal and asks the mother to review it when no photo is selected", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
       history: [], suggestions: [], worker: { status: "online" }
     }), { status: 200 })));
     mealClient.createMealNote.mockResolvedValue("11111111-1111-4111-8111-111111111111");
+    mealClient.waitForMealDraft.mockResolvedValue({ note: "Một ly sữa và một quả chuối", analysis: {
+      foods: [
+        { nameVi: "Sữa", searchNameEn: "milk", estimatedGrams: 240, confidence: 0.8, foodGroups: ["dairy"], safetyFlags: [] },
+        { nameVi: "Chuối", searchNameEn: "banana", estimatedGrams: 100, confidence: 0.8, foodGroups: ["fruit"], safetyFlags: [] }
+      ], needsUserConfirmation: [], estimateNotice: "Ước lượng từ ghi chú"
+    } });
 
     render(<MealPhotoTracker />);
     fireEvent.change(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh"), {
       target: { value: "Một ly sữa và một quả chuối" }
     });
-    const save = screen.getByRole("button", { name: "Lưu ghi chú" });
+    const save = screen.getByRole("button", { name: "Nhận diện từ ghi chú" });
     expect(save).toBeEnabled();
     fireEvent.click(save);
 
     await waitFor(() => expect(mealClient.createMealNote).toHaveBeenCalledWith(expect.objectContaining({
       note: "Một ly sữa và một quả chuối", mealType: expect.any(String)
     })));
-    expect(await screen.findByText("Đã lưu ghi chú bữa ăn.")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("Sữa")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Chuối")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lưu bữa này" })).toBeEnabled();
+  });
+
+  it("lets the mother save or add a missing food when a written note is ambiguous", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: [], suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+    mealClient.createMealNote.mockResolvedValue("11111111-1111-4111-8111-111111111111");
+    mealClient.waitForMealDraft.mockResolvedValue({ note: "Hôm nay ăn ngon", analysis: {
+      entryMode: "note", foods: [], needsUserConfirmation: [],
+      estimateNotice: "Không thấy món cụ thể nên EmBe không tự đoán."
+    } });
+
+    render(<MealPhotoTracker />);
+    fireEvent.change(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh"), {
+      target: { value: "Hôm nay ăn ngon" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Nhận diện từ ghi chú" }));
+
+    expect(await screen.findByText(/không thấy món cụ thể/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thêm món còn thiếu" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Lưu bữa này" })).toBeEnabled();
   });
 
   it("lets the mother correct recognition and add a missing food before saving", async () => {
@@ -143,6 +172,23 @@ describe("mobile meal journal", () => {
       expect.objectContaining({ nameVi: "Đậu hũ", searchNameEn: "Đậu hũ" }),
       expect.objectContaining({ nameVi: "Rau luộc", searchNameEn: "Rau luộc" })
     ]));
+  });
+
+  it("lets the mother resume and confirm a recognized written meal after reopening the app", async () => {
+    const pendingHistory = [{
+      ...history[0], note: "Hôm nay ăn ngon", status: "needs_review" as const,
+      analysis: {
+        entryMode: "note" as const, foods: [], needsUserConfirmation: ["Mẹ đã ăn món gì?"],
+        estimateNotice: "Không thấy món cụ thể nên EmBe không tự đoán."
+      }
+    }];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: pendingHistory, suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+
+    render(<MealPhotoTracker />);
+    fireEvent.click(await screen.findByText("Chờ Mẹ kiểm tra"));
+    expect(screen.getByRole("button", { name: "Kiểm tra và lưu" })).toBeEnabled();
   });
 
   it("shows a clear retry message when correcting a saved meal fails", async () => {

@@ -63,7 +63,7 @@ export async function POST(request: Request): Promise<Response> {
       });
       const result = data as Record<string, unknown> | null;
       if (error || !result || !isUuidV4(result.id)) throw new Error("meal note unavailable");
-      return privateReply({ entryId: result.id, status: "confirmed" }, 201);
+      return privateReply({ entryId: result.id, status: "analyzing" }, 201);
     }
     const { data, error } = await store.rpc("embe_create_meal_analysis", {
       p_idempotency_key: input.idempotencyKey, p_author_role: input.authorRole,
@@ -85,7 +85,7 @@ type HistoryEntry = {
   mealType: string;
   eatenAt: string;
   note: string;
-  status: "ready" | "processing";
+  status: "ready" | "processing" | "analyzing" | "needs_review" | "failed";
   analysis: NonNullable<ReturnType<typeof normalizeMealAnalysis>>;
 };
 type WorkerStatus = { status: "online" | "degraded" | "offline" | "unknown"; lastSeenAt?: string };
@@ -130,12 +130,16 @@ export async function GET(request: Request): Promise<Response> {
       if (!isUuidV4(value.id) || typeof value.meal_type !== "string" || !MEAL_TYPES.has(value.meal_type)
           || typeof value.eaten_at !== "string" || typeof value.note !== "string" || !analysis) return [];
       const status = value.status === "nutrition_pending" || value.status === "nutrition_processing"
-        ? "processing" : "ready";
+        ? "processing" : value.status === "uploaded" || value.status === "analyzing"
+          ? "analyzing" : value.status === "review" ? "needs_review"
+            : value.status === "failed" || value.status === "rejected" ? "failed" : "ready";
       return [{ id: value.id, mealType: value.meal_type, eatenAt: value.eaten_at, note: value.note, status, analysis }];
     });
     const heartbeat = await store.rpc("embe_get_worker_heartbeat", { p_worker_name: "meal-analysis" });
     return privateReply({
-      history, suggestions: suggestions(history), worker: workerStatus(heartbeat.error ? null : heartbeat.data),
+      history,
+      suggestions: suggestions(history.filter((entry) => entry.status === "ready" || entry.status === "processing")),
+      worker: workerStatus(heartbeat.error ? null : heartbeat.data),
       notice: "Chỉ dựa trên bữa đã ghi; không chẩn đoán thiếu chất."
     }, 200);
   } catch {

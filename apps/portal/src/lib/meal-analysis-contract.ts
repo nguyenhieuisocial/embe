@@ -40,7 +40,8 @@ export function normalizeMealAnalysis(value: unknown): MealAnalysis | null {
   const raw = value as Record<string, unknown>;
   const entryMode = raw.entry_mode ?? raw.entryMode;
   if (entryMode !== undefined && entryMode !== "note") return null;
-  if (!Array.isArray(raw.foods) || raw.foods.length > 8 || (entryMode !== "note" && raw.foods.length < 1)) return null;
+  if (!Array.isArray(raw.foods) || raw.foods.length > 8
+      || (entryMode === "note" ? raw.foods.length !== 0 : raw.foods.length < 1)) return null;
   const foods: MealFood[] = [];
   for (const candidate of raw.foods) {
     if (!candidate || typeof candidate !== "object") return null;

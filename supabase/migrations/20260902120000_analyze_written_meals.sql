@@ -1,0 +1,55 @@
+CREATE OR REPLACE FUNCTION public.embe_create_meal_note(
+  p_idempotency_key uuid, p_author_role text, p_meal_type text,
+  p_eaten_at timestamptz, p_note text
+)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+DECLARE
+  entry_id uuid := gen_random_uuid();
+  result_row portal_read_model.meal_analysis%ROWTYPE;
+  note_text text := btrim(COALESCE(p_note, ''));
+BEGIN
+  IF p_idempotency_key IS NULL
+     OR p_author_role NOT IN ('father', 'mother')
+     OR p_meal_type NOT IN ('breakfast', 'lunch', 'dinner', 'snack')
+     OR p_eaten_at IS NULL OR p_eaten_at < TIMESTAMPTZ '2000-01-01 00:00:00+00'
+     OR p_eaten_at > timezone('utc', now()) + interval '1 day'
+     OR char_length(note_text) NOT BETWEEN 1 AND 300 THEN
+    RAISE EXCEPTION 'invalid meal note request';
+  END IF;
+
+  INSERT INTO portal_read_model.meal_analysis (
+    id, idempotency_key, author_role, meal_type, eaten_at, note,
+    status, uploaded_at
+  ) VALUES (
+    entry_id, p_idempotency_key, p_author_role, p_meal_type, p_eaten_at, note_text,
+    'uploaded', timezone('utc', now())
+  ) ON CONFLICT (idempotency_key) DO NOTHING;
+
+  SELECT * INTO result_row FROM portal_read_model.meal_analysis WHERE idempotency_key = p_idempotency_key;
+  RETURN jsonb_build_object('id', result_row.id, 'status', result_row.status);
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.embe_create_meal_note(uuid,text,text,timestamptz,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.embe_create_meal_note(uuid,text,text,timestamptz,text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.embe_confirm_meal_analysis(p_id uuid, p_confirmed_analysis jsonb, p_note text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
+DECLARE result_row portal_read_model.meal_analysis%ROWTYPE;
+BEGIN
+  IF jsonb_typeof(p_confirmed_analysis) <> 'object' OR char_length(COALESCE(btrim(p_note), '')) > 300
+    THEN RAISE EXCEPTION 'invalid confirmed meal'; END IF;
+  UPDATE portal_read_model.meal_analysis
+  SET status = CASE WHEN p_confirmed_analysis ->> 'entry_mode' = 'note' THEN 'confirmed' ELSE 'nutrition_pending' END,
+      confirmed_analysis = p_confirmed_analysis,
+      note = btrim(COALESCE(p_note, '')), confirmed_at = timezone('utc', now())
+  WHERE id = p_id AND status IN ('review', 'nutrition_pending', 'confirmed') RETURNING * INTO result_row;
+  IF result_row.id IS NULL THEN RAISE EXCEPTION 'meal is not ready for confirmation'; END IF;
+  RETURN jsonb_build_object('id', result_row.id, 'status', result_row.status,
+    'meal_type', result_row.meal_type, 'eaten_at', result_row.eaten_at,
+    'note', result_row.note, 'analysis', result_row.confirmed_analysis);
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.embe_confirm_meal_analysis(uuid,jsonb,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.embe_confirm_meal_analysis(uuid,jsonb,text) TO service_role;

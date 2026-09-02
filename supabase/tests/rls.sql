@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(97);
+SELECT plan(99);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -419,16 +419,58 @@ SELECT is(
     'd1111111-1111-4111-8111-111111111111', 'mother', 'snack',
     timezone('utc', now()), 'Một ly sữa và một quả chuối'
   ) ->> 'status',
-  'confirmed',
-  'A written meal is saved immediately without waiting for image analysis'
+  'uploaded',
+  'A written meal is queued for text analysis'
 );
 SELECT ok(
   (SELECT storage_path IS NULL
-       AND confirmed_analysis ->> 'entry_mode' = 'note'
-       AND jsonb_array_length(confirmed_analysis -> 'foods') = 0
+       AND confirmed_analysis IS NULL
+       AND status = 'uploaded'
    FROM portal_read_model.meal_analysis
    WHERE idempotency_key = 'd1111111-1111-4111-8111-111111111111'),
-  'A written meal has no fake image or invented foods'
+  'A written meal has no fake image or pre-confirmed foods'
+);
+SELECT is(
+  public.embe_claim_meal_analysis() ->> 'id',
+  (SELECT id::text FROM portal_read_model.meal_analysis
+   WHERE idempotency_key = 'd1111111-1111-4111-8111-111111111111'),
+  'A written meal can be claimed by the analysis worker'
+);
+SELECT lives_ok(
+  format(
+    $$SELECT public.embe_finish_meal_analysis(%L, %L, %L, %L::jsonb)$$,
+    (SELECT id FROM portal_read_model.meal_analysis
+     WHERE idempotency_key = 'd1111111-1111-4111-8111-111111111111'),
+    repeat('a', 64), 'qwen3-vl:4b-instruct',
+    '{"entry_mode":"note","foods":[],"needs_user_confirmation":[],"estimate_notice":"Không thấy món cụ thể nên EmBe không tự đoán."}'
+  ),
+  'An ambiguous written meal can become a reviewable note'
+);
+SELECT is(
+  public.embe_list_meal_history(7) -> 0 ->> 'status',
+  'review',
+  'A recognized written meal remains resumable after the app closes'
+);
+SELECT throws_ok(
+  format(
+    $$SELECT public.embe_confirm_meal_analysis(%L, %L::jsonb, %L)$$,
+    (SELECT id FROM portal_read_model.meal_analysis
+     WHERE idempotency_key = 'd1111111-1111-4111-8111-111111111111'),
+    '{"entry_mode":"note","foods":[{"name_vi":"Chuối"}],"needs_user_confirmation":[],"estimate_notice":"Sai"}',
+    'Hôm nay ăn ngon'
+  ),
+  'P0001', 'invalid confirmed meal',
+  'Note-only mode cannot contain foods and skip nutrition'
+);
+SELECT is(
+  public.embe_confirm_meal_analysis(
+    (SELECT id FROM portal_read_model.meal_analysis
+     WHERE idempotency_key = 'd1111111-1111-4111-8111-111111111111'),
+    '{"entry_mode":"note","foods":[],"needs_user_confirmation":[],"estimate_notice":"Không thấy món cụ thể nên EmBe không tự đoán."}'::jsonb,
+    'Hôm nay ăn ngon'
+  ) ->> 'status',
+  'confirmed',
+  'An ambiguous written meal skips fake nutrition safely'
 );
 DELETE FROM portal_read_model.meal_analysis;
 INSERT INTO portal_read_model.meal_analysis (

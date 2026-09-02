@@ -78,7 +78,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       p_id: id, p_confirmed_analysis: databaseMealAnalysis(confirmed), p_note: value.note.trim()
     });
     if (error || !data) throw new Error("confirmation unavailable");
-    return privateReply({ id, status: "nutrition_pending" }, 202);
+    const result = data as Record<string, unknown>;
+    return privateReply({ id, status: result.status === "confirmed" ? "confirmed" : "nutrition_pending" }, 202);
   } catch {
     return privateReply({ error: "temporarily_unavailable" }, 503);
   }

@@ -240,7 +240,7 @@ def parse_vision_result(value: Any) -> dict[str, Any]:
 
 
 PROMPT = """Bạn đang tạo bản nháp nhật ký bữa ăn cho một phụ nữ đang mang thai.
-Chỉ mô tả những gì có thể nhìn thấy. Không chẩn đoán, không kê bổ sung, không khẳng định thiếu chất,
+Chỉ trích xuất món có căn cứ trực tiếp từ ảnh hoặc ghi chú. Không chẩn đoán, không kê bổ sung, không khẳng định thiếu chất,
 không tự đặt mục tiêu calorie. Trường name_vi bắt buộc là tiếng Việt tự nhiên có dấu, ví dụ
 "Cơm chiên trứng", "Cá hồi áp chảo"; tuyệt đối không điền tên tiếng Anh vào trường này.
 Trường search_name_en mới dùng cụm tìm kiếm nguyên liệu tương đương bằng tiếng Anh.
@@ -286,13 +286,13 @@ class MealAnalysisWorker:
         validate_image(response.body, str(item["mime_type"]))
         return response.body
 
-    def _analyze(self, body: bytes, note: str) -> dict[str, Any]:
+    def _analyze(self, body: bytes | None, note: str) -> dict[str, Any]:
         schema = {
             "type": "object", "required": ["foods", "needs_user_confirmation"],
             "additionalProperties": False,
             "properties": {
                 "foods": {
-                    "type": "array", "minItems": 1, "maxItems": 8,
+                    "type": "array", "minItems": 0 if body is None else 1, "maxItems": 8,
                     "items": {
                         "type": "object", "additionalProperties": False,
                         "required": ["name_vi", "search_name_en", "estimated_grams", "confidence", "food_groups", "safety_flags"],
@@ -311,21 +311,43 @@ class MealAnalysisWorker:
                 "needs_user_confirmation": {"type": "array", "maxItems": 6, "items": {"type": "string"}},
             },
         }
+        message: dict[str, Any] = {
+            "role": "user",
+            "content": f"{PROMPT}\n{'Chỉ trích xuất món được viết rõ trong ghi chú.' if body is None else 'Đối chiếu cả ảnh và ghi chú.'}\nGhi chú của người dùng: {note[:300] or '(không có)'}",
+        }
+        if body is not None:
+            message["images"] = [base64.b64encode(body).decode()]
         payload = {
             "model": self.config.ollama_model, "stream": False, "think": False, "format": schema,
             "options": {"temperature": 0},
-            "messages": [{"role": "user", "content": f"{PROMPT}\nGhi chú của người dùng: {note[:300] or '(không có)'}",
-                          "images": [base64.b64encode(body).decode()]}],
+            "messages": [message],
         }
         response = self.transport("POST", f"{self.config.ollama_url}/api/chat",
                                   {"content-type": "application/json"}, json.dumps(payload, ensure_ascii=False).encode())
         if response.status != 200:
-            raise WorkerFailure("vision_unavailable")
+            raise WorkerFailure("vision_unavailable" if body is not None else "text_analysis_unavailable")
         try:
             outer = json.loads(response.body)
-            return parse_vision_result(json.loads(outer["message"]["content"]))
+            raw_result = json.loads(outer["message"]["content"])
+            if body is None and isinstance(raw_result, dict) and raw_result.get("foods") == []:
+                questions = raw_result.get("needs_user_confirmation")
+                if (set(raw_result) - {"foods", "needs_user_confirmation"}
+                        or not isinstance(questions, list)
+                        or len(questions) > 6
+                        or any(not isinstance(question, str) or not 1 <= len(question.strip()) <= 120
+                               for question in questions)):
+                    raise ValueError("invalid_text_analysis_result")
+                return {
+                    "entry_mode": "note", "foods": [],
+                    "needs_user_confirmation": [question.strip() for question in questions],
+                    "estimate_notice": "Không thấy món cụ thể nên EmBe không tự đoán. Mẹ có thể thêm món hoặc chỉ lưu ghi chú.",
+                }
+            result = parse_vision_result(raw_result)
+            if body is None:
+                result["estimate_notice"] = "Ước lượng từ ghi chú; cần xác nhận món và khẩu phần trước khi lưu."
+            return result
         except (KeyError, TypeError, json.JSONDecodeError, ValueError) as error:
-            raise WorkerFailure("invalid_vision_output") from error
+            raise WorkerFailure("invalid_vision_output" if body is not None else "invalid_text_analysis_output") from error
 
     def _cleanup(self, storage_path: str) -> None:
         encoded = "/".join(quote(part, safe="") for part in storage_path.split("/"))
@@ -510,13 +532,17 @@ class MealAnalysisWorker:
             raise RuntimeError("invalid meal queue response")
         entry_id = str(item["id"])
         try:
-            body = self._download(item)
-            analysis = self._analyze(body, str(item.get("note", "")))
+            note = str(item.get("note", ""))
+            has_image = bool(item.get("storage_path"))
+            body = self._download(item) if has_image else None
+            analysis = self._analyze(body, note)
+            checksum_source = body if body is not None else note.encode("utf-8")
             self._rpc("embe_finish_meal_analysis", {
-                "p_id": entry_id, "p_checksum_sha256": hashlib.sha256(body).hexdigest(),
+                "p_id": entry_id, "p_checksum_sha256": hashlib.sha256(checksum_source).hexdigest(),
                 "p_model_name": self.config.ollama_model, "p_analysis": analysis,
             })
-            self._cleanup(str(item["storage_path"]))
+            if has_image:
+                self._cleanup(str(item["storage_path"]))
             return {"status": "review", "entry_id": entry_id, "food_count": len(analysis["foods"])}
         except WorkerFailure as error:
             attempts = int(item.get("attempts", 1))

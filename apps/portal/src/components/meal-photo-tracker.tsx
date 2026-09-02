@@ -68,7 +68,11 @@ export default function MealPhotoTracker() {
     finally { setHistoryLoading(false); }
   }
 
-  const dashboard = useMemo(() => buildMealDashboard(history, range), [history, range]);
+  const completedHistory = useMemo(
+    () => history.filter((entry) => entry.status === "ready" || entry.status === "processing"),
+    [history]
+  );
+  const dashboard = useMemo(() => buildMealDashboard(completedHistory, range), [completedHistory, range]);
   const risks = useMemo(() => new Set(analysis?.foods.flatMap((food) => [
     ...food.safetyFlags, ...deriveMealSafetyFlags(food.nameVi)
   ]) ?? []), [analysis]);
@@ -79,13 +83,19 @@ export default function MealPhotoTracker() {
     if ((!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving") return;
     setAnalysis(null); setStatusMessage("");
     if (!file) {
-      setStatus("saving");
+      setStatus("analyzing");
       try {
-        await createMealNote({ authorRole: "mother", mealType, note });
-        setNote(""); setStatusMessage("Đã lưu ghi chú bữa ăn."); setStatus("saved");
-        await loadHistory();
-      } catch {
-        setStatusMessage("Chưa lưu được ghi chú. Hãy kiểm tra mạng và thử lại."); setStatus("error");
+        const id = await createMealNote({ authorRole: "mother", mealType, note });
+        setEntryId(id);
+        const draft = await waitForMealDraft(id);
+        setAnalysis(draft.analysis);
+        setStatus("review");
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "unknown";
+        setStatusMessage(code === "analysis_timeout"
+          ? "Ghi chú đã gửi. Máy nhà đang nhận diện và sẽ giữ kết quả trong nhật ký."
+          : "Chưa nhận diện được ghi chú. Hãy kiểm tra mạng và thử lại.");
+        setStatus(code === "analysis_timeout" ? "queued" : "error");
       }
       return;
     }
@@ -126,6 +136,7 @@ export default function MealPhotoTracker() {
   function addFood() {
     setAnalysis((current) => current && current.foods.length < 8 ? {
       ...current,
+      entryMode: undefined,
       foods: [...current.foods, {
         nameVi: "", searchNameEn: "food", estimatedGrams: null,
         confidence: 1, foodGroups: ["other"], safetyFlags: []
@@ -172,6 +183,7 @@ export default function MealPhotoTracker() {
       ...current,
       analysis: {
         ...current.analysis,
+        entryMode: undefined,
         foods: [...current.analysis.foods, {
           nameVi: "", searchNameEn: "food", estimatedGrams: null,
           confidence: 1, foodGroups: ["other"], safetyFlags: []
@@ -248,7 +260,7 @@ export default function MealPhotoTracker() {
         </label>
         <button className="health-save" type="button" disabled={(!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving"} onClick={() => void analyze()}>
           {status === "sending" ? "Đang gửi ảnh…" : status === "analyzing" ? "Đang nhận diện…"
-            : status === "saving" ? "Đang lưu…" : file ? "Nhận diện bữa ăn" : "Lưu ghi chú"}
+            : status === "saving" ? "Đang lưu…" : file ? "Nhận diện bữa ăn" : "Nhận diện từ ghi chú"}
         </button>
         <p className={`meal-state is-${status}`} aria-live="polite">
           {statusMessage || (status === "analyzing" ? "Đang tự nhận diện tên món. Mẹ có thể tiếp tục xem trang."
@@ -260,6 +272,7 @@ export default function MealPhotoTracker() {
 
       {analysis ? <div className="meal-review" aria-label="Xác nhận kết quả nhận diện">
         <div><p className="panel-kicker">Cần Mẹ kiểm tra</p><h3>Máy nhìn thấy</h3></div>
+        {analysis.foods.length === 0 ? <p className="meal-empty">{analysis.estimateNotice}</p> : null}
         {analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
           <label>Tên món<input value={food.nameVi} maxLength={80} onChange={(event) => updateFood(index, "nameVi", event.target.value)} /></label>
           <label>Khẩu phần (g)<input inputMode="decimal" type="number" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateFood(index, "estimatedGrams", event.target.value)} /></label>
@@ -330,7 +343,10 @@ export default function MealPhotoTracker() {
                   <summary>
                     <span><b>{labels[entry.mealType] ?? "Bữa ăn"}</b><small>{mealDate(entry.eatenAt)}</small></span>
                     <span><b>{entry.analysis.foods.map((food) => food.nameVi).join(", ") || entry.note || "Ghi chú bữa ăn"}</b>
-                      <small>{entry.status === "processing" ? "Đã lưu · đang bổ sung dinh dưỡng"
+                      <small>{entry.status === "analyzing" ? "Đang nhận diện món"
+                        : entry.status === "needs_review" ? "Chờ Mẹ kiểm tra"
+                        : entry.status === "failed" ? "Chưa nhận diện được · ghi chú vẫn còn"
+                        : entry.status === "processing" ? "Đã lưu · đang bổ sung dinh dưỡng"
                         : entry.analysis.entryMode === "note" ? "Chỉ có ghi chú"
                         : entry.analysis.nutrition?.calorieRange ? `${Math.round(entry.analysis.nutrition.calorieRange.low)}–${Math.round(entry.analysis.nutrition.calorieRange.high)} kcal`
                           : "Đang bổ sung dinh dưỡng"}</small></span>
@@ -356,7 +372,11 @@ export default function MealPhotoTracker() {
                         ...food.safetyFlags, ...deriveMealSafetyFlags(food.nameVi)
                       ])) ? <p className="meal-risk">Món này cần kiểm tra độ chín hoặc tiệt trùng, loại cá và thành phần trước khi dùng.</p> : null}
                       <small>{entry.analysis.nutrition?.notice ?? entry.analysis.estimateNotice}</small>
-                      {entry.status === "ready" && entry.analysis.foods.length ? <button className="meal-edit-saved" type="button" onClick={() => editSavedMeal(entry)}>Sửa bữa này</button> : null}
+                      {(entry.status === "ready" && entry.analysis.foods.length > 0)
+                        || (entry.status === "needs_review" && (entry.analysis.foods.length > 0 || entry.analysis.entryMode === "note"))
+                        ? <button className="meal-edit-saved" type="button" onClick={() => editSavedMeal(entry)}>
+                          {entry.status === "needs_review" ? "Kiểm tra và lưu" : "Sửa bữa này"}
+                        </button> : null}
                     </>}
                   </div>
                 </details>)}

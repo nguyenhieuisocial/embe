@@ -67,15 +67,15 @@ describe("private review-first meal analysis API", () => {
     expect(invalid.status).toBe(400);
   });
 
-  it("stores a written meal note without requiring a photo", async () => {
-    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "confirmed" }, error: null });
+  it("queues a written meal note for recognition without requiring a photo", async () => {
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "uploaded" }, error: null });
     const response = await createMeal(request("https://embe.hieu.asia/api/meals", {
       authorRole: "mother", eatenAt: "2026-09-01T05:00:00Z", idempotencyKey: entryId,
       mealType: "lunch", note: "Một bát phở bò, ăn hết khoảng hai phần ba"
     }));
 
     expect(response.status).toBe(201);
-    expect(await response.json()).toEqual({ entryId, status: "confirmed" });
+    expect(await response.json()).toEqual({ entryId, status: "analyzing" });
     expect(rpc).toHaveBeenCalledWith("embe_create_meal_note", expect.objectContaining({
       p_note: "Một bát phở bò, ăn hết khoảng hai phần ba"
     }));
@@ -113,6 +113,20 @@ describe("private review-first meal analysis API", () => {
     }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
     expect(confirmed.status).toBe(202);
     expect(rpc).toHaveBeenLastCalledWith("embe_confirm_meal_analysis", expect.objectContaining({ p_id: entryId }));
+  });
+
+  it("confirms an ambiguous text-only note without queueing fake nutrition", async () => {
+    const noteAnalysis = {
+      entry_mode: "note", foods: [], needs_user_confirmation: [],
+      estimate_notice: "Không thấy món cụ thể nên EmBe không tự đoán."
+    };
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "review", analysis: noteAnalysis }, error: null });
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "confirmed" }, error: null });
+    const response = await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "Hôm nay ăn ngon", analysis: noteAnalysis
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ id: entryId, status: "confirmed" });
   });
 
   it("accepts foods corrected, added, or removed by the mother before confirmation", async () => {
@@ -224,6 +238,19 @@ describe("private review-first meal analysis API", () => {
 
     expect(response.status).toBe(200);
     expect(payload.history).toEqual([expect.objectContaining({ id: entryId, status: "processing" })]);
+  });
+
+  it("returns a written meal draft after the app was closed during recognition", async () => {
+    rpc.mockResolvedValueOnce({ data: [{
+      id: entryId, meal_type: "breakfast", eaten_at: "2026-09-01T01:00:00Z",
+      note: "Một quả chuối", status: "review", analysis: rawAnalysis
+    }], error: null });
+    rpc.mockResolvedValueOnce({ data: { state: "online", last_seen_at: new Date().toISOString() }, error: null });
+
+    const response = await history(request("https://embe.hieu.asia/api/meals?days=7", undefined, "GET"));
+    const payload = await response.json();
+
+    expect(payload.history).toEqual([expect.objectContaining({ id: entryId, status: "needs_review" })]);
   });
 
   it("shows a stale home worker clearly while keeping meal history available", async () => {

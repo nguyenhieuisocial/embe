@@ -15,4 +15,15 @@ describe("meal analysis contract", () => {
 
     expect(result?.foods[0]).toMatchObject({ nameVi: "Phở bò", estimatedGrams: null });
   });
+
+  it("rejects note-only mode when a payload also contains recognized foods", () => {
+    expect(normalizeMealAnalysis({
+      entry_mode: "note",
+      foods: [{
+        name_vi: "Chuối", search_name_en: "banana", estimated_grams: 100,
+        confidence: 0.9, food_groups: ["fruit"], safety_flags: []
+      }],
+      needs_user_confirmation: [], estimate_notice: "Ước lượng"
+    })).toBeNull();
+  });
 });
