@@ -1,3 +1,5 @@
+import { cleanJournalCaption } from "./journal-content";
+
 export type TimelineEvent = {
   id: string;
   eventAt: string;
@@ -26,7 +28,8 @@ export function parseEvent(value: RawTimelineEvent): TimelineEvent | null {
   const id = safeText(value.id, 80);
   const eventAt = safeText(value.event_at, 40);
   const title = safeText(value.title, 120);
-  const caption = safeText(value.caption, 1000);
+  const cleanCaption = typeof value.caption === "string" ? cleanJournalCaption(value.caption) : null;
+  const caption = safeText(cleanCaption, 1000);
   const eventType = value.portal_event_type;
   if (!id || !eventAt || !title || !caption || (eventType !== "journal" && eventType !== "milestone")) {
     return null;

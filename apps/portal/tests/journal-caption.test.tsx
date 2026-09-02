@@ -24,4 +24,15 @@ describe("journal caption", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.getByText("📍 [Bấm vào đây](https://evil.example/collect)")).toBeInTheDocument();
   });
+
+  it("never shows the private synchronization marker or trailing encoded space", () => {
+    render(
+      <JournalCaption caption={
+        "Một ngày thật vui.\n<!-- embe-journal:cc0cd7c4-156f-44d5-818b-53962b699555 -->\n&#x20;"
+      } />
+    );
+
+    expect(screen.getByText("Một ngày thật vui.")).toBeInTheDocument();
+    expect(screen.queryByText(/embe-journal|&#x20;/i)).not.toBeInTheDocument();
+  });
 });

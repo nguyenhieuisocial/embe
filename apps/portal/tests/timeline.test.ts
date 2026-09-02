@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getTimeline, getTimelineFreshness } from "../src/lib/timeline";
+import { getTimeline, getTimelineFreshness, parseEvent } from "../src/lib/timeline";
 
 const originalEnvironment = { ...process.env };
 
@@ -10,6 +10,18 @@ afterEach(() => {
 });
 
 describe("curated family timeline", () => {
+  it("removes internal journal metadata before exposing an event", () => {
+    const event = parseEvent({
+      id: "1",
+      event_at: "2026-09-02T10:00:00Z",
+      portal_event_type: "journal",
+      title: "Ngày đáng nhớ",
+      caption: "Cả nhà cùng mỉm cười.\n<!-- embe-journal:cc0cd7c4-156f-44d5-818b-53962b699555 -->\n&#x20;"
+    });
+
+    expect(event?.caption).toBe("Cả nhà cùng mỉm cười.");
+  });
+
   it("reads approved rows only through the server secret", async () => {
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-secret";

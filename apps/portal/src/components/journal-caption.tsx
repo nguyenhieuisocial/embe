@@ -1,3 +1,5 @@
+import { cleanJournalCaption } from "../lib/journal-content";
+
 const CHECKIN_LINE = /(?:\r?\n){1,2}📍 \[([^\]\r\n]{1,120})\]\((https:\/\/[^)\s]+)\)\s*$/u;
 
 function safeGoogleMapsUrl(value: string): string | null {
@@ -17,11 +19,12 @@ function safeGoogleMapsUrl(value: string): string | null {
 }
 
 export default function JournalCaption({ caption }: { caption: string }) {
-  const match = caption.match(CHECKIN_LINE);
+  const cleanCaption = cleanJournalCaption(caption);
+  const match = cleanCaption.match(CHECKIN_LINE);
   const href = match ? safeGoogleMapsUrl(match[2]) : null;
-  if (!match || !href) return <p className="journal-caption-text">{caption}</p>;
+  if (!match || !href) return cleanCaption ? <p className="journal-caption-text">{cleanCaption}</p> : null;
 
-  const body = caption.slice(0, match.index).trim();
+  const body = cleanCaption.slice(0, match.index).trim();
   return (
     <div className="journal-caption">
       {body ? <p className="journal-caption-text">{body}</p> : null}

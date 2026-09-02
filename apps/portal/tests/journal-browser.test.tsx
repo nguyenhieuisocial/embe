@@ -47,4 +47,19 @@ describe("mobile journal browser", () => {
 
     await waitFor(() => expect(screen.getByRole("button", { name: "Lịch" })).toHaveAttribute("aria-pressed", "true"));
   });
+
+  it("finds Vietnamese journal text and filters milestones without leaving the page", () => {
+    render(<JournalBrowser events={events} />);
+
+    expect(screen.getByText("3 mục · 2 ngày")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Tìm trong nhật ký" }), { target: { value: "cuoi tuan" } });
+    expect(screen.getByText("Cuối tuần")).toBeInTheDocument();
+    expect(screen.queryByText("Buổi sáng của Mẹ")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Xóa tìm kiếm" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cột mốc" }));
+    expect(screen.getByText("Cột mốc nhỏ")).toBeInTheDocument();
+    expect(screen.queryByText("Cuối tuần")).not.toBeInTheDocument();
+    expect(screen.getByText("1 mục · 1 ngày")).toBeInTheDocument();
+  });
 });

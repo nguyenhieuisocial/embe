@@ -8,6 +8,7 @@ import type { TimelineEvent } from "../lib/timeline";
 import JournalCaption from "./journal-caption";
 
 type JournalView = "timeline" | "days" | "calendar";
+type JournalKind = "all" | TimelineEvent["eventType"];
 
 const weekDays = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 const viewLabels: Array<{ key: JournalView; label: string }> = [
@@ -15,6 +16,15 @@ const viewLabels: Array<{ key: JournalView; label: string }> = [
   { key: "days", label: "Theo ngày" },
   { key: "calendar", label: "Lịch" }
 ];
+const kindLabels: Array<{ key: JournalKind; label: string }> = [
+  { key: "all", label: "Tất cả" },
+  { key: "journal", label: "Ghi chép" },
+  { key: "milestone", label: "Cột mốc" }
+];
+
+function searchableText(value: string): string {
+  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("vi");
+}
 
 function longDate(value: Date | string): string {
   return new Intl.DateTimeFormat("vi-VN", {
@@ -48,16 +58,26 @@ function initialMonth(events: TimelineEvent[]): string {
 
 export default function JournalBrowser({ events }: { events: TimelineEvent[] }) {
   const [view, setView] = useState<JournalView>("timeline");
+  const [kind, setKind] = useState<JournalKind>("all");
+  const [query, setQuery] = useState("");
   const [monthValue, setMonthValue] = useState(() => initialMonth(events));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const visibleEvents = useMemo(() => {
+    const needle = searchableText(query.trim());
+    return events.filter((event) => {
+      if (kind !== "all" && event.eventType !== kind) return false;
+      return !needle || searchableText(`${event.title} ${event.caption}`).includes(needle);
+    });
+  }, [events, kind, query]);
   const grouped = useMemo(() => {
     const result = new Map<string, TimelineEvent[]>();
-    for (const event of events) {
+    for (const event of visibleEvents) {
       const key = dateKey(event.eventAt);
       result.set(key, [...(result.get(key) ?? []), event]);
     }
     return result;
-  }, [events]);
+  }, [visibleEvents]);
+  const visibleDays = grouped.size;
   const [year, month] = monthValue.split("-").map(Number);
   const cells = useMemo(
     () => getCalendarGrid(month, year, selectedDate ? parseDateKey(selectedDate) : undefined, 1),
@@ -95,21 +115,38 @@ export default function JournalBrowser({ events }: { events: TimelineEvent[] }) 
         {viewLabels.map((item) => <button type="button" key={item.key} aria-pressed={view === item.key} onClick={() => chooseView(item.key)}>{item.label}</button>)}
       </div>
 
-      {view === "timeline" ? <div className="journal-view-timeline">
-        {events.map((event) => <div className="journal-view-timeline-row" key={event.id}>
+      <div className="journal-browser-tools">
+        <div className="journal-search">
+          <span aria-hidden="true">⌕</span>
+          <input type="search" aria-label="Tìm trong nhật ký" placeholder="Tìm người, nơi hoặc kỷ niệm…" value={query} onChange={(event) => setQuery(event.target.value)} />
+          {query ? <button type="button" aria-label="Xóa tìm kiếm" onClick={() => setQuery("")}>×</button> : null}
+        </div>
+        <div className="journal-kind-filter" role="group" aria-label="Lọc loại nhật ký">
+          {kindLabels.map((item) => <button type="button" key={item.key} aria-pressed={kind === item.key} onClick={() => setKind(item.key)}>{item.label}</button>)}
+        </div>
+        <p aria-live="polite">{visibleEvents.length} mục · {visibleDays} ngày</p>
+      </div>
+
+      {!visibleEvents.length ? <div className="journal-filter-empty">
+        <strong>Chưa tìm thấy điều này</strong>
+        <p>Thử từ khóa ngắn hơn hoặc chọn Tất cả.</p>
+      </div> : null}
+
+      {view === "timeline" && visibleEvents.length ? <div className="journal-view-timeline">
+        {visibleEvents.map((event) => <div className="journal-view-timeline-row" key={event.id}>
           <time dateTime={event.eventAt}>{longDate(event.eventAt)}</time>
           <EventCard event={event} />
         </div>)}
       </div> : null}
 
-      {view === "days" ? <div className="journal-day-groups">
+      {view === "days" && visibleEvents.length ? <div className="journal-day-groups">
         {[...grouped.entries()].map(([key, entries]) => <section className="journal-day-group" role="group" aria-label={longDate(`${key}T12:00:00+07:00`)} key={key}>
           <header><div><time dateTime={key}>{longDate(`${key}T12:00:00+07:00`)}</time><small>Âm lịch {lunarDateLabel(parseDateKey(key)!)}</small></div><span>{entries.length} ghi chép</span></header>
           <div>{entries.map((event) => <EventCard event={event} key={event.id} />)}</div>
         </section>)}
       </div> : null}
 
-      {view === "calendar" ? <div className="journal-calendar-view">
+      {view === "calendar" && visibleEvents.length ? <div className="journal-calendar-view">
         <div className="journal-calendar-toolbar">
           <button type="button" aria-label="Tháng trước" onClick={() => moveMonth(-1)}>←</button>
           <strong>Tháng {month}, {year}</strong>
