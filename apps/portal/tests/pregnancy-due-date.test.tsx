@@ -11,10 +11,9 @@ describe("canonical pregnancy due date", () => {
   });
 
   it("uses the server profile on a new phone and keeps it as offline fallback", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ dueDate: "2026-12-01", completed: [], hasProfile: true, hasDayState: false })
-    }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      dueDate: "2026-12-01", completed: [], hasProfile: true, hasDayState: false
+    })));
 
     render(<PregnancyChapter />);
 
@@ -23,10 +22,9 @@ describe("canonical pregnancy due date", () => {
   });
 
   it("shows the correct quick action without opening pregnancy settings first", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ dueDate: "2026-12-01", completed: [], hasProfile: true, hasDayState: false })
-    }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      dueDate: "2026-12-01", completed: [], hasProfile: true, hasDayState: false
+    })));
 
     render(<QuickActions />);
     await waitFor(() => expect(localStorage.getItem("embe:pregnancy:due-date")).toBe("2026-12-01"));

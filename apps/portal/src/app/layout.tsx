@@ -9,13 +9,13 @@ import "./globals.css";
 
 const body = Be_Vietnam_Pro({
   subsets: ["vietnamese"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "600"],
   variable: "--font-body"
 });
 
 const display = Noto_Serif({
   subsets: ["vietnamese"],
-  weight: ["500", "600"],
+  weight: "variable",
   variable: "--font-display"
 });
 

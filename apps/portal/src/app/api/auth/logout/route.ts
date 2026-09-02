@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { readSessionCookie } from "../../../../lib/portal-auth";
-import { sessionRpc } from "../../../../lib/session-store";
+import { clearSessionValidationCache, sessionRpc } from "../../../../lib/session-store";
 
 export async function POST(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
@@ -19,6 +19,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (revoked.error || !Number.isInteger(revoked.data)) {
     return NextResponse.json({ error: "unavailable" }, { status: 503, headers });
   }
+  clearSessionValidationCache(session.id);
   const response = NextResponse.redirect(new URL("/login", request.url), { status: 303, headers });
   response.cookies.set("embe_session", "", {
     expires: new Date(0),

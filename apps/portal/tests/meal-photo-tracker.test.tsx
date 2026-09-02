@@ -44,7 +44,10 @@ describe("mobile meal journal", () => {
     expect(screen.getByText("Lịch sử từng bữa")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "28 ngày" }));
-    await waitFor(() => expect(fetch).toHaveBeenLastCalledWith("/api/meals?days=28", { cache: "no-store" }));
+    await waitFor(() => expect(fetch).toHaveBeenLastCalledWith(
+      "/api/meals?days=28",
+      expect.objectContaining({ cache: "no-store", credentials: "same-origin" })
+    ));
     fireEvent.click(screen.getByText("Cơm và rau"));
     expect(screen.getByText("ít cơm")).toBeInTheDocument();
     expect(screen.getByText("Đã lưu · đang bổ sung dinh dưỡng")).toBeInTheDocument();

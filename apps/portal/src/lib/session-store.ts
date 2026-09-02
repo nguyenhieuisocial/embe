@@ -1,6 +1,10 @@
 import { readSessionCookie } from "./portal-auth";
 
 type RpcResult = { data: unknown; error: boolean };
+type SessionState = "active" | "revoked" | "unavailable";
+type SessionCacheEntry = { expiresAt: number; state: Promise<SessionState> };
+const SESSION_CACHE_MS = 5_000;
+const sessionValidationCache = new Map<string, SessionCacheEntry>();
 export const isSessionId = (value: unknown): value is string => typeof value === "string"
   && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
@@ -33,10 +37,26 @@ export async function activeSession(id: string): Promise<boolean> {
   return await activeSessionState(id) === "active";
 }
 
-export async function activeSessionState(id: string): Promise<"active" | "revoked" | "unavailable"> {
-  const result = await sessionRpc("embe_verify_portal_session", { p_id: id });
-  if (result.error || typeof result.data !== "boolean") return "unavailable";
-  return result.data ? "active" : "revoked";
+export async function activeSessionState(id: string): Promise<SessionState> {
+  const now = Date.now();
+  const cached = sessionValidationCache.get(id);
+  if (cached && cached.expiresAt > now) return cached.state;
+  if (cached) sessionValidationCache.delete(id);
+
+  const state = sessionRpc("embe_verify_portal_session", { p_id: id }).then((result): SessionState => {
+    if (result.error || typeof result.data !== "boolean") {
+      sessionValidationCache.delete(id);
+      return "unavailable";
+    }
+    return result.data ? "active" : "revoked";
+  });
+  sessionValidationCache.set(id, { expiresAt: now + SESSION_CACHE_MS, state });
+  return state;
+}
+
+export function clearSessionValidationCache(id?: string): void {
+  if (id) sessionValidationCache.delete(id);
+  else sessionValidationCache.clear();
 }
 
 export async function activeRequestSession(request: Request): Promise<{ id: string; expiresAt: number } | null> {

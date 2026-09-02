@@ -6,6 +6,7 @@ import type { MealAnalysis } from "../lib/meal-analysis-contract";
 import { buildMealDashboard, FOOD_GROUP_LABELS, type MealHistoryEntry } from "../lib/meal-dashboard";
 import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition } from "../lib/meal-photo-client";
 import { deriveMealSafetyFlags, hasMealSafetyConcern } from "../lib/meal-safety";
+import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
 const nutrientLabels = [
@@ -55,10 +56,11 @@ export default function MealPhotoTracker() {
   useEffect(() => { setMealType(defaultMealType()); }, []);
   useEffect(() => { void loadHistory(range); }, [range]);
 
-  async function loadHistory(days = range) {
+  async function loadHistory(days = range, fresh = false) {
     setHistoryLoading(true);
     try {
-      const response = await fetch(`/api/meals?days=${days}`, { cache: "no-store" });
+      if (fresh) clearPrivateGetCache("/api/meals?");
+      const response = await cachedPrivateGet(`/api/meals?days=${days}`);
       if (!response.ok) return;
       const payload = await response.json() as { history?: MealHistoryEntry[]; suggestions?: string[]; worker?: Worker };
       setHistory(payload.history ?? []);
@@ -162,8 +164,8 @@ export default function MealPhotoTracker() {
       const savedId = entryId;
       setStatus("saved"); setStatusMessage("Đã lưu bữa ăn."); setFile(null); setAnalysis(null); setEntryId(""); setNote("");
       if (inputRef.current) inputRef.current.value = "";
-      await loadHistory();
-      void waitForMealNutrition(savedId).then(() => loadHistory());
+      await loadHistory(range, true);
+      void waitForMealNutrition(savedId).then(() => loadHistory(range, true));
     } catch {
       setStatusMessage("Chưa lưu được bữa ăn. Hãy thử lại.");
       setStatus("error");
@@ -225,8 +227,8 @@ export default function MealPhotoTracker() {
       if (!response.ok) throw new Error("save_failed");
       const savedId = historyEditor.id;
       setHistoryEditor(null);
-      await loadHistory();
-      void waitForMealNutrition(savedId).then(() => loadHistory());
+      await loadHistory(range, true);
+      void waitForMealNutrition(savedId).then(() => loadHistory(range, true));
     } catch {
       setHistoryMessage("Chưa lưu được thay đổi. Hãy thử lại.");
     } finally { setHistorySaving(false); }

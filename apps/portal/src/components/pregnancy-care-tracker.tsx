@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
+import { cachedPrivateGet } from "../lib/private-get-cache";
 import {
   estimatedEnergyTarget, PREGNANCY_NUTRIENTS,
   type EnergyProfile, type NutrientKey
@@ -130,7 +131,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     try {
       const [careResponse, mealsResponse] = await Promise.all([
         fetch(`/api/pregnancy/care?day=${currentDay}&days=30`, { cache: "no-store" }),
-        fetch("/api/meals?days=7", { cache: "no-store" })
+        cachedPrivateGet("/api/meals?days=7")
       ]);
       if (!careResponse.ok) throw new Error("care unavailable");
       const care = await careResponse.json() as { snapshot?: Snapshot };

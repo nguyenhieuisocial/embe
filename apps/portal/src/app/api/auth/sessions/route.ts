@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { readSessionCookie } from "../../../../lib/portal-auth";
-import { activeSession, isSessionId, sessionRpc } from "../../../../lib/session-store";
+import { activeSession, clearSessionValidationCache, isSessionId, sessionRpc } from "../../../../lib/session-store";
 
 const HEADERS = { "cache-control": "private, no-store" };
 function current(request: Request) {
@@ -43,6 +43,8 @@ export async function DELETE(request: Request) {
   const target = one ? body.id as string : null;
   const result = await sessionRpc("embe_revoke_portal_sessions", { p_current_id: session.id, p_target_id: target, p_all: Boolean(all) });
   if (result.error || !Number.isInteger(result.data)) return NextResponse.json({ error: "unavailable" }, { status: 503, headers: HEADERS });
+  if (all) clearSessionValidationCache();
+  else if (target) clearSessionValidationCache(target);
   const response = NextResponse.json({ revoked: result.data }, { headers: HEADERS });
   if (all || target === session.id) response.cookies.set("embe_session", "", {
     expires: new Date(0), httpOnly: true, maxAge: 0, path: "/", sameSite: "lax", secure: url.protocol === "https:"

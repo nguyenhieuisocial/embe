@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { dateInVietnam } from "./family-task-contract";
+import { cachedPrivateGet } from "./private-get-cache";
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
 const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
@@ -14,15 +15,10 @@ export function usePregnancyDueDate(): string {
 
   useEffect(() => {
     let active = true;
-    const controller = new AbortController();
     const readCache = () => setDueDate(localStorage.getItem(DUE_DATE_KEY) ?? "");
 
     readCache();
-    void fetch(`/api/pregnancy?day=${dateInVietnam()}`, {
-      cache: "no-store",
-      credentials: "same-origin",
-      signal: controller.signal
-    }).then(async (response) => {
+    void cachedPrivateGet(`/api/pregnancy?day=${dateInVietnam()}`).then(async (response) => {
       if (!response.ok || !active) return;
       const state = await response.json() as PregnancyState;
       if (!active) return;
@@ -39,7 +35,6 @@ export function usePregnancyDueDate(): string {
     window.addEventListener(STAGE_CHANGE_EVENT, readCache);
     return () => {
       active = false;
-      controller.abort();
       window.removeEventListener("storage", readCache);
       window.removeEventListener(STAGE_CHANGE_EVENT, readCache);
     };

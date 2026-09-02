@@ -30,6 +30,7 @@ export default function FamilyNav() {
         <Link
           href={destination.href}
           key={destination.href}
+          prefetch={false}
           aria-current={pathname === destination.href || destination.href !== "/" && pathname?.startsWith(`${destination.href}/`) ? "page" : undefined}
         >
           <Icon name={destination.icon} className="nav-icon" />

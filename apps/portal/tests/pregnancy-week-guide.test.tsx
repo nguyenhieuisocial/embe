@@ -10,13 +10,13 @@ describe("pregnancy week journey", () => {
   });
 
   it("guides a new phone to the shared pregnancy profile", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ dueDate: null }) }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ dueDate: null })));
     render(<PregnancyWeekPage />);
     await waitFor(() => expect(screen.getByRole("link", { name: "Cài ngày dự sinh" })).toHaveAttribute("href", "/me-bau/ho-so"));
   });
 
   it("shows the current week, three practical actions and the official source", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ dueDate: "2026-12-01" }) }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ dueDate: "2026-12-01" })));
     render(<PregnancyWeekPage />);
 
     await waitFor(() => expect(screen.getByRole("heading", { name: /Tuần \d+/ })).toBeInTheDocument());

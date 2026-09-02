@@ -1,15 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
 import type { PregnancyHealthMetric } from "./pregnancy-health-charts";
 
-const PregnancyHealthCharts = dynamic(() => import("./pregnancy-health-charts"), {
-  ssr: false,
-  loading: () => <p className="health-chart-loading">Đang mở biểu đồ…</p>
-});
+const PregnancyHealthCharts = lazy(() => import("./pregnancy-health-charts"));
 
 type FormState = {
   weightKg: string;
@@ -310,7 +306,9 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
             <span>Vuốt ngang để xem</span>
           </div>
           {hasHealthValues ? (
-            <PregnancyHealthCharts history={history} />
+            <Suspense fallback={<p className="health-chart-loading">Đang mở biểu đồ…</p>}>
+              <PregnancyHealthCharts history={history} />
+            </Suspense>
           ) : (
             <div className="health-empty">
               <strong>Chưa có số liệu sức khỏe</strong>

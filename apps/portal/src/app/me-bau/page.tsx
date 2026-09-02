@@ -9,6 +9,7 @@ import PregnancyCareTracker from "../../components/pregnancy-care-tracker";
 import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
 import PregnancyMedicalRecords from "../../components/pregnancy-medical-records";
 import MealPhotoTracker from "../../components/meal-photo-tracker";
+import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
 import {
   dailyChecklist,
   pregnancyGuidance,
@@ -97,7 +98,7 @@ export default function PregnancyPage() {
         const dueDateDirty = localStorage.getItem(DUE_DATE_DIRTY_KEY) === "1";
         const checklistDirty = localStorage.getItem(checklistDirtyKey(currentDay)) === "1";
 
-        const response = await fetch(`/api/pregnancy?day=${currentDay}`, { cache: "no-store" });
+        const response = await cachedPrivateGet(`/api/pregnancy?day=${currentDay}`);
         if (!response.ok) throw new Error("pregnancy state unavailable");
         let remote = (await response.json()) as PregnancyState;
         if (!active || revision !== revisionRef.current) return;
@@ -113,6 +114,7 @@ export default function PregnancyPage() {
             body: JSON.stringify(update)
           });
           if (!saveResponse.ok) throw new Error("pregnancy state save unavailable");
+          clearPrivateGetCache("/api/pregnancy?");
           remote = (await saveResponse.json()) as PregnancyState;
         }
         if (!active || revision !== revisionRef.current) return;
@@ -169,6 +171,7 @@ export default function PregnancyPage() {
             body: JSON.stringify(body)
           });
           if (!response.ok) throw new Error("pregnancy state save unavailable");
+          clearPrivateGetCache("/api/pregnancy?");
           if (stillCurrent()) {
             localStorage.removeItem(dirtyKey);
             const hasPendingWrite = localStorage.getItem(DUE_DATE_DIRTY_KEY) === "1"

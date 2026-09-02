@@ -1,4 +1,4 @@
-const STATIC_CACHE = "embe-static-v1";
+const STATIC_CACHE = "embe-static-v2";
 const OFFLINE_PAGE = "/offline";
 const OPTIONAL_PRECACHE = ["/icon-192.png", "/icon-512.png"];
 
@@ -42,6 +42,7 @@ self.addEventListener("fetch", (event) => {
 
   const isPublicAsset = url.pathname.startsWith("/_next/static/")
     || url.pathname.startsWith("/illustrations/")
+    || (url.pathname === "/_next/image" && /^\/(?:illustrations\/|(?:apple-)?icon)/.test(url.searchParams.get("url") || ""))
     || /^\/(?:apple-)?icon(?:-[0-9]+)?\.(?:png|svg)$/.test(url.pathname);
   if (!isPublicAsset) return;
 
