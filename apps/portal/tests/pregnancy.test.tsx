@@ -117,6 +117,17 @@ describe("pregnancy daily page", () => {
     expect(position("Hồ sơ khám thai")).toBeLessThan(position("Điều nên ưu tiên theo giai đoạn"));
   });
 
+  it("keeps the mobile day compact and opens deeper information only when requested", () => {
+    render(<PregnancyPage />);
+
+    expect(screen.getByRole("progressbar", { name: "Tiến độ việc hôm nay" })).toHaveAttribute("aria-valuenow", "0");
+    expect(screen.getByRole("heading", { level: 3, name: "Ăn uống" }).closest("details")).toHaveAttribute("open");
+    expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" }).closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText("Xem biểu đồ và lịch sử").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("heading", { name: "Nên ăn gì, hạn chế gì, kiêng gì?" }).closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" }).closest("details")).not.toHaveAttribute("open");
+  });
+
   it("saves one bounded daily health snapshot from simple mobile fields", async () => {
     render(<PregnancyPage />);
     await act(async () => {

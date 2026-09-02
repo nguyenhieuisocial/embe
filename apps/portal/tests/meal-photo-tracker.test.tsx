@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import MealPhotoTracker from "../src/components/meal-photo-tracker";
@@ -35,6 +35,10 @@ describe("mobile meal journal", () => {
 
     render(<MealPhotoTracker />);
     expect(await screen.findByText("Máy nhà đang tắt")).toBeInTheDocument();
+    const insights = screen.getByText("Nhìn lại dinh dưỡng").closest("details");
+    expect(insights).not.toHaveAttribute("open");
+    if (insights) fireEvent.click(within(insights).getByText("Nhìn lại dinh dưỡng"));
+    expect(insights).toHaveAttribute("open");
     expect(screen.getByText("Năng lượng theo ngày")).toBeInTheDocument();
     expect(screen.getByText("Nhóm thực phẩm xuất hiện")).toBeInTheDocument();
     expect(screen.getByText("Lịch sử từng bữa")).toBeInTheDocument();

@@ -318,30 +318,51 @@ export default function PregnancyPage() {
           </div>
         </div>
 
+        <div
+          className="care-progress"
+          role="progressbar"
+          aria-label="Tiến độ việc hôm nay"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
+        >
+          <i style={{ width: `${progress}%` }} />
+        </div>
+
         <div className="checklist">
-          {checklistGroups.map((group) => (
-            <div className="checklist-group" key={group}>
-              <h3>{group}</h3>
-              {dailyChecklist.filter((task) => task.group === group).map((task) => {
-                const isDone = completed.includes(task.id);
-                return (
-                  <label className={`check-item${isDone ? " is-done" : ""}`} key={task.id}>
-                    <input
-                      type="checkbox"
-                      checked={isDone}
-                      disabled={!ready}
-                      onChange={() => toggleTask(task.id)}
-                    />
-                    <span className="custom-check" aria-hidden="true">✓</span>
-                    <span className="check-text">
-                      <strong>{task.title}</strong>
-                      <small>{task.detail}</small>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          ))}
+          {checklistGroups.map((group) => {
+            const groupTasks = dailyChecklist.filter((task) => task.group === group);
+            const completedInGroup = groupTasks.filter((task) => completed.includes(task.id)).length;
+            return (
+              <details className="checklist-group" key={group} open={group === "Ăn uống"}>
+                <summary>
+                  <h3>{group}</h3>
+                  <span>{completedInGroup}/{groupTasks.length}</span>
+                  <i aria-hidden="true">⌄</i>
+                </summary>
+                <div>
+                  {groupTasks.map((task) => {
+                    const isDone = completed.includes(task.id);
+                    return (
+                      <label className={`check-item${isDone ? " is-done" : ""}`} key={task.id}>
+                        <input
+                          type="checkbox"
+                          checked={isDone}
+                          disabled={!ready}
+                          onChange={() => toggleTask(task.id)}
+                        />
+                        <span className="custom-check" aria-hidden="true">✓</span>
+                        <span className="check-text">
+                          <strong>{task.title}</strong>
+                          <small>{task.detail}</small>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </details>
+            );
+          })}
         </div>
       </section>
 
@@ -382,18 +403,17 @@ export default function PregnancyPage() {
       </section>
 
       <section className="guidance-section" id="cam-nang" aria-labelledby="guidance-title">
-        <div className="section-heading-row">
-          <div>
-            <p className="panel-kicker">Cẩm nang thực hành · chạm để xem chi tiết</p>
-            <h2 id="guidance-title">Nên ăn gì, hạn chế gì, kiêng gì?</h2>
-          </div>
-          <p>
-            Phân biệt điều cần tránh thật sự với lời truyền miệng. Chỉ dẫn riêng
-            của nơi đang khám luôn được ưu tiên.
-          </p>
-        </div>
-
-        <div className="guidance-levels">
+        <details className="reference-disclosure">
+          <summary className="section-heading-row">
+            <div>
+              <p className="panel-kicker">Cẩm nang ăn uống</p>
+              <h2 id="guidance-title">Nên ăn gì, hạn chế gì, kiêng gì?</h2>
+            </div>
+            <i aria-hidden="true">⌄</i>
+          </summary>
+          <div className="reference-disclosure-body">
+            <p className="reference-intro">Phân biệt điều cần tránh thật sự với lời truyền miệng. Chỉ dẫn riêng của nơi đang khám luôn được ưu tiên.</p>
+            <div className="guidance-levels">
           {pregnancyGuidanceLevels.map((level) => (
             <article className={`guidance-level is-${level.id}`} key={level.id}>
               <header>
@@ -422,31 +442,28 @@ export default function PregnancyPage() {
               </div>
             </article>
           ))}
-        </div>
+            </div>
 
-        <aside className="guidance-myth">
-          <strong>Không cần “kiêng” mọi món theo truyền miệng</strong>
-          <p>
-            Đồ cay hoặc chua chỉ cần giảm nếu làm Mẹ Ngân khó chịu. Các loại hạt
-            vẫn dùng được nếu không dị ứng và bác sĩ không dặn tránh. Cũng không
-            cần “ăn cho hai”.
-          </p>
-        </aside>
+            <aside className="guidance-myth">
+              <strong>Không cần “kiêng” mọi món theo truyền miệng</strong>
+              <p>Đồ cay hoặc chua chỉ cần giảm nếu làm Mẹ Ngân khó chịu. Các loại hạt vẫn dùng được nếu không dị ứng và bác sĩ không dặn tránh. Cũng không cần “ăn cho hai”.</p>
+            </aside>
+          </div>
+        </details>
       </section>
 
       <section className="menu-section" aria-labelledby="menu-title">
-        <div className="section-heading-row">
-          <div>
-            <p className="panel-kicker">Gợi ý, không phải đơn thuốc</p>
-            <h2 id="menu-title">Thực đơn 7 ngày tham khảo</h2>
-          </div>
-          <p>
-            Điều chỉnh lượng ăn theo thể trạng, dị ứng, khẩu vị và hướng dẫn của
-            bác sĩ. Tất cả thịt, cá, trứng và hải sản cần được nấu chín kỹ.
-          </p>
-        </div>
-
-        <div className="menu-scroll">
+        <details className="reference-disclosure">
+          <summary className="section-heading-row">
+            <div>
+              <p className="panel-kicker">Gợi ý khi cần đổi món</p>
+              <h2 id="menu-title">Thực đơn 7 ngày tham khảo</h2>
+            </div>
+            <i aria-hidden="true">⌄</i>
+          </summary>
+          <div className="reference-disclosure-body">
+            <p className="reference-intro">Điều chỉnh theo thể trạng, dị ứng, khẩu vị và hướng dẫn của bác sĩ. Thịt, cá, trứng và hải sản cần được nấu chín kỹ.</p>
+            <div className="menu-scroll">
           {weeklyMenu.map((menu) => (
             <article className="menu-day" key={menu.day}>
               <h3>{menu.day}</h3>
@@ -457,7 +474,9 @@ export default function PregnancyPage() {
               </dl>
             </article>
           ))}
-        </div>
+            </div>
+          </div>
+        </details>
       </section>
 
       <aside className="medical-boundary">

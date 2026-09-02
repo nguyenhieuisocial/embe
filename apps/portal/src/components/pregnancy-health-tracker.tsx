@@ -296,22 +296,28 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
         </p>
       </form>}
 
-      <div className="health-chart-heading">
-        <div>
-          <p className="panel-kicker">Xu hướng · không phải chẩn đoán</p>
-          <h2>Biểu đồ 28 ngày</h2>
-        </div>
-        <span>Vuốt ngang để xem</span>
-      </div>
-      {hasHealthValues ? (
-        <PregnancyHealthCharts history={history} />
-      ) : (
-        <div className="health-empty">
-          <strong>Chưa có số liệu sức khỏe</strong>
-          <p>Ghi một mục ở trên; biểu đồ sẽ bắt đầu từ số liệu thật đầu tiên.</p>
-        </div>
-      )}
-      {hasHealthValues ? <section className="health-history" aria-labelledby="health-history-title">
+      <details className="health-insights">
+        <summary>
+          <span><strong>Xem biểu đồ và lịch sử</strong><small>{hasHealthValues ? `${history.filter(metricHasValues).length} ngày đã ghi` : "Chưa có số liệu"}</small></span>
+          <i aria-hidden="true">⌄</i>
+        </summary>
+        <div className="health-insights-body">
+          <div className="health-chart-heading">
+            <div>
+              <p className="panel-kicker">Xu hướng · không phải chẩn đoán</p>
+              <h2>Biểu đồ 28 ngày</h2>
+            </div>
+            <span>Vuốt ngang để xem</span>
+          </div>
+          {hasHealthValues ? (
+            <PregnancyHealthCharts history={history} />
+          ) : (
+            <div className="health-empty">
+              <strong>Chưa có số liệu sức khỏe</strong>
+              <p>Ghi một mục ở trên; biểu đồ sẽ bắt đầu từ số liệu thật đầu tiên.</p>
+            </div>
+          )}
+          {hasHealthValues ? <section className="health-history" aria-labelledby="health-history-title">
         <div className="health-history-heading"><h3 id="health-history-title">Lịch sử sức khỏe chi tiết</h3><small>{history.filter(metricHasValues).length} ngày đã ghi</small></div>
         {history.filter(metricHasValues).slice().reverse().map((metric) => <details key={metric.day} className="health-history-card">
           <summary><span><strong>{new Date(`${metric.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}</strong><small>{[typeof metric.weightKg === "number" ? `${metric.weightKg} kg` : "", typeof metric.sleepMinutes === "number" ? `${metric.sleepMinutes / 60}h ngủ` : "", typeof metric.wellbeing === "number" ? `cảm nhận ${metric.wellbeing}/5` : ""].filter(Boolean).join(" · ")}</small></span><i aria-hidden="true">⌄</i></summary>
@@ -327,14 +333,16 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           {metric.symptoms?.length ? <p>Dấu hiệu đã ghi: {metric.symptoms.map((item) => symptomLabels.get(item as typeof symptomOptions[number][0]) ?? item).join(", ")}</p> : null}
           {metric.healthNote?.trim() ? <p>{metric.healthNote}</p> : null}
         </details>)}
-      </section> : null}
-      {visitDays.length ? <section className="visit-brief" aria-labelledby="visit-brief-title">
+          </section> : null}
+          {visitDays.length ? <section className="visit-brief" aria-labelledby="visit-brief-title">
         <div><p className="panel-kicker">Mang theo khi cần trao đổi</p><h3 id="visit-brief-title">Tóm tắt 7 ngày để đi khám</h3></div>
         <strong>{visitDays.length} ngày có số liệu</strong>
         {visitSymptoms.length ? <p>Dấu hiệu đã ghi: {visitSymptoms.join(", ")}</p> : <p>Chưa ghi dấu hiệu bất thường trong khoảng này.</p>}
         <button type="button" onClick={() => void copyVisitSummary()}>Sao chép tóm tắt</button>
         <small>Chỉ tổng hợp dữ liệu đã nhập; không đánh giá bình thường hay bất thường.</small>
-      </section> : null}
+          </section> : null}
+        </div>
+      </details>
     </section>
   );
 }

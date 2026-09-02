@@ -173,13 +173,18 @@ export default function MealPhotoTracker() {
         <button className="health-save" type="button" disabled={status === "saving"} onClick={() => void confirm()}>{status === "saving" ? "Đang lưu…" : "Đúng rồi, lưu bữa này"}</button>
       </div> : null}
 
-      <section className="meal-dashboard" aria-labelledby="meal-dashboard-title">
-        <header className="meal-dashboard-head">
-          <div><p className="panel-kicker">Từ những bữa đã ghi</p><h3 id="meal-dashboard-title">Nhìn lại dinh dưỡng</h3></div>
+      <details className="meal-dashboard" aria-labelledby="meal-dashboard-title">
+        <summary className="meal-dashboard-summary">
+          <span><p className="panel-kicker">Từ những bữa đã ghi</p><h3 id="meal-dashboard-title">Nhìn lại dinh dưỡng</h3></span>
+          <span><small>{historyLoading ? "Đang tải" : `${history.length} bữa`}</small><i aria-hidden="true">⌄</i></span>
+        </summary>
+        <div className="meal-dashboard-body">
+          <div className="meal-dashboard-head">
+            <small>Khoảng thời gian</small>
           <div className="meal-range" role="group" aria-label="Khoảng thời gian">
             {[7, 28].map((days) => <button key={days} type="button" aria-pressed={range === days} onClick={() => setRange(days as 7 | 28)}>{days} ngày</button>)}
           </div>
-        </header>
+          </div>
 
         {historyLoading ? <p className="meal-empty" aria-live="polite">Đang mở sổ bữa ăn…</p>
           : history.length === 0 ? <p className="meal-empty">Chưa có bữa nào trong khoảng này. Chụp món đầu tiên để bắt đầu.</p>
@@ -239,8 +244,9 @@ export default function MealPhotoTracker() {
                 </details>)}
               </div>
             </>}
-        <small className="meal-safety-note">Không tự kết luận thiếu chất hoặc tự đề nghị uống thêm vi chất.</small>
-      </section>
+          <small className="meal-safety-note">Không tự kết luận thiếu chất hoặc tự đề nghị uống thêm vi chất.</small>
+        </div>
+      </details>
     </section>
   );
 }
