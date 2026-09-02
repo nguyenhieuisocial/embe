@@ -11,7 +11,8 @@ $requiredTools = @(
     @{ Name = "age"; Path = Join-Path $localBin "age.exe"; VersionArgs = @("--version") },
     @{ Name = "restic"; Path = Join-Path $localBin "restic.exe"; VersionArgs = @("version") },
     @{ Name = "cloudflared"; Path = Join-Path $localBin "cloudflared.exe"; VersionArgs = @("--version") },
-    @{ Name = "typst"; Path = Join-Path $localBin "typst.exe"; VersionArgs = @("--version") }
+    @{ Name = "typst"; Path = Join-Path $localBin "typst.exe"; VersionArgs = @("--version") },
+    @{ Name = "supabase"; Path = Join-Path $localBin "supabase.exe"; VersionArgs = @("--version") }
 )
 
 $tools = foreach ($tool in $requiredTools) {

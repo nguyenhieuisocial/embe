@@ -22,6 +22,8 @@ param(
 
     [string]$ManifestPath,
 
+    [string[]]$RequiredAppDataFiles = @(),
+
     [switch]$AllowR2Repository
 )
 
@@ -207,9 +209,22 @@ foreach ($item in $requiredParams) {
     Assert-RequiredValue -Name $item.Name -Value $item.Value
 }
 
+if ($RequiredAppDataFiles.Count -eq 1 -and $RequiredAppDataFiles[0].Contains(",")) {
+    $RequiredAppDataFiles = @($RequiredAppDataFiles[0] -split ",")
+}
+
 Assert-Directory -Name "CodeConfigPath" -Path $CodeConfigPath
 Assert-Directory -Name "VaultPath" -Path $VaultPath
 Assert-Directory -Name "AppDataPath" -Path $AppDataPath
+foreach ($requiredFile in $RequiredAppDataFiles) {
+    if ([string]::IsNullOrWhiteSpace($requiredFile) -or $requiredFile -ne [IO.Path]::GetFileName($requiredFile)) {
+        throw "Required appdata file must be a safe filename: $requiredFile"
+    }
+    $requiredPath = Join-Path $AppDataPath $requiredFile
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf) -or (Get-Item -LiteralPath $requiredPath).Length -eq 0) {
+        throw "Required appdata file is missing or empty: $requiredFile"
+    }
+}
 if (-not [string]::IsNullOrWhiteSpace($MediaPath)) {
     Assert-Directory -Name "MediaPath" -Path $MediaPath
     $isLocalRepository = $Repository -match "^[A-Za-z]:[\\/]" -or $Repository -match "^\\\\"
@@ -279,6 +294,7 @@ $report = [ordered]@{
     snapshot_id = $snapshotId
     tag = $Tag
     restic_version = Get-ResticVersion
+    required_appdata_files = @($RequiredAppDataFiles)
     sources = @($snapshots)
 }
 

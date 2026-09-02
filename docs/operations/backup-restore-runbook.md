@@ -3,18 +3,27 @@
 ## Phạm vi hiện hành
 
 - Vault thực tế: `C:\\EmBe\\embe` (`C:\\EmBe\\vault` chỉ là junction tương thích cho lịch cũ).
-- Snapshot nhất quán: BabyBuddy, Memos, Grocy bằng SQLite Backup API; Immich bằng `pg_dump`.
+- Snapshot nhất quán: BabyBuddy, Memos, Grocy bằng SQLite Backup API; Immich bằng `pg_dump`;
+  schema và data của Supabase `portal_read_model` bằng Supabase CLI.
 - R2 chỉ nhận vault, cấu hình và snapshot DB đã được Restic mã hóa.
 - Không backup model Ollama, cache ML, RAW hoặc video vào R2 Free.
 - Repository R2 duy nhất được script chấp nhận là prefix `embe-backup/restic-critical`.
 
 ## Tạo snapshot ứng dụng
 
+Chạy `scripts\install-toolchain.ps1` để cài bản Supabase CLI đã pin và kiểm tra
+SHA-256. Tạo `secrets\supabase-backup.env` từ password manager với ba khóa được
+ghi trong `secrets\README.md`, sau đó bỏ quyền kế thừa và chỉ giữ Administrators,
+SYSTEM, người vận hành. Không đặt token hoặc mật khẩu trong Scheduled Task hay
+profile PowerShell. Chạy lại `install-scheduled-backup.ps1` để cấp riêng quyền đọc
+cho tài khoản `EmBeBackupSvc` và kiểm chứng tác vụ non-interactive.
+
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\backup\\prepare-snapshots.ps1
 ```
 
-Script phải trả `status: ok` và bốn artifact. Không copy trực tiếp database đang
+Script phải trả `status: ok` và sáu artifact, gồm
+`supabase-portal-schema.sql` và `supabase-portal-data.sql`. Không copy trực tiếp database đang
 chạy vì có thể bỏ sót WAL hoặc tạo bản PostgreSQL không nhất quán.
 
 ## Backup Restic
@@ -31,16 +40,23 @@ Các nguồn đưa vào backup R2:
 2. `C:\\EmBe\\embe`
 3. thư mục snapshot mới nhất dưới `C:\\EmBe\\exports\\backup-staging`
 
+`run-critical-r2.ps1` coi hai dump Supabase là artifact bắt buộc. Thiếu hoặc rỗng
+thì dừng trước khi gọi Restic. Manifest Restic lưu danh sách bắt buộc và checksum;
+thư mục staging plaintext được xóa sau cả thành công lẫn thất bại.
+
 ## Restore drill
 
 `restore-drill.ps1` phục hồi vào thư mục sạch và so checksum của từng file với
 manifest. R2 cũng cần cờ `-AllowR2Repository`. Sau khi đạt, giữ báo cáo bằng chứng
 và chuyển thư mục phục hồi tạm vào Recycle Bin vì bên trong có dữ liệu đã giải mã.
+Với manifest mới, drill phải thất bại nếu thiếu một trong hai dump Supabase, ngay
+cả khi các file còn lại đều đúng checksum.
 
 ## Kiểm thử
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\tests\\prepare-snapshots.tests.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\tests\\supabase-backup.tests.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\tests\\run-restic.tests.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\tests\\restore-drill.tests.ps1
 ```

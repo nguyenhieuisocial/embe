@@ -13,7 +13,7 @@ if (-not (Test-Path -LiteralPath $installerPath)) {
 }
 
 $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
-$requiredNames = @("sops", "age", "restic", "cloudflared", "typst")
+$requiredNames = @("sops", "age", "restic", "cloudflared", "typst", "supabase")
 
 foreach ($name in $requiredNames) {
     $tool = @($manifest.tools | Where-Object name -eq $name)

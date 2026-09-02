@@ -3,6 +3,9 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $scriptPath = Join-Path $projectRoot "scripts\verify-toolchain.ps1"
 $pwsh = Join-Path $PSHOME "pwsh.exe"
+if (-not (Test-Path -LiteralPath $pwsh)) {
+    $pwsh = Join-Path $PSHOME "powershell.exe"
+}
 
 if (-not (Test-Path -LiteralPath $scriptPath)) {
     throw "verify-toolchain.ps1 is missing"

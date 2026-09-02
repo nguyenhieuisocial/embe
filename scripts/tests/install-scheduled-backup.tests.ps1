@@ -29,6 +29,7 @@ foreach ($required in @(
     'SeBatchLogonRight',
     '$installStep = "batch_logon_right"',
     'data\evidence',
+    'secrets\supabase-backup.env',
     'Unable to grant operational evidence access'
 )) {
     if (-not $source.Contains($required)) { throw "Scheduled backup installer is missing: $required" }

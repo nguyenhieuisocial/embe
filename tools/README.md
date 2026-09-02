@@ -12,6 +12,7 @@ Installed tool families:
 - Restic 0.19.x
 - cloudflared 2026.8.x
 - Typst 0.15.x
+- Supabase CLI 2.116.x
 
 The age private identity is stored at `C:\EmBe\secrets\age\keys.txt`, excluded
 from Git, with inherited NTFS permissions removed. Only the public recipient is

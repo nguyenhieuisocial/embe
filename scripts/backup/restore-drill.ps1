@@ -97,6 +97,21 @@ if ($repositoryPath -notmatch '^[a-zA-Z][a-zA-Z0-9+.-]*:' -and -not (Test-Path -
     throw "Repository is missing: $($manifest.repository)"
 }
 
+$requiredAppDataFiles = @()
+if ($manifest.PSObject.Properties.Name -contains "required_appdata_files") {
+    $requiredAppDataFiles = @($manifest.required_appdata_files)
+    $appDataSources = @($manifest.sources | Where-Object { $_.label -eq "appdata" })
+    if ($appDataSources.Count -ne 1) { throw "Manifest must contain exactly one appdata source." }
+    foreach ($requiredFile in $requiredAppDataFiles) {
+        $name = [string]$requiredFile
+        if ([string]::IsNullOrWhiteSpace($name) -or $name -ne [IO.Path]::GetFileName($name)) {
+            throw "Unsafe required appdata filename in manifest."
+        }
+        $matches = @($appDataSources[0].files | Where-Object { $_.relative_path -eq $name })
+        if ($matches.Count -ne 1) { throw "Manifest is missing required appdata file: $name" }
+    }
+}
+
 if (-not (Test-Path -LiteralPath $RestoreRoot)) {
     New-Item -ItemType Directory -Path $RestoreRoot -Force | Out-Null
 }
@@ -170,6 +185,7 @@ $report = [ordered]@{
     restore_root = $restoreCandidateTarget
     total_expected_files = @($manifest.sources | ForEach-Object { $_.files } | ForEach-Object { $_ }).Count
     restored_files_found = $used.Count
+    required_appdata_files = @($requiredAppDataFiles)
     mismatches = @($mismatches)
     verified_at = (Get-Date).ToUniversalTime().ToString("o")
 }

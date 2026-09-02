@@ -193,7 +193,8 @@ $readPaths = @(
     (Join-Path $ProjectRoot "scripts"),
     (Join-Path $ProjectRoot "tools"),
     (Join-Path $ProjectRoot ".venv"),
-    (Join-Path $ProjectRoot "secrets\restic-r2-password.txt")
+    (Join-Path $ProjectRoot "secrets\restic-r2-password.txt"),
+    (Join-Path $ProjectRoot "secrets\supabase-backup.env")
 )
 $installStep = "filesystem_permissions"
 foreach ($path in $readPaths) {

@@ -32,7 +32,7 @@ $env:AWS_DEFAULT_REGION = "auto"
 
 $snapshot = $null
 try {
-    $snapshot = & powershell -NoProfile -ExecutionPolicy Bypass -File $prepareScript | ConvertFrom-Json
+    $snapshot = & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $prepareScript -ProjectRoot $ProjectRoot | ConvertFrom-Json
     if ($LASTEXITCODE -ne 0 -or $snapshot.status -ne "ok") { throw "Application snapshot failed" }
 
     $manifestDirectory = Join-Path $ProjectRoot "exports\backup-manifests"
@@ -48,6 +48,7 @@ try {
         -PasswordFile $passwordFile `
         -ResticPath $restic `
         -ManifestPath $manifestPath `
+        -RequiredAppDataFiles "supabase-portal-schema.sql,supabase-portal-data.sql" `
         -Tag "embe-critical-r2" `
         -AllowR2Repository | ConvertFrom-Json
 

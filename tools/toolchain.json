@@ -44,6 +44,15 @@
       "archive": "zip",
       "binaryPattern": "typst.exe",
       "output": "typst.exe"
+    },
+    {
+      "name": "supabase",
+      "version": "2.116.0",
+      "url": "https://github.com/supabase/cli/releases/download/v2.116.0/supabase_2.116.0_windows_amd64.zip",
+      "sha256": "d88832770615c915e1782af99ba6475afcfdc026f939214940f7eea9aaa2341e",
+      "archive": "zip",
+      "binaryPattern": "supabase.exe",
+      "output": "supabase.exe"
     }
   ]
 }

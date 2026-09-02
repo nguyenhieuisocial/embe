@@ -3,7 +3,11 @@ param(
     [string]$OutputRoot = "C:\EmBe\exports\backup-staging",
     [string]$PythonPath = "C:\EmBe\.venv\Scripts\python.exe",
     [string]$ImmichContainer = "compose-immich-postgres-1",
-    [switch]$SkipImmich
+    [string]$ProjectRoot = "C:\EmBe",
+    [string]$SupabaseConfigFile,
+    [string]$SupabaseCliPath,
+    [switch]$SkipImmich,
+    [switch]$SkipSupabase
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,8 +20,14 @@ foreach ($required in @($AppDataRoot, $PythonPath, $helper)) {
     }
 }
 
+$approvedOutputRoot = [IO.Path]::GetFullPath((Join-Path $ProjectRoot "exports\backup-staging")).TrimEnd('\') + '\'
+$resolvedOutputRoot = [IO.Path]::GetFullPath($OutputRoot).TrimEnd('\') + '\'
+if (-not $resolvedOutputRoot.StartsWith($approvedOutputRoot, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Snapshot output must remain inside the approved backup staging directory."
+}
+
 $session = Join-Path $OutputRoot ((Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ-") + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $session -Force | Out-Null
+$sessionCreated = $false
 
 $databases = [ordered]@{
     babybuddy = Join-Path $AppDataRoot "babybuddy\data\db.sqlite3"
@@ -26,6 +36,9 @@ $databases = [ordered]@{
 }
 
 $artifacts = @()
+try {
+New-Item -ItemType Directory -Path $session -Force | Out-Null
+$sessionCreated = $true
 foreach ($item in $databases.GetEnumerator()) {
     if (-not (Test-Path -LiteralPath $item.Value -PathType Leaf)) {
         throw "Database is missing: $($item.Value)"
@@ -36,6 +49,24 @@ foreach ($item in $databases.GetEnumerator()) {
         throw "SQLite backup failed: $($item.Key)"
     }
     $artifacts += $destination
+}
+
+if (-not $SkipSupabase) {
+    $supabaseExporter = Join-Path $PSScriptRoot "export-supabase-read-model.ps1"
+    if (-not (Test-Path -LiteralPath $supabaseExporter -PathType Leaf)) { throw "Supabase exporter is missing" }
+    $arguments = @(
+        "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", $supabaseExporter,
+        "-ProjectRoot", $ProjectRoot, "-OutputDirectory", $session
+    )
+    if (-not [string]::IsNullOrWhiteSpace($SupabaseConfigFile)) { $arguments += @("-ConfigFile", $SupabaseConfigFile) }
+    if (-not [string]::IsNullOrWhiteSpace($SupabaseCliPath)) { $arguments += @("-SupabaseCliPath", $SupabaseCliPath) }
+    $supabaseResult = & powershell @arguments 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "Supabase read-model snapshot failed" }
+    $supabaseSnapshot = ($supabaseResult | Out-String).Trim() | ConvertFrom-Json
+    if ($supabaseSnapshot.status -ne "ok") { throw "Supabase read-model snapshot failed" }
+    foreach ($entry in $supabaseSnapshot.artifacts) {
+        $artifacts += Join-Path $session ([string]$entry.name)
+    }
 }
 
 if (-not $SkipImmich) {
@@ -76,3 +107,14 @@ $manifestPath = Join-Path $session "snapshot-manifest.json"
     manifest = $manifestPath
     artifact_count = $entries.Count
 } | ConvertTo-Json -Compress
+} catch {
+    if ($sessionCreated -and (Test-Path -LiteralPath $session)) {
+        $resolvedSession = [IO.Path]::GetFullPath($session)
+        $resolvedRoot = [IO.Path]::GetFullPath($OutputRoot).TrimEnd('\') + '\'
+        if (-not ($resolvedSession + '\').StartsWith($resolvedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Refusing to remove snapshot outside backup staging"
+        }
+        Remove-Item -LiteralPath $resolvedSession -Recurse -Force
+    }
+    throw
+}

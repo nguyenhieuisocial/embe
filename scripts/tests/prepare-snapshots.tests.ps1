@@ -16,17 +16,60 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Unable to create SQLite fixture" }
     }
 
-    $result = & powershell -NoProfile -ExecutionPolicy Bypass -File $script -AppDataRoot (Join-Path $root "appdata") -OutputRoot (Join-Path $root "output") -PythonPath $python -SkipImmich | ConvertFrom-Json
-    if ($result.status -ne "ok" -or $result.artifact_count -ne 3) { throw "Snapshot result is invalid" }
+    $outputRoot = Join-Path $root "exports\backup-staging"
+    $secretDirectory = Join-Path $root "secrets"
+    $toolDirectory = Join-Path $root "tools\bin"
+    New-Item -ItemType Directory -Path $outputRoot, $secretDirectory, $toolDirectory -Force | Out-Null
+    @(
+        "SUPABASE_PROJECT_REF=test-project-ref"
+        "SUPABASE_ACCESS_TOKEN=test-token"
+        "SUPABASE_DB_PASSWORD=test-password"
+    ) | Set-Content -LiteralPath (Join-Path $secretDirectory "supabase-backup.env") -Encoding UTF8
+    $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    & icacls $secretDirectory /inheritance:r /grant:r "*${currentSid}:(OI)(CI)F" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Unable to protect test secret directory" }
+
+    $fakeSupabase = Join-Path $toolDirectory "supabase.ps1"
+    @'
+param([Parameter(ValueFromRemainingArguments = $true)] [string[]]$Arguments)
+$fileIndex = [Array]::IndexOf($Arguments, "--file")
+if ($fileIndex -lt 0) { throw "Missing --file" }
+Set-Content -LiteralPath $Arguments[$fileIndex + 1] -Value "non-empty dump"
+'@ | Set-Content -LiteralPath $fakeSupabase -Encoding UTF8
+
+    $result = & powershell -NoProfile -ExecutionPolicy Bypass -File $script `
+        -ProjectRoot $root -AppDataRoot (Join-Path $root "appdata") -OutputRoot $outputRoot `
+        -PythonPath $python -SupabaseCliPath $fakeSupabase -SkipImmich | ConvertFrom-Json
+    if ($result.status -ne "ok" -or $result.artifact_count -ne 5) { throw "Snapshot result is invalid" }
     $manifest = Get-Content -LiteralPath $result.manifest -Raw | ConvertFrom-Json
-    if ($manifest.artifacts.Count -ne 3) { throw "Snapshot manifest is incomplete" }
+    if ($manifest.artifacts.Count -ne 5) { throw "Snapshot manifest is incomplete" }
     foreach ($artifact in $manifest.artifacts) {
         $path = Join-Path $result.session $artifact.name
         if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $artifact.sha256) {
             throw "Snapshot checksum mismatch: $($artifact.name)"
         }
     }
-    Write-Output "PASS: consistent SQLite snapshots and manifest"
+    foreach ($required in @("supabase-portal-schema.sql", "supabase-portal-data.sql")) {
+        if (@($manifest.artifacts | Where-Object name -eq $required).Count -ne 1) { throw "Snapshot manifest missing $required" }
+    }
+
+    Remove-Item -LiteralPath $result.session -Recurse -Force
+    $failingCli = Join-Path $toolDirectory "supabase-fail.ps1"
+    'throw "simulated Supabase failure"' | Set-Content -LiteralPath $failingCli -Encoding UTF8
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script `
+            -ProjectRoot $root -AppDataRoot (Join-Path $root "appdata") -OutputRoot $outputRoot `
+            -PythonPath $python -SupabaseCliPath $failingCli -SkipImmich 2>$null | Out-Null
+        $failureExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+    if ($failureExitCode -eq 0) { throw "Expected Supabase snapshot failure" }
+    if (@(Get-ChildItem -LiteralPath $outputRoot -Directory).Count -ne 0) { throw "Failed snapshot left plaintext staging behind" }
+
+    Write-Output "PASS: consistent SQLite/Supabase snapshots, manifest, and failure cleanup"
 } finally {
     if (Test-Path -LiteralPath $root) {
         $resolved = [IO.Path]::GetFullPath($root)

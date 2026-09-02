@@ -67,17 +67,24 @@ try {
     $codeFile = Join-Path $sourceCode "a.txt"
     $vaultFile = Join-Path $sourceVault "b.md"
     $appFile = Join-Path $sourceApp "c.dat"
+    $schemaFile = Join-Path $sourceApp "supabase-portal-schema.sql"
+    $dataFile = Join-Path $sourceApp "supabase-portal-data.sql"
     Set-Content -Path $codeFile -Value "abc"
     Set-Content -Path $vaultFile -Value "xyz"
     Set-Content -Path $appFile -Value "media"
+    Set-Content -Path $schemaFile -Value "schema"
+    Set-Content -Path $dataFile -Value "data"
 
     $codeHash = (Get-FileHash -LiteralPath $codeFile -Algorithm SHA256).Hash.ToLowerInvariant()
     $vaultHash = (Get-FileHash -LiteralPath $vaultFile -Algorithm SHA256).Hash.ToLowerInvariant()
     $appHash = (Get-FileHash -LiteralPath $appFile -Algorithm SHA256).Hash.ToLowerInvariant()
+    $schemaHash = (Get-FileHash -LiteralPath $schemaFile -Algorithm SHA256).Hash.ToLowerInvariant()
+    $dataHash = (Get-FileHash -LiteralPath $dataFile -Algorithm SHA256).Hash.ToLowerInvariant()
 
     $manifest = [ordered]@{
         snapshot_id = "snap-drill-1"
         repository = $fakeRepo
+        required_appdata_files = @("supabase-portal-schema.sql", "supabase-portal-data.sql")
         sources = @(
             [ordered]@{
                 label = "code"
@@ -97,7 +104,9 @@ try {
                 label = "appdata"
                 source_path = $sourceApp
                 files = @(
-                    [ordered]@{ name = "c.dat"; sha256 = $appHash; relative_path = "c.dat" }
+                    [ordered]@{ name = "c.dat"; sha256 = $appHash; relative_path = "c.dat" },
+                    [ordered]@{ name = "supabase-portal-schema.sql"; sha256 = $schemaHash; relative_path = "supabase-portal-schema.sql" },
+                    [ordered]@{ name = "supabase-portal-data.sql"; sha256 = $dataHash; relative_path = "supabase-portal-data.sql" }
                 )
             }
         )
@@ -141,6 +150,13 @@ exit 0
 
     $bad = Invoke-RestoreDrill -ManifestPath $badManifestPath -PasswordFile $passwordFile -RestoreRoot (Join-Path $testRoot "restore-bad") -FakeRestic $fakeResticPath
     Assert-Equal "restore-drill fails on checksum mismatch" 1 $bad.ExitCode
+
+    $missingRequiredManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    $missingRequiredManifest.sources[2].files = @($missingRequiredManifest.sources[2].files | Where-Object name -ne "supabase-portal-data.sql")
+    $missingRequiredPath = Join-Path $testRoot "manifest-missing-required.json"
+    $missingRequiredManifest | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $missingRequiredPath -Encoding UTF8
+    $missingRequired = Invoke-RestoreDrill -ManifestPath $missingRequiredPath -PasswordFile $passwordFile -RestoreRoot (Join-Path $testRoot "restore-missing-required") -FakeRestic $fakeResticPath
+    Assert-Equal "restore-drill rejects manifest missing required Supabase dump" 1 $missingRequired.ExitCode
 
     $remoteManifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     $remoteManifest.repository = "s3:https://example.invalid/embe"

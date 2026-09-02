@@ -23,12 +23,28 @@ $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $session = Join-Path $root ("exports\backup-staging\" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $session -Force | Out-Null
 Set-Content -LiteralPath (Join-Path $session "database.dump") -Value "private snapshot"
-[ordered]@{status="ok";session=$session;artifact_count=1} | ConvertTo-Json -Compress
+Set-Content -LiteralPath (Join-Path $session "supabase-portal-schema.sql") -Value "schema"
+Set-Content -LiteralPath (Join-Path $session "supabase-portal-data.sql") -Value "data"
+[ordered]@{status="ok";session=$session;artifact_count=3} | ConvertTo-Json -Compress
 '@
     Set-Content -LiteralPath (Join-Path $root "scripts\backup\prepare-snapshots.ps1") -Value $prepare
 
     if ($BackupSucceeds) {
-        $backup = '[ordered]@{status="ok";file_count=1;snapshot_id="test-id";manifest="test.json"} | ConvertTo-Json -Compress'
+        $backup = @'
+param(
+    [string]$CodeConfigPath, [string]$VaultPath, [string]$AppDataPath,
+    [string]$Repository, [string]$PasswordFile, [string]$ResticPath,
+    [string]$ManifestPath, [string]$Tag, [switch]$AllowR2Repository,
+    [string[]]$RequiredAppDataFiles
+)
+$expected = @("supabase-portal-schema.sql", "supabase-portal-data.sql")
+$received = if (@($RequiredAppDataFiles).Count -eq 1) { @($RequiredAppDataFiles[0] -split ",") } else { @($RequiredAppDataFiles) }
+if ($received.Count -ne 2) { throw "Required Supabase dumps were not passed to restic" }
+foreach ($name in $expected) {
+    if ($received -notcontains $name) { throw "Missing required dump: $name" }
+}
+[ordered]@{status="ok";file_count=3;snapshot_id="test-id";manifest="test.json"} | ConvertTo-Json -Compress
+'@
     } else {
         $backup = 'throw "simulated backup failure"'
     }
