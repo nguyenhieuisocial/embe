@@ -2007,6 +2007,74 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .later-trimesters > summary::-webkit-details-marker { display: none; }
 .later-trimesters article { border: 0; border-radius: 0; border-top: 1px solid var(--line); }
 
+.stage-nutrition {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+.stage-nutrition-heading { align-items: end; display: flex; gap: 12px; justify-content: space-between; }
+.stage-nutrition-heading h2 { margin-top: 2px; }
+.stage-nutrition-heading > span {
+  background: var(--rose-soft);
+  border-radius: 999px;
+  color: var(--rose);
+  flex: none;
+  font-size: .6875rem;
+  font-weight: 650;
+  padding: 5px 9px;
+}
+.stage-nutrition-current { background: var(--surface-soft); border-radius: var(--radius); padding: 13px; }
+.stage-nutrition-current > p:first-child { color: var(--ink); font-size: .875rem; }
+.stage-nutrition dl { display: grid; gap: 0; margin: 10px 0 0; }
+.stage-nutrition dl > div { border-top: 1px solid var(--line); display: grid; gap: 2px; padding: 9px 0; }
+.stage-nutrition dt { color: var(--rose); font-size: .75rem; font-weight: 700; }
+.stage-nutrition dd { color: var(--ink-soft); font-size: .8125rem; line-height: 1.45; margin: 0; }
+.stage-nutrition-warning {
+  background: var(--sun-soft);
+  border-radius: 10px;
+  color: var(--ink-soft);
+  font-size: .75rem;
+  line-height: 1.45;
+  margin-top: 2px;
+  padding: 8px 10px;
+}
+.stage-nutrition-sources { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; }
+.stage-nutrition-sources a { color: var(--rose); font-size: .6875rem; min-height: 40px; padding-block: 11px; text-decoration: none; }
+.stage-nutrition-later { border-top: 1px solid var(--line); }
+.stage-nutrition-later > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-size: .8125rem;
+  font-weight: 650;
+  justify-content: space-between;
+  list-style: none;
+  min-height: 44px;
+  padding: 4px 2px 0;
+}
+.stage-nutrition-later > summary::-webkit-details-marker { display: none; }
+.stage-nutrition-later > article { border-top: 1px solid var(--line); padding: 12px 0 2px; }
+.stage-nutrition-later h3 { font-size: .9375rem; }
+.stage-nutrition-later article > p:not(.stage-nutrition-warning) { color: var(--ink-soft); font-size: .8125rem; margin-top: 3px; }
+.stage-nutrition-safety {
+  align-items: center;
+  background: var(--rose-soft);
+  border-radius: 12px;
+  color: var(--ink);
+  display: flex;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 8px 11px;
+  text-decoration: none;
+}
+.stage-nutrition-safety > span:first-child { display: grid; gap: 1px; }
+.stage-nutrition-safety strong { font-size: .8125rem; }
+.stage-nutrition-safety small { color: var(--ink-soft); font-size: .6875rem; }
+.stage-nutrition-safety > span:last-child { color: var(--rose); font-size: 1.25rem; }
+
 .guidance-levels { display: grid; gap: 16px; }
 .reference-disclosure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: clip; }
 .reference-disclosure > summary { align-items: center; cursor: pointer; display: flex; justify-content: space-between; list-style: none; margin: 0; min-height: 62px; padding: 11px 14px; }

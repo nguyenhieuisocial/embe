@@ -97,7 +97,16 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Không rượu bia")).toBeInTheDocument();
     expect(screen.getByText("Không tự dùng thuốc, thảo dược hoặc vi chất")).toBeInTheDocument();
     expect(screen.getByText(/Không cần “kiêng” mọi món theo truyền miệng/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Điều nên ưu tiên theo giai đoạn" })).toBeInTheDocument();
+    const stageNutrition = screen.getByRole("region", { name: "Ăn uống theo giai đoạn" });
+    expect(within(stageNutrition).getByRole("heading", { name: "Ăn uống theo giai đoạn" })).toBeInTheDocument();
+    expect(within(stageNutrition).getByText("Món dễ bắt đầu")).toBeInTheDocument();
+    expect(within(stageNutrition).getAllByText("Đồ uống")).toHaveLength(3);
+    expect(within(stageNutrition).getByText("Khi đang nghén")).toBeInTheDocument();
+    expect(within(stageNutrition).getByText(/5–6 bữa nhỏ/i)).toBeInTheDocument();
+    expect(within(stageNutrition).getByText(/nước lọc từng ngụm/i)).toBeInTheDocument();
+    expect(within(stageNutrition).getByText(/đạm.*sắt.*canxi.*choline/i)).toBeInTheDocument();
+    expect(within(stageNutrition).getByText(/chia thành bữa nhỏ/i)).toBeInTheDocument();
+    expect(within(stageNutrition).getByText("Quy tắc an toàn áp dụng suốt thai kỳ")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nhật ký sức khỏe" })).toBeInTheDocument();
     expect(screen.getByLabelText("Đường huyết (mg/dL)")).toBeInTheDocument();
     expect(screen.getByLabelText("Số cử động thai")).toBeInTheDocument();
@@ -120,11 +129,12 @@ describe("pregnancy daily page", () => {
     expect(screen.queryByRole("img", { name: /nước uống, bữa ăn chín/i })).not.toBeInTheDocument();
     const headings = screen.getAllByRole("heading").map((heading) => heading.textContent ?? "");
     const position = (name: string) => headings.findIndex((heading) => heading.includes(name));
-    expect(position("Việc của hôm nay")).toBeLessThan(position("Thuốc, vi chất & dinh dưỡng"));
+    expect(position("Việc của hôm nay")).toBeLessThan(position("Ăn uống theo giai đoạn"));
+    expect(position("Ăn uống theo giai đoạn")).toBeLessThan(position("Thuốc, vi chất & dinh dưỡng"));
     expect(position("Thuốc, vi chất & dinh dưỡng")).toBeLessThan(position("Nhật ký bữa ăn"));
     expect(position("Nhật ký bữa ăn")).toBeLessThan(position("Nhật ký sức khỏe"));
     expect(position("Nhật ký sức khỏe")).toBeLessThan(position("Hồ sơ khám thai"));
-    expect(position("Hồ sơ khám thai")).toBeLessThan(position("Điều nên ưu tiên theo giai đoạn"));
+    expect(position("Hồ sơ khám thai")).toBeLessThan(position("Nên ăn gì, hạn chế gì, kiêng gì?"));
   });
 
   it("exposes iPhone health import before the long daily content", () => {

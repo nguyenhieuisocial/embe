@@ -383,6 +383,58 @@ export default function PregnancyPage() {
         </div>
       </section>
 
+      <section className="stage-nutrition" aria-labelledby="stage-nutrition-title">
+        <div className="stage-nutrition-heading">
+          <div>
+            <p className="panel-kicker">Gợi ý đúng lúc · không ép ăn</p>
+            <h2 id="stage-nutrition-title">Ăn uống theo giai đoạn</h2>
+          </div>
+          <span>{trimesterGuides[trimesterIndex].title}</span>
+        </div>
+        <article className="stage-nutrition-current">
+          <p>{trimesterGuides[trimesterIndex].detail}</p>
+          <dl>
+            <div>
+              <dt>{trimesterGuides[trimesterIndex].foodLabel}</dt>
+              <dd>{trimesterGuides[trimesterIndex].food}</dd>
+            </div>
+            <div>
+              <dt>Đồ uống</dt>
+              <dd>{trimesterGuides[trimesterIndex].drink}</dd>
+            </div>
+            <div>
+              <dt>{trimesterGuides[trimesterIndex].comfortLabel}</dt>
+              <dd>{trimesterGuides[trimesterIndex].comfort}</dd>
+            </div>
+          </dl>
+          <p className="stage-nutrition-warning">{trimesterGuides[trimesterIndex].warning}</p>
+          <div className="stage-nutrition-sources">
+            {trimesterGuides[trimesterIndex].sources.map((source) => (
+              <a href={source.href} key={source.href} rel="noreferrer" target="_blank">{source.label}</a>
+            ))}
+          </div>
+        </article>
+        <details className="stage-nutrition-later">
+          <summary>Các giai đoạn khác <span aria-hidden="true">⌄</span></summary>
+          {trimesterGuides.filter((_, index) => index !== trimesterIndex).map((guide) => (
+            <article key={guide.title}>
+              <h3>{guide.title}</h3>
+              <p>{guide.detail}</p>
+              <dl>
+                <div><dt>{guide.foodLabel}</dt><dd>{guide.food}</dd></div>
+                <div><dt>Đồ uống</dt><dd>{guide.drink}</dd></div>
+                <div><dt>{guide.comfortLabel}</dt><dd>{guide.comfort}</dd></div>
+              </dl>
+              <p className="stage-nutrition-warning">{guide.warning}</p>
+            </article>
+          ))}
+        </details>
+        <a className="stage-nutrition-safety" href="#cam-nang">
+          <span><strong>Quy tắc an toàn áp dụng suốt thai kỳ</strong><small>Thực phẩm sống, caffeine, rượu bia, cá thủy ngân cao…</small></span>
+          <span aria-hidden="true">›</span>
+        </a>
+      </section>
+
       <PregnancyCareTracker pregnancyWeek={week} />
 
       <MealPhotoTracker />
@@ -392,32 +444,6 @@ export default function PregnancyPage() {
       <PregnancyMedicalRecords />
 
       <div className="pregnancy-reference-label"><span>Tham khảo khi cần</span></div>
-
-      <section className="trimester-section" aria-labelledby="trimester-title">
-        <div className="section-heading-row">
-          <div>
-            <p className="panel-kicker">Nhắc đúng việc · không tự chẩn đoán</p>
-            <h2 id="trimester-title">Điều nên ưu tiên theo giai đoạn</h2>
-          </div>
-          <p>Ngày dự sinh chỉ giúp hiển thị tuần thai. Mọi lịch khám, xét nghiệm và thuốc vẫn theo nơi Mẹ Ngân đang được chăm sóc.</p>
-        </div>
-        <div className="trimester-grid">
-          <article className="is-current">
-            <small>Ưu tiên lúc này</small>
-            <h3>{trimesterGuides[trimesterIndex].title}</h3>
-            <p>{trimesterGuides[trimesterIndex].detail}</p>
-          </article>
-          <details className="later-trimesters">
-            <summary>Xem các giai đoạn tiếp theo <span aria-hidden="true">⌄</span></summary>
-            {trimesterGuides.filter((_, index) => index !== trimesterIndex).map((guide) => (
-              <article key={guide.title}>
-                <h3>{guide.title}</h3>
-                <p>{guide.detail}</p>
-              </article>
-            ))}
-          </details>
-        </div>
-      </section>
 
       <section className="guidance-section" id="cam-nang" aria-labelledby="guidance-title">
         <details className="reference-disclosure">

@@ -250,8 +250,8 @@ export const pregnancyGuidance = [
     level: "avoid",
     category: "An toàn thực phẩm",
     title: "Tránh thực phẩm sống, tái hoặc chưa tiệt trùng",
-    detail: "Gồm thịt, trứng, cá và hải sản sống/tái; sữa hoặc nước ép chưa tiệt trùng; rau mầm sống và rau quả chưa rửa sạch.",
-    action: "Kiểm tra chữ “pasteurized/tiệt trùng” trên nhãn và chọn món chín kỹ khi ăn ngoài.",
+    detail: "Gồm thịt, trứng, cá và hải sản sống/tái; sữa hoặc nước ép chưa tiệt trùng; rau mầm sống, bột sống và rau quả chưa rửa sạch.",
+    action: "Kiểm tra chữ “pasteurized/tiệt trùng” trên nhãn; khi ăn ngoài, chọn món chín kỹ và còn nóng.",
     sourceLabel: "CDC — thực phẩm an toàn khi mang thai",
     sourceHref: "https://www.cdc.gov/food-safety/foods/pregnant-women.html"
   },
@@ -260,10 +260,20 @@ export const pregnancyGuidance = [
     level: "avoid",
     category: "Ăn uống",
     title: "Tránh cá có hàm lượng thủy ngân cao",
-    detail: "CDC nêu cá mập, cá kiếm, cá thu vua và cá ngói là các lựa chọn rủi ro cao hơn.",
-    action: "Khi không biết rõ loại cá, hỏi người bán hoặc chọn các loại ít thủy ngân quen thuộc thay thế.",
-    sourceLabel: "CDC — lựa chọn hải sản an toàn",
-    sourceHref: "https://www.cdc.gov/food-safety/foods/pregnant-women.html"
+    detail: "Danh sách FDA/EPA cần tránh gồm cá ngừ mắt to, cá thu vua, cá marlin, orange roughy, cá mập, cá kiếm và cá ngói Vịnh Mexico.",
+    action: "Nếu tên loài không rõ, hỏi người bán hoặc đổi sang cá trong nhóm ít thủy ngân; không bỏ hoàn toàn cá chỉ vì lo thủy ngân.",
+    sourceLabel: "FDA/EPA — bảng chọn cá",
+    sourceHref: "https://www.fda.gov/food/consumers/advice-about-eating-fish"
+  },
+  {
+    id: "no-cold-deli-foods",
+    level: "avoid",
+    category: "An toàn thực phẩm",
+    title: "Không ăn nguội thịt chế biến và hải sản hun khói lạnh",
+    detail: "Thịt nguội, xúc xích, giò/chả đóng gói và hải sản hun khói bảo quản lạnh có thể mang Listeria dù đã được giữ lạnh.",
+    action: "Chỉ dùng sau khi hâm nóng bốc hơi đều; chọn salad tự làm thay vì salad trộn sẵn ở quầy và nấu chín rau mầm.",
+    sourceLabel: "CDC — phòng Listeria",
+    sourceHref: "https://www.cdc.gov/listeria/prevention/index.html"
   },
   {
     id: "no-vitamin-a",
@@ -304,6 +314,18 @@ export const pregnancyGuidanceLevels = [
 ] as const;
 
 export const pregnancySources = [
+  {
+    label: "ACOG — ăn uống lành mạnh trong thai kỳ",
+    href: "https://www.acog.org/womens-health/faqs/healthy-eating-during-pregnancy"
+  },
+  {
+    label: "ACOG — giảm buồn nôn và nôn trong thai kỳ",
+    href: "https://www.acog.org/womens-health/faqs/morning-sickness-nausea-and-vomiting-of-pregnancy"
+  },
+  {
+    label: "FDA/EPA — chọn cá ít thủy ngân",
+    href: "https://www.fda.gov/food/consumers/advice-about-eating-fish"
+  },
   {
     label: "NIH ODS — nhu cầu và giới hạn vitamin, khoáng chất trong thai kỳ",
     href: "https://ods.od.nih.gov/factsheets/Pregnancy-HealthProfessional/"
@@ -381,15 +403,63 @@ export const pregnancySources = [
 export const trimesterGuides = [
   {
     title: "Ba tháng đầu",
-    detail: "Xác nhận lịch chăm sóc trước sinh, ghi đầy đủ thuốc và vi chất đang dùng, hỏi bác sĩ trước khi tự bổ sung hoặc ngừng bất kỳ loại nào."
+    detail: "Mục tiêu là ăn được, giữ đủ nước và duy trì món đa dạng trong khả năng — không ép một thực đơn cứng khi đang nghén.",
+    foodLabel: "Món dễ bắt đầu",
+    food: "Thử 5–6 bữa nhỏ: cháo thịt nạc hoặc cá chín, cơm mềm, bánh mì, chuối; thêm trứng chín, đậu phụ, hạt hoặc sữa chua tiệt trùng nếu hợp.",
+    drink: "Nước lọc từng ngụm suốt ngày; có thể đổi vị bằng sữa tiệt trùng hoặc nước quả tiệt trùng ít đường. Cộng cả cà phê, trà, cola và chocolate vào giới hạn caffeine.",
+    comfortLabel: "Khi đang nghén",
+    comfort: "Để bánh quy nhạt hoặc bánh mì cạnh giường, tránh mùi gây buồn nôn và chọn món ít béo, dễ tiêu. Không cần cố ăn món làm Mẹ Ngân khó chịu.",
+    warning: "Không giữ được thức ăn hoặc nước, tiểu ít/sẫm màu, chóng mặt hoặc sụt cân: liên hệ nơi đang khám sớm.",
+    sources: [
+      {
+        label: "ACOG · nghén",
+        href: "https://www.acog.org/womens-health/faqs/morning-sickness-nausea-and-vomiting-of-pregnancy"
+      },
+      {
+        label: "ACOG · dinh dưỡng",
+        href: "https://www.acog.org/womens-health/faqs/healthy-eating-during-pregnancy"
+      }
+    ]
   },
   {
     title: "Ba tháng giữa",
-    detail: "Duy trì lịch khám, ăn đa dạng và vận động ở mức đã được nhân viên y tế đồng ý; ghi lại câu hỏi thay vì tự diễn giải triệu chứng."
+    detail: "Giữ bữa ăn đa dạng; ưu tiên nguồn đạm, sắt, canxi và choline từ thực phẩm thay vì tự tăng liều viên bổ sung.",
+    foodLabel: "Gợi ý phối hợp",
+    food: "Thịt nạc, cá hoặc trứng chín, đậu và rau lá xanh; dùng cùng cam, ổi hoặc rau giàu vitamin C. Thêm sữa/sữa chua tiệt trùng, đậu phụ và cá ít thủy ngân.",
+    drink: "Nước lọc là chính; sữa tiệt trùng hoặc đồ uống tăng cường canxi phù hợp nếu không dung nạp sữa. Tránh để nước ngọt thay nước lọc.",
+    comfortLabel: "Đổi món trong tuần",
+    comfort: "Chọn 2–3 khẩu phần cá ít thủy ngân mỗi tuần, mỗi lần khoảng một lòng bàn tay; đổi loại cá và luôn nấu chín kỹ.",
+    warning: "Thiếu máu, đái tháo đường thai kỳ, tăng huyết áp, đa thai hoặc dị ứng cần kế hoạch riêng từ bác sĩ/chuyên gia dinh dưỡng.",
+    sources: [
+      {
+        label: "ACOG · dinh dưỡng",
+        href: "https://www.acog.org/womens-health/faqs/healthy-eating-during-pregnancy"
+      },
+      {
+        label: "FDA/EPA · chọn cá",
+        href: "https://www.fda.gov/food/consumers/advice-about-eating-fish"
+      }
+    ]
   },
   {
     title: "Ba tháng cuối",
-    detail: "Chuẩn bị kế hoạch đi sinh, số liên hệ và túi cần mang; trao đổi cách theo dõi cử động thai phù hợp với hướng dẫn của nơi đang khám."
+    detail: "Giữ chất lượng bữa ăn nhưng chia nhỏ nếu nhanh no hoặc ợ nóng; tiếp tục đạm, sắt, canxi, rau quả và ngũ cốc phù hợp.",
+    foodLabel: "Món vừa bụng",
+    food: "Cháo cá hoặc thịt chín, canh rau, cơm với đậu phụ/trứng chín, sữa chua tiệt trùng và trái cây đã rửa sạch; điều chỉnh lượng theo cảm giác no.",
+    drink: "Uống nước đều giữa các bữa thay vì dồn nhiều một lúc. Giảm đồ uống có caffeine, có gas hoặc quá ngọt nếu chúng làm ợ nóng nặng hơn.",
+    comfortLabel: "Khi ợ nóng",
+    comfort: "Chia thành bữa nhỏ, ngồi thẳng khi ăn và sau ăn; tránh ăn trong khoảng 3 giờ trước khi ngủ và giảm đúng món kích hoạt triệu chứng của Mẹ Ngân.",
+    warning: "Ợ nóng kéo dài, nôn nhiều hoặc không ăn uống được cần được nơi đang khám đánh giá; không tự mua thuốc dạ dày.",
+    sources: [
+      {
+        label: "NHS · ợ nóng",
+        href: "https://www.nhs.uk/pregnancy/common-symptoms/indigestion-and-heartburn/"
+      },
+      {
+        label: "ACOG · dinh dưỡng",
+        href: "https://www.acog.org/womens-health/faqs/healthy-eating-during-pregnancy"
+      }
+    ]
   }
 ] as const;
 

@@ -1,6 +1,6 @@
 # Nguồn nội dung “Mẹ bầu hôm nay”
 
-**Ngày rà soát:** 2026-09-01
+**Ngày rà soát:** 2026-09-02
 **Phạm vi:** Checklist hằng ngày, thực đơn Việt Nam tham khảo, cẩm nang nên làm
 – nên hạn chế – nên tránh, an toàn thực phẩm và lựa chọn phần mềm miễn phí/mã
 nguồn mở.
@@ -15,6 +15,14 @@ nguồn mở.
 - Cẩm nang phân biệt điều cần tránh có bằng chứng với kiêng khem truyền miệng.
   Không mặc định cấm đồ cay, chua hay các loại hạt; chỉ giảm khi gây khó chịu,
   có dị ứng hoặc nhân viên y tế yêu cầu. Không cổ vũ “ăn cho hai”.
+- Gợi ý theo ba tam cá nguyệt không tạo ba chế độ ăn cứng. Quy tắc an toàn thực
+  phẩm áp dụng suốt thai kỳ; nội dung theo giai đoạn chủ yếu thay đổi theo triệu
+  chứng và khả năng ăn uống: bữa nhỏ khi nghén ở đầu thai kỳ, bữa đa dạng giàu
+  đạm/sắt/canxi/choline ở giữa thai kỳ, và bữa nhỏ hơn khi nhanh no hoặc ợ nóng
+  ở cuối thai kỳ.
+- Ví dụ món Việt chỉ là cách ghép các nhóm thực phẩm được nguồn chính thống nêu,
+  không phải đơn điều trị. EmBe không tự tăng liều vitamin, không đặt khẩu phần
+  cho người có đái tháo đường thai kỳ, thiếu máu, tăng huyết áp, đa thai hoặc dị ứng.
 - Ngày dự sinh và trạng thái checklist được lưu qua API riêng tư, chỉ server có
   quyền gọi Supabase. Trình duyệt vẫn giữ một bản cục bộ để dùng khi mất mạng và
   tự đồng bộ lại; GA4 không nhận các giá trị này.
@@ -30,6 +38,20 @@ nguồn mở.
   phẩm chuẩn hóa; API miễn phí nhưng cần key và dữ liệu Việt Nam hạn chế.
 
 ## Nguồn y tế
+
+- [Healthy Eating During Pregnancy](https://www.acog.org/womens-health/faqs/healthy-eating-during-pregnancy),
+  ACOG, cập nhật 03-2026: ăn đa dạng, không ăn gấp đôi; ưu tiên nguồn thực phẩm
+  cho folate, sắt, canxi, iodine, choline và các chất dinh dưỡng khác; không tự
+  tăng liều prenatal vitamin.
+- [Morning Sickness: Nausea and Vomiting of Pregnancy](https://www.acog.org/womens-health/faqs/morning-sickness-nausea-and-vomiting-of-pregnancy),
+  ACOG: có thể thử 5–6 bữa nhỏ, món nhạt dễ tiêu và uống đều; không giữ được nước,
+  tiểu ít/sẫm màu, chóng mặt hoặc sụt cân là lý do liên hệ nơi chăm sóc sớm.
+- [Advice about Eating Fish](https://www.fda.gov/food/consumers/advice-about-eating-fish),
+  FDA/EPA: người mang thai hoặc cho con bú chọn 2–3 khẩu phần mỗi tuần từ nhóm cá
+  ít thủy ngân; mỗi khẩu phần người lớn khoảng 4 oz, tương đương một lòng bàn tay.
+- [Preventing Listeria Infection](https://www.cdc.gov/listeria/prevention/index.html),
+  CDC, cập nhật 31-01-2025: thịt nguội/xúc xích cần hâm đến nóng bốc hơi; tránh
+  hải sản hun khói bảo quản lạnh, salad trộn sẵn và rau mầm sống ở nhóm nguy cơ cao.
 
 - [WHO recommendations on antenatal care](https://www.who.int/publications/i/item/9789241549912),
   WHO, 2016 và các cập nhật liên quan: chăm sóc trước sinh, ăn đa dạng, hoạt động
@@ -86,3 +108,14 @@ nguồn mở.
 Checklist không được dùng để trì hoãn khám. Nội dung công khai khác nhau theo
 quốc gia và có thể được cập nhật; cần rà soát nguồn mỗi quý và khi bác sĩ thay
 đổi khuyến nghị cá nhân.
+
+## Sổ đối chiếu tuyên bố chính
+
+| Tuyên bố dùng trong EmBe | Nguồn chính | Độ tin cậy / giới hạn |
+|---|---|---|
+| Bữa nhỏ có thể giúp khi nghén | ACOG Morning Sickness; NHS Morning Sickness | Cao; là mẹo hỗ trợ, không thay điều trị |
+| Bữa nhỏ và tránh ăn sát giờ ngủ có thể giảm ợ nóng | NHS Indigestion and Heartburn | Cao; món kích hoạt khác nhau từng người |
+| 2–3 khẩu phần cá ít thủy ngân mỗi tuần | FDA/EPA Advice about Eating Fish | Cao; tên cá địa phương cần xác định đúng loài |
+| Caffeine tối đa 200 mg/ngày | NHS Foods to Avoid; ACOG Having a Baby | Cao; phải cộng từ mọi nguồn |
+| Không có mức rượu bia an toàn đã biết | CDC Alcohol and Pregnancy | Cao |
+| Quy tắc sống/tái/chưa tiệt trùng và Listeria | CDC Safer Food Choices; CDC Listeria | Cao; áp dụng suốt thai kỳ |
