@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
 import { Icon, type IconName } from "../../components/embe-icon";
+import { readDeviceRole, type DeviceRole } from "../../lib/device-preferences";
+import { enqueueJournal, flushJournalQueue, type JournalQueueItem } from "../../lib/journal-offline";
 import { sendFamilyPhoto } from "../../lib/photo-upload-client";
 import { useFamilyStage } from "../../lib/use-family-stage";
 
@@ -37,6 +39,17 @@ const pregnancyHelp = [
 ];
 
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const ASSISTANT_POLL_INTERVAL_MS = 2_000;
+const ASSISTANT_MAX_WAIT_MS = 180_000;
+const JOURNAL_CONTENT_MAX_LENGTH = 1_000;
+
+function conversationJournalContent(question: string, answer: string, authorRole: DeviceRole): string {
+  const authorName = authorRole === "father" ? "Ba Hiếu" : "Mẹ Ngân";
+  const prefix = `Trò chuyện cùng EmBe\n${authorName} hỏi: ${question}\nEmBe trả lời: `;
+  const available = Math.max(0, JOURNAL_CONTENT_MAX_LENGTH - prefix.length);
+  if (answer.length <= available) return `${prefix}${answer}`;
+  return `${prefix}${answer.slice(0, Math.max(0, available - 1)).trimEnd()}…`;
+}
 
 export default function AssistantPage() {
   const { postpartum } = useFamilyStage();
@@ -48,6 +61,8 @@ export default function AssistantPage() {
     id: "welcome", role: "assistant", text: "Mẹ Ngân có thể hỏi bằng chữ hoặc chạm micro để nói. EmBe sẽ trả lời ngắn gọn và không thay bác sĩ."
   }]);
   const [chatState, setChatState] = useState<"ready" | "sending" | "error">("ready");
+  const [chatError, setChatError] = useState("");
+  const [journalState, setJournalState] = useState<"idle" | "saving" | "saved" | "queued" | "error">("idle");
   const [listening, setListening] = useState(false);
   const [media, setMedia] = useState<{ file: File; kind: "image" | "video"; url: string } | null>(null);
   const [mediaProgress, setMediaProgress] = useState(0);
@@ -57,6 +72,20 @@ export default function AssistantPage() {
 
   useEffect(() => () => { mediaUrlsRef.current.forEach((url) => URL.revokeObjectURL(url)); }, []);
   useEffect(() => { chatEndRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" }); }, [messages, chatState]);
+  useEffect(() => {
+    let active = true;
+    async function flushPendingJournal(): Promise<void> {
+      if (!navigator.onLine) return;
+      const result = await flushJournalQueue(localStorage);
+      if (active && result.accepted > 0) setJournalState("saved");
+    }
+    void flushPendingJournal();
+    window.addEventListener("online", flushPendingJournal);
+    return () => {
+      active = false;
+      window.removeEventListener("online", flushPendingJournal);
+    };
+  }, []);
 
   async function requestAssistant(topic: Topic | "hoi-dap", directQuestion?: string): Promise<string> {
     const submitted = await fetch("/api/assistant", {
@@ -65,8 +94,9 @@ export default function AssistantPage() {
     });
     if (!submitted.ok) throw new Error("assistant unavailable");
     const { id } = await submitted.json() as { id: string };
-    for (let attempt = 0; attempt < 50; attempt += 1) {
-      if (attempt > 0) await pause(1000);
+    const maxAttempts = Math.ceil(ASSISTANT_MAX_WAIT_MS / ASSISTANT_POLL_INTERVAL_MS) + 1;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (attempt > 0) await pause(ASSISTANT_POLL_INTERVAL_MS);
       const response = await fetch(`/api/assistant?id=${encodeURIComponent(id)}`, { cache: "no-store" });
       if (!response.ok) throw new Error("assistant unavailable");
       const result = await response.json() as { status: string; answer?: string };
@@ -74,6 +104,39 @@ export default function AssistantPage() {
       if (result.status === "failed") throw new Error("assistant failed");
     }
     throw new Error("assistant timeout");
+  }
+
+  async function saveConversationToJournal(text: string, response: string, authorRole: DeviceRole): Promise<void> {
+    const queuedItem: JournalQueueItem = {
+      content: conversationJournalContent(text, response, authorRole),
+      authorRole,
+      idempotencyKey: crypto.randomUUID(),
+      savedAt: Date.now()
+    };
+    setJournalState("saving");
+    try {
+      const saved = await fetch("/api/journal", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(queuedItem)
+      });
+      if (saved.ok) {
+        setJournalState("saved");
+        return;
+      }
+      if (saved.status === 400) {
+        setJournalState("error");
+        return;
+      }
+      throw new Error("journal unavailable");
+    } catch {
+      try {
+        enqueueJournal(localStorage, queuedItem);
+        setJournalState("queued");
+      } catch {
+        setJournalState("error");
+      }
+    }
   }
 
   async function ask(topic: Topic) {
@@ -92,10 +155,13 @@ export default function AssistantPage() {
     const text = question.trim();
     if (!text || chatState === "sending") return;
     const currentMedia = media;
+    const authorRole = readDeviceRole(localStorage) ?? "mother";
     setQuestion("");
     setMedia(null);
     setMediaProgress(0);
     setChatState("sending");
+    setChatError("");
+    setJournalState("idle");
     setMessages((current) => [...current, {
       id: crypto.randomUUID(), role: "user", text,
       ...(currentMedia ? { media: { kind: currentMedia.kind, url: currentMedia.url } } : {})
@@ -103,16 +169,18 @@ export default function AssistantPage() {
     try {
       if (currentMedia) {
         await sendFamilyPhoto({
-          authorRole: "mother", caption: `Từ Trợ lý: ${text}`.slice(0, 180), file: currentMedia.file,
+          authorRole, caption: `Từ Trợ lý: ${text}`.slice(0, 180), file: currentMedia.file,
           idempotencyKey: crypto.randomUUID(), onProgress: setMediaProgress
         });
       }
       const response = await requestAssistant("hoi-dap", text);
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", text: response }]);
       setChatState("ready");
+      await saveConversationToJournal(text, response, authorRole);
     } catch {
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", text: "Máy nhà chưa trả lời được lúc này. Mẹ Ngân có thể thử lại sau; nội dung vừa nhập không bị đăng công khai." }]);
       setChatState("error");
+      setChatError("Máy nhà chưa trả lời được. Hãy giữ trang mở một lát rồi thử gửi lại.");
     }
   }
 
@@ -128,6 +196,7 @@ export default function AssistantPage() {
     const Recognition = browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition;
     if (!Recognition) {
       setChatState("error");
+      setChatError("Safari chưa cho phép nhập bằng giọng nói. Mẹ Ngân vẫn có thể nhập bằng bàn phím.");
       return;
     }
     const recognition = new Recognition();
@@ -135,10 +204,14 @@ export default function AssistantPage() {
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.onresult = (event) => setQuestion((current) => `${current}${current ? " " : ""}${event.results[0]?.[0]?.transcript ?? ""}`.trim());
-    recognition.onerror = () => setChatState("error");
+    recognition.onerror = () => {
+      setChatState("error");
+      setChatError("Safari chưa nhận được giọng nói. Hãy kiểm tra quyền micro hoặc nhập bằng bàn phím.");
+    };
     recognition.onend = () => { setListening(false); recognitionRef.current = null; };
     recognitionRef.current = recognition;
     setChatState("ready");
+    setChatError("");
     setListening(true);
     recognition.start();
   }
@@ -147,6 +220,7 @@ export default function AssistantPage() {
     if (!file) return;
     if (file.size > 25_000_000 || !(file.type.startsWith("image/") || file.type === "video/mp4" || file.type === "video/quicktime")) {
       setChatState("error");
+      setChatError("Ảnh hoặc video cần đúng định dạng và không quá 25 MB.");
       return;
     }
     if (media) {
@@ -157,6 +231,7 @@ export default function AssistantPage() {
     mediaUrlsRef.current.push(url);
     setMedia({ file, kind: file.type.startsWith("video/") ? "video" : "image", url });
     setChatState("ready");
+    setChatError("");
   }
 
   function clearMedia(): void {
@@ -201,8 +276,12 @@ export default function AssistantPage() {
             <button className="assistant-send" type="submit" disabled={!question.trim() || chatState === "sending"} aria-label="Gửi câu hỏi"><Icon name="arrow" /></button>
           </div>
         </form>
+        {journalState === "saving" ? <p className="assistant-journal-status" role="status">Đang lưu cuộc trò chuyện vào nhật ký…</p> : null}
+        {journalState === "saved" ? <p className="assistant-journal-status is-saved" role="status">Đã lưu cuộc trò chuyện vào nhật ký.</p> : null}
+        {journalState === "queued" ? <p className="assistant-journal-status" role="status">Đã giữ cuộc trò chuyện, sẽ tự lưu vào nhật ký khi có mạng.</p> : null}
+        {journalState === "error" ? <p className="assistant-journal-status is-error" role="alert">Chưa lưu được nhật ký. Câu trả lời vẫn còn trên màn hình để Mẹ Ngân sao chép.</p> : null}
         <p className="assistant-chat-note">Micro chuyển lời nói thành chữ; EmBe không lưu file ghi âm. Ảnh/video tối đa 25 MB được lưu riêng vào kỷ niệm, AI chỉ trả lời phần chữ.</p>
-        {chatState === "error" ? <p className="assistant-error" role="alert">Nếu micro không mở được, hãy cho Safari quyền dùng micro hoặc nhập bằng bàn phím. Ảnh/video cần đúng định dạng và không quá 25 MB.</p> : null}
+        {chatState === "error" && chatError ? <p className="assistant-error" role="alert">{chatError}</p> : null}
       </section>
       <section className="assistant-topics pregnancy-help" aria-label={postpartum ? "Hỗ trợ Mẹ và Bé" : "Hỗ trợ thai kỳ"}>
         {(postpartum ? [

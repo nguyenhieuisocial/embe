@@ -3013,6 +3013,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .assistant-voice.is-listening { animation: assistant-record 1.2s ease-in-out infinite; background: var(--coral-soft); }
 .assistant-send { background: var(--coral); color: white; }
 .assistant-send:disabled { opacity: .35; }
+.assistant-journal-status { color: var(--ink-soft); font-size: .72rem; line-height: 1.4; padding: 0 3px; }
+.assistant-journal-status.is-saved { color: var(--jade); }
+.assistant-journal-status.is-error { color: var(--coral); }
 .assistant-chat-note { color: var(--ink-soft); font-size: .7rem; line-height: 1.45; padding: 0 3px; }
 @keyframes assistant-record { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--coral) 12%, transparent); } }
 
