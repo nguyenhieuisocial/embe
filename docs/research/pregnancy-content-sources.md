@@ -91,6 +91,22 @@ nguồn mở.
 - [Water, drinks and hydration](https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/water-drinks-nutrition/),
   NHS: uống đều trong ngày; nhu cầu thay đổi khi mang thai, vận động, thời tiết
   và tình trạng sức khỏe, nên Portal không đặt mục tiêu cốc cố định.
+- [Early Pregnancy Loss](https://www.acog.org/womens-health/faqs/early-pregnancy-loss),
+  ACOG: đi làm, vận động, căng thẳng, tranh cãi và quan hệ tình dục không phải
+  nguyên nhân của sảy thai sớm. Dặn riêng cho thai kỳ có biến chứng vẫn được ưu tiên.
+- [High-Risk Pregnancy and Bed Rest](https://www.acog.org/womens-health/experts-and-stories/the-latest/so-you-have-a-high-risk-pregnancy-heres-what-to-expect),
+  ACOG: nghỉ tuyệt đối thường quy không chứng minh ngăn biến chứng; bất động kéo
+  dài có rủi ro huyết khối và sức khỏe tinh thần. Không áp dụng cho chỉ định cá nhân.
+- [Travel During Pregnancy](https://www.acog.org/womens-health/faqs/travel-during-pregnancy),
+  ACOG: thai kỳ bình thường thường vẫn có thể đi lại; cần cá nhân hóa theo tuổi thai,
+  biến chứng và giảm bất động trong hành trình dài.
+- [Can I use a sauna or hot tub early in pregnancy?](https://www.acog.org/womens-health/experts-and-stories/ask-acog/can-i-use-a-sauna-or-hot-tub-early-in-pregnancy),
+  ACOG: nên tránh sauna và bồn nước nóng, đặc biệt đầu thai kỳ, vì làm tăng thân nhiệt.
+- [About Toxoplasmosis](https://www.cdc.gov/toxoplasmosis/about/), CDC: không cần
+  cho mèo đi; ưu tiên người khác dọn khay cát, hoặc dùng găng và rửa tay nếu phải làm.
+- [Medicines in pregnancy](https://www.nhs.uk/pregnancy/keeping-well/medicines/),
+  NHS, cập nhật 23-09-2025: “tự nhiên” không đồng nghĩa an toàn; không tự dừng
+  thuốc đã kê và trị liệu bổ sung không thay chăm sóc trước sinh.
 
 ## Công cụ và dữ liệu đã đánh giá
 
@@ -119,3 +135,10 @@ quốc gia và có thể được cập nhật; cần rà soát nguồn mỗi qu
 | Caffeine tối đa 200 mg/ngày | NHS Foods to Avoid; ACOG Having a Baby | Cao; phải cộng từ mọi nguồn |
 | Không có mức rượu bia an toàn đã biết | CDC Alcohol and Pregnancy | Cao |
 | Quy tắc sống/tái/chưa tiệt trùng và Listeria | CDC Safer Food Choices; CDC Listeria | Cao; áp dụng suốt thai kỳ |
+| Không cần ăn gấp đôi khẩu phần | ACOG Healthy Eating | Cao; nhu cầu năng lượng vẫn cá nhân hóa |
+| Đi làm, vận động và quan hệ không gây sảy thai sớm | ACOG Early Pregnancy Loss | Cao cho thai kỳ nói chung; làm theo dặn riêng khi có biến chứng |
+| Không tự áp dụng nghỉ tuyệt đối | ACOG High-Risk Pregnancy | Cao; chỉ bác sĩ theo dõi mới quyết định hạn chế cá nhân |
+| Không cần cho mèo đi | CDC Toxoplasmosis | Cao; vẫn phải kiểm soát khay cát, đất và thực phẩm |
+| Thuốc nam/thảo dược không mặc nhiên an toàn | NHS Medicines in Pregnancy | Cao; thành phần và tương tác phải được kiểm tra |
+| Tránh sauna, bồn nước nóng và xông làm tăng thân nhiệt | ACOG Sauna/Hot Tub | Trung bình–cao; đặc biệt quan trọng đầu thai kỳ |
+| Dáng bụng, món thèm không dùng để dự đoán đặc điểm em bé | Không có trong khuyến cáo y tế được đối chiếu | Chỉ ghi là quan niệm vui; không dùng để quyết định chăm sóc |

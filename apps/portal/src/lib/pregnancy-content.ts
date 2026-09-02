@@ -313,6 +313,89 @@ export const pregnancyGuidanceLevels = [
   { id: "avoid", title: "Nên tránh", mark: "×" }
 ] as const;
 
+export const folkPracticeLevels = [
+  {
+    id: "keep",
+    title: "Có thể giữ",
+    mark: "♡",
+    detail: "Phong tục hoặc cách chăm sóc khiến Mẹ thấy dễ chịu, miễn là không ép buộc, không tốn kém quá mức và không thay chỉ dẫn y tế.",
+    examples: "Một nghi thức gia đình nhẹ nhàng, lời chúc, vật kỷ niệm hoặc món quen đã được nấu an toàn."
+  },
+  {
+    id: "fun",
+    title: "Chỉ để vui",
+    mark: "✦",
+    detail: "Đoán giới tính qua dáng bụng, món thèm hay dùng món ăn để đoán da, tóc, chiều cao của bé không phải căn cứ y khoa.",
+    examples: "Có thể lưu như câu chuyện gia đình, nhưng không dùng để đổi chế độ ăn, bỏ xét nghiệm hoặc quyết định chăm sóc."
+  },
+  {
+    id: "avoid",
+    title: "Không nên làm",
+    mark: "!",
+    detail: "Không uống thuốc nam, rượu thuốc hay sản phẩm không rõ thành phần; không xông hoặc ngâm quá nóng; không kiêng khem cực đoan.",
+    examples: "Không tự dừng thuốc đã kê và không trì hoãn liên hệ nơi đang khám để thử mẹo dân gian trước."
+  }
+] as const;
+
+export const pregnancyMyths = [
+  {
+    id: "eat-for-two",
+    question: "Phải “ăn cho hai”?",
+    answer: "Không. Mục tiêu là ăn đa dạng và vừa sức, không tăng gấp đôi khẩu phần. Nhu cầu cụ thể thay đổi theo giai đoạn và hồ sơ sức khỏe.",
+    sourceLabel: "ACOG — ăn uống lành mạnh",
+    sourceHref: "https://www.acog.org/womens-health/faqs/healthy-eating-during-pregnancy"
+  },
+  {
+    id: "blanket-food-bans",
+    question: "Phải kiêng mọi món chua, cay, dứa, nước dừa và các loại hạt?",
+    answer: "Không có một lệnh cấm chung như vậy trong hướng dẫn thực phẩm chính thống. Giảm món làm Mẹ khó chịu; các loại hạt dùng được nếu không dị ứng. Vẫn ưu tiên danh sách an toàn thực phẩm và dặn riêng của nơi khám.",
+    sourceLabel: "NHS — thực phẩm cần tránh",
+    sourceHref: "https://www.nhs.uk/pregnancy/keeping-well/foods-to-avoid/"
+  },
+  {
+    id: "miscarriage-blame",
+    question: "Đi làm, vận động hoặc quan hệ gây sảy thai?",
+    answer: "Những sinh hoạt này không phải nguyên nhân của sảy thai sớm. Nếu đang ra máu, đau, có biến chứng hoặc được nơi khám dặn hạn chế, cần làm theo chỉ dẫn riêng.",
+    sourceLabel: "ACOG — sảy thai sớm",
+    sourceHref: "https://www.acog.org/womens-health/faqs/early-pregnancy-loss"
+  },
+  {
+    id: "cat",
+    question: "Có mèo thì phải cho đi?",
+    answer: "Không. Trọng tâm là tránh trực tiếp dọn phân mèo, đeo găng khi làm vườn hoặc tiếp xúc đất và rửa tay kỹ; đồng thời ăn thịt chín và rửa rau quả.",
+    sourceLabel: "CDC — phòng toxoplasmosis",
+    sourceHref: "https://www.cdc.gov/toxoplasmosis/about/"
+  },
+  {
+    id: "bed-rest",
+    question: "Phải nằm yên để giữ thai?",
+    answer: "Không nên tự nằm bất động kéo dài. Nghỉ khi mệt là hợp lý, nhưng hạn chế hoạt động hoặc nằm nghỉ tuyệt đối chỉ theo chỉ định cá nhân của bác sĩ.",
+    sourceLabel: "ACOG — nghỉ tuyệt đối và thai kỳ nguy cơ cao",
+    sourceHref: "https://www.acog.org/womens-health/experts-and-stories/the-latest/so-you-have-a-high-risk-pregnancy-heres-what-to-expect"
+  },
+  {
+    id: "herbal-is-safe",
+    question: "Thuốc nam và thảo dược luôn an toàn?",
+    answer: "Không. “Tự nhiên” không đồng nghĩa an toàn, sản phẩm có thể tương tác với thuốc hoặc không rõ thành phần. Hỏi bác sĩ, nữ hộ sinh hay dược sĩ trước khi dùng.",
+    sourceLabel: "NHS — thuốc trong thai kỳ",
+    sourceHref: "https://www.nhs.uk/pregnancy/keeping-well/medicines/"
+  },
+  {
+    id: "heat",
+    question: "Xông nóng hoặc ngâm bồn thật nóng giúp khỏe hơn?",
+    answer: "Không nên. Sauna, bồn nước nóng và xông làm tăng thân nhiệt, đặc biệt cần tránh ở đầu thai kỳ. Chọn tắm ấm vừa phải và dừng nếu chóng mặt hoặc khó chịu.",
+    sourceLabel: "ACOG — sauna và bồn nước nóng",
+    sourceHref: "https://www.acog.org/womens-health/experts-and-stories/ask-acog/can-i-use-a-sauna-or-hot-tub-early-in-pregnancy"
+  },
+  {
+    id: "travel",
+    question: "Mang thai là phải kiêng đi xa hoàn toàn?",
+    answer: "Không phải với mọi thai kỳ. Khi thai kỳ bình thường, đi lại thường vẫn được; thời điểm, quãng đường và biện pháp phòng huyết khối cần được cá nhân hóa với nơi khám.",
+    sourceLabel: "ACOG — đi lại khi mang thai",
+    sourceHref: "https://www.acog.org/womens-health/faqs/travel-during-pregnancy"
+  }
+] as const;
+
 export const pregnancySources = [
   {
     label: "ACOG — ăn uống lành mạnh trong thai kỳ",
@@ -373,6 +456,22 @@ export const pregnancySources = [
   {
     label: "ACOG — vận động trong thai kỳ",
     href: "https://www.acog.org/womens-health/faqs/exercise-during-pregnancy"
+  },
+  {
+    label: "ACOG — sảy thai sớm và những điều không phải nguyên nhân",
+    href: "https://www.acog.org/womens-health/faqs/early-pregnancy-loss"
+  },
+  {
+    label: "ACOG — nghỉ tuyệt đối và hạn chế hoạt động",
+    href: "https://www.acog.org/womens-health/experts-and-stories/the-latest/so-you-have-a-high-risk-pregnancy-heres-what-to-expect"
+  },
+  {
+    label: "ACOG — đi lại trong thai kỳ",
+    href: "https://www.acog.org/womens-health/faqs/travel-during-pregnancy"
+  },
+  {
+    label: "ACOG — sauna và bồn nước nóng",
+    href: "https://www.acog.org/womens-health/experts-and-stories/ask-acog/can-i-use-a-sauna-or-hot-tub-early-in-pregnancy"
   },
   {
     label: "NHS — vận động trong thai kỳ",

@@ -2167,6 +2167,63 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 .guidance-myth p { color: var(--ink-soft); font-size: .875rem; }
 
+.folk-body { gap: 12px; }
+.folk-levels { display: grid; gap: 8px; }
+.folk-level {
+  align-items: start;
+  background: color-mix(in srgb, var(--rose-soft) 42%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--rose) 18%, var(--line));
+  border-radius: var(--radius);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  padding: 11px;
+}
+.folk-level > span {
+  align-items: center;
+  background: var(--surface);
+  border-radius: 50%;
+  color: var(--rose);
+  display: flex;
+  font-size: .8125rem;
+  font-weight: 750;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+.folk-level > div { display: grid; gap: 3px; }
+.folk-level h3 { font-size: .9rem; line-height: 1.25; }
+.folk-level p { color: var(--ink-soft); font-size: .8rem; line-height: 1.45; }
+.folk-level small { color: var(--ink-soft); font-size: .72rem; line-height: 1.4; }
+.folk-level.is-fun { background: color-mix(in srgb, var(--sun-soft) 46%, var(--surface)); border-color: color-mix(in srgb, var(--sun-ink) 16%, var(--line)); }
+.folk-level.is-fun > span { color: var(--sun-ink); }
+.folk-level.is-avoid { background: color-mix(in srgb, var(--coral-soft) 34%, var(--surface)); border-color: color-mix(in srgb, var(--coral) 18%, var(--line)); }
+.folk-level.is-avoid > span { color: var(--coral); }
+.folk-myths { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.folk-myth + .folk-myth { border-top: 1px solid var(--line); }
+.folk-myth > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  list-style: none;
+  min-height: 48px;
+  padding: 9px 11px;
+  -webkit-tap-highlight-color: transparent;
+}
+.folk-myth > summary::-webkit-details-marker { display: none; }
+.folk-myth > summary strong { font-size: .8375rem; font-weight: 650; line-height: 1.35; }
+.folk-myth > summary i { color: var(--rose); flex: none; font-style: normal; transition: transform 160ms ease; }
+.folk-myth[open] > summary { background: var(--paper); }
+.folk-myth[open] > summary i { transform: rotate(180deg); }
+.folk-myth > div { display: grid; gap: 6px; padding: 0 11px 11px; }
+.folk-myth > div p { color: var(--ink-soft); font-size: .8rem; line-height: 1.5; }
+.folk-myth > div a { align-items: center; color: var(--jade); display: inline-flex; font-size: .75rem; font-weight: 650; min-height: 44px; text-decoration: none; }
+.folk-safety { background: var(--coral-soft); border-radius: var(--radius); display: grid; gap: 3px; padding: 11px 12px; }
+.folk-safety strong { color: var(--coral); font-size: .8375rem; }
+.folk-safety p { color: var(--ink-soft); font-size: .78rem; line-height: 1.45; }
+
 .menu-scroll {
   display: grid;
   gap: 8px;

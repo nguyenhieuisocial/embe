@@ -97,6 +97,16 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Không rượu bia")).toBeInTheDocument();
     expect(screen.getByText("Không tự dùng thuốc, thảo dược hoặc vi chất")).toBeInTheDocument();
     expect(screen.getByText(/Không cần “kiêng” mọi món theo truyền miệng/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Mẹo dân gian: điều nào nên tin?" })).toBeInTheDocument();
+    expect(screen.getByText("Có thể giữ")).toBeInTheDocument();
+    expect(screen.getByText("Chỉ để vui")).toBeInTheDocument();
+    expect(screen.getByText("Không nên làm")).toBeInTheDocument();
+    expect(screen.getByText("Phải “ăn cho hai”?")).toBeInTheDocument();
+    expect(screen.getByText("Có mèo thì phải cho đi?")).toBeInTheDocument();
+    expect(screen.getByText("Phải nằm yên để giữ thai?")).toBeInTheDocument();
+    expect(screen.getByText("Thuốc nam và thảo dược luôn an toàn?")).toBeInTheDocument();
+    expect(screen.getByText(/không tự dừng thuốc đã kê/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/không trì hoãn liên hệ nơi đang khám/i)).toHaveLength(2);
     const stageNutrition = screen.getByRole("region", { name: "Ăn uống theo giai đoạn" });
     expect(within(stageNutrition).getByRole("heading", { name: "Ăn uống theo giai đoạn" })).toBeInTheDocument();
     expect(within(stageNutrition).getByText("Món dễ bắt đầu")).toBeInTheDocument();
@@ -162,6 +172,7 @@ describe("pregnancy daily page", () => {
     expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" }).closest("details")).not.toHaveAttribute("open");
     expect(screen.getByText("Xem biểu đồ và lịch sử").closest("details")).not.toHaveAttribute("open");
     expect(screen.getByRole("heading", { name: "Nên ăn gì, hạn chế gì, kiêng gì?" }).closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("heading", { name: "Mẹo dân gian: điều nào nên tin?" }).closest("details")).not.toHaveAttribute("open");
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" }).closest("details")).not.toHaveAttribute("open");
   });
 

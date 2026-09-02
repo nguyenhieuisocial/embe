@@ -13,8 +13,10 @@ import MealPhotoTracker from "../../components/meal-photo-tracker";
 import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
 import {
   dailyChecklist,
+  folkPracticeLevels,
   pregnancyGuidance,
   pregnancyGuidanceLevels,
+  pregnancyMyths,
   pregnancySources,
   trimesterGuides,
   urgentCareReminders,
@@ -490,6 +492,53 @@ export default function PregnancyPage() {
             <aside className="guidance-myth">
               <strong>Không cần “kiêng” mọi món theo truyền miệng</strong>
               <p>Đồ cay hoặc chua chỉ cần giảm nếu làm Mẹ Ngân khó chịu. Các loại hạt vẫn dùng được nếu không dị ứng và bác sĩ không dặn tránh. Cũng không cần “ăn cho hai”.</p>
+            </aside>
+          </div>
+        </details>
+      </section>
+
+      <section className="folk-section" id="meo-dan-gian" aria-labelledby="folk-title">
+        <details className="reference-disclosure">
+          <summary className="section-heading-row">
+            <div>
+              <p className="panel-kicker">Giữ nét nhà mình, vẫn an toàn</p>
+              <h2 id="folk-title">Mẹo dân gian: điều nào nên tin?</h2>
+            </div>
+            <i aria-hidden="true">⌄</i>
+          </summary>
+          <div className="reference-disclosure-body folk-body">
+            <p className="reference-intro">Mẹo chỉ nên giúp Mẹ Ngân dễ chịu hơn, không thay khám thai, thuốc đã kê hoặc hướng dẫn riêng của bác sĩ.</p>
+            <div className="folk-levels">
+              {folkPracticeLevels.map((level) => (
+                <article className={`folk-level is-${level.id}`} key={level.id}>
+                  <span aria-hidden="true">{level.mark}</span>
+                  <div>
+                    <h3>{level.title}</h3>
+                    <p>{level.detail}</p>
+                    <small>{level.examples}</small>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="folk-myths" aria-label="Giải đáp quan niệm dân gian thường gặp">
+              {pregnancyMyths.map((myth) => (
+                <details className="folk-myth" key={myth.id}>
+                  <summary>
+                    <strong>{myth.question}</strong>
+                    <i aria-hidden="true">⌄</i>
+                  </summary>
+                  <div>
+                    <p>{myth.answer}</p>
+                    <a href={myth.sourceHref} rel="noreferrer" target="_blank">{myth.sourceLabel} ↗</a>
+                  </div>
+                </details>
+              ))}
+            </div>
+
+            <aside className="folk-safety">
+              <strong>Khi có dấu hiệu lạ</strong>
+              <p>Không trì hoãn liên hệ nơi đang khám để thử mẹo trước. Ghi lại đã dùng gì, lượng bao nhiêu và thời điểm để nhân viên y tế hỗ trợ chính xác.</p>
             </aside>
           </div>
         </details>
