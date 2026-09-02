@@ -62,4 +62,21 @@ describe("private family push notification contract", () => {
     expect(sql).toContain("Thuốc/vi chất đang chờ");
     expect(sql).not.toContain("plan.name");
   });
+
+  it("queues privacy-safe family activity only for the other person", async () => {
+    const { existsSync, readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const path = join(process.cwd(), "..", "..", "supabase", "migrations", "20260902153000_add_family_activity_notifications.sql");
+    expect(existsSync(path)).toBe(true);
+    if (!existsSync(path)) return;
+    const sql = readFileSync(path, "utf8");
+    expect(sql).toContain("embe_enqueue_family_activity");
+    expect(sql).toContain("embe_claim_family_activity");
+    expect(sql).toContain("p_activity_kind NOT IN ('meal','health','medical','journal','memory','task','inventory','profile','baby')");
+    expect(sql).toContain("subscription.device_role <> source_role");
+    expect(sql).toContain("subscription.endpoint IS DISTINCT FROM p_source_endpoint");
+    expect(sql).toContain("ON CONFLICT (subscription_id, notification_key) DO NOTHING");
+    expect(sql).toContain("TO service_role");
+    expect(sql).not.toContain("p_body");
+  });
 });

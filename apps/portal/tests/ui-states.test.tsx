@@ -15,6 +15,7 @@ describe("offline and failure states", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     Reflect.deleteProperty(navigator, "onLine");
+    Reflect.deleteProperty(navigator, "serviceWorker");
   });
 
   it("keeps the offline route free of a second main-content landmark", () => {
@@ -55,6 +56,29 @@ describe("offline and failure states", () => {
     const update = await screen.findByRole("button", { name: "Cập nhật ngay" });
     expect(screen.getByRole("status")).toHaveTextContent("EmBe có bản mới");
     fireEvent.click(update);
+    expect(reload).toHaveBeenCalledWith(0);
+  });
+
+  it("offers one-tap refresh when another family phone changes data", async () => {
+    setOnline(true);
+    const serviceWorker = new EventTarget() as EventTarget & {
+      register: ReturnType<typeof vi.fn>;
+      getRegistrations: ReturnType<typeof vi.fn>;
+    };
+    serviceWorker.register = vi.fn().mockResolvedValue({ update: vi.fn() });
+    serviceWorker.getRegistrations = vi.fn().mockResolvedValue([]);
+    Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: serviceWorker });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "ok", version: "development" }), { status: 200 })));
+    const reload = vi.spyOn(window.history, "go").mockImplementation(() => undefined);
+
+    render(<PwaRuntime />);
+    serviceWorker.dispatchEvent(new MessageEvent("message", { data: {
+      type: "EMBE_FAMILY_ACTIVITY", title: "Mẹ Ngân vừa cập nhật", url: "/me-bau#bua-an"
+    } }));
+
+    const action = await screen.findByRole("button", { name: "Xem cập nhật" });
+    expect(screen.getByRole("status")).toHaveTextContent("Mẹ Ngân vừa cập nhật");
+    fireEvent.click(action);
     expect(reload).toHaveBeenCalledWith(0);
   });
 

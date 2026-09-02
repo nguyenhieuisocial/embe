@@ -11,6 +11,7 @@ vi.mock("web-push", () => ({ default: { sendNotification, setVapidDetails } }));
 import * as configRoute from "../src/app/api/notifications/config/route";
 import * as subscriptionRoute from "../src/app/api/notifications/subscriptions/route";
 import * as dispatchRoute from "../src/app/api/notifications/dispatch/route";
+import * as activityRoute from "../src/app/api/notifications/activity/route";
 
 const originalEnvironment = { ...process.env };
 function cookie() { return `embe_session=${createSessionCookie("server-secret", new Date(), "11111111-1111-4111-8111-111111111111")}`; }
@@ -79,5 +80,51 @@ describe("private family push routes", () => {
     expect(rpc).toHaveBeenCalledWith("embe_update_push_schedule", {
       p_endpoint: "https://push.example.test/device/1", p_notify_at: "19:15"
     });
+  });
+
+  it("immediately notifies the other person after a safe family update", async () => {
+    const notification = {
+      id: "22222222-2222-4222-8222-222222222222", endpoint: "https://push.example.test/device/2",
+      p256dh: "a".repeat(87), auth: "b".repeat(22), title: "Mẹ Ngân vừa cập nhật",
+      body: "Nhật ký bữa ăn có thông tin mới.", url: "/me-bau#bua-an",
+      tag: "activity:33333333-3333-4333-8333-333333333333"
+    };
+    rpc.mockResolvedValueOnce({ data: 1, error: null })
+      .mockResolvedValueOnce({ data: [notification], error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
+    sendNotification.mockResolvedValueOnce({ statusCode: 201 });
+
+    const response = await activityRoute.POST(request("https://embe.hieu.asia/api/notifications/activity", "POST", {
+      eventId: "33333333-3333-4333-8333-333333333333",
+      sourceEndpoint: "https://push.example.test/device/1",
+      pathname: "/api/meals",
+      method: "POST"
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ queued: 1, sent: 1, failed: 0 });
+    expect(rpc).toHaveBeenNthCalledWith(1, "embe_enqueue_family_activity", {
+      p_event_id: "33333333-3333-4333-8333-333333333333",
+      p_source_endpoint: "https://push.example.test/device/1",
+      p_activity_kind: "meal"
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "embe_claim_family_activity", {
+      p_event_id: "33333333-3333-4333-8333-333333333333", p_limit: 20
+    });
+    expect(sendNotification.mock.calls[0][1]).toContain("Nhật ký bữa ăn có thông tin mới.");
+    expect(sendNotification.mock.calls[0][1]).not.toContain("device/1");
+  });
+
+  it("rejects unauthenticated or unrelated mutation reports", async () => {
+    const unauthorized = await activityRoute.POST(request("https://embe.hieu.asia/api/notifications/activity", "POST", {
+      eventId: "33333333-3333-4333-8333-333333333333", pathname: "/api/meals", method: "POST"
+    }, false));
+    expect(unauthorized.status).toBe(401);
+
+    const unrelated = await activityRoute.POST(request("https://embe.hieu.asia/api/notifications/activity", "POST", {
+      eventId: "33333333-3333-4333-8333-333333333333", pathname: "/api/auth/login", method: "POST"
+    }));
+    expect(unrelated.status).toBe(204);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

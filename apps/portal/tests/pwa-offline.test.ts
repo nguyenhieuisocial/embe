@@ -26,6 +26,23 @@ describe("privacy-safe PWA runtime", () => {
     expect(source).toContain("clients.openWindow");
   });
 
+  it("reports successful family mutations without delaying the original response", () => {
+    const source = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+    expect(source).toContain("familyActivityKind");
+    expect(source).toContain('request.method !== "GET"');
+    expect(source).toContain('fetch("/api/notifications/activity"');
+    expect(source).toContain("event.respondWith(responsePromise)");
+    expect(source).toContain("event.waitUntil(");
+    expect(source).toContain('pathname.startsWith("/api/notifications/")');
+    expect(source).toContain("ACTIVITY_DEDUP_MS");
+  });
+
+  it("notifies open EmBe windows that another family device changed data", () => {
+    const source = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+    expect(source).toContain('type: "EMBE_FAMILY_ACTIVITY"');
+    expect(source).toContain("client.postMessage");
+  });
+
   it("keeps generated illustrations within the mobile performance budget", () => {
     for (const name of ["family-thread-hero.webp", "memory-album-empty.webp", "pregnancy-care.webp"]) {
       const path = join(process.cwd(), "public", "illustrations", name);

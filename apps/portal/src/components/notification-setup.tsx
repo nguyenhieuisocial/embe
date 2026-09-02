@@ -91,11 +91,11 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
     } catch { setState("error"); }
   }
 
-  const note = state === "on" ? "Đã bật trên điện thoại này. EmBe sẽ nhắc lịch khám, việc đến hạn và đồ dùng sắp hết."
+  const note = state === "on" ? "Đã bật trên điện thoại này. EmBe sẽ báo khi người còn lại cập nhật, cùng lịch khám và việc quan trọng."
     : state === "blocked" ? "Thông báo đang bị chặn trong cài đặt của iPhone."
       : state === "unsupported" ? "Trên iPhone, hãy thêm EmBe vào Màn hình chính để nhận lịch khám, việc đến hạn và đồ dùng sắp hết."
         : state === "error" ? "Chưa bật được. Hãy kiểm tra mạng rồi thử lại."
-          : "Nhận lịch khám, việc đến hạn và đồ dùng sắp hết ngay trên điện thoại.";
+          : "Biết ngay khi người còn lại cập nhật, cùng lịch khám và việc quan trọng.";
 
   return <div className="notification-setup">
     <div className="notification-copy"><strong>Thông báo trên điện thoại</strong><p>{note}</p></div>
