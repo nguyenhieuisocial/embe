@@ -1,4 +1,5 @@
 import { databaseMealAnalysis, normalizeMealAnalysis } from "../../../../lib/meal-analysis-contract";
+import { deriveMealSafetyFlags } from "../../../../lib/meal-safety";
 import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
 import { verifySessionCookie } from "../../../../lib/portal-auth";
 
@@ -46,21 +47,32 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       || Object.keys(value).some((key) => !["analysis", "note"].includes(key))) {
     return privateReply({ error: "invalid_request" }, 400);
   }
+  if (analysis.foods.some((food) => food.nameVi.trim().toLocaleLowerCase("vi") === "món cần mẹ xác nhận")) {
+    return privateReply({ error: "invalid_request" }, 400);
+  }
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
   try {
     const draft = await store.rpc("embe_get_meal_analysis", { p_id: id });
     const current = normalizeMealAnalysis((draft.data as Record<string, unknown> | null)?.analysis);
-    if (draft.error || !current || current.foods.length !== analysis.foods.length) {
+    if (draft.error || !current) {
       return privateReply({ error: "not_found" }, 404);
     }
     const confirmed = {
       ...current,
-      foods: current.foods.map((food, index) => ({
-        ...food,
-        nameVi: analysis.foods[index].nameVi,
-        estimatedGrams: analysis.foods[index].estimatedGrams
-      }))
+      foods: analysis.foods.map((food) => {
+        const unchanged = current.foods.find((candidate) => candidate.searchNameEn === food.searchNameEn
+          && candidate.nameVi === food.nameVi);
+        if (unchanged) return { ...unchanged, estimatedGrams: food.estimatedGrams };
+        const derivedSafetyFlags = deriveMealSafetyFlags(food.nameVi);
+        return {
+          ...food,
+          searchNameEn: food.nameVi,
+          confidence: 0,
+          foodGroups: ["other"],
+          safetyFlags: [...new Set([...derivedSafetyFlags, "unknown"])]
+        };
+      })
     };
     const { data, error } = await store.rpc("embe_confirm_meal_analysis", {
       p_id: id, p_confirmed_analysis: databaseMealAnalysis(confirmed), p_note: value.note.trim()

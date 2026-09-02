@@ -3561,6 +3561,10 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 }
 .meal-food-row label { display: grid; font-size: .75rem; font-weight: 600; gap: 4px; }
 .meal-food-row small { grid-column: 1 / -1; }
+.meal-add-food,
+.meal-remove-food { background: transparent; border: 0; color: var(--coral); font: inherit; font-size: .8125rem; font-weight: 700; min-height: 44px; padding: 6px 8px; }
+.meal-add-food { justify-self: start; }
+.meal-remove-food { grid-column: 1 / -1; justify-self: end; margin: 0; }
 .meal-questions { display: grid; gap: 8px; margin: 0; padding-left: 20px; }
 .meal-risk { background: var(--coral-soft); border-radius: var(--radius-sm); margin: 0; padding: 12px; }
 .meal-heading { align-items: end; }
@@ -3643,6 +3647,12 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .meal-history-detail p, .meal-history-detail ul { margin: 0; }
 .meal-history-detail ul { display: grid; gap: 4px; padding-left: 18px; }
 .meal-history-detail li { font-size: .8125rem; }
+.meal-history-editor { display: grid; gap: 10px; }
+.meal-edit-actions { align-items: center; display: flex; gap: 8px; justify-content: flex-end; }
+.meal-edit-actions > button:first-child,
+.meal-edit-saved { background: transparent; border: 0; color: var(--coral); font: inherit; font-size: .8125rem; font-weight: 700; min-height: 44px; padding: 6px 10px; }
+.meal-edit-saved { justify-self: end; }
+.meal-edit-actions .health-save { min-height: 44px; width: auto; }
 .meal-safety-note { border-top: 1px solid var(--line); padding-top: 12px; }
 
 @media (min-width: 600px) {

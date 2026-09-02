@@ -115,6 +115,79 @@ describe("private review-first meal analysis API", () => {
     expect(rpc).toHaveBeenLastCalledWith("embe_confirm_meal_analysis", expect.objectContaining({ p_id: entryId }));
   });
 
+  it("accepts foods corrected, added, or removed by the mother before confirmation", async () => {
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "review", analysis: rawAnalysis }, error: null });
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "nutrition_pending" }, error: null });
+    const corrected = {
+      ...rawAnalysis,
+      foods: [
+        { ...rawAnalysis.foods[0], name_vi: "Cơm gạo lứt", estimated_grams: 150 },
+        { name_vi: "Rau cải luộc", search_name_en: "Rau cải luộc", estimated_grams: 80,
+          confidence: 1, food_groups: ["other"], safety_flags: [] }
+      ]
+    };
+
+    const response = await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "đã sửa theo bữa thật", analysis: corrected
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+
+    expect(response.status).toBe(202);
+    const confirmation = rpc.mock.calls.at(-1)?.[1] as { p_confirmed_analysis: { foods: unknown[] } };
+    expect(confirmation.p_confirmed_analysis.foods).toHaveLength(2);
+    expect(confirmation.p_confirmed_analysis.foods).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name_vi: "Cơm gạo lứt", search_name_en: "Cơm gạo lứt" }),
+      expect.objectContaining({ name_vi: "Rau cải luộc" })
+    ]));
+    expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
+      confidence: 0, food_groups: ["other"], safety_flags: ["unknown"]
+    }));
+  });
+
+  it("rejects saving the unresolved recognition placeholder", async () => {
+    const unresolved = {
+      ...rawAnalysis,
+      foods: [{ ...rawAnalysis.foods[0], name_vi: "Món cần Mẹ xác nhận" }]
+    };
+    const response = await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "", analysis: unresolved
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+    expect(response.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("preserves server safety metadata for unchanged foods and derives it again for corrections", async () => {
+    const serverAnalysis = {
+      ...rawAnalysis,
+      foods: [{ ...rawAnalysis.foods[0], safety_flags: ["raw_or_undercooked"], confidence: 0.62 }]
+    };
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "review", analysis: serverAnalysis }, error: null });
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "nutrition_pending" }, error: null });
+    const clientAnalysis = {
+      ...rawAnalysis,
+      foods: [{ ...rawAnalysis.foods[0], safety_flags: [], confidence: 1 }]
+    };
+    const response = await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "", analysis: clientAnalysis
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+    expect(response.status).toBe(202);
+    let confirmation = rpc.mock.calls.at(-1)?.[1] as { p_confirmed_analysis: { foods: Array<Record<string, unknown>> } };
+    expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
+      confidence: 0.62, safety_flags: ["raw_or_undercooked"]
+    }));
+
+    rpc.mockClear();
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "review", analysis: rawAnalysis }, error: null });
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "nutrition_pending" }, error: null });
+    const corrected = { ...rawAnalysis, foods: [{ ...rawAnalysis.foods[0], name_vi: "Trứng lòng đào" }] };
+    await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "", analysis: corrected
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+    confirmation = rpc.mock.calls.at(-1)?.[1] as { p_confirmed_analysis: { foods: Array<Record<string, unknown>> } };
+    expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
+      confidence: 0, safety_flags: expect.arrayContaining(["raw_or_undercooked", "unknown"])
+    }));
+  });
+
   it("returns the confirmed nutrition result instead of the earlier model draft", async () => {
     rpc.mockResolvedValueOnce({ data: {
       id: entryId, status: "confirmed", note: "cơm ít", analysis: rawAnalysis,

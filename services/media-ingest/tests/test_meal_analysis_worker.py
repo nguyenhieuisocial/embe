@@ -5,6 +5,8 @@ import sqlite3
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -12,6 +14,7 @@ from meal_analysis_worker import (  # noqa: E402
     Config,
     HttpResponse,
     MealAnalysisWorker,
+    nutrition_search_query,
     parse_vision_result,
 )
 
@@ -200,3 +203,61 @@ def test_local_usda_snapshot_keeps_known_food_available_when_the_api_is_limited(
     assert nutrition["status"] == "estimated"
     assert nutrition["totals"]["calories"] == 260.0
     assert "1 món chưa ghép" in nutrition["notice"]
+
+
+def test_vision_result_localizes_common_english_food_names_for_vietnamese_ui():
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": "Fried rice", "search_name_en": "fried rice with egg",
+                   "estimated_grams": 220, "confidence": 0.8,
+                   "food_groups": ["starch", "protein"], "safety_flags": []}],
+        "needs_user_confirmation": [],
+    })
+
+    assert parsed["foods"][0]["name_vi"] == "Cơm chiên trứng"
+
+
+def test_vision_result_never_exposes_an_unknown_english_name_as_vietnamese():
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": "Unknown casserole", "search_name_en": "unknown casserole",
+                   "estimated_grams": None, "confidence": 0.4,
+                   "food_groups": ["other"], "safety_flags": []}],
+        "needs_user_confirmation": ["Please confirm the dish and portion"],
+    })
+
+    assert parsed["foods"][0]["name_vi"] == "Món cần Mẹ xác nhận"
+    assert "Nhập lại tên món bằng tiếng Việt." in parsed["needs_user_confirmation"]
+    assert "Please confirm the dish and portion" not in parsed["needs_user_confirmation"]
+
+
+def test_user_corrected_vietnamese_food_uses_a_safe_usda_query_instead_of_the_old_dish():
+    assert nutrition_search_query("Đậu hũ") == "tofu"
+    assert nutrition_search_query("Cơm gạo lứt") == "brown rice cooked"
+
+
+def test_valid_detailed_vietnamese_food_name_is_preserved_verbatim():
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": "Cá hồi áp chảo", "search_name_en": "pan fried salmon",
+                   "estimated_grams": 120, "confidence": 0.9,
+                   "food_groups": ["protein"], "safety_flags": []}],
+        "needs_user_confirmation": ["Please confirm portion 😊"],
+    })
+
+    assert parsed["foods"][0]["name_vi"] == "Cá hồi áp chảo"
+    assert all("Please" not in question for question in parsed["needs_user_confirmation"])
+
+
+@pytest.mark.parametrize("english_name", ["Pasta carbonara", "Avocado toast", "Omelette"])
+def test_unmapped_english_food_names_fail_closed_for_vietnamese_ui(english_name):
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": english_name, "search_name_en": english_name,
+                   "estimated_grams": 120, "confidence": 0.8,
+                   "food_groups": ["other"], "safety_flags": []}],
+        "needs_user_confirmation": [],
+    })
+    assert parsed["foods"][0]["name_vi"] == "Món cần Mẹ xác nhận"
+
+
+def test_nutrition_aliases_only_match_a_complete_food_name():
+    assert nutrition_search_query("Rau luộc") == "boiled vegetables"
+    assert nutrition_search_query("Thịt bò xào") == "stir fried beef"
+    assert nutrition_search_query("Cơm gạo lứt với thịt bò") == "Cơm gạo lứt với thịt bò"

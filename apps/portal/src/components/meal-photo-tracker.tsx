@@ -5,12 +5,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MealAnalysis } from "../lib/meal-analysis-contract";
 import { buildMealDashboard, FOOD_GROUP_LABELS, type MealHistoryEntry } from "../lib/meal-dashboard";
 import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition } from "../lib/meal-photo-client";
+import { deriveMealSafetyFlags, hasMealSafetyConcern } from "../lib/meal-safety";
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
 const nutrientLabels = [
   ["protein_g", "Đạm", "g"], ["fiber_g", "Chất xơ", "g"],
   ["calcium_mg", "Canxi", "mg"], ["iron_mg", "Sắt", "mg"], ["folate_ug", "Folate", "µg"]
 ] as const;
+const UNCONFIRMED_FOOD_NAME = "món cần mẹ xác nhận";
+
+function hasInvalidFood(analysis: MealAnalysis): boolean {
+  return analysis.foods.some((food) => {
+    const name = food.nameVi.trim().toLocaleLowerCase("vi");
+    return !name || name === UNCONFIRMED_FOOD_NAME;
+  });
+}
 
 function defaultMealType(): string {
   const hour = new Date().getHours();
@@ -36,6 +45,9 @@ export default function MealPhotoTracker() {
   const [range, setRange] = useState<7 | 28>(7);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [worker, setWorker] = useState<Worker>({ status: "unknown" });
+  const [historyEditor, setHistoryEditor] = useState<{ id: string; note: string; analysis: MealAnalysis } | null>(null);
+  const [historySaving, setHistorySaving] = useState(false);
+  const [historyMessage, setHistoryMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "analyzing" | "queued" | "review" | "saving" | "saved" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,7 +69,9 @@ export default function MealPhotoTracker() {
   }
 
   const dashboard = useMemo(() => buildMealDashboard(history, range), [history, range]);
-  const risks = useMemo(() => new Set(analysis?.foods.flatMap((food) => food.safetyFlags) ?? []), [analysis]);
+  const risks = useMemo(() => new Set(analysis?.foods.flatMap((food) => [
+    ...food.safetyFlags, ...deriveMealSafetyFlags(food.nameVi)
+  ]) ?? []), [analysis]);
   const groups = Object.entries(dashboard.groupCounts).sort((a, b) => b[1] - a[1]);
   const maxGroup = Math.max(1, ...groups.map(([, count]) => count));
 
@@ -102,13 +116,32 @@ export default function MealPhotoTracker() {
   function updateFood(index: number, field: "nameVi" | "estimatedGrams", value: string) {
     setAnalysis((current) => current ? {
       ...current, foods: current.foods.map((food, itemIndex) => itemIndex === index
-        ? { ...food, [field]: field === "estimatedGrams" ? (value ? Number(value) : null) : value }
+        ? field === "estimatedGrams"
+          ? { ...food, estimatedGrams: value ? Number(value) : null }
+          : { ...food, nameVi: value, searchNameEn: value }
         : food)
     } : current);
   }
 
+  function addFood() {
+    setAnalysis((current) => current && current.foods.length < 8 ? {
+      ...current,
+      foods: [...current.foods, {
+        nameVi: "", searchNameEn: "food", estimatedGrams: null,
+        confidence: 1, foodGroups: ["other"], safetyFlags: []
+      }]
+    } : current);
+  }
+
+  function removeFood(index: number) {
+    setAnalysis((current) => current && current.foods.length > 1
+      ? { ...current, foods: current.foods.filter((_, itemIndex) => itemIndex !== index) }
+      : current);
+  }
+
   async function confirm() {
     if (!entryId || !analysis || status === "saving") return;
+    setStatusMessage("");
     setStatus("saving");
     try {
       const response = await fetch(`/api/meals/${entryId}`, {
@@ -116,11 +149,75 @@ export default function MealPhotoTracker() {
       });
       if (!response.ok) throw new Error("save_failed");
       const savedId = entryId;
-      setStatus("saved"); setFile(null); setAnalysis(null); setEntryId(""); setNote("");
+      setStatus("saved"); setStatusMessage("Đã lưu bữa ăn."); setFile(null); setAnalysis(null); setEntryId(""); setNote("");
       if (inputRef.current) inputRef.current.value = "";
       await loadHistory();
       void waitForMealNutrition(savedId).then(() => loadHistory());
-    } catch { setStatus("error"); }
+    } catch {
+      setStatusMessage("Chưa lưu được bữa ăn. Hãy thử lại.");
+      setStatus("error");
+    }
+  }
+
+  function editSavedMeal(entry: MealHistoryEntry) {
+    setHistoryMessage("");
+    setHistoryEditor({
+      id: entry.id, note: entry.note,
+      analysis: { ...entry.analysis, nutrition: undefined, foods: entry.analysis.foods.map((food) => ({ ...food })) }
+    });
+  }
+
+  function addSavedFood() {
+    setHistoryEditor((current) => current && current.analysis.foods.length < 8 ? {
+      ...current,
+      analysis: {
+        ...current.analysis,
+        foods: [...current.analysis.foods, {
+          nameVi: "", searchNameEn: "food", estimatedGrams: null,
+          confidence: 1, foodGroups: ["other"], safetyFlags: []
+        }]
+      }
+    } : current);
+  }
+
+  function removeSavedFood(index: number) {
+    setHistoryEditor((current) => current && current.analysis.foods.length > 1 ? {
+      ...current,
+      analysis: { ...current.analysis, foods: current.analysis.foods.filter((_, itemIndex) => itemIndex !== index) }
+    } : current);
+  }
+
+  function updateSavedFood(index: number, field: "nameVi" | "estimatedGrams", value: string) {
+    setHistoryEditor((current) => current ? {
+      ...current,
+      analysis: {
+        ...current.analysis,
+        foods: current.analysis.foods.map((food, itemIndex) => itemIndex === index
+          ? field === "estimatedGrams"
+            ? { ...food, estimatedGrams: value ? Number(value) : null }
+            : { ...food, nameVi: value, searchNameEn: value }
+          : food)
+      }
+    } : current);
+  }
+
+  async function saveHistoryEdit() {
+    if (!historyEditor || historySaving || hasInvalidFood(historyEditor.analysis)) return;
+    setHistoryMessage("");
+    setHistorySaving(true);
+    try {
+      const response = await fetch(`/api/meals/${historyEditor.id}`, {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ analysis: historyEditor.analysis, note: historyEditor.note })
+      });
+      if (!response.ok) throw new Error("save_failed");
+      const savedId = historyEditor.id;
+      setHistoryEditor(null);
+      await loadHistory();
+      void waitForMealNutrition(savedId).then(() => loadHistory());
+    } catch {
+      setHistoryMessage("Chưa lưu được thay đổi. Hãy thử lại.");
+    } finally { setHistorySaving(false); }
   }
 
   const workerCopy = worker.status === "online" ? "Nhận diện sẵn sàng"
@@ -163,14 +260,16 @@ export default function MealPhotoTracker() {
 
       {analysis ? <div className="meal-review" aria-label="Xác nhận kết quả nhận diện">
         <div><p className="panel-kicker">Cần Mẹ kiểm tra</p><h3>Máy nhìn thấy</h3></div>
-        {analysis.foods.map((food, index) => <div className="meal-food-row" key={`${food.nameVi}-${index}`}>
+        {analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
           <label>Tên món<input value={food.nameVi} maxLength={80} onChange={(event) => updateFood(index, "nameVi", event.target.value)} /></label>
           <label>Khẩu phần (g)<input inputMode="decimal" type="number" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateFood(index, "estimatedGrams", event.target.value)} /></label>
           <small>Độ chắc chắn {Math.round(food.confidence * 100)}%</small>
+          {analysis.foods.length > 1 ? <button className="meal-remove-food" type="button" aria-label={`Bỏ ${food.nameVi || `món ${index + 1}`}`} onClick={() => removeFood(index)}>Bỏ món</button> : null}
         </div>)}
+        {analysis.foods.length < 8 ? <button className="meal-add-food" type="button" onClick={addFood}>Thêm món còn thiếu</button> : null}
         {analysis.needsUserConfirmation.length ? <ul className="meal-questions">{analysis.needsUserConfirmation.map((question) => <li key={question}>{question}</li>)}</ul> : null}
-        {risks.size ? <p className="meal-risk">Có điểm cần kiểm tra về độ chín, tiệt trùng hoặc loại cá. Không dùng ảnh để kết luận món đã an toàn.</p> : null}
-        <button className="health-save" type="button" disabled={status === "saving"} onClick={() => void confirm()}>{status === "saving" ? "Đang lưu…" : "Đúng rồi, lưu bữa này"}</button>
+        {hasMealSafetyConcern(risks) ? <p className="meal-risk">Món này cần kiểm tra độ chín hoặc tiệt trùng, loại cá và thành phần trước khi dùng.</p> : null}
+        <button className="health-save" type="button" disabled={status === "saving" || hasInvalidFood(analysis)} onClick={() => void confirm()}>{status === "saving" ? "Đang lưu…" : "Lưu bữa này"}</button>
       </div> : null}
 
       <details className="meal-dashboard" aria-labelledby="meal-dashboard-title">
@@ -237,9 +336,28 @@ export default function MealPhotoTracker() {
                           : "Đang bổ sung dinh dưỡng"}</small></span>
                   </summary>
                   <div className="meal-history-detail">
-                    {entry.note ? <p>{entry.note}</p> : null}
-                    <ul>{entry.analysis.foods.map((food, index) => <li key={`${entry.id}-${index}`}>{food.nameVi}{food.estimatedGrams ? ` · ${food.estimatedGrams} g` : ""}</li>)}</ul>
-                    <small>{entry.analysis.nutrition?.notice ?? entry.analysis.estimateNotice}</small>
+                    {historyEditor?.id === entry.id ? <div className="meal-history-editor">
+                      {historyEditor.analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
+                        <label>Sửa tên món<input maxLength={80} value={food.nameVi} onChange={(event) => updateSavedFood(index, "nameVi", event.target.value)} /></label>
+                        <label>Sửa khẩu phần (g)<input type="number" inputMode="decimal" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateSavedFood(index, "estimatedGrams", event.target.value)} /></label>
+                        {historyEditor.analysis.foods.length > 1 ? <button className="meal-remove-food" type="button" aria-label={`Bỏ ${food.nameVi || `món ${index + 1}`}`} onClick={() => removeSavedFood(index)}>Bỏ món</button> : null}
+                      </div>)}
+                      {historyEditor.analysis.foods.length < 8 ? <button className="meal-add-food" type="button" onClick={addSavedFood}>Thêm món vào bữa đã lưu</button> : null}
+                      <label className="meal-note">Sửa ghi chú<textarea maxLength={300} rows={2} value={historyEditor.note} onChange={(event) => setHistoryEditor((current) => current ? { ...current, note: event.target.value } : current)} /></label>
+                      {historyMessage ? <p className="meal-state is-error" aria-live="polite">{historyMessage}</p> : null}
+                      <div className="meal-edit-actions">
+                        <button type="button" onClick={() => setHistoryEditor(null)}>Hủy</button>
+                        <button className="health-save" type="button" disabled={historySaving || hasInvalidFood(historyEditor.analysis)} onClick={() => void saveHistoryEdit()}>{historySaving ? "Đang lưu…" : "Lưu thay đổi"}</button>
+                      </div>
+                    </div> : <>
+                      {entry.note ? <p>{entry.note}</p> : null}
+                      <ul>{entry.analysis.foods.map((food, index) => <li key={`${entry.id}-${index}`}>{food.nameVi}{food.estimatedGrams ? ` · ${food.estimatedGrams} g` : ""}</li>)}</ul>
+                      {hasMealSafetyConcern(entry.analysis.foods.flatMap((food) => [
+                        ...food.safetyFlags, ...deriveMealSafetyFlags(food.nameVi)
+                      ])) ? <p className="meal-risk">Món này cần kiểm tra độ chín hoặc tiệt trùng, loại cá và thành phần trước khi dùng.</p> : null}
+                      <small>{entry.analysis.nutrition?.notice ?? entry.analysis.estimateNotice}</small>
+                      {entry.status === "ready" && entry.analysis.foods.length ? <button className="meal-edit-saved" type="button" onClick={() => editSavedMeal(entry)}>Sửa bữa này</button> : null}
+                    </>}
                   </div>
                 </details>)}
               </div>

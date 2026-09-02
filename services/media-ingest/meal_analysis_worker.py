@@ -23,6 +23,69 @@ SAFETY_FLAGS = {
     "raw_or_undercooked", "unpasteurized", "high_mercury_possible", "alcohol", "unknown"
 }
 
+VIETNAMESE_FOOD_NAMES = (
+    ("fried rice with egg", "Cơm chiên trứng"),
+    ("egg fried rice", "Cơm chiên trứng"),
+    ("fried rice", "Cơm chiên"),
+    ("white rice", "Cơm trắng"),
+    ("brown rice", "Cơm gạo lứt"),
+    ("grilled chicken", "Gà nướng"),
+    ("fried chicken", "Gà chiên"),
+    ("chicken breast", "Ức gà"),
+    ("boiled egg", "Trứng luộc"),
+    ("fried egg", "Trứng chiên"),
+    ("salmon", "Cá hồi"),
+    ("shrimp", "Tôm"),
+    ("tofu", "Đậu hũ"),
+    ("vegetable soup", "Canh rau"),
+    ("salad", "Rau trộn"),
+    ("banana", "Chuối"),
+    ("apple", "Táo"),
+    ("yogurt", "Sữa chua"),
+    ("milk", "Sữa"),
+)
+VIETNAMESE_NAME_MARKERS = set("ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ")
+VIETNAMESE_NUTRITION_QUERIES = (
+    ("cơm chiên trứng", "fried rice with egg"),
+    ("cơm gạo lứt", "brown rice cooked"),
+    ("cơm chiên", "fried rice"),
+    ("cơm trắng", "white rice cooked"),
+    ("đậu hũ", "tofu"),
+    ("đậu phụ", "tofu"),
+    ("trứng chiên", "fried egg"),
+    ("trứng luộc", "boiled egg"),
+    ("ức gà", "chicken breast"),
+    ("gà nướng", "grilled chicken"),
+    ("cá hồi", "salmon"),
+    ("sữa chua", "plain yogurt"),
+    ("chuối", "banana"),
+    ("táo", "apple"),
+    ("rau luộc", "boiled vegetables"),
+    ("thịt bò xào", "stir fried beef"),
+    ("bún cá", "fish noodle soup"),
+    ("khoai lang", "sweet potato cooked"),
+)
+
+
+def vietnamese_food_name(name: str, search_name: str) -> tuple[str, bool]:
+    """Keep Vietnamese output, localize common English labels, otherwise request correction."""
+    normalized_name = name.casefold()
+    if any(character in VIETNAMESE_NAME_MARKERS for character in normalized_name):
+        return name.strip(), False
+    combined = f"{name} {search_name}".casefold()
+    for english, vietnamese in VIETNAMESE_FOOD_NAMES:
+        if english in combined:
+            return vietnamese, False
+    return "Món cần Mẹ xác nhận", True
+
+
+def nutrition_search_query(value: str) -> str:
+    normalized = " ".join(value.casefold().split())
+    for vietnamese, english in VIETNAMESE_NUTRITION_QUERIES:
+        if vietnamese == normalized:
+            return english
+    return value.strip()
+
 
 @dataclass(frozen=True)
 class HttpResponse:
@@ -115,6 +178,7 @@ def parse_vision_result(value: Any) -> dict[str, Any]:
     if not isinstance(foods, list) or not 1 <= len(foods) <= 8 or not isinstance(questions, list) or len(questions) > 6:
         raise ValueError("invalid_vision_result")
     normalized_foods: list[dict[str, Any]] = []
+    needs_name_confirmation = False
     for food in foods:
         if not isinstance(food, dict) or set(food) != {
             "name_vi", "search_name_en", "estimated_grams", "confidence", "food_groups", "safety_flags"
@@ -143,8 +207,10 @@ def parse_vision_result(value: Any) -> dict[str, Any]:
             derived_flags.append("high_mercury_possible")
         if float(confidence) < 0.5:
             derived_flags.append("unknown")
+        localized_name, food_needs_name_confirmation = vietnamese_food_name(name_vi.strip(), search_name.strip())
+        needs_name_confirmation = needs_name_confirmation or food_needs_name_confirmation
         normalized_foods.append({
-            "name_vi": name_vi.strip(), "search_name_en": search_name.strip(),
+            "name_vi": localized_name, "search_name_en": search_name.strip(),
             "estimated_grams": round(float(grams), 1) if grams is not None else None,
             "confidence": round(float(confidence), 2),
             "food_groups": list(dict.fromkeys(groups)), "safety_flags": derived_flags,
@@ -158,10 +224,9 @@ def parse_vision_result(value: Any) -> dict[str, Any]:
         if identity not in seen:
             distinct.append(food)
             seen.add(identity)
-    confirmations = [
-        question.strip() for question in questions
-        if question.strip() not in SAFETY_FLAGS and "_" not in question
-    ]
+    confirmations: list[str] = []
+    if needs_name_confirmation:
+        confirmations.append("Nhập lại tên món bằng tiếng Việt.")
     all_groups = {group for food in distinct for group in food["food_groups"]}
     if "protein" in all_groups and "Thịt, cá, trứng hoặc hải sản đã nấu chín kỹ chưa?" not in confirmations:
         confirmations.append("Thịt, cá, trứng hoặc hải sản đã nấu chín kỹ chưa?")
@@ -176,8 +241,10 @@ def parse_vision_result(value: Any) -> dict[str, Any]:
 
 PROMPT = """Bạn đang tạo bản nháp nhật ký bữa ăn cho một phụ nữ đang mang thai.
 Chỉ mô tả những gì có thể nhìn thấy. Không chẩn đoán, không kê bổ sung, không khẳng định thiếu chất,
-không tự đặt mục tiêu calorie. Ghi tên món bằng tiếng Việt và cụm tìm kiếm nguyên liệu tương đương
-bằng tiếng Anh. Ước lượng gram thận trọng; nếu không đủ căn cứ thì dùng null. Mỗi món chỉ xuất hiện
+không tự đặt mục tiêu calorie. Trường name_vi bắt buộc là tiếng Việt tự nhiên có dấu, ví dụ
+"Cơm chiên trứng", "Cá hồi áp chảo"; tuyệt đối không điền tên tiếng Anh vào trường này.
+Trường search_name_en mới dùng cụm tìm kiếm nguyên liệu tương đương bằng tiếng Anh.
+Ước lượng gram thận trọng; nếu không đủ căn cứ thì dùng null. Mỗi món chỉ xuất hiện
 một lần, không lặp và không điền thêm cho đủ số lượng. Đánh dấu an toàn chỉ khi có dấu hiệu thực sự
 hoặc cần người dùng xác nhận. Trả về đúng JSON theo schema, tối đa 8 món phân biệt."""
 
@@ -379,7 +446,7 @@ class MealAnalysisWorker:
         for food in parsed["foods"]:
             grams = food["estimated_grams"]
             try:
-                match = self._lookup_food(food["search_name_en"]) if grams is not None else None
+                match = self._lookup_food(nutrition_search_query(food["search_name_en"])) if grams is not None else None
             except WorkerFailure as error:
                 if error.code != "nutrition_provider_unavailable":
                     raise
