@@ -23,7 +23,7 @@ const kindLabels: Array<{ key: JournalKind; label: string }> = [
 ];
 
 function searchableText(value: string): string {
-  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("vi");
+  return value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("vi").replace(/đ/g, "d");
 }
 
 function longDate(value: Date | string): string {

@@ -9,7 +9,7 @@ const events = [
   { id: "2", eventAt: "2026-09-02T18:00:00+07:00", eventType: "milestone" as const,
     title: "Cột mốc nhỏ", caption: "Ba và Mẹ cùng ghi nhớ.", albumCoverUrl: null },
   { id: "3", eventAt: "2026-08-30T09:00:00+07:00", eventType: "journal" as const,
-    title: "Cuối tuần", caption: "Cả nhà đi dạo.", albumCoverUrl: null }
+    title: "Cuối tuần", caption: "Cả nhà đi dạo ở Đế Vương.", albumCoverUrl: null }
 ];
 
 describe("mobile journal browser", () => {
@@ -55,6 +55,10 @@ describe("mobile journal browser", () => {
     fireEvent.change(screen.getByRole("searchbox", { name: "Tìm trong nhật ký" }), { target: { value: "cuoi tuan" } });
     expect(screen.getByText("Cuối tuần")).toBeInTheDocument();
     expect(screen.queryByText("Buổi sáng của Mẹ")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Xóa tìm kiếm" }));
+    fireEvent.change(screen.getByRole("searchbox", { name: "Tìm trong nhật ký" }), { target: { value: "de vuong" } });
+    expect(screen.getByText("Cuối tuần")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Xóa tìm kiếm" }));
     fireEvent.click(screen.getByRole("button", { name: "Cột mốc" }));
