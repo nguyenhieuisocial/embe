@@ -107,11 +107,18 @@ describe("private review-first meal analysis API", () => {
     expect((await review.json()).analysis.foods[0].nameVi).toBe("Cơm trắng");
 
     rpc.mockResolvedValueOnce({ data: { id: entryId, status: "review", analysis: rawAnalysis }, error: null });
-    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "nutrition_pending" }, error: null });
+    rpc.mockResolvedValueOnce({ data: {
+      id: entryId, status: "nutrition_pending", checklist_task_id: "lunch", checklist_day: "2026-09-01"
+    }, error: null });
     const confirmed = await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
       note: "cơm ít", analysis: rawAnalysis
     }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
     expect(confirmed.status).toBe(202);
+    await expect(confirmed.json()).resolves.toEqual({
+      id: entryId,
+      status: "nutrition_pending",
+      checklistCompletion: { taskId: "lunch", day: "2026-09-01" }
+    });
     expect(rpc).toHaveBeenLastCalledWith("embe_confirm_meal_analysis", expect.objectContaining({ p_id: entryId }));
   });
 

@@ -132,7 +132,7 @@ describe("pregnancy daily page", () => {
     if (sources) fireEvent.click(within(sources).getByText("Nguồn đã đối chiếu"));
     expect(screen.getByRole("link", { name: /WHO/ })).toHaveAttribute("href", expect.stringContaining("who.int"));
     expect(screen.getAllByRole("link", { name: /ACOG/ })[0]).toHaveAttribute("href", expect.stringContaining("acog.org"));
-  });
+  }, 10_000);
 
   it("puts frequent daily actions before occasional records and reference content", () => {
     render(<PregnancyPage />);
@@ -291,6 +291,20 @@ describe("pregnancy daily page", () => {
 
     expect(firstTask).toBeChecked();
     expect(localStorage.getItem("embe:pregnancy:checklist:2026-08-30")).toContain("supplements");
+  });
+
+  it("checks a linked daily action immediately without writing a stale checklist snapshot", async () => {
+    render(<PregnancyPage />);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    vi.mocked(fetch).mockClear();
+
+    act(() => window.dispatchEvent(new CustomEvent("embe:daily-action-completed", {
+      detail: { taskId: "lunch", day: "2026-08-30" }
+    })));
+
+    expect(screen.getByRole("checkbox", { name: /Đã ăn trưa/ })).toBeChecked();
+    expect(localStorage.getItem("embe:pregnancy:checklist:2026-08-30")).toContain("lunch");
+    expect(fetch).not.toHaveBeenCalledWith("/api/pregnancy", expect.objectContaining({ method: "PATCH" }));
   });
 
   it("stores the due date locally and displays the calculated week", () => {

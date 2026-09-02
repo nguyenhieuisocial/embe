@@ -6,6 +6,7 @@ import type { MealAnalysis } from "../lib/meal-analysis-contract";
 import { buildMealDashboard, FOOD_GROUP_LABELS, type MealHistoryEntry } from "../lib/meal-dashboard";
 import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition } from "../lib/meal-photo-client";
 import { deriveMealSafetyFlags, hasMealSafetyConcern } from "../lib/meal-safety";
+import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
@@ -161,8 +162,14 @@ export default function MealPhotoTracker() {
         method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ analysis, note })
       });
       if (!response.ok) throw new Error("save_failed");
+      const payload = await response.json() as { checklistCompletion?: unknown };
+      announceLinkedDailyAction(payload.checklistCompletion);
       const savedId = entryId;
-      setStatus("saved"); setStatusMessage("Đã lưu bữa ăn."); setFile(null); setAnalysis(null); setEntryId(""); setNote("");
+      setStatus("saved");
+      setStatusMessage(payload.checklistCompletion
+        ? "Đã lưu bữa ăn · việc hôm nay đã tự tích."
+        : "Đã lưu bữa ăn.");
+      setFile(null); setAnalysis(null); setEntryId(""); setNote("");
       if (inputRef.current) inputRef.current.value = "";
       await loadHistory(range, true);
       void waitForMealNutrition(savedId).then(() => loadHistory(range, true));
@@ -225,6 +232,8 @@ export default function MealPhotoTracker() {
         body: JSON.stringify({ analysis: historyEditor.analysis, note: historyEditor.note })
       });
       if (!response.ok) throw new Error("save_failed");
+      const payload = await response.json() as { checklistCompletion?: unknown };
+      announceLinkedDailyAction(payload.checklistCompletion);
       const savedId = historyEditor.id;
       setHistoryEditor(null);
       await loadHistory(range, true);

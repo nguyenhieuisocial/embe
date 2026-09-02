@@ -36,6 +36,27 @@ async function refresh(day: string) {
   return error || !data || typeof data !== "object" ? null : data;
 }
 
+function allConfirmedDosesTaken(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const plans = (value as Record<string, unknown>).plans;
+  if (!Array.isArray(plans)) return false;
+  const active = plans.filter((plan): plan is Record<string, unknown> => Boolean(
+    plan && typeof plan === "object"
+      && (plan as Record<string, unknown>).active === true
+      && (plan as Record<string, unknown>).confirmed_by_clinician === true
+  ));
+  return active.length > 0 && active.every((plan) => {
+    if (!Number.isInteger(plan.times_per_day) || Number(plan.times_per_day) < 1) return false;
+    const states = Array.isArray(plan.dose_states) ? plan.dose_states : [];
+    const taken = new Set(states.flatMap((state) => state && typeof state === "object"
+      && (state as Record<string, unknown>).status === "taken"
+      && Number.isInteger((state as Record<string, unknown>).slot)
+      ? [Number((state as Record<string, unknown>).slot)] : []));
+    return Array.from({ length: Number(plan.times_per_day) }, (_, index) => index + 1)
+      .every((slot) => taken.has(slot));
+  });
+}
+
 export async function GET(request: Request): Promise<Response> {
   if (!authorized(request)) return privateReply({ error: "unauthorized" }, 401);
   const params = new URL(request.url).searchParams;
@@ -141,5 +162,10 @@ export async function PATCH(request: Request): Promise<Response> {
   }
 
   const snapshot = await refresh(day);
-  return snapshot ? privateReply({ snapshot }, 200) : privateReply({ error: "temporarily_unavailable" }, 503);
+  if (!snapshot) return privateReply({ error: "temporarily_unavailable" }, 503);
+  const checklistCompletion = body.action === "intake" && body.status === "taken"
+    && allConfirmedDosesTaken(snapshot)
+    ? { taskId: "supplements", day }
+    : null;
+  return privateReply({ snapshot, ...(checklistCompletion ? { checklistCompletion } : {}) }, 200);
 }

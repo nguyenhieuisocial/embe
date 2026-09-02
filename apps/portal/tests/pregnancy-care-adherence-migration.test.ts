@@ -17,4 +17,22 @@ describe("pregnancy care adherence migration", () => {
     expect(sql).toContain("TO service_role");
     expect(sql).toContain("FROM PUBLIC, anon, authenticated");
   });
+
+  it("links only confirmed semantic evidence to bounded checklist items", () => {
+    const path = join(process.cwd(), "..", "..", "supabase", "migrations", "20260902171159_link_daily_actions.sql");
+    expect(existsSync(path)).toBe(true);
+    if (!existsSync(path)) return;
+    const sql = readFileSync(path, "utf8");
+
+    expect(sql).toContain("portal_read_model.complete_linked_daily_action");
+    expect(sql).toContain("WHEN 'breakfast' THEN 'breakfast'");
+    expect(sql).toContain("WHEN 'lunch' THEN 'lunch'");
+    expect(sql).toContain("WHEN 'dinner' THEN 'dinner'");
+    expect(sql).toContain("AT TIME ZONE 'Asia/Ho_Chi_Minh'");
+    expect(sql).toContain("ON CONFLICT (day, task_id) DO NOTHING");
+    expect(sql).toContain("status IN ('nutrition_pending', 'confirmed')");
+    expect(sql).toContain("count(*) FILTER (WHERE intake.status = 'taken')");
+    expect(sql).toContain("'supplements'");
+    expect(sql).toContain("SECURITY INVOKER");
+  });
 });

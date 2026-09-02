@@ -11,6 +11,7 @@ import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
 import PregnancyMedicalRecords from "../../components/pregnancy-medical-records";
 import MealPhotoTracker from "../../components/meal-photo-tracker";
 import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
+import { LINKED_DAILY_ACTION_EVENT, linkedDailyAction } from "../../lib/linked-daily-actions";
 import {
   dailyChecklist,
   folkPracticeLevels,
@@ -147,6 +148,26 @@ export default function PregnancyPage() {
       window.removeEventListener("online", synchronize);
     };
   }, []);
+
+  useEffect(() => {
+    const applyLinkedAction = (event: Event) => {
+      const completion = linkedDailyAction((event as CustomEvent).detail);
+      if (!completion || completion.day !== todayKey) return;
+      setCompleted((current) => {
+        if (current.includes(completion.taskId)) return current;
+        const next = [...current, completion.taskId];
+        try {
+          localStorage.setItem(`embe:pregnancy:checklist:${completion.day}`, JSON.stringify(next));
+        } catch {
+          // The server is already authoritative; keep the in-memory view current.
+        }
+        clearPrivateGetCache("/api/pregnancy?");
+        return next;
+      });
+    };
+    window.addEventListener(LINKED_DAILY_ACTION_EVENT, applyLinkedAction);
+    return () => window.removeEventListener(LINKED_DAILY_ACTION_EVENT, applyLinkedAction);
+  }, [todayKey]);
 
   const week = useMemo(() => calculatePregnancyWeek(dueDate), [dueDate]);
   const estimatedDueDate = useMemo(

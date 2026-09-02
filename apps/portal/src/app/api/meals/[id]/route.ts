@@ -82,7 +82,15 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     });
     if (error || !data) throw new Error("confirmation unavailable");
     const result = data as Record<string, unknown>;
-    return privateReply({ id, status: result.status === "confirmed" ? "confirmed" : "nutrition_pending" }, 202);
+    const checklistCompletion = typeof result.checklist_task_id === "string"
+      && typeof result.checklist_day === "string"
+      ? { taskId: result.checklist_task_id, day: result.checklist_day }
+      : null;
+    return privateReply({
+      id,
+      status: result.status === "confirmed" ? "confirmed" : "nutrition_pending",
+      ...(checklistCompletion ? { checklistCompletion } : {})
+    }, 202);
   } catch {
     return privateReply({ error: "temporarily_unavailable" }, 503);
   }

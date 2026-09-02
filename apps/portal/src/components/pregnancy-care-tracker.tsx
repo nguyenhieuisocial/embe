@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import {
   estimatedEnergyTarget, PREGNANCY_NUTRIENTS,
   type EnergyProfile, type NutrientKey
@@ -203,8 +204,9 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         body: JSON.stringify({ ...body, day })
       });
       if (!response.ok) throw new Error("save unavailable");
-      const payload = await response.json() as { snapshot?: Snapshot };
+      const payload = await response.json() as { snapshot?: Snapshot; checklistCompletion?: unknown };
       if (!payload.snapshot) throw new Error("malformed snapshot");
+      announceLinkedDailyAction(payload.checklistCompletion);
       clearPrivateGetCache("/api/pregnancy/care?");
       const nextSnapshot = payload.snapshot;
       setSnapshot((current) => ({

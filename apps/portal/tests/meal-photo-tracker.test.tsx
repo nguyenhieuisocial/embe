@@ -103,9 +103,13 @@ describe("mobile meal journal", () => {
   });
 
   it("lets the mother correct recognition and add a missing food before saving", async () => {
+    const linked = vi.fn();
+    window.addEventListener("embe:daily-action-completed", linked);
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input).startsWith("/api/meals/") && init?.method === "PATCH") {
-        return new Response(JSON.stringify({ status: "nutrition_pending" }), { status: 202 });
+        return new Response(JSON.stringify({
+          status: "nutrition_pending", checklistCompletion: { taskId: "lunch", day: "2026-09-01" }
+        }), { status: 202 });
       }
       return new Response(JSON.stringify({ history: [], suggestions: [], worker: { status: "online" } }), { status: 200 });
     });
@@ -143,6 +147,11 @@ describe("mobile meal journal", () => {
       expect.objectContaining({ nameVi: "Cơm chiên" }),
       expect.objectContaining({ nameVi: "Trứng chiên", estimatedGrams: 60 })
     ]));
+    expect(linked).toHaveBeenCalledWith(expect.objectContaining({
+      detail: { taskId: "lunch", day: "2026-09-01" }
+    }));
+    expect(screen.getByText("Đã lưu bữa ăn · việc hôm nay đã tự tích.")).toBeInTheDocument();
+    window.removeEventListener("embe:daily-action-completed", linked);
   });
 
   it("lets the mother correct a saved meal without reusing the stale nutrition query", async () => {

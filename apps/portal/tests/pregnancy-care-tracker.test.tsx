@@ -109,6 +109,8 @@ describe("iPhone health connection state", () => {
   });
 
   it("shows daily progress and saved adherence history without suggesting a dose", async () => {
+    const linked = vi.fn();
+    window.addEventListener("embe:daily-action-completed", linked);
     const careSnapshot = {
       profile: null, iphone_health: null, iphone_health_history: [], iphone_devices: [],
       plans: [{ id: "11111111-1111-4111-8111-111111111111", category: "supplement", name: "Prenatal theo đơn",
@@ -122,7 +124,10 @@ describe("iPhone health connection state", () => {
         day: "2026-08-31", slot: 1, status: "skipped", reason: "Buồn nôn", recorded_at: "2026-08-31T01:00:00Z" }]
     };
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      if (String(input).startsWith("/api/pregnancy/care")) return Response.json({ snapshot: careSnapshot });
+      if (String(input).startsWith("/api/pregnancy/care")) return Response.json({
+        snapshot: careSnapshot,
+        ...(init?.method === "PATCH" ? { checklistCompletion: { taskId: "supplements", day: "2026-09-01" } } : {})
+      });
       return Response.json({ history: [] });
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -136,6 +141,9 @@ describe("iPhone health connection state", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
       method: "PATCH", body: expect.stringContaining('"status":"taken"')
     })));
+    expect(linked).toHaveBeenCalledWith(expect.objectContaining({
+      detail: { taskId: "supplements", day: "2026-09-01" }
+    }));
     fireEvent.click(screen.getByRole("button", { name: "Tạm dừng Prenatal theo đơn" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
       body: expect.stringContaining('"action":"planState"')
@@ -144,5 +152,6 @@ describe("iPhone health connection state", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
       body: expect.stringContaining('"active":true')
     })));
+    window.removeEventListener("embe:daily-action-completed", linked);
   });
 });

@@ -108,6 +108,28 @@ describe("private pregnancy care and iPhone health APIs", () => {
     });
   });
 
+  it("reports the linked supplement checklist only after every confirmed dose is taken", async () => {
+    const completeSnapshot = {
+      ...snapshot,
+      plans: [{
+        id: planId, active: true, confirmed_by_clinician: true, times_per_day: 2,
+        dose_states: [
+          { slot: 1, status: "taken", reason: "", recorded_at: "2026-09-01T01:00:00Z" },
+          { slot: 2, status: "taken", reason: "", recorded_at: "2026-09-01T13:00:00Z" }
+        ]
+      }]
+    };
+    rpc.mockResolvedValueOnce({ data: null, error: null }).mockResolvedValueOnce({ data: completeSnapshot, error: null });
+    const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+      action: "intake", day: "2026-09-01", planId, slot: 2, status: "taken", reason: ""
+    }));
+
+    await expect(response.json()).resolves.toEqual({
+      snapshot: completeSnapshot,
+      checklistCompletion: { taskId: "supplements", day: "2026-09-01" }
+    });
+  });
+
   it("pauses and reactivates only the requested care plan", async () => {
     rpc.mockResolvedValue({ data: snapshot, error: null });
     const paused = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
