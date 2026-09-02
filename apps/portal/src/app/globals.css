@@ -117,20 +117,9 @@
 .dose-copy span { color: #a05770; font-size: .68rem; }
 .dose-copy strong { font-size: .93rem; }
 .dose-copy small { color: #796b70; line-height: 1.4; }
-.dose-slots { display: flex; gap: .45rem; }
-.dose-slots button {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid #e5cfd7;
-  border-radius: 50%;
-  background: #fff8fa;
-  color: #9f4564;
-  font: inherit;
-  font-weight: 700;
-}
-.dose-slots button.is-taken { border-color: #b95477; background: #b95477; color: #fff; }
+.dose-slots { display: grid; gap: .6rem; }
+.dose-slots .care-plan-form { margin: 0; padding: .7rem; }
+.dose-slots .care-plan-form > strong { font-size: .8rem; }
 .care-empty { padding: 1rem; border-radius: 18px; background: #fbf5f7; text-align: center; }
 .care-empty p { margin: .25rem 0 0; color: #796a70; font-size: .82rem; }
 .care-add-button {
@@ -193,6 +182,10 @@
 .iphone-metric-sync { margin: .35rem 0 .7rem !important; color: #8b7680 !important; font-size: .66rem !important; }
 .iphone-health-history { display: grid; gap: .45rem; margin: .7rem 0; }
 .iphone-health-history h3 { margin: 0; color: #593e48; font-size: .82rem; }
+.iphone-health-history > .iphone-health-history-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.iphone-health-history-heading > span { display: flex; gap: .3rem; }
+.iphone-health-history-heading button { min-height: 44px; padding: .35rem .65rem; border: 1px solid #ead8de; border-radius: 999px; background: #fff; color: #715f66; font: inherit; font-weight: 700; }
+.iphone-health-history-heading button[aria-pressed="true"] { border-color: #a14f6b; background: #f9e8ee; color: #8e3e5b; }
 .iphone-health-history > div { display: grid; gap: .35rem; }
 .iphone-health-history article { display: grid; grid-template-columns: 48px repeat(3, 1fr); gap: .35rem; align-items: center; min-height: 44px; padding: .48rem .55rem; border-radius: 12px; background: #fbf6f8; color: #715f66; font-size: .66rem; }
 .iphone-health-history time { color: #a14f6b; font-weight: 700; }
@@ -454,6 +447,14 @@ ol, ul { margin: 0; padding: 0; }
 .settings-main { display: grid; gap: 2px; }
 .settings-hero { display: grid; gap: 7px; padding-top: 18px; }
 .advanced-settings { display: grid; gap: 0; }
+.passkey-settings { display: grid; gap: 12px; }
+.passkey-settings > p { color: var(--ink-soft); font-size: .76rem; line-height: 1.5; }
+.passkey-device-list { display: grid; gap: 0; list-style: none; margin: 0; padding: 0; }
+.passkey-device-list li { align-items: center; border-top: 1px solid var(--line); display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr) auto; min-height: 58px; }
+.passkey-device-list span { display: grid; gap: 2px; }
+.passkey-device-list strong { font-size: .82rem; }
+.passkey-device-list small { color: var(--ink-soft); font-size: .68rem; }
+.passkey-device-list button { background: transparent; border: 0; color: var(--rose); font: inherit; font-size: .75rem; font-weight: 700; min-height: 44px; padding-inline: 8px; }
 .settings-row, .settings-toggle { align-items: center; border-top: 1px solid var(--line); display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr) auto; min-height: 66px; padding-block: 10px; }
 .settings-row > span, .settings-toggle > span { display: grid; gap: 2px; }
 .settings-row strong, .settings-toggle strong { font-size: .84rem; }
@@ -3345,6 +3346,18 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .next-appointment > span { align-items: center; background: var(--paper); border-radius: 50%; color: var(--coral); display: flex; font-size: 1.5rem; height: 38px; justify-content: center; }
 .next-appointment > div { display: grid; gap: 2px; }
 .next-appointment small, .next-appointment p { color: var(--ink-soft); font-size: .8125rem; margin: 0; }
+.appointment-workspace h4 { font-family: var(--font-display); font-size: 1rem; margin: 0; }
+.appointment-prepared-block, .appointment-check-summary { border-top: 1px solid var(--line); display: grid; gap: 5px; margin-top: 8px; padding-top: 10px; }
+.appointment-prepared-block b, .appointment-check-summary b, .appointment-record-summary b { font-size: .75rem; }
+.appointment-prepared-block ul, .appointment-record-summary ul { display: grid; gap: 4px; margin: 0; padding-left: 18px; }
+.appointment-prepared-block li, .appointment-record-summary li { color: var(--ink-soft); font-size: .8125rem; }
+.appointment-check-summary span { color: var(--ink-soft); font-size: .8125rem; }
+.appointment-check-summary span.is-done { color: var(--ink); font-weight: 650; }
+.appointment-actions { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 10px; }
+.appointment-actions button {
+  background: var(--paper); border: 1px solid color-mix(in srgb, var(--coral) 35%, var(--line)); border-radius: var(--radius-sm);
+  color: var(--coral); font: inherit; font-size: .75rem; font-weight: 700; min-height: 48px; padding: 8px;
+}
 .medical-empty-short { background: var(--paper); border: 1px dashed var(--line); border-radius: var(--radius-md); display: grid; gap: 3px; padding: 14px; }
 .medical-empty-short p { color: var(--ink-soft); font-size: .8125rem; margin: 0; }
 .medical-form, .medical-insights {
@@ -3367,6 +3380,13 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   font-size: 1rem; min-height: 44px; min-width: 0; padding: 10px 12px; width: 100%;
 }
 .medical-form-grid > label:first-child, .medical-wide, .medical-notes, .medical-files { grid-column: 1 / -1; }
+.appointment-preparation { border: 0; border-top: 1px solid var(--line); display: grid; gap: 12px; margin: 0; min-width: 0; padding: 13px 0 0; }
+.appointment-preparation legend { font-size: .8125rem; font-weight: 750; padding: 0 0 8px; }
+.appointment-preparation > label { display: grid; font-size: .75rem; font-weight: 650; gap: 5px; }
+.appointment-preparation textarea { min-height: 88px; resize: vertical; }
+.appointment-checklist { display: grid; gap: 7px; }
+.appointment-checklist label { align-items: center; background: var(--surface); border-radius: var(--radius-sm); display: grid; font-size: .8125rem; grid-template-columns: 24px minmax(0, 1fr); min-height: 48px; padding: 8px 10px; }
+.appointment-checklist input { height: 22px; margin: 0; width: 22px; }
 .medical-measurements { border-top: 1px solid var(--line); padding-top: 12px; }
 .medical-measurements summary { align-items: center; cursor: pointer; display: flex; font-size: .8125rem; font-weight: 650; justify-content: space-between; min-height: 44px; }
 .medical-measurements > div { display: grid; gap: 9px; grid-template-columns: repeat(2, minmax(0, 1fr)); padding-top: 8px; }
@@ -3403,6 +3423,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .medical-record-metrics span { background: var(--coral-soft); border-radius: var(--radius-sm); color: var(--ink-soft); display: grid; font-size: .6875rem; gap: 1px; padding: 8px; }
 .medical-record-metrics b { color: var(--ink); font-size: .8125rem; }
 .medical-record-note { border-left: 2px solid color-mix(in srgb, var(--coral) 55%, var(--line)); padding-left: 9px; }
+.appointment-record-summary { display: grid; gap: 8px; }
+.appointment-record-summary > div { background: var(--surface); border-radius: var(--radius-sm); display: grid; gap: 5px; padding: 9px; }
+.appointment-record-summary p { color: var(--ink-soft); font-size: .8125rem; margin: 0; white-space: pre-wrap; }
 .medical-documents { display: flex; flex-wrap: wrap; gap: 7px; }
 .medical-documents a { align-items: center; background: var(--surface); border-radius: 999px; color: var(--ink); display: inline-flex; font-size: .75rem; max-width: 100%; min-height: 44px; overflow: hidden; padding: 8px 10px; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
 .medical-status { color: var(--ink-soft); font-size: .75rem; margin: 0; }
@@ -3619,6 +3642,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   font-size: .9375rem;
   padding: 12px 14px;
 }
+.passkey-login { display: grid; gap: 9px; margin-top: 12px; }
+.passkey-login > span { align-items: center; color: var(--ink-soft); display: flex; font-size: .72rem; gap: 10px; justify-content: center; }
+.passkey-login > span::before, .passkey-login > span::after { background: var(--line); content: ""; height: 1px; width: 38%; }
 .login-privacy { color: var(--ink-soft); font-size: .8125rem; }
 
 /* ── Hoàn thiện cảm giác ứng dụng trên điện thoại ────────────── */

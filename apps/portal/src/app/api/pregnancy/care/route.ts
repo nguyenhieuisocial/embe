@@ -6,6 +6,13 @@ const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const CATEGORIES = new Set(["medicine", "supplement"]);
 const ACTIVITY_LEVELS = new Set(["sedentary", "low_active", "active", "very_active"]);
 const NUTRIENTS = new Set<string>(PREGNANCY_NUTRIENTS.map((item) => item.key));
+const INTAKE_STATUSES = new Set(["taken", "skipped", "deferred"]);
+
+function exactKeys(value: Record<string, unknown>, keys: string[]): boolean {
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
+}
 
 function cookieValue(header: string | null): string | undefined {
   return header?.split(";").map((part) => part.trim().split("="))
@@ -31,12 +38,15 @@ async function refresh(day: string) {
 
 export async function GET(request: Request): Promise<Response> {
   if (!authorized(request)) return privateReply({ error: "unauthorized" }, 401);
-  const day = new URL(request.url).searchParams.get("day") ?? "";
-  if (!ISO_DAY.test(day)) return privateReply({ error: "invalid_request" }, 400);
+  const params = new URL(request.url).searchParams;
+  const day = params.get("day") ?? "";
+  const daysValue = params.get("days") ?? "7";
+  const days = daysValue === "7" ? 7 : daysValue === "30" ? 30 : null;
+  if (!ISO_DAY.test(day) || !days) return privateReply({ error: "invalid_request" }, 400);
   const snapshot = await refresh(day);
   if (!snapshot) return privateReply({ error: "temporarily_unavailable" }, 503);
   const store = photoStore();
-  const history = store ? await store.rpc("embe_get_iphone_health_history", { p_end_day: day, p_days: 28 }) : null;
+  const history = store ? await store.rpc("embe_get_iphone_health_history", { p_end_day: day, p_days: days }) : null;
   return history && !history.error && Array.isArray(history.data)
     ? privateReply({ snapshot: { ...(snapshot as Record<string, unknown>), iphone_health_history: history.data } }, 200)
     : privateReply({ error: "temporarily_unavailable" }, 503);
@@ -109,11 +119,20 @@ export async function PATCH(request: Request): Promise<Response> {
       p_confirmed_by_clinician: plan.confirmedByClinician, p_active: plan.active
     });
     if (error) return privateReply({ error: "temporarily_unavailable" }, 503);
-  } else if (body.action === "intake" && isUuidV4(body.planId)
+  } else if (body.action === "intake" && exactKeys(body, ["action", "day", "planId", "slot", "status", "reason"])
+      && isUuidV4(body.planId)
       && Number.isInteger(body.slot) && Number(body.slot) >= 1 && Number(body.slot) <= 6
-      && typeof body.taken === "boolean") {
-    const { error } = await store.rpc("embe_toggle_pregnancy_care_intake", {
-      p_plan_id: body.planId, p_day: day, p_slot: body.slot, p_taken: body.taken
+      && typeof body.status === "string" && INTAKE_STATUSES.has(body.status)
+      && typeof body.reason === "string" && body.reason.trim().length <= 120) {
+    const { error } = await store.rpc("embe_record_pregnancy_care_intake", {
+      p_plan_id: body.planId, p_day: day, p_slot: body.slot,
+      p_status: body.status, p_reason: body.reason.trim()
+    });
+    if (error) return privateReply({ error: "temporarily_unavailable" }, 503);
+  } else if (body.action === "planState" && exactKeys(body, ["action", "day", "planId", "active"])
+      && isUuidV4(body.planId) && typeof body.active === "boolean") {
+    const { error } = await store.rpc("embe_set_pregnancy_care_plan_active", {
+      p_plan_id: body.planId, p_active: body.active
     });
     if (error) return privateReply({ error: "temporarily_unavailable" }, 503);
   } else {

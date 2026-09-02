@@ -36,16 +36,26 @@ describe("private pregnancy care and iPhone health APIs", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("returns a bounded iPhone health history with the care snapshot", async () => {
+  it("returns the requested 7 or 30 day iPhone health history with the care snapshot", async () => {
     rpc.mockResolvedValueOnce({ data: snapshot, error: null }).mockResolvedValueOnce({
       data: [{ day: "2026-09-01", height_cm: 160, steps: 5200, metric_synced_at: { heightCm: "2026-09-01T08:00:00Z" } }], error: null
     });
-    const response = await GET(request("https://embe.hieu.asia/api/pregnancy/care?day=2026-09-01", "GET"));
+    const response = await GET(request("https://embe.hieu.asia/api/pregnancy/care?day=2026-09-01&days=30", "GET"));
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ snapshot: {
       ...snapshot, iphone_health_history: [{ day: "2026-09-01", height_cm: 160, steps: 5200, metric_synced_at: { heightCm: "2026-09-01T08:00:00Z" } }]
     } });
-    expect(rpc).toHaveBeenNthCalledWith(2, "embe_get_iphone_health_history", { p_end_day: "2026-09-01", p_days: 28 });
+    expect(rpc).toHaveBeenNthCalledWith(2, "embe_get_iphone_health_history", { p_end_day: "2026-09-01", p_days: 30 });
+  });
+
+  it("defaults iPhone health history to 7 days and rejects unsupported windows", async () => {
+    rpc.mockResolvedValueOnce({ data: snapshot, error: null }).mockResolvedValueOnce({ data: [], error: null });
+    const accepted = await GET(request("https://embe.hieu.asia/api/pregnancy/care?day=2026-09-01", "GET"));
+    const rejected = await GET(request("https://embe.hieu.asia/api/pregnancy/care?day=2026-09-01&days=28", "GET"));
+    expect(accepted.status).toBe(200);
+    expect(rejected.status).toBe(400);
+    expect(rpc).toHaveBeenNthCalledWith(2, "embe_get_iphone_health_history", { p_end_day: "2026-09-01", p_days: 7 });
+    expect(rpc).toHaveBeenCalledTimes(2);
   });
 
   it("saves a bounded profile and returns a refreshed snapshot", async () => {
@@ -76,6 +86,44 @@ describe("private pregnancy care and iPhone health APIs", () => {
     expect(rpc).toHaveBeenNthCalledWith(1, "embe_save_pregnancy_care_plan", expect.objectContaining({
       p_nutrient_amounts: { iron_mg: 27, folate_ug: 600 }, p_reminder_times: ["08:00"]
     }));
+  });
+
+  it("records taken, skipped or deferred dose states with a short reason", async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: null }).mockResolvedValueOnce({ data: snapshot, error: null });
+    const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+      action: "intake", day: "2026-09-01", planId, slot: 1, status: "deferred", reason: "Đợi sau bữa sáng"
+    }));
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenNthCalledWith(1, "embe_record_pregnancy_care_intake", {
+      p_plan_id: planId, p_day: "2026-09-01", p_slot: 1, p_status: "deferred", p_reason: "Đợi sau bữa sáng"
+    });
+  });
+
+  it("pauses and reactivates only the requested care plan", async () => {
+    rpc.mockResolvedValue({ data: snapshot, error: null });
+    const paused = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+      action: "planState", day: "2026-09-01", planId, active: false
+    }));
+    const active = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+      action: "planState", day: "2026-09-01", planId, active: true
+    }));
+    expect([paused.status, active.status]).toEqual([200, 200]);
+    expect(rpc).toHaveBeenNthCalledWith(1, "embe_set_pregnancy_care_plan_active", { p_plan_id: planId, p_active: false });
+    expect(rpc).toHaveBeenNthCalledWith(3, "embe_set_pregnancy_care_plan_active", { p_plan_id: planId, p_active: true });
+  });
+
+  it("rejects unknown adherence states, long reasons and extra mutation fields", async () => {
+    const invalidState = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+      action: "intake", day: "2026-09-01", planId, slot: 1, status: "recommended", reason: ""
+    }));
+    const longReason = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+      action: "intake", day: "2026-09-01", planId, slot: 1, status: "skipped", reason: "x".repeat(121)
+    }));
+    const extra = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+      action: "planState", day: "2026-09-01", planId, active: false, dose: "2 viên"
+    }));
+    expect([invalidState.status, longReason.status, extra.status]).toEqual([400, 400, 400]);
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("rejects missing, duplicate or unsorted dose reminder times", async () => {
@@ -180,13 +228,23 @@ describe("private pregnancy care and iPhone health APIs", () => {
         { type: "Height", date: "2026-09-01T08:00:00+07:00", value: 1.6, unit: "m" },
         { type: "Walking + Running Distance", date: "2026-09-01T08:00:00+07:00", value: 4.2, unit: "km" },
         { type: "Resting Heart Rate", date: "2026-09-01T08:00:00+07:00", value: 67, unit: "bpm" },
-        { type: "Blood Oxygen", date: "2026-09-01T08:00:00+07:00", value: 0.98, unit: "%" }
+        { type: "Respiratory Rate", date: "2026-09-01T08:00:00+07:00", value: 15, unit: "breaths/min" },
+        { type: "Blood Oxygen", date: "2026-09-01T08:00:00+07:00", value: 0.98, unit: "%" },
+        { type: "Body Temperature", date: "2026-09-01T08:00:00+07:00", value: 98.24, unit: "°F" },
+        { type: "Wrist Temperature", date: "2026-09-01T08:00:00+07:00", value: 36.4, unit: "°C" },
+        { type: "Heart Rate Variability", date: "2026-09-01T08:00:00+07:00", value: 42, unit: "ms" },
+        { type: "Exercise Time", date: "2026-09-01T08:00:00+07:00", value: 28, unit: "min" },
+        { type: "Mindful Minutes", date: "2026-09-01T08:00:00+07:00", value: 10, unit: "min" },
+        { type: "Blood Pressure Systolic", date: "2026-09-01T08:00:00+07:00", value: 112, unit: "mmHg" },
+        { type: "Blood Pressure Diastolic", date: "2026-09-01T08:00:00+07:00", value: 72, unit: "mmHg" }
       ] })
     }));
     expect(response.status).toBe(202);
     expect(rpc).toHaveBeenCalledWith("embe_ingest_iphone_health_v2", expect.objectContaining({
       p_height_cm: 160, p_distance_m: 4200, p_resting_heart_rate_bpm: 67,
-      p_oxygen_saturation_percent: 98
+      p_respiratory_rate: 15, p_oxygen_saturation_percent: 98, p_body_temperature_c: 36.8,
+      p_wrist_temperature_c: 36.4, p_hrv_ms: 42, p_exercise_minutes: 28,
+      p_mindfulness_minutes: 10, p_systolic: 112, p_diastolic: 72
     }));
   });
 

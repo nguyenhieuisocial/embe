@@ -12,6 +12,47 @@ export type MedicalRecord = {
   documents: MedicalDocument[];
 };
 
+export type AppointmentWorkspace = { questions: string[]; checklist: string[]; outcome: string };
+
+export const APPOINTMENT_CHECKLIST = [
+  { id: "schedule", label: "Kiểm tra lại giờ và nơi khám" },
+  { id: "papers", label: "Mang giấy tờ và sổ khám" },
+  { id: "results", label: "Mang kết quả siêu âm/xét nghiệm gần nhất" }
+] as const;
+
+const APPOINTMENT_WORKSPACE_PREFIX = "EMBE_APPOINTMENT_V1\n";
+const appointmentChecklistIds = new Set<string>(APPOINTMENT_CHECKLIST.map((item) => item.id));
+
+export function encodeAppointmentWorkspace(workspace: AppointmentWorkspace): string {
+  const questions = workspace.questions.map((question) => question.trim()).filter(Boolean).slice(0, 12);
+  const checklist = [...new Set(workspace.checklist.filter((item) => appointmentChecklistIds.has(item)))];
+  const outcome = workspace.outcome.trim();
+  const encoded = APPOINTMENT_WORKSPACE_PREFIX + JSON.stringify({ questions, checklist, outcome });
+  if (questions.some((question) => question.length > 200) || outcome.length > 1000 || encoded.length > 2000) {
+    throw new Error("appointment_workspace_too_large");
+  }
+  return encoded;
+}
+
+export function decodeAppointmentWorkspace(notes: string): AppointmentWorkspace {
+  if (!notes.startsWith(APPOINTMENT_WORKSPACE_PREFIX)) {
+    return { questions: [], checklist: [], outcome: notes.trim() };
+  }
+  try {
+    const value = JSON.parse(notes.slice(APPOINTMENT_WORKSPACE_PREFIX.length)) as Record<string, unknown>;
+    const questions = Array.isArray(value.questions)
+      ? value.questions.filter((item): item is string => typeof item === "string" && item.trim().length > 0 && item.length <= 200).slice(0, 12)
+      : [];
+    const checklist = Array.isArray(value.checklist)
+      ? [...new Set(value.checklist.filter((item): item is string => typeof item === "string" && appointmentChecklistIds.has(item)))]
+      : [];
+    const outcome = typeof value.outcome === "string" && value.outcome.length <= 1000 ? value.outcome.trim() : "";
+    return { questions, checklist, outcome };
+  } catch {
+    return { questions: [], checklist: [], outcome: "" };
+  }
+}
+
 function boundedText(value: unknown, maximum: number): string | null {
   return typeof value === "string" && value.trim().length <= maximum ? value.trim() : null;
 }

@@ -47,6 +47,31 @@ describe("iPhone health connection state", () => {
     expect(screen.getByRole("heading", { name: "Lịch sử sức khỏe từ iPhone" })).toBeInTheDocument();
   });
 
+  it("switches the private aggregate history between 7 and 30 days", async () => {
+    const history = Array.from({ length: 8 }, (_, index) => ({
+      day: `2026-08-${String(24 + index).padStart(2, "0")}`,
+      steps: index === 0 ? 1111 : 5000 + index,
+      sleep_minutes: 420,
+      weight_kg: 53,
+      updated_at: "2026-09-01T08:00:00Z"
+    }));
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).startsWith("/api/pregnancy/care")) return Response.json({ snapshot: {
+        profile: null, plans: [], iphone_health: null, iphone_devices: [], iphone_health_history: history
+      } });
+      return Response.json({ history: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+
+    await waitFor(() => expect(screen.getByText("5.007 bước")).toBeInTheDocument());
+    expect(screen.queryByText("1.111 bước")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "30 ngày" }));
+    expect(screen.getByText("1.111 bước")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("days=30"), { cache: "no-store" });
+  });
+
   it("captures one reminder time for every planned daily dose", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input).startsWith("/api/pregnancy/care") && init?.method === "PATCH") {
@@ -72,6 +97,44 @@ describe("iPhone health connection state", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
       method: "PATCH",
       body: expect.stringContaining('"reminderTimes":["08:00","20:00"]')
+    })));
+  });
+
+  it("shows daily progress and saved adherence history without suggesting a dose", async () => {
+    const careSnapshot = {
+      profile: null, iphone_health: null, iphone_health_history: [], iphone_devices: [],
+      plans: [{ id: "11111111-1111-4111-8111-111111111111", category: "supplement", name: "Prenatal theo đơn",
+        dose_display: "1 viên", times_per_day: 1, reminder_times: ["08:00:00"], instructions: "Sau ăn",
+        nutrient_amounts: {}, confirmed_by_clinician: true, active: true, taken_slots: [],
+        dose_states: [{ slot: 1, status: "deferred", reason: "Đợi sau ăn", recorded_at: "2026-09-01T01:00:00Z" }] },
+        { id: "22222222-2222-4222-8222-222222222222", category: "medicine", name: "Thuốc A",
+          dose_display: "Theo đơn", times_per_day: 1, reminder_times: ["20:00:00"], instructions: "",
+          nutrient_amounts: {}, confirmed_by_clinician: true, active: false, taken_slots: [], dose_states: [] }],
+      adherence_history: [{ plan_id: "11111111-1111-4111-8111-111111111111", plan_name: "Prenatal theo đơn",
+        day: "2026-08-31", slot: 1, status: "skipped", reason: "Buồn nôn", recorded_at: "2026-08-31T01:00:00Z" }]
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).startsWith("/api/pregnancy/care")) return Response.json({ snapshot: careSnapshot });
+      return Response.json({ history: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+    await waitFor(() => expect(screen.getByText(/0\/1 đã uống · 0 bỏ qua · 1 hoãn/i)).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: "Lịch sử tuân thủ" })).toBeInTheDocument();
+    expect(screen.getByText(/Bỏ qua · Buồn nôn/i)).toBeInTheDocument();
+    expect(screen.queryByText(/liều khuyến nghị|nên uống/i)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Trạng thái Prenatal theo đơn lần 1"), { target: { value: "taken" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu lần 1" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
+      method: "PATCH", body: expect.stringContaining('"status":"taken"')
+    })));
+    fireEvent.click(screen.getByRole("button", { name: "Tạm dừng Prenatal theo đơn" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
+      body: expect.stringContaining('"action":"planState"')
+    })));
+    fireEvent.click(screen.getByRole("button", { name: "Kích hoạt Thuốc A" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
+      body: expect.stringContaining('"active":true')
     })));
   });
 });

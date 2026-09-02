@@ -20,7 +20,11 @@ type CarePlan = {
   confirmed_by_clinician: boolean;
   active: boolean;
   taken_slots: number[];
+  dose_states?: DoseState[];
 };
+
+type DoseState = { slot: number; status: "taken" | "skipped" | "deferred"; reason: string; recorded_at: string };
+type AdherenceHistory = DoseState & { plan_id: string; plan_name: string; day: string };
 
 type IphoneHealth = {
   day?: string;
@@ -47,6 +51,8 @@ type IphoneHealth = {
   updated_at: string;
 };
 
+type IphoneHealthHistoryDays = 7 | 30;
+
 type Snapshot = {
   profile: null | {
     birth_date: string | null;
@@ -61,6 +67,7 @@ type Snapshot = {
   iphone_health: IphoneHealth | null;
   iphone_health_history: IphoneHealth[];
   iphone_devices: { id: string; label: string; active: boolean; last_synced_at: string | null }[];
+  adherence_history?: AdherenceHistory[];
 };
 
 type MealEntry = {
@@ -117,11 +124,12 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [planTimesPerDay, setPlanTimesPerDay] = useState(1);
   const [syncSecret, setSyncSecret] = useState<{ token: string; ingestUrl: string } | null>(null);
   const [copied, setCopied] = useState<"token" | "url" | null>(null);
+  const [iphoneHistoryDays, setIphoneHistoryDays] = useState<IphoneHealthHistoryDays>(7);
 
   async function load(currentDay: string) {
     try {
       const [careResponse, mealsResponse] = await Promise.all([
-        fetch(`/api/pregnancy/care?day=${currentDay}`, { cache: "no-store" }),
+        fetch(`/api/pregnancy/care?day=${currentDay}&days=30`, { cache: "no-store" }),
         fetch("/api/meals?days=7", { cache: "no-store" })
       ]);
       if (!careResponse.ok) throw new Error("care unavailable");
@@ -181,6 +189,14 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     setShowPlan(false);
   }
 
+  async function saveDose(event: FormEvent<HTMLFormElement>, planId: string, slot: number) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const doseStatus = data.get("doseStatus");
+    await mutate({ action: "intake", planId, slot, status: doseStatus,
+      reason: doseStatus === "taken" ? "" : data.get("reason") ?? "" });
+  }
+
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -218,8 +234,12 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   }
 
   const activePlans = snapshot.plans.filter((plan) => plan.active);
-  const doseCount = activePlans.reduce((sum, plan) => sum + plan.times_per_day, 0);
-  const takenCount = activePlans.reduce((sum, plan) => sum + plan.taken_slots.length, 0);
+  const pausedPlans = snapshot.plans.filter((plan) => !plan.active);
+  const confirmedPlans = activePlans.filter((plan) => plan.confirmed_by_clinician);
+  const doseCount = confirmedPlans.reduce((sum, plan) => sum + plan.times_per_day, 0);
+  const takenCount = confirmedPlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "taken").length, 0);
+  const skippedCount = confirmedPlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "skipped").length, 0);
+  const deferredCount = confirmedPlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "deferred").length, 0);
   const adherence = doseCount ? Math.round(takenCount * 100 / doseCount) : 0;
   const mealTotals = useMemo(() => dailyMealTotals(meals, day), [meals, day]);
   const nutrientTotals = useMemo(() => {
@@ -269,7 +289,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <div className="adherence-ring" style={{ "--progress": `${adherence * 3.6}deg` } as React.CSSProperties}>
             <strong>{doseCount ? `${adherence}%` : "—"}</strong><span>đã dùng</span>
           </div>
-          <div><h3>Hôm nay</h3><p>{doseCount ? `${takenCount}/${doseCount} lần theo kế hoạch` : "Chưa thêm thuốc hoặc vi chất"}</p></div>
+          <div><h3>Hôm nay</h3><p>{doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : "Chưa có kế hoạch đã được bác sĩ xác nhận"}</p></div>
         </article>
         <article className="energy-card">
           <span>Ước lượng từ bữa đã ghi</span>
@@ -283,19 +303,39 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <div className="dose-copy">
             <span>{plan.category === "medicine" ? "Thuốc" : "Vi chất"}{plan.confirmed_by_clinician ? " · đã xác nhận với bác sĩ" : " · cần xác nhận"}</span>
             <strong>{plan.name}</strong><small>{plan.dose_display}{plan.instructions ? ` · ${plan.instructions}` : ""}</small>
+            <button className="care-add-button" type="button" disabled={status === "saving"} onClick={() => void mutate({ action: "planState", planId: plan.id, active: false })}>Tạm dừng {plan.name}</button>
           </div>
-          <div className="dose-slots" aria-label={`Đánh dấu ${plan.name}`}>
+          {plan.confirmed_by_clinician ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
             {Array.from({ length: plan.times_per_day }, (_, index) => index + 1).map((slot) => {
-              const taken = plan.taken_slots.includes(slot);
+              const dose = (plan.dose_states ?? []).find((item) => item.slot === slot);
               const reminderTime = plan.reminder_times?.[slot - 1]?.slice(0, 5);
-              return <button key={slot} type="button" className={taken ? "is-taken" : ""} aria-pressed={taken}
-                onClick={() => void mutate({ action: "intake", planId: plan.id, slot, taken: !taken })}>
-                {taken ? "✓" : reminderTime || slot}<span className="sr-only">Lần {slot}{reminderTime ? ` lúc ${reminderTime}` : ""}</span>
-              </button>;
+              return <form className="care-plan-form" key={`${slot}-${dose?.status ?? "pending"}-${dose?.recorded_at ?? ""}`} onSubmit={(event) => void saveDose(event, plan.id, slot)}>
+                <strong>Lần {slot}{reminderTime ? ` · ${reminderTime}` : ""}</strong>
+                <label>Trạng thái<span className="sr-only"> {plan.name} lần {slot}</span><select name="doseStatus" required defaultValue={dose?.status ?? ""} aria-label={`Trạng thái ${plan.name} lần ${slot}`}>
+                  <option value="">Chọn</option><option value="taken">Đã uống</option><option value="skipped">Bỏ qua</option><option value="deferred">Hoãn</option>
+                </select></label>
+                <label>Lý do ngắn (nếu bỏ qua/hoãn)<input name="reason" maxLength={120} defaultValue={dose?.reason ?? ""} /></label>
+                <button className="health-save" type="submit" disabled={status === "saving"}>Lưu lần {slot}</button>
+              </form>;
             })}
-          </div>
+          </div> : <p className="formula-note">Xác nhận kế hoạch với bác sĩ/dược sĩ trước khi ghi tuân thủ.</p>}
         </article>)}
       </div> : <div className="care-empty"><strong>Chưa có kế hoạch dùng hằng ngày</strong><p>Chỉ thêm đúng tên và liều đang dùng hoặc đã được bác sĩ dặn.</p></div>}
+
+      {pausedPlans.length ? <details className="energy-profile">
+        <summary><span><strong>Kế hoạch đang tạm dừng</strong><small>{pausedPlans.length} kế hoạch</small></span><i>⌄</i></summary>
+        <div className="dose-list">{pausedPlans.map((plan) => <article key={plan.id}><div className="dose-copy"><strong>{plan.name}</strong><small>{plan.dose_display}</small></div>
+          <button className="care-add-button" type="button" disabled={status === "saving"} onClick={() => void mutate({ action: "planState", planId: plan.id, active: true })}>Kích hoạt {plan.name}</button>
+        </article>)}</div>
+      </details> : null}
+
+      {(snapshot.adherence_history ?? []).length ? <section className="dose-list" aria-labelledby="adherence-history-title">
+        <h3 id="adherence-history-title">Lịch sử tuân thủ</h3>
+        {(snapshot.adherence_history ?? []).map((item) => <article key={`${item.plan_id}-${item.day}-${item.slot}`}>
+          <div className="dose-copy"><span>{new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN")} · Lần {item.slot}</span><strong>{item.plan_name}</strong>
+            <small>{item.status === "taken" ? "Đã uống" : item.status === "skipped" ? "Bỏ qua" : "Hoãn"}{item.reason ? ` · ${item.reason}` : ""}</small></div>
+        </article>)}
+      </section> : null}
 
       <button className="care-add-button" type="button" onClick={() => setShowPlan((value) => !value)}>
         {showPlan ? "Đóng" : "+ Thêm thuốc hoặc vi chất"}
@@ -379,8 +419,14 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           </details>
           <p className="iphone-metric-sync">Mỗi chỉ số giữ thời điểm đồng bộ riêng · cập nhật gần nhất {new Date(latestIphoneHealth.updated_at).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}</p>
           <div className="iphone-health-history">
-            <h3>Lịch sử sức khỏe từ iPhone</h3>
-            <div>{iphoneHistory.slice(-7).reverse().map((item) => <article key={item.day}>
+            <div className="iphone-health-history-heading">
+              <h3>Lịch sử sức khỏe từ iPhone</h3>
+              <span role="group" aria-label="Khoảng lịch sử sức khỏe">
+                <button type="button" aria-pressed={iphoneHistoryDays === 7} onClick={() => setIphoneHistoryDays(7)}>7 ngày</button>
+                <button type="button" aria-pressed={iphoneHistoryDays === 30} onClick={() => setIphoneHistoryDays(30)}>30 ngày</button>
+              </span>
+            </div>
+            <div>{iphoneHistory.slice(-iphoneHistoryDays).reverse().map((item) => <article key={item.day}>
               <time>{item.day ? new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : "—"}</time>
               <span>{item.steps?.toLocaleString("vi-VN") ?? "—"} bước</span>
               <span>{item.sleep_minutes ? `${(item.sleep_minutes / 60).toFixed(1)}h ngủ` : "—"}</span>
