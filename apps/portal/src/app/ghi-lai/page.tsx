@@ -314,6 +314,7 @@ export default function JournalPage() {
         <p className="eyebrow">Một dòng cho mai sau</p>
         <h1>Hôm nay có gì đáng nhớ?</h1>
         <p className="intro">Một câu ngắn cũng đủ. EmBe sẽ tự đưa vào dòng thời gian gia đình.</p>
+        <a className="journal-browse-link" href="/nhat-ky">Xem nhật ký</a>
         <form className="journal-form" id="viet-nhat-ky" onSubmit={submit}>
           <input ref={cameraInput} aria-hidden="true" tabIndex={-1} className="sr-only" type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={choosePhotos} />

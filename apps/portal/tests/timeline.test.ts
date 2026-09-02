@@ -54,6 +54,17 @@ describe("curated family timeline", () => {
     expect(await getTimeline()).toEqual([]);
   });
 
+  it("allows the dedicated journal to request more history within a safe bound", async () => {
+    process.env.SUPABASE_URL = "https://project.supabase.co";
+    process.env.SUPABASE_SECRET_KEY = "server-only-secret";
+    const fetchMock = vi.fn().mockResolvedValue(new Response("[]", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getTimeline(200);
+
+    expect(fetchMock.mock.calls[0][0]).toContain("limit=200");
+  });
+
   it("reports whether the local publication is fresh without exposing credentials", async () => {
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-secret";

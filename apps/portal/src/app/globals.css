@@ -1219,6 +1219,56 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .home-shortcuts .shortcut-text strong { padding-right: 20px; }
 
 .timeline-panel { margin-top: 24px; }
+.timeline-panel > .section-head { align-items: center; display: flex; justify-content: space-between; }
+.journal-all-link { color: var(--rose); font-size: .75rem; font-weight: 700; min-height: 44px; padding: 12px 0 8px 12px; text-decoration: none; }
+.journal-browse-link { color: var(--rose); font-size: .78rem; font-weight: 700; justify-self: start; min-height: 44px; padding: 11px 0; text-decoration: none; }
+
+/* ── Nhật ký nhiều chế độ xem ─────────────────────────────── */
+.journal-view-page { padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
+.journal-view-hero { align-items: end; display: flex; gap: 12px; justify-content: space-between; margin: 10px 0 16px; padding: 0 4px; }
+.journal-view-hero > div { display: grid; gap: 3px; }
+.journal-view-hero h1 { font-family: var(--font-display), Georgia, serif; font-size: clamp(2rem, 10vw, 2.8rem); font-weight: 500; line-height: 1; }
+.journal-view-hero > div > p:last-child { color: var(--ink-soft); font-size: .82rem; }
+.journal-view-hero > a { background: var(--rose); border-radius: 999px; color: white; font-size: .78rem; font-weight: 700; min-height: 44px; padding: 13px 16px; text-decoration: none; white-space: nowrap; }
+.journal-browser { display: grid; gap: 14px; }
+.journal-view-switch { background: color-mix(in srgb, var(--rose-soft) 62%, var(--surface)); border: 1px solid var(--line); border-radius: 14px; display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; position: sticky; top: calc(6px + env(safe-area-inset-top)); z-index: 8; }
+.journal-view-switch button { background: transparent; border: 0; border-radius: 11px; color: var(--ink-soft); font: inherit; font-size: .72rem; font-weight: 650; min-height: 42px; padding: 7px 4px; }
+.journal-view-switch button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 3px 12px rgba(96, 55, 71, .09); color: var(--rose); }
+.journal-view-timeline, .journal-day-groups { display: grid; gap: 12px; }
+.journal-view-timeline-row { border-left: 1px solid color-mix(in srgb, var(--rose) 25%, var(--line)); display: grid; gap: 5px; padding-left: 14px; position: relative; }
+.journal-view-timeline-row::before { background: var(--rose); border: 3px solid var(--paper); border-radius: 50%; content: ""; height: 11px; left: -6px; position: absolute; top: 5px; width: 11px; }
+.journal-view-timeline-row > time, .journal-day-group header time { color: var(--ink-soft); font-size: .7rem; text-transform: capitalize; }
+.journal-view-entry { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; display: grid; gap: 5px; overflow: hidden; padding: 12px; }
+.journal-view-entry.is-milestone { background: color-mix(in srgb, var(--rose-soft) 44%, var(--surface)); }
+.journal-view-entry-head { align-items: center; display: flex; justify-content: space-between; }
+.journal-view-entry-head span { color: var(--rose); font-size: .64rem; font-weight: 750; }
+.journal-view-entry-head time { color: var(--ink-soft); font-size: .65rem; }
+.journal-view-entry > strong { font-family: var(--font-display), Georgia, serif; font-size: 1rem; font-weight: 600; }
+.journal-view-entry p { color: var(--ink-soft); font-size: .8rem; line-height: 1.5; }
+.journal-view-entry > img { border-radius: 10px; height: 128px; margin-top: 3px; object-fit: cover; width: 100%; }
+.journal-day-group { background: var(--surface); border: 1px solid var(--line); border-radius: 17px; overflow: hidden; }
+.journal-day-group > header { align-items: center; background: color-mix(in srgb, var(--rose-soft) 38%, var(--surface)); display: flex; justify-content: space-between; padding: 11px 12px; }
+.journal-day-group > header div { display: grid; gap: 2px; }
+.journal-day-group > header small, .journal-day-group > header span { color: var(--ink-soft); font-size: .65rem; }
+.journal-day-group > div { display: grid; gap: 8px; padding: 8px; }
+.journal-day-group .journal-view-entry { border-color: transparent; border-radius: 11px; padding: 8px; }
+.journal-calendar-view { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; display: grid; gap: 8px; padding: 10px; }
+.journal-calendar-toolbar { align-items: center; display: grid; grid-template-columns: 44px 1fr 44px; text-align: center; }
+.journal-calendar-toolbar button { background: transparent; border: 0; border-radius: 12px; color: var(--rose); font-size: 1.1rem; min-height: 44px; }
+.journal-calendar-toolbar strong { font-family: var(--font-display), Georgia, serif; font-size: 1rem; font-weight: 600; }
+.journal-calendar-week, .journal-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.journal-calendar-week span { color: var(--ink-soft); font-size: .6rem; padding: 4px; text-align: center; }
+.journal-calendar-grid button { align-content: center; aspect-ratio: 1; background: transparent; border: 0; border-radius: 11px; color: var(--ink); display: grid; min-height: 43px; padding: 3px; position: relative; }
+.journal-calendar-grid button b { font-size: .75rem; font-weight: 650; }
+.journal-calendar-grid button small { color: var(--ink-soft); font-size: .5rem; }
+.journal-calendar-grid button.is-outside { opacity: .3; }
+.journal-calendar-grid button.has-entry { background: var(--rose-soft); }
+.journal-calendar-grid button.is-selected { box-shadow: inset 0 0 0 2px var(--rose); }
+.journal-calendar-grid button i { align-items: center; background: var(--rose); border-radius: 50%; color: white; display: flex; font-size: .48rem; font-style: normal; height: 14px; justify-content: center; position: absolute; right: 2px; top: 2px; width: 14px; }
+.journal-calendar-note { color: var(--ink-soft); font-size: .64rem; text-align: center; }
+.journal-calendar-selected { border-top: 1px solid var(--line); display: grid; gap: 8px; margin-top: 4px; padding-top: 11px; }
+.journal-calendar-selected h2 { font-family: var(--font-display), Georgia, serif; font-size: .95rem; font-weight: 600; text-transform: capitalize; }
+.journal-calendar-selected > p { color: var(--ink-soft); font-size: .78rem; padding: 12px 4px; text-align: center; }
 .freshness { color: var(--ink-soft); font-size: .8125rem; margin-top: 12px; }
 .timeline-date { color: var(--ink-soft); font-size: .75rem; }
 .privacy-line {

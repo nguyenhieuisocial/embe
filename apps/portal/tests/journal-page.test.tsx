@@ -27,6 +27,7 @@ describe("one-handed family journal", () => {
     expect(screen.getByRole("radio", { name: "Ba Hiếu" })).toBeInTheDocument();
     expect(screen.getByLabelText("Điều đáng nhớ")).toHaveAttribute("maxLength", "1000");
     expect(screen.getByText(/Không ghi thông tin khám/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Xem nhật ký" })).toHaveAttribute("href", "/nhat-ky");
   });
 
   it("submits once and clears the note after acceptance", async () => {

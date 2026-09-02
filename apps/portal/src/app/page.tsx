@@ -58,8 +58,8 @@ async function TimelinePanel() {
   return (
     <section className="section timeline-panel" aria-labelledby="timeline-title">
       <div className="section-head">
-        <p className="panel-kicker">Theo dòng thời gian</p>
-        <h2 id="timeline-title">Nhật ký</h2>
+        <div><p className="panel-kicker">Theo dòng thời gian</p><h2 id="timeline-title">Nhật ký</h2></div>
+        <a className="journal-all-link" href="/nhat-ky" aria-label="Xem toàn bộ nhật ký">Xem tất cả</a>
       </div>
 
       {timeline.length > 0 ? (
@@ -95,8 +95,8 @@ function TimelineLoading() {
   return (
     <section className="section timeline-panel" aria-busy="true">
       <div className="section-head">
-        <p className="panel-kicker">Theo dòng thời gian</p>
-        <h2>Nhật ký</h2>
+        <div><p className="panel-kicker">Theo dòng thời gian</p><h2>Nhật ký</h2></div>
+        <a className="journal-all-link" href="/nhat-ky" aria-label="Xem toàn bộ nhật ký">Xem tất cả</a>
       </div>
       <div className="skeleton" role="status">
         <span className="skeleton-line is-short" />

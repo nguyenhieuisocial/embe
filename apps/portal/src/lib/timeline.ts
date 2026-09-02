@@ -38,14 +38,15 @@ export function parseEvent(value: RawTimelineEvent): TimelineEvent | null {
   return { id, eventAt, eventType, title, caption, albumCoverUrl };
 }
 
-export async function getTimeline(): Promise<TimelineEvent[]> {
+export async function getTimeline(requestedLimit = 20): Promise<TimelineEvent[]> {
   const baseUrl = process.env.SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
   if (!baseUrl || !secretKey || !baseUrl.startsWith("https://")) return [];
+  const limit = Number.isInteger(requestedLimit) ? Math.max(1, Math.min(200, requestedLimit)) : 20;
   const query = new URLSearchParams({
     select: "id,event_at,portal_event_type,title,caption,album_cover_url",
     order: "event_at.desc",
-    limit: "20"
+    limit: String(limit)
   });
   try {
     const response = await fetch(`${baseUrl}/rest/v1/embe_timeline_event?${query}`, {
