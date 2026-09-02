@@ -2,7 +2,7 @@
 param(
     [string]$ProjectRoot = "C:\EmBe",
     [string]$BaseUrl = "http://127.0.0.1:2283",
-    [string]$DatabaseContainerName = "compose-immich-postgres-1",
+    [string]$DatabaseContainerName = "embe-immich-postgres-1",
     [string]$KeyName = "EmBe Portal Publisher",
     [string]$FamilyEmail = "family@hieu.asia",
     [string]$FamilyName = "Gia đình Ngân & Hiếu"

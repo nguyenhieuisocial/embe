@@ -25,7 +25,7 @@ def probe(docker: str) -> bool:
         [
             docker,
             "exec",
-            "compose-immich-postgres-1",
+            "embe-immich-postgres-1",
             "psql",
             "-U",
             "postgres",

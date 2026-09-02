@@ -2,12 +2,12 @@
 param(
     [string]$ProjectRoot = "C:\EmBe",
     [string]$StatusPath = "",
-    [ValidateRange(15, 60)]
-    [double]$TargetFreePercent = 20,
-    [ValidateRange(10, 40)]
-    [double]$MinimumFreePercent = 15,
-    [ValidateRange(-1, 100)]
-    [double]$FreePercentOverride = -1,
+    [ValidateRange(20, 500)]
+    [double]$TargetFreeGiB = 75,
+    [ValidateRange(10, 250)]
+    [double]$MinimumFreeGiB = 50,
+    [ValidateRange(-1, 10000)]
+    [double]$FreeGiBOverride = -1,
     [switch]$SkipActions,
     [string]$TempPath = $env:TEMP,
     [switch]$SkipSystemActions
@@ -16,17 +16,25 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-if ($MinimumFreePercent -gt $TargetFreePercent) { throw "Minimum free percent exceeds target" }
+if ($MinimumFreeGiB -gt $TargetFreeGiB) { throw "Minimum free space exceeds target" }
 if (-not $StatusPath) { $StatusPath = Join-Path $ProjectRoot "data\status\disk-maintenance.json" }
 
+function Get-FreeGiB {
+    if ($FreeGiBOverride -ge 0) { return $FreeGiBOverride }
+    $driveName = ([IO.Path]::GetPathRoot($ProjectRoot)).TrimEnd(':', '\')
+    $drive = Get-PSDrive -Name $driveName
+    return $drive.Free / 1GB
+}
+
 function Get-FreePercent {
-    if ($FreePercentOverride -ge 0) { return $FreePercentOverride }
+    if ($FreeGiBOverride -ge 0) { return $null }
     $driveName = ([IO.Path]::GetPathRoot($ProjectRoot)).TrimEnd(':', '\')
     $drive = Get-PSDrive -Name $driveName
     return 100 * $drive.Free / ($drive.Used + $drive.Free)
 }
 
-$before = Get-FreePercent
+$before = Get-FreeGiB
+$percentBefore = Get-FreePercent
 $maintenanceAttempted = $false
 $builderCachePruned = $false
 $filesystemTrimmed = $false
@@ -63,7 +71,7 @@ function Remove-StaleWslSwaps([string]$RootPath) {
     return @($removed, $bytes)
 }
 
-if ($before -lt $TargetFreePercent -and -not $SkipActions) {
+if ($before -lt $TargetFreeGiB -and -not $SkipActions) {
     $maintenanceAttempted = $true
 
     $swapCleanup = @(Remove-StaleWslSwaps $TempPath)
@@ -80,7 +88,7 @@ if ($before -lt $TargetFreePercent -and -not $SkipActions) {
         $filesystemTrimmed = $LASTEXITCODE -eq 0
     }
 
-    if (-not $SkipSystemActions -and (Get-FreePercent) -lt $TargetFreePercent) {
+    if (-not $SkipSystemActions -and (Get-FreeGiB) -lt $TargetFreeGiB) {
         $npmAvailable = $null -ne (Get-Command npm -ErrorAction SilentlyContinue)
         $npmCleared = $false
         if ($npmAvailable) {
@@ -110,17 +118,20 @@ if ($before -lt $TargetFreePercent -and -not $SkipActions) {
     }
 }
 
-$after = Get-FreePercent
-$status = if ($after -ge $MinimumFreePercent) { "pass" } else { "warning" }
+$after = Get-FreeGiB
+$percentAfter = Get-FreePercent
+$status = if ($after -ge $MinimumFreeGiB) { "pass" } else { "warning" }
 $report = [ordered]@{
     schema_version = 1
     generated_at = [DateTimeOffset]::UtcNow.ToString("o")
     status = $status
-    free_percent_before = [math]::Round($before, 2)
-    free_percent_after = [math]::Round($after, 2)
-    target_percent = $TargetFreePercent
-    minimum_percent = $MinimumFreePercent
-    target_met = $after -ge $TargetFreePercent
+    free_gib_before = [math]::Round($before, 2)
+    free_gib_after = [math]::Round($after, 2)
+    free_percent_before = if ($null -eq $percentBefore) { $null } else { [math]::Round($percentBefore, 2) }
+    free_percent_after = if ($null -eq $percentAfter) { $null } else { [math]::Round($percentAfter, 2) }
+    target_gib = $TargetFreeGiB
+    minimum_gib = $MinimumFreeGiB
+    target_met = $after -ge $TargetFreeGiB
     maintenance_attempted = $maintenanceAttempted
     builder_cache_pruned = $builderCachePruned
     filesystem_trimmed = $filesystemTrimmed

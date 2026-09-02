@@ -2,7 +2,7 @@ param(
     [string]$AppDataRoot = "C:\EmBe\data\appdata",
     [string]$OutputRoot = "C:\EmBe\exports\backup-staging",
     [string]$PythonPath = "C:\EmBe\.venv\Scripts\python.exe",
-    [string]$ImmichContainer = "compose-immich-postgres-1",
+    [string]$ImmichContainer = "embe-immich-postgres-1",
     [string]$ProjectRoot = "C:\EmBe",
     [string]$SupabaseConfigFile,
     [string]$SupabaseCliPath,

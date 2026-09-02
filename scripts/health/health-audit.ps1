@@ -112,6 +112,7 @@ if ($FixturePath) {
     $fixture = Get-Content -LiteralPath $FixturePath -Raw | ConvertFrom-Json
     if ($fixture.now_utc) { $now = Convert-ToDateTimeOffset $fixture.now_utc }
     $diskFreePercent = [double]$fixture.disk_free_percent
+    $diskFreeGiB = [double]$fixture.disk_free_gib
     $diskMaintenanceStatus = $fixture.disk_maintenance
     $diskMaintenanceTaskReady = [bool]$fixture.disk_maintenance_task_ready
     $containers = @($fixture.containers)
@@ -156,6 +157,7 @@ if ($FixturePath) {
     $driveName = ([IO.Path]::GetPathRoot($ProjectRoot)).TrimEnd(':', '\')
     $drive = Get-PSDrive -Name $driveName
     $diskFreePercent = 100 * $drive.Free / ($drive.Used + $drive.Free)
+    $diskFreeGiB = $drive.Free / 1GB
 
     $diskMaintenancePath = Join-Path $ProjectRoot "data\status\disk-maintenance.json"
     $diskMaintenanceStatus = if (Test-Path -LiteralPath $diskMaintenancePath -PathType Leaf) {
@@ -313,7 +315,7 @@ if ($FixturePath) {
     }
     if (-not $immichFamilyAccountReady) {
         try {
-            $accountCount = & docker exec compose-immich-postgres-1 psql -U postgres -d immich -Atc 'SELECT COUNT(*) FROM "user" WHERE NOT "isAdmin" AND NOT "shouldChangePassword" AND "deletedAt" IS NULL;' 2>$null
+            $accountCount = & docker exec embe-immich-postgres-1 psql -U postgres -d immich -Atc 'SELECT COUNT(*) FROM "user" WHERE NOT "isAdmin" AND NOT "shouldChangePassword" AND "deletedAt" IS NULL;' 2>$null
             $immichFamilyAccountReady = $LASTEXITCODE -eq 0 -and [int]$accountCount -ge 1
         } catch {
             $immichFamilyAccountReady = $false
@@ -512,8 +514,13 @@ if ($FixturePath) {
     }
 }
 
-$diskStatus = if ($diskFreePercent -lt 15) { "critical" } elseif ($diskFreePercent -lt 20) { "warning" } else { "pass" }
-Add-Check "disk_headroom" $diskStatus "Dung lượng trống của ổ hệ thống" @{ free_percent = [math]::Round($diskFreePercent, 2); warning_below = 20; critical_below = 15 }
+$diskStatus = if ($diskFreeGiB -lt 20) { "critical" } elseif ($diskFreeGiB -lt 50) { "warning" } else { "pass" }
+Add-Check "disk_headroom" $diskStatus "Dung lượng trống của ổ hệ thống" @{
+    free_gib = [math]::Round($diskFreeGiB, 2)
+    free_percent = [math]::Round($diskFreePercent, 2)
+    warning_below_gib = 50
+    critical_below_gib = 20
+}
 
 $diskMaintenanceAge = if ($null -ne $diskMaintenanceStatus -and $diskMaintenanceStatus.generated_at) { Get-AgeHours $diskMaintenanceStatus.generated_at } else { [double]::PositiveInfinity }
 $diskMaintenancePass = $diskMaintenanceTaskReady -and $null -ne $diskMaintenanceStatus -and [string]$diskMaintenanceStatus.status -eq "pass" -and $diskMaintenanceAge -le 30
@@ -526,7 +533,7 @@ Add-Check "disk_maintenance" $(if ($diskMaintenancePass) { "pass" } else { "crit
 $expectedContainers = @(
     "embe-babybuddy-1", "embe-memos-1", "embe-grocy-1", "embe-node-red-1", "embe-uptime-kuma-1",
     "embe-mqtt-1", "embe-home-assistant-1",
-    "compose-immich-server-1", "compose-immich-postgres-1", "compose-immich-redis-1", "compose-immich-machine-learning-1"
+    "embe-immich-server-1", "embe-immich-postgres-1", "embe-immich-redis-1", "embe-immich-machine-learning-1"
 )
 $containerFailures = @()
 foreach ($name in $expectedContainers) {

@@ -12,7 +12,7 @@ Chạy `scripts\health\health-audit.ps1`. Báo cáo an toàn nằm tại
 `data\status\system-health.json` và chỉ chứa tên dịch vụ, số lượng, thời gian và
 trạng thái.
 
-- `disk_headroom`: ngừng import media dưới 15%; lên kế hoạch mở rộng dưới 20%.
+- `disk_headroom`: ngừng import media dưới 20 GiB; lên kế hoạch dọn/mở rộng dưới 50 GiB. Phần trăm dung lượng vẫn được ghi để theo dõi nhưng không dùng làm ngưỡng sai lệch trên ổ lớn.
 - `disk_maintenance`: kiểm tra tác vụ `EmBe-DiskMaintenance`; không thay bằng
   `docker system prune`, `image prune` hoặc `volume prune`.
 - `backup_freshness` hoặc `restore_drill`: dừng nâng cấp và chạy lại backup/restore.

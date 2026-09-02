@@ -35,7 +35,7 @@ if (-not $healthSource.Contains('System32\Tasks') -or -not $healthSource.Contain
 if (-not $healthSource.Contains("'^\d{8}T\d{6}Z\.json$'")) {
     throw "Backup freshness must ignore status JSON files beside Restic manifests"
 }
-foreach ($immichAccountContract in @('compose-immich-postgres-1', 'NOT "isAdmin"', 'NOT "shouldChangePassword"', '"deletedAt" IS NULL')) {
+foreach ($immichAccountContract in @('embe-immich-postgres-1', 'NOT "isAdmin"', 'NOT "shouldChangePassword"', '"deletedAt" IS NULL')) {
     if (-not $healthSource.Contains($immichAccountContract)) {
         throw "Immich family-account health must have a secret-free database fallback: $immichAccountContract"
     }
@@ -46,16 +46,17 @@ if ($healthSource.Contains('SELECT email')) {
 $testRoot = Join-Path $env:TEMP ("embe-health-gates-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory $testRoot | Out-Null
 
-function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHours) {
+function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHours, [double]$DiskGiB = 80) {
     $now = [DateTimeOffset]::Parse("2026-08-30T12:00:00Z")
     $containers = @(
         "embe-babybuddy-1", "embe-memos-1", "embe-grocy-1", "embe-node-red-1", "embe-uptime-kuma-1",
         "embe-mqtt-1", "embe-home-assistant-1",
-        "compose-immich-server-1", "compose-immich-postgres-1", "compose-immich-redis-1", "compose-immich-machine-learning-1"
+        "embe-immich-server-1", "embe-immich-postgres-1", "embe-immich-redis-1", "embe-immich-machine-learning-1"
     ) | ForEach-Object { @{ name = $_; status = "Up 1 hour (healthy)" } }
     $fixture = [ordered]@{
         now_utc = $now.ToString("o")
         disk_free_percent = $DiskPercent
+        disk_free_gib = $DiskGiB
         disk_maintenance = @{ status = "pass"; generated_at = $now.AddHours(-1).ToString("o") }
         disk_maintenance_task_ready = $true
         containers = $containers
@@ -122,8 +123,8 @@ function Write-Fixture([string]$Path, [double]$DiskPercent, [double]$BackupAgeHo
 try {
     $healthyFixture = Join-Path $testRoot "healthy.json"
     $criticalFixture = Join-Path $testRoot "critical.json"
-    Write-Fixture $healthyFixture 40 2
-    Write-Fixture $criticalFixture 10 12
+    Write-Fixture $healthyFixture 7 2
+    Write-Fixture $criticalFixture 10 12 10
 
     $healthyReport = Join-Path $testRoot "healthy-report.json"
     $healthyOutput = & $scriptEngine -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot "scripts\health\health-audit.ps1") -ProjectRoot $projectRoot -FixturePath $healthyFixture -OutputPath $healthyReport 2>&1
