@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 import { calculatePregnancyWeek } from "../lib/pregnancy";
-
-const DUE_DATE_KEY = "embe:pregnancy:due-date";
-const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
+import { usePregnancyDueDate } from "../lib/use-pregnancy-due-date";
 
 function chapterFor(dueDate: string) {
   const week = calculatePregnancyWeek(dueDate);
@@ -36,18 +32,7 @@ function chapterFor(dueDate: string) {
 }
 
 export default function PregnancyChapter() {
-  const [dueDate, setDueDate] = useState("");
-
-  useEffect(() => {
-    const refresh = () => setDueDate(localStorage.getItem(DUE_DATE_KEY) ?? "");
-    refresh();
-    window.addEventListener("storage", refresh);
-    window.addEventListener(STAGE_CHANGE_EVENT, refresh);
-    return () => {
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener(STAGE_CHANGE_EVENT, refresh);
-    };
-  }, []);
+  const dueDate = usePregnancyDueDate();
 
   const chapter = chapterFor(dueDate);
 

@@ -9,7 +9,7 @@ export async function DELETE(request: Request, context: Context): Promise<Respon
   if (!isUuidV4(id)) return privateReply({ error: "invalid_request" }, 400);
   const store = photoStore(); if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
   try {
-    const result = await store.rpc("embe_delete_pregnancy_medical_record", { p_id: id });
+    const result = await store.rpc("embe_delete_pregnancy_medical_record_with_task", { p_id: id });
     if (result.error) throw new Error("delete unavailable");
     return privateReply({ deleted: true }, 200);
   } catch { return privateReply({ error: "temporarily_unavailable" }, 503); }

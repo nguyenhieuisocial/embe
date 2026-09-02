@@ -11,6 +11,7 @@ vi.mock("@supabase/supabase-js", () => ({
 }));
 
 import { GET as listRecords, POST as saveRecord } from "../src/app/api/pregnancy/records/route";
+import { DELETE as deleteRecord } from "../src/app/api/pregnancy/records/[id]/route";
 import { POST as createDocument } from "../src/app/api/pregnancy/records/[id]/documents/route";
 import { GET as viewDocument, POST as completeDocument } from "../src/app/api/pregnancy/documents/[id]/route";
 
@@ -40,15 +41,26 @@ describe("private pregnancy medical records", () => {
   });
   afterEach(() => { process.env = { ...originalEnvironment }; });
 
-  it("requires the family session and stores a planned appointment in the shared calendar", async () => {
+  it("requires the family session and stores a planned appointment atomically", async () => {
     expect((await listRecords(request("https://embe.hieu.asia/api/pregnancy/records", "GET", undefined, false))).status).toBe(401);
     rpc.mockResolvedValueOnce({ data: recordId, error: null });
-    rpc.mockResolvedValueOnce({ data: { id: "12" }, error: null });
     const response = await saveRecord(request("https://embe.hieu.asia/api/pregnancy/records", "POST", recordInput));
     expect(response.status).toBe(201);
-    expect(rpc).toHaveBeenNthCalledWith(2, "embe_create_family_task", expect.objectContaining({
-      p_category: "appointment", p_due_on: "2026-09-10", p_due_time: "09:30"
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith("embe_save_pregnancy_medical_record_with_task", expect.objectContaining({
+      p_kind: "appointment", p_status: "planned", p_occurred_at: "2026-09-10T02:30:00.000Z"
     }));
+  });
+
+  it("deletes a medical record and its planner task atomically", async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: null });
+    const response = await deleteRecord(
+      request(`https://embe.hieu.asia/api/pregnancy/records/${recordId}`, "DELETE"),
+      { params: Promise.resolve({ id: recordId }) }
+    );
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith("embe_delete_pregnancy_medical_record_with_task", { p_id: recordId });
   });
 
   it("classifies records and returns only cautious preparation insights", async () => {

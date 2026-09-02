@@ -288,6 +288,7 @@ export default function PregnancyPage() {
       </section>
 
       <BirthTransition />
+      <a className="stage-feature-link" href="/me-bau/tuan-nay"><span><small>Tự đổi theo ngày dự sinh</small><strong>Tuần này của Mẹ và Bé</strong></span><span aria-hidden="true">›</span></a>
       <a className="stage-feature-link" href="/me-bau/ho-so"><span><small>Dùng chung cho lịch và hồ sơ khám</small><strong>Hồ sơ thai kỳ</strong></span><span aria-hidden="true">›</span></a>
       <a className="stage-feature-link" href="/chuan-bi-sinh"><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></a>
 
@@ -297,6 +298,8 @@ export default function PregnancyPage() {
         <a href="/me-bau/ho-so">Hồ sơ</a>
         <a href="#cam-nang">Cẩm nang</a>
       </nav>
+
+      <div className="pregnancy-reference-label"><a href="/me-bau/trieu-chung">Ghi triệu chứng &amp; tâm trạng</a></div>
 
       <a className="iphone-health-entry" href="#suc-khoe-iphone">
         <span className="iphone-health-entry-mark" aria-hidden="true"><Icon name="care" /></span>

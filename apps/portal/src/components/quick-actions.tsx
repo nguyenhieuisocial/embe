@@ -4,10 +4,8 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { calculatePregnancyWeek } from "../lib/pregnancy";
 import { useFamilyStage } from "../lib/use-family-stage";
+import { usePregnancyDueDate } from "../lib/use-pregnancy-due-date";
 import { Icon, type IconName } from "./embe-icon";
-
-const DUE_DATE_KEY = "embe:pregnancy:due-date";
-const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
 
 type QuickAction = {
   href: string;
@@ -36,21 +34,10 @@ function actionsForStage(dueDate: string): QuickAction[] {
 
 export default function QuickActions() {
   const [open, setOpen] = useState(false);
-  const [dueDate, setDueDate] = useState("");
+  const dueDate = usePregnancyDueDate();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const { postpartum } = useFamilyStage();
-
-  useEffect(() => {
-    const refreshStage = () => setDueDate(localStorage.getItem(DUE_DATE_KEY) ?? "");
-    refreshStage();
-    window.addEventListener("storage", refreshStage);
-    window.addEventListener(STAGE_CHANGE_EVENT, refreshStage);
-    return () => {
-      window.removeEventListener("storage", refreshStage);
-      window.removeEventListener(STAGE_CHANGE_EVENT, refreshStage);
-    };
-  }, []);
 
   useEffect(() => {
     if (!open) return;
