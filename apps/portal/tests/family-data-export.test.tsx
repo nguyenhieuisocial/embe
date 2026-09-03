@@ -42,8 +42,8 @@ describe("private family JSON export", () => {
 
   it("downloads one versioned JSON package without secrets or binary media", async () => {
     rpc.mockResolvedValueOnce({ data: {
-      schema_version: "embe-family-export/v1", generated_at: "2026-09-02T10:00:00Z",
-      data: { pregnancy: { mental_health: [{ mood: 4, anxiety: 2 }] }, tasks: {}, meals: [], lifecycle: [], postpartum: [], baby: {}, inventory: {}, journal: {} }
+      schema_version: "embe-family-export/v3", generated_at: "2026-09-02T10:00:00Z",
+      data: { pregnancy: { mental_health: [{ mood: 4, anxiety: 2 }] }, tasks: {}, meals: [], lifecycle: [], postpartum: [], baby: {}, inventory: {}, journal: {}, history: { trash_actions: [], family_activity: [] } }
     }, error: null }).mockResolvedValueOnce({ data: {
       published_entries: [{
         id: "11111111-1111-4111-8111-111111111111", event_at: "2026-09-02T10:00:00Z",
@@ -60,12 +60,13 @@ describe("private family JSON export", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-disposition")).toMatch(/^attachment; filename="embe-family-data-/);
     expect(response.headers.get("cache-control")).toContain("no-store");
-    expect(payload.schema_version).toBe("embe-family-export/v1");
+    expect(payload.schema_version).toBe("embe-family-export/v3");
+    expect(payload.data.history).toEqual({ trash_actions: [], family_activity: [] });
     expect(payload.data.pregnancy.mental_health).toEqual([{ mood: 4, anxiety: 2 }]);
     expect(payload.data.journal.published_entries[0].caption).toBe("Nhẹ nhàng.");
     expect(payload.data.journal.pending_entries[0].content).toBe("Đang chờ đồng bộ.");
     expect(JSON.stringify(payload)).not.toMatch(/token_hash|storage_path|object_path|binary|secret/i);
-    expect(rpc).toHaveBeenCalledWith("embe_export_family_data_v2");
+    expect(rpc).toHaveBeenCalledWith("embe_export_family_data_v3");
     expect(rpc).toHaveBeenCalledWith("embe_export_journal_data");
     expect(body).not.toContain("\n  ");
   });
@@ -92,6 +93,7 @@ describe("private family JSON export", () => {
     render(<FamilyDataExport />);
     expect(screen.getByText(/không gồm file ảnh, video hay tài liệu gốc/i)).toBeInTheDocument();
     expect(screen.getByText(/gồm cả nhật ký đang thấy trong EmBe/i)).toBeInTheDocument();
+    expect(screen.getByText(/lịch sử xóa, khôi phục và hoạt động gần đây/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Xuất dữ liệu JSON" }));
     await waitFor(() => expect(click).toHaveBeenCalledOnce());
     expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/dữ liệu sức khỏe riêng tư/i));

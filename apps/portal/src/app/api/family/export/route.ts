@@ -61,7 +61,7 @@ export async function POST(request: Request): Promise<Response> {
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
   const [familyResult, journalResult] = await Promise.all([
-    store.rpc("embe_export_family_data_v2"),
+    store.rpc("embe_export_family_data_v3"),
     store.rpc("embe_export_journal_data")
   ]);
   const data = familyResult.data;

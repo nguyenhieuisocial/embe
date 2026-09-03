@@ -34,7 +34,7 @@ export default function FamilyDataExport() {
       <h2 id="family-data-export-title">Dữ liệu của gia đình</h2>
     </div>
     <p>Tải một gói JSON có phiên bản gồm dữ liệu gia đình đang lưu trong EmBe. Gói này không gồm file ảnh, video hay tài liệu gốc, và không chứa khóa bí mật.</p>
-    <p>Gói gồm cả nhật ký đang thấy trong EmBe và những ghi chép đang chờ đồng bộ.</p>
+      <p>Gói gồm cả nhật ký đang thấy trong EmBe, ghi chép đang chờ đồng bộ, lịch sử xóa, khôi phục và hoạt động gần đây.</p>
     <button className="btn btn-primary btn-block" type="button" disabled={status === "working"} onClick={() => void download()}>
       {status === "working" ? "Đang chuẩn bị…" : "Xuất dữ liệu JSON"}
     </button>
