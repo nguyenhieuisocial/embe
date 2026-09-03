@@ -101,6 +101,13 @@ class SupabaseAssistantQueue:
         value = self._rpc("embe_assistant_queue_status", {}) or {}
         return {key: int(value.get(key, 0)) for key in ("pending", "processing", "dead_letters")}
 
+    def heartbeat(self, state: str) -> None:
+        self._rpc("embe_touch_worker_heartbeat", {
+            "p_worker_name": "assistant",
+            "p_state": "degraded" if state == "degraded" else "online",
+            "p_detail": "degraded" if state == "degraded" else "ok",
+        })
+
     def pregnancy_context(self, days: int) -> dict[str, Any]:
         value = self._rpc("embe_assistant_pregnancy_context", {"p_days": max(7, min(days, 30))})
         return value if isinstance(value, dict) else {}
@@ -185,6 +192,7 @@ def main(argv=None) -> int:
     try:
         processed = process_jobs(queue, answer)
         status = queue.status()
+        queue.heartbeat("degraded" if processed["failed"] or status["dead_letters"] else "online")
         _write_status(args.status, {
             "schema_version": 1, "status": "ok",
             "last_success_at": datetime.now(timezone.utc).isoformat(),

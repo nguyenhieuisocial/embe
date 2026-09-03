@@ -2,10 +2,11 @@ import sys
 import unittest
 from datetime import date
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from assistant_worker import AssistantJob, direct_question_prompt, process_jobs  # noqa: E402
+from assistant_worker import AssistantJob, SupabaseAssistantQueue, direct_question_prompt, process_jobs  # noqa: E402
 
 
 class FakeQueue:
@@ -25,6 +26,16 @@ class FakeQueue:
 
 
 class AssistantWorkerTests(unittest.TestCase):
+    def test_reports_only_bounded_assistant_health_to_the_shared_status_store(self):
+        with patch("assistant_worker._request_json", return_value=None) as request_json:
+            queue = SupabaseAssistantQueue("https://project.supabase.co", "server-key")
+            queue.heartbeat("degraded")
+
+        self.assertTrue(request_json.call_args.args[0].endswith("/rest/v1/rpc/embe_touch_worker_heartbeat"))
+        self.assertEqual(request_json.call_args.args[2], {
+            "p_worker_name": "assistant", "p_state": "degraded", "p_detail": "degraded"
+        })
+
     def test_direct_question_prompt_includes_only_bounded_family_context(self):
         prompt = direct_question_prompt(
             "Tôi nên chuẩn bị gì cho lần khám tới?",

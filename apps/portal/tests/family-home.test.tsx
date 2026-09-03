@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import FamilyHomePage from "../src/app/nha-minh/page";
 
+vi.mock("../src/components/system-status", () => ({ default: () => <section>Tình trạng EmBe</section> }));
+
 describe("family home hub", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -21,6 +23,7 @@ describe("family home hub", () => {
     expect(screen.getByRole("link", { name: "Mở Sổ Mẹ và Bé" })).toHaveAttribute("href", "/so-me-va-be");
     expect(screen.getByRole("link", { name: "Mở cài đặt" })).toHaveAttribute("href", "/cai-dat");
     expect(screen.getByText("Chọn công cụ cần mở hoặc thiết lập điện thoại này.")).toBeInTheDocument();
+    expect(screen.getByText("Tình trạng EmBe")).toBeInTheDocument();
   });
 
   it("never renders an unavailable photo endpoint as a broken link", () => {
