@@ -7,6 +7,7 @@ type ObserverCallback = (entries: Array<{ isIntersecting: boolean }>) => void;
 
 describe("DeferredSection", () => {
   let callback: ObserverCallback | undefined;
+  let rootMargin: string | undefined;
 
   afterEach(() => {
     window.history.replaceState(null, "", "/");
@@ -15,7 +16,10 @@ describe("DeferredSection", () => {
 
   function installObserver() {
     class Observer {
-      constructor(next: ObserverCallback) { callback = next; }
+      constructor(next: ObserverCallback, options?: IntersectionObserverInit) {
+        callback = next;
+        rootMargin = options?.rootMargin;
+      }
       observe() {}
       disconnect() {}
     }
@@ -30,6 +34,7 @@ describe("DeferredSection", () => {
 
     expect(screen.queryByText("Đã mở công cụ")).not.toBeInTheDocument();
     expect(screen.getByText("Công cụ chăm sóc sẽ mở khi Mẹ cuộn tới.")).toBeInTheDocument();
+    expect(rootMargin).toBe("0px 0px 320px 0px");
 
     act(() => callback?.([{ isIntersecting: true }]));
     expect(screen.getByText("Đã mở công cụ")).toBeInTheDocument();

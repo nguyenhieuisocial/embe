@@ -41,7 +41,7 @@ export default function DeferredSection({
           setVisible(true);
           observer?.disconnect();
         }
-      }, { rootMargin: "700px 0px" });
+      }, { rootMargin: "0px 0px 320px 0px" });
       observer.observe(rootRef.current);
     } else {
       setVisible(true);

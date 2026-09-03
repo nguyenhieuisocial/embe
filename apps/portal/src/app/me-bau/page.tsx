@@ -21,9 +21,9 @@ import {
 } from "../../lib/pregnancy-content";
 import { calculatePregnancyWeek, estimateDueDateFromLmp, localDateKey } from "../../lib/pregnancy";
 
-function ToolLoading({ label }: { label: string }) {
+function ToolLoading({ label, height }: { label: string; height: number }) {
   return (
-    <div className="deferred-section" role="status" aria-label={`Đang mở ${label}`}>
+    <div className="deferred-section" role="status" aria-label={`Đang mở ${label}`} style={{ minHeight: height }}>
       <span aria-hidden="true" />
       <p>Đang mở {label}…</p>
     </div>
@@ -31,16 +31,16 @@ function ToolLoading({ label }: { label: string }) {
 }
 
 const PregnancyCareTracker = dynamic(() => import("../../components/pregnancy-care-tracker"), {
-  loading: () => <ToolLoading label="sức khỏe từ iPhone và vi chất" />
+  loading: () => <ToolLoading label="sức khỏe từ iPhone và vi chất" height={1400} />
 });
 const MealPhotoTracker = dynamic(() => import("../../components/meal-photo-tracker"), {
-  loading: () => <ToolLoading label="nhật ký bữa ăn" />
+  loading: () => <ToolLoading label="nhật ký bữa ăn" height={1200} />
 });
 const PregnancyHealthTracker = dynamic(() => import("../../components/pregnancy-health-tracker"), {
-  loading: () => <ToolLoading label="nhật ký sức khỏe" />
+  loading: () => <ToolLoading label="nhật ký sức khỏe" height={1200} />
 });
 const PregnancyMedicalRecords = dynamic(() => import("../../components/pregnancy-medical-records"), {
-  loading: () => <ToolLoading label="hồ sơ khám thai" />
+  loading: () => <ToolLoading label="hồ sơ khám thai" height={900} />
 });
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
@@ -480,16 +480,16 @@ export default function PregnancyPage() {
         </a>
       </section>
 
-      <DeferredSection label="sức khỏe từ iPhone và vi chất" targetIds="suc-khoe-iphone vi-chat-thuoc" placeholderHeight={720}>
+      <DeferredSection label="sức khỏe từ iPhone và vi chất" targetIds="suc-khoe-iphone vi-chat-thuoc" placeholderHeight={1400}>
         <PregnancyCareTracker pregnancyWeek={week} />
       </DeferredSection>
-      <DeferredSection label="nhật ký bữa ăn" targetIds="bua-an" placeholderHeight={640}>
+      <DeferredSection label="nhật ký bữa ăn" targetIds="bua-an" placeholderHeight={1200}>
         <MealPhotoTracker />
       </DeferredSection>
-      <DeferredSection label="nhật ký sức khỏe" targetIds="suc-khoe" placeholderHeight={640}>
+      <DeferredSection label="nhật ký sức khỏe" targetIds="suc-khoe" placeholderHeight={1200}>
         <div id="suc-khoe"><PregnancyHealthTracker pregnancyWeek={week} /></div>
       </DeferredSection>
-      <DeferredSection label="hồ sơ khám thai" targetIds="ho-so-kham" placeholderHeight={560}>
+      <DeferredSection label="hồ sơ khám thai" targetIds="ho-so-kham" placeholderHeight={900}>
         <PregnancyMedicalRecords />
       </DeferredSection>
 
