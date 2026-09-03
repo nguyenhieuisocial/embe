@@ -86,6 +86,12 @@ describe("mobile family shell", () => {
     expect(ruleBody(css, ".today-priorities.skeleton")).toMatch(/min-height:\s*27[0-9]px/);
   });
 
+  it("does not preload unused Vietnamese font ranges before private content", () => {
+    const layout = readFileSync(join(process.cwd(), "src/app/layout.tsx"), "utf8");
+
+    expect(layout.match(/preload:\s*false/g)).toHaveLength(2);
+  });
+
   it("gives compact text links a full iPhone touch target", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
