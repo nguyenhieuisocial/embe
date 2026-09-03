@@ -594,6 +594,11 @@ ol, ul { margin: 0; padding: 0; }
 .notification-setup p { color: var(--ink-soft); font-size: .75rem; line-height: 1.55; margin: 3px 0 0; }
 .notification-setup button { background: var(--rose-soft); border: 1px solid color-mix(in srgb, var(--rose) 30%, var(--line)); border-radius: 999px; color: var(--rose); font: inherit; font-size: .75rem; font-weight: 700; min-height: 44px; padding: 8px 13px; white-space: nowrap; }
 .notification-setup button:disabled { opacity: .55; }
+.notification-actions { display: flex; gap: 6px; }
+.notification-actions .is-muted { background: var(--surface); border-color: var(--line); color: var(--ink-soft); }
+.notification-test-state { font-size: .72rem !important; grid-column: 1 / -1; margin: 0 !important; }
+.notification-test-state.is-sent { color: #467457; }
+.notification-test-state.is-failed { color: #9b4a59; }
 .notification-family { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; }
 .notification-family span { background: var(--surface-soft); border-radius: 999px; color: var(--ink-soft); font-size: .6875rem; padding: 5px 8px; }
 .notification-family span[data-ready="true"] { background: color-mix(in srgb, #79a98a 14%, var(--surface)); color: #467457; }

@@ -6,6 +6,7 @@ import type { DeviceRole } from "../lib/device-preferences";
 import { readNotifyAt, saveNotifyAt } from "../lib/device-preferences";
 
 type State = "checking" | "off" | "busy" | "on" | "blocked" | "unsupported" | "error";
+type TestState = "idle" | "sending" | "sent" | "failed";
 
 function applicationKey(value: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - value.length % 4) % 4);
@@ -21,6 +22,7 @@ function available(): boolean {
 
 export default function NotificationSetup({ role }: { role: DeviceRole | null }) {
   const [state, setState] = useState<State>("checking");
+  const [testState, setTestState] = useState<TestState>("idle");
   const [notifyAt, setNotifyAt] = useState("08:00");
   const [familyReady, setFamilyReady] = useState<{ mother: boolean; father: boolean } | null>(null);
 
@@ -45,12 +47,14 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
       .catch(() => setState("off"));
   }, []);
 
-  async function saveSubscription(subscription: PushSubscription) {
+  async function saveSubscription(subscription: PushSubscription): Promise<boolean> {
     const saved = await fetch("/api/notifications/subscriptions", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ subscription: subscription.toJSON(), deviceRole: role ?? "family", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, notifyAt })
     });
     if (!saved.ok) throw new Error("notification subscription unavailable");
+    const result = await saved.json() as { testSent?: boolean };
+    return result.testSent === true;
   }
 
   async function enable() {
@@ -65,10 +69,23 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
       const { publicKey } = await config.json() as { publicKey: string };
       let subscription = await registration.pushManager.getSubscription();
       subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: applicationKey(publicKey) });
-      await saveSubscription(subscription);
+      const testSent = await saveSubscription(subscription);
       setState("on");
+      setTestState(testSent ? "sent" : "failed");
       await refreshFamilyReady();
     } catch { setState("error"); }
+  }
+
+  async function testNotification() {
+    setTestState("sending");
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) { setState("off"); setTestState("failed"); return; }
+      const testSent = await saveSubscription(subscription);
+      setTestState(testSent ? "sent" : "failed");
+      await refreshFamilyReady();
+    } catch { setTestState("failed"); }
   }
 
   async function changeNotifyAt(value: string) {
@@ -115,8 +132,13 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
   return <div className="notification-setup">
     <div className="notification-copy"><strong>Thông báo trên điện thoại</strong><p>{note}</p></div>
     {state === "on"
-      ? <button type="button" onClick={() => void disable()}>Tắt thông báo</button>
+      ? <div className="notification-actions">
+        <button type="button" disabled={testState === "sending"} onClick={() => void testNotification()}>{testState === "sending" ? "Đang gửi…" : "Gửi thử"}</button>
+        <button className="is-muted" type="button" onClick={() => void disable()}>Tắt</button>
+      </div>
       : <button type="button" disabled={state === "busy" || state === "checking"} onClick={() => void enable()}>{state === "busy" ? "Đang lưu…" : "Bật thông báo"}</button>}
+    {testState === "sent" ? <p className="notification-test-state is-sent" role="status">Đã gửi thử. Kiểm tra Trung tâm thông báo trên iPhone này.</p> : null}
+    {testState === "failed" ? <p className="notification-test-state is-failed" role="status">Chưa nhận được thông báo thử. Hãy kiểm tra quyền thông báo của EmBe trên iPhone.</p> : null}
     {familyReady ? <div className="notification-family" aria-label="Điện thoại nhận thông báo">
       <span data-ready={familyReady.mother}>{familyReady.mother ? "Mẹ Ngân đã bật" : "Mẹ Ngân chưa bật"}</span>
       <span data-ready={familyReady.father}>{familyReady.father ? "Ba Hiếu đã bật" : "Ba Hiếu chưa bật"}</span>
