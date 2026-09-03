@@ -1,7 +1,9 @@
 import { getFamilyTasks } from "./family-tasks-server";
 import { dateInVietnam } from "./family-task-contract";
 import { photoStore } from "./photo-upload-server";
-import { selectTodayPriorities, type TodayCarePlan, type TodayPriority } from "./today-priorities";
+import {
+  selectTodayPriorities, type TodayCarePlan, type TodayInventoryItem, type TodayPriority
+} from "./today-priorities";
 
 export type TodaySnapshot = { priorities: TodayPriority[]; unavailableSources: string[] };
 
@@ -42,6 +44,27 @@ function hasMealEntry(value: unknown, today: string): boolean {
   });
 }
 
+function lowInventoryItems(value: unknown): TodayInventoryItem[] | null {
+  if (!Array.isArray(value)) return null;
+  const result: TodayInventoryItem[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") return null;
+    const row = item as Record<string, unknown>;
+    if (!Number.isInteger(row.source_product_id) || Number(row.source_product_id) < 1
+        || typeof row.name !== "string" || !row.name.trim()
+        || typeof row.quantity !== "number" || !Number.isFinite(row.quantity) || row.quantity < 0
+        || typeof row.unit !== "string"
+        || typeof row.min_quantity !== "number" || !Number.isFinite(row.min_quantity) || row.min_quantity < 0) {
+      return null;
+    }
+    result.push({
+      productId: Number(row.source_product_id), name: row.name.trim(), quantity: row.quantity,
+      unit: row.unit, minQuantity: row.min_quantity
+    });
+  }
+  return result;
+}
+
 export async function getTodaySnapshot(now = new Date()): Promise<TodaySnapshot> {
   const today = dateInVietnam(now);
   const unavailableSources: string[] = [];
@@ -53,17 +76,24 @@ export async function getTodaySnapshot(now = new Date()): Promise<TodaySnapshot>
   const healthPromise = store?.rpc("embe_get_pregnancy_health_history", { p_end_day: today, p_days: 7 });
   const mealsPromise = store?.rpc("embe_list_meal_history", { p_days: 7 });
   const profilePromise = store?.rpc("embe_get_pregnancy_profile");
+  const inventoryPromise = store?.from("embe_inventory_item")
+    .select("source_product_id,name,quantity,unit,min_quantity")
+    .eq("needs_restock", true)
+    .order("name", { ascending: true })
+    .limit(3);
 
-  const [tasks, care, health, meals, profile] = await Promise.all([
-    tasksPromise, carePromise, healthPromise, mealsPromise, profilePromise
+  const [tasks, care, health, meals, profile, inventory] = await Promise.all([
+    tasksPromise, carePromise, healthPromise, mealsPromise, profilePromise, inventoryPromise
   ]);
 
-  if (!store) unavailableSources.push("thuốc, sức khỏe và bữa ăn");
+  const inventoryRows = inventory?.error ? null : lowInventoryItems(inventory?.data);
+  if (!store) unavailableSources.push("thuốc, sức khỏe, bữa ăn, hồ sơ thai kỳ và đồ dùng");
   else {
     if (care?.error) unavailableSources.push("thuốc và vi chất");
     if (health?.error) unavailableSources.push("sức khỏe");
     if (meals?.error) unavailableSources.push("bữa ăn");
     if (profile?.error) unavailableSources.push("hồ sơ thai kỳ");
+    if (inventoryRows === null) unavailableSources.push("đồ dùng");
   }
 
   const rawProfile = profile?.data && typeof profile.data === "object" ? profile.data as Record<string, unknown> : null;
@@ -71,6 +101,7 @@ export async function getTodaySnapshot(now = new Date()): Promise<TodaySnapshot>
   return {
     priorities: selectTodayPriorities({
       now: now.toISOString(), today, tasks: tasks ?? [], carePlans: care?.error ? [] : carePlans(care?.data),
+      inventoryItems: inventoryRows ?? [],
       hasHealthEntry: !store || !health || health.error ? null : hasHealthEntry(health.data, today),
       hasMealEntry: !store || !meals || meals.error ? null : hasMealEntry(meals.data, today),
       profileComplete: !store || profile?.error ? null : Boolean(rawProfile?.due_date && contacts.length)

@@ -1,5 +1,6 @@
 import { verifySessionCookie } from "../../../lib/portal-auth";
 import { authorizeMutation } from "../../../lib/photo-upload-server";
+import { revalidateFamilyViews } from "../../../lib/family-view-revalidation";
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const UNITS = new Set(["cái", "gói", "hộp", "ml", "g"]);
@@ -150,7 +151,9 @@ export async function POST(request: Request): Promise<Response> {
       p_amount: input.amount,
       p_min_amount: isCreate ? input.minAmount : null
     });
-    return response.ok ? reply({ status: "accepted" }, 202) : reply({ error: "temporarily_unavailable" }, 503);
+    if (!response.ok) return reply({ error: "temporarily_unavailable" }, 503);
+    revalidateFamilyViews();
+    return reply({ status: "accepted" }, 202);
   } catch {
     return reply({ error: "temporarily_unavailable" }, 503);
   }

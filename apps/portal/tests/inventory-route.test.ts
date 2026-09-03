@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createSessionCookie } from "../src/lib/portal-auth";
+
+const revalidateFamilyViews = vi.hoisted(() => vi.fn());
+vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
 import { GET, POST } from "../src/app/api/inventory/route";
 
 const originalEnvironment = { ...process.env };
@@ -11,6 +14,7 @@ function sessionCookie(): string {
 
 describe("private inventory endpoint", () => {
   beforeEach(() => {
+    revalidateFamilyViews.mockClear();
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-key";
@@ -78,6 +82,7 @@ describe("private inventory endpoint", () => {
         })
       })
     );
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
   it("rejects a foreign origin before storage", async () => {

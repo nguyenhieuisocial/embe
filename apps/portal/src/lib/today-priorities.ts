@@ -8,9 +8,17 @@ export type TodayCarePlan = {
   takenSlots: number[];
 };
 
+export type TodayInventoryItem = {
+  productId: number;
+  name: string;
+  quantity: number;
+  unit: string;
+  minQuantity: number;
+};
+
 export type TodayPriority = {
   id: string;
-  kind: "appointment" | "task" | "medicine" | "health" | "meal" | "profile";
+  kind: "appointment" | "task" | "medicine" | "health" | "meal" | "profile" | "inventory";
   title: string;
   detail: string;
   href: string;
@@ -22,6 +30,7 @@ export type TodayPriorityInput = {
   today: string;
   tasks: FamilyTask[];
   carePlans: TodayCarePlan[];
+  inventoryItems: TodayInventoryItem[];
   hasHealthEntry: boolean | null;
   hasMealEntry: boolean | null;
   profileComplete: boolean | null;
@@ -90,6 +99,20 @@ export function selectTodayPriorities(input: TodayPriorityInput): TodayPriority[
     id: "health:today", kind: "health", title: "Ghi sức khỏe", detail: "Một check-in ngắn cho Mẹ Ngân",
     href: "/me-bau#suc-khoe", actionLabel: "Ghi nhanh", rank: 20, order: ""
   });
+  if (input.inventoryItems.length) {
+    const first = input.inventoryItems[0];
+    const remaining = input.inventoryItems.length - 1;
+    candidates.push({
+      id: `inventory:${first.productId}`,
+      kind: "inventory",
+      title: remaining ? `${first.name} và ${remaining} món khác` : `${first.name} sắp hết`,
+      detail: remaining ? "Đều đang dưới mức nhắc" : `Còn ${first.quantity.toLocaleString("vi-VN")} ${first.unit} · nhắc ở ${first.minQuantity.toLocaleString("vi-VN")}`,
+      href: "/do-dung",
+      actionLabel: "Xem đồ dùng",
+      rank: 35,
+      order: first.name
+    });
+  }
   if (input.hasMealEntry === false) candidates.push({
     id: "meal:today", kind: "meal", title: "Ghi bữa ăn", detail: "Chụp ảnh hoặc chỉ ghi chú",
     href: "/me-bau#bua-an", actionLabel: "Ghi bữa", rank: 40, order: ""
