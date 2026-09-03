@@ -72,7 +72,11 @@ function metricHasValues(metric: PregnancyHealthMetric): boolean {
     metric.bloodGlucoseMgDl,
     metric.fetalMovementCount
   ].some((value) => typeof value === "number");
-  return hasNumber || (metric.symptoms?.length ?? 0) > 0 || Boolean(metric.healthNote?.trim());
+  return hasNumber || typeof metric.waterMl === "number" || (metric.symptoms?.length ?? 0) > 0 || Boolean(metric.healthNote?.trim());
+}
+
+function hasIphoneValues(metric: PregnancyHealthMetric): boolean {
+  return Object.values(metric.metricSources ?? {}).includes("iphone");
 }
 
 function metricToForm(metric: PregnancyHealthMetric | undefined): FormState {
@@ -248,7 +252,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
       </div>
 
       {!editing && todayMetric ? <article className="health-saved-card" aria-label="Sức khỏe đã lưu hôm nay">
-        <div><span aria-hidden="true">✓</span><p><strong>Đã lưu sức khỏe hôm nay</strong><small>{[typeof todayMetric.weightKg === "number" ? `${todayMetric.weightKg} kg` : "", typeof todayMetric.sleepMinutes === "number" ? `${todayMetric.sleepMinutes / 60} giờ ngủ` : "", typeof todayMetric.waterGlasses === "number" ? `${todayMetric.waterGlasses} cốc nước` : ""].filter(Boolean).join(" · ") || "Đã lưu ghi chú và dấu hiệu đã chọn"}</small></p></div>
+        <div><span aria-hidden="true">✓</span><p><strong>Đã lưu sức khỏe hôm nay {hasIphoneValues(todayMetric) ? <em className="health-source-badge">Từ iPhone</em> : null}</strong><small>{[typeof todayMetric.weightKg === "number" ? `${todayMetric.weightKg} kg` : "", typeof todayMetric.sleepMinutes === "number" ? `${todayMetric.sleepMinutes / 60} giờ ngủ` : "", typeof todayMetric.waterGlasses === "number" ? `${todayMetric.waterGlasses} cốc nước` : "", typeof todayMetric.waterMl === "number" ? `${todayMetric.waterMl.toLocaleString("vi-VN")} ml nước` : ""].filter(Boolean).join(" · ") || "Đã lưu ghi chú và dấu hiệu đã chọn"}</small></p></div>
         <button type="button" onClick={() => setEditing(true)}>Sửa thông tin hôm nay</button>
       </article> : <form className="health-entry-card" onSubmit={(event) => void save(event)}>
         <div className="health-fields">
@@ -338,12 +342,13 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           {hasHealthValues ? <section className="health-history" aria-labelledby="health-history-title">
         <div className="health-history-heading"><h3 id="health-history-title">Lịch sử sức khỏe chi tiết</h3><small>{history.filter(metricHasValues).length} ngày đã ghi</small></div>
         {history.filter(metricHasValues).slice().reverse().map((metric) => <details key={metric.day} className="health-history-card">
-          <summary><span><strong>{new Date(`${metric.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}</strong><small>{[typeof metric.weightKg === "number" ? `${metric.weightKg} kg` : "", typeof metric.sleepMinutes === "number" ? `${metric.sleepMinutes / 60}h ngủ` : "", typeof metric.wellbeing === "number" ? `cảm nhận ${metric.wellbeing}/5` : ""].filter(Boolean).join(" · ")}</small></span><i aria-hidden="true">⌄</i></summary>
+          <summary><span><strong>{new Date(`${metric.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })} {hasIphoneValues(metric) ? <em className="health-source-badge">iPhone</em> : null}</strong><small>{[typeof metric.weightKg === "number" ? `${metric.weightKg} kg` : "", typeof metric.sleepMinutes === "number" ? `${metric.sleepMinutes / 60}h ngủ` : "", typeof metric.wellbeing === "number" ? `cảm nhận ${metric.wellbeing}/5` : ""].filter(Boolean).join(" · ")}</small></span><i aria-hidden="true">⌄</i></summary>
           <dl>
             {typeof metric.weightKg === "number" ? <div><dt>Cân nặng</dt><dd>{metric.weightKg} kg</dd></div> : null}
             {typeof metric.systolic === "number" && typeof metric.diastolic === "number" ? <div><dt>Huyết áp</dt><dd>{metric.systolic}/{metric.diastolic} mmHg</dd></div> : null}
             {typeof metric.sleepMinutes === "number" ? <div><dt>Giấc ngủ</dt><dd>{metric.sleepMinutes / 60} giờ</dd></div> : null}
             {typeof metric.waterGlasses === "number" ? <div><dt>Nước</dt><dd>{metric.waterGlasses} cốc</dd></div> : null}
+            {typeof metric.waterMl === "number" ? <div><dt>Nước từ iPhone</dt><dd>{metric.waterMl.toLocaleString("vi-VN")} ml</dd></div> : null}
             {typeof metric.movementMinutes === "number" ? <div><dt>Vận động</dt><dd>{metric.movementMinutes} phút</dd></div> : null}
             {typeof metric.bloodGlucoseMgDl === "number" ? <div><dt>Đường huyết</dt><dd>{metric.bloodGlucoseMgDl} mg/dL</dd></div> : null}
             {typeof metric.fetalMovementCount === "number" ? <div><dt>Cử động thai</dt><dd>{metric.fetalMovementCount}</dd></div> : null}

@@ -28,6 +28,9 @@ export type PregnancyHealthMetric = {
   glucoseContext: "fasting" | "after_1h" | "after_2h" | "other" | null;
   healthNote: string;
   checklistPercent: number;
+  waterMl?: number | null;
+  metricSources?: Partial<Record<"weightKg" | "bloodPressure" | "sleepMinutes" | "waterMl", "manual" | "iphone">>;
+  metricSyncedAt?: Record<string, string>;
 };
 
 type ChartKey = keyof Omit<PregnancyHealthMetric, "day">;

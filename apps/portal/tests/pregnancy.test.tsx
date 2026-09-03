@@ -275,6 +275,25 @@ describe("pregnancy daily page", () => {
     expect(within(brief).getByRole("button", { name: "Sao chép tóm tắt" })).toBeInTheDocument();
   });
 
+  it("shows when saved maternal values came from iPhone without adding another large card", async () => {
+    vi.mocked(fetch).mockImplementation(async (input) => String(input).includes("/api/pregnancy/health")
+      ? Response.json({ history: [{
+          day: "2026-08-30", weightKg: 56.4, systolic: null, diastolic: null,
+          sleepMinutes: 450, waterGlasses: null, movementMinutes: null, wellbeing: null,
+          bloodGlucoseMgDl: null, fetalMovementCount: null, symptoms: [], glucoseContext: null,
+          healthNote: "", checklistPercent: 0, waterMl: 1250,
+          metricSources: { weightKg: "iphone", sleepMinutes: "iphone", waterMl: "iphone" },
+          metricSyncedAt: { weightKg: "2026-08-30T01:15:00Z", sleepMinutes: "2026-08-30T01:15:00Z" }
+        }] })
+      : Response.json({ snapshot: { profile: null } }));
+
+    render(<PregnancyHealthPage />);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+    expect(screen.getByText("Từ iPhone")).toBeInTheDocument();
+    expect(screen.getByText(/1\.250 ml nước/)).toBeInTheDocument();
+  });
+
   it("does not overwrite a health value typed while the private history is loading", async () => {
     let finishHealthLoad: ((response: Response) => void) | undefined;
     vi.mocked(fetch).mockImplementation(async (input, init) => {

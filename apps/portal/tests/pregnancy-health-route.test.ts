@@ -38,7 +38,10 @@ const databaseMetric = {
   symptoms: ["severe_headache"],
   glucose_context: "fasting",
   health_note: "Hơi chóng mặt sau khi ngủ dậy.",
-  checklist_percent: 62
+  checklist_percent: 62,
+  water_ml: 1250,
+  metric_sources: { weightKg: "manual", bloodPressure: "manual", sleepMinutes: "iphone", waterMl: "iphone" },
+  metric_synced_at: { sleepMinutes: "2026-09-01T01:15:00Z", waterMl: "2026-09-01T01:15:00Z" }
 };
 
 describe("private pregnancy health endpoint", () => {
@@ -86,10 +89,13 @@ describe("private pregnancy health endpoint", () => {
       symptoms: ["severe_headache"],
       glucoseContext: "fasting",
       healthNote: "Hơi chóng mặt sau khi ngủ dậy.",
-      checklistPercent: 62
+      checklistPercent: 62,
+      waterMl: 1250,
+      metricSources: { weightKg: "manual", bloodPressure: "manual", sleepMinutes: "iphone", waterMl: "iphone" },
+      metricSyncedAt: { sleepMinutes: "2026-09-01T01:15:00Z", waterMl: "2026-09-01T01:15:00Z" }
     }] });
     expect(fetch).toHaveBeenCalledWith(
-      "https://project.supabase.co/rest/v1/rpc/embe_get_pregnancy_health_history",
+      "https://project.supabase.co/rest/v1/rpc/embe_get_unified_pregnancy_health_history",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ p_end_day: "2026-09-01", p_days: 28 })

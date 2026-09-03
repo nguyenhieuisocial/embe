@@ -30,7 +30,7 @@ function hasHealthEntry(value: unknown, today: string): boolean {
   const row = value.find((item) => item && typeof item === "object" && (item as Record<string, unknown>).day === today);
   if (!row || typeof row !== "object") return false;
   const record = row as Record<string, unknown>;
-  return ["weight_kg", "systolic", "sleep_minutes", "water_glasses", "movement_minutes", "wellbeing", "blood_glucose_mg_dl", "fetal_movement_count"]
+  return ["weight_kg", "systolic", "sleep_minutes", "water_glasses", "water_ml", "movement_minutes", "wellbeing", "blood_glucose_mg_dl", "fetal_movement_count"]
     .some((key) => record[key] !== null && record[key] !== undefined)
     || (Array.isArray(record.symptoms) && record.symptoms.length > 0)
     || (typeof record.health_note === "string" && record.health_note.length > 0);
@@ -73,7 +73,7 @@ export async function getTodaySnapshot(now = new Date()): Promise<TodaySnapshot>
   const tasksPromise = getFamilyTasks(shiftDay(today, -7), shiftDay(today, 7))
     .catch(() => { unavailableSources.push("lịch và việc"); return null; });
   const carePromise = store?.rpc("embe_get_pregnancy_care", { p_day: today });
-  const healthPromise = store?.rpc("embe_get_pregnancy_health_history", { p_end_day: today, p_days: 7 });
+  const healthPromise = store?.rpc("embe_get_unified_pregnancy_health_history", { p_end_day: today, p_days: 7 });
   const mealsPromise = store?.rpc("embe_list_meal_history", { p_days: 7 });
   const profilePromise = store?.rpc("embe_get_pregnancy_profile");
   const inventoryPromise = store?.from("embe_inventory_item")

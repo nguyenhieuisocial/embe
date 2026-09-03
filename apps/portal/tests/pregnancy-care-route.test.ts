@@ -7,7 +7,7 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc }) }));
 vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
 
 import { GET, PATCH } from "../src/app/api/pregnancy/care/route";
-import { GET as probeHealth, POST as createDevice, PUT as ingestHealth } from "../src/app/api/pregnancy/iphone-health/route";
+import { DELETE as revokeDevice, GET as probeHealth, POST as createDevice, PUT as ingestHealth } from "../src/app/api/pregnancy/iphone-health/route";
 import { estimatedEnergyTarget, PREGNANCY_NUTRIENTS } from "../src/lib/pregnancy-nutrition";
 
 const originalEnvironment = { ...process.env };
@@ -196,6 +196,21 @@ describe("private pregnancy care and iPhone health APIs", () => {
     const stored = rpc.mock.calls[0][1].p_token_hash;
     expect(stored).toMatch(/^[0-9a-f]{64}$/);
     expect(stored).not.toContain(payload.token);
+  });
+
+  it("revokes a selected iPhone connection without deleting its history", async () => {
+    rpc.mockResolvedValueOnce({ data: true, error: null });
+    const response = await revokeDevice(request(
+      "https://embe.hieu.asia/api/pregnancy/iphone-health", "DELETE", { deviceId: planId }
+    ));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ revoked: true });
+    expect(rpc).toHaveBeenCalledWith("embe_revoke_iphone_health_device", { p_device_id: planId });
+
+    const unauthorized = await revokeDevice(request(
+      "https://embe.hieu.asia/api/pregnancy/iphone-health", "DELETE", { deviceId: planId }, false
+    ));
+    expect(unauthorized.status).toBe(401);
   });
 
   it("accepts selected daily aggregates with a device token and rejects raw excess", async () => {

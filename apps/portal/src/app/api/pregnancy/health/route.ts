@@ -39,6 +39,9 @@ type HealthMetric = {
   glucoseContext: string | null;
   healthNote: string;
   checklistPercent: number;
+  waterMl: number | null;
+  metricSources: Partial<Record<"weightKg" | "bloodPressure" | "sleepMinutes" | "waterMl", "manual" | "iphone">>;
+  metricSyncedAt: Record<string, string>;
 };
 
 const BOUNDS: Record<MetricKey, readonly [number, number, boolean]> = {
@@ -94,6 +97,23 @@ function databaseNumber(value: unknown): number | null | undefined {
   return undefined;
 }
 
+function databaseSources(value: unknown): HealthMetric["metricSources"] | null {
+  if (value === null || value === undefined) return {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const allowed = new Set(["weightKg", "bloodPressure", "sleepMinutes", "waterMl"]);
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.some(([key, source]) => !allowed.has(key) || (source !== "manual" && source !== "iphone"))) return null;
+  return Object.fromEntries(entries) as HealthMetric["metricSources"];
+}
+
+function databaseTimestamps(value: unknown): Record<string, string> | null {
+  if (value === null || value === undefined) return {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.some(([, timestamp]) => typeof timestamp !== "string" || !Number.isFinite(Date.parse(timestamp)))) return null;
+  return Object.fromEntries(entries) as Record<string, string>;
+}
+
 function normalizeMetric(value: unknown): HealthMetric | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
@@ -122,7 +142,10 @@ function normalizeMetric(value: unknown): HealthMetric | null {
   const glucoseContext = row.glucose_context === null ? null
     : typeof row.glucose_context === "string" && GLUCOSE_CONTEXTS.has(row.glucose_context) ? row.glucose_context : undefined;
   const healthNote = typeof row.health_note === "string" && row.health_note.length <= 500 ? row.health_note : undefined;
-  if (glucoseContext === undefined || healthNote === undefined) return null;
+  const waterMl = databaseNumber(row.water_ml ?? null);
+  const metricSources = databaseSources(row.metric_sources);
+  const metricSyncedAt = databaseTimestamps(row.metric_synced_at);
+  if (glucoseContext === undefined || healthNote === undefined || waterMl === undefined || !metricSources || !metricSyncedAt) return null;
   return {
     day: row.day,
     weightKg: mapped.weightKg as number | null,
@@ -137,7 +160,10 @@ function normalizeMetric(value: unknown): HealthMetric | null {
     symptoms,
     glucoseContext,
     healthNote,
-    checklistPercent
+    checklistPercent,
+    waterMl,
+    metricSources,
+    metricSyncedAt
   };
 }
 
@@ -174,7 +200,7 @@ export async function GET(request: Request): Promise<Response> {
     return reply({ error: "invalid_request" }, 400);
   }
 
-  const value = await callRpc("embe_get_pregnancy_health_history", {
+  const value = await callRpc("embe_get_unified_pregnancy_health_history", {
     p_end_day: end,
     p_days: days
   });

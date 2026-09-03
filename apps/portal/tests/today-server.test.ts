@@ -18,7 +18,7 @@ describe("Today server snapshot", () => {
     getFamilyTasks.mockReset().mockResolvedValue([]);
     rpc.mockReset().mockImplementation(async (name: string) => {
       if (name === "embe_get_pregnancy_care") return { data: { plans: [] }, error: null };
-      if (name === "embe_get_pregnancy_health_history") return { data: [{ day: "2026-09-02", weight_kg: 55 }], error: null };
+      if (name === "embe_get_unified_pregnancy_health_history") return { data: [{ day: "2026-09-02", weight_kg: 55, metric_sources: { weightKg: "iphone" } }], error: null };
       if (name === "embe_list_meal_history") return { data: [{ eaten_at: "2026-09-02T05:00:00+07:00" }], error: null };
       if (name === "embe_get_pregnancy_profile") return { data: { due_date: "2027-04-20", contacts: [{}] }, error: null };
       return { data: null, error: new Error("unexpected RPC") };

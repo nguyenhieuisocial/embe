@@ -371,6 +371,12 @@
 .iphone-health-history-heading button[aria-pressed="true"] { border-color: #a14f6b; background: #f9e8ee; color: #8e3e5b; }
 .iphone-health-history > div { display: grid; gap: .35rem; }
 .iphone-health-history article { display: grid; grid-template-columns: 48px repeat(3, 1fr); gap: .35rem; align-items: center; min-height: 44px; padding: .48rem .55rem; border-radius: 12px; background: #fbf6f8; color: #715f66; font-size: .66rem; }
+.iphone-device-list { display: grid; gap: .4rem; margin-top: .55rem; }
+.iphone-device-list > div { display: flex; align-items: center; justify-content: space-between; gap: .6rem; min-height: 48px; padding: .48rem .55rem; border-radius: 12px; background: #fff; }
+.iphone-device-list span { display: grid; gap: .08rem; min-width: 0; }
+.iphone-device-list strong { overflow: hidden; color: #65434f; font-size: .75rem; text-overflow: ellipsis; white-space: nowrap; }
+.iphone-device-list small { color: #8a757d; font-size: .62rem; }
+.iphone-device-list button { min-height: 44px; padding: .35rem .65rem; border: 1px solid #ead8de; border-radius: 999px; background: #fff; color: #8e3e5b; font: inherit; font-size: .68rem; font-weight: 700; }
 .iphone-health-history time { color: #a14f6b; font-weight: 700; }
 .sync-secret { display: grid; gap: .35rem; margin-top: .7rem; padding: .75rem; border-radius: 14px; background: #f6f1ff; }
 .iphone-connection-warning { padding: .65rem .75rem; border-radius: 12px; background: #fff4e8; color: #7c5739 !important; }
@@ -1991,6 +1997,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .health-saved-card > div > span { align-items: center; background: var(--jade-soft); border-radius: 50%; color: var(--jade); display: flex; flex: 0 0 30px; height: 30px; justify-content: center; }
 .health-saved-card p { display: grid; gap: 2px; margin: 0; min-width: 0; }
 .health-saved-card strong { font-size: .9rem; }
+.health-source-badge { display: inline-flex; margin-left: .25rem; padding: .1rem .34rem; border-radius: 999px; background: #f6e7ed; color: #93536b; font-size: .6rem; font-style: normal; font-weight: 700; vertical-align: middle; }
 .health-saved-card small { color: var(--ink-soft); font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .health-saved-card button { background: #fff0f4; border: 1px solid #e8c3cf; border-radius: 999px; color: #91435c; font: inherit; font-size: .78rem; font-weight: 700; min-height: 44px; padding: 8px 14px; width: 100%; }
 .health-fields {

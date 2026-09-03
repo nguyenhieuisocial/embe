@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import PregnancyCareTracker from "../src/components/pregnancy-care-tracker";
 
 describe("iPhone health connection state", () => {
+  beforeEach(() => localStorage.clear());
   afterEach(() => vi.unstubAllGlobals());
 
   it("does not claim Health permission is enough when the iPhone has never sent data", async () => {
@@ -49,6 +50,43 @@ describe("iPhone health connection state", () => {
     expect(screen.getByText("112/72")).toBeInTheDocument();
     expect(screen.getAllByText(/đồng bộ/iu).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Lịch sử" })).toBeInTheDocument();
+  });
+
+  it("keeps pregnancy Health connection setup on Mother Ngân's iPhone", async () => {
+    localStorage.setItem("embe:device-role", "father");
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => String(input).startsWith("/api/pregnancy/care")
+      ? Response.json({ snapshot: { profile: null, plans: [], iphone_health: null, iphone_health_history: [], iphone_devices: [] } })
+      : Response.json({ history: [] })));
+
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+
+    await waitFor(() => expect(screen.getByText("Kết nối Sức khỏe được thực hiện trên iPhone của Mẹ Ngân.")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Kết nối iPhone" })).not.toBeInTheDocument();
+  });
+
+  it("lets Mother revoke a connection without deleting saved history", async () => {
+    localStorage.setItem("embe:device-role", "mother");
+    const device = { id: "11111111-1111-4111-8111-111111111111", label: "iPhone của Mẹ Ngân", active: true, last_synced_at: "2026-09-01T08:00:00Z" };
+    const health = { day: "2026-09-01", sleep_minutes: 420, weight_kg: 53, steps: 5000, updated_at: "2026-09-01T08:00:00Z" };
+    let revoked = false;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === "/api/pregnancy/iphone-health" && init?.method === "DELETE") {
+        revoked = true;
+        return Response.json({ revoked: true });
+      }
+      if (String(input).startsWith("/api/pregnancy/care")) return Response.json({ snapshot: {
+        profile: null, plans: [], iphone_health: health, iphone_health_history: [], iphone_devices: revoked ? [] : [device]
+      } });
+      return Response.json({ history: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Ngắt kết nối" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/iphone-health", expect.objectContaining({
+      method: "DELETE", body: JSON.stringify({ deviceId: device.id })
+    })));
   });
 
   it("switches the private aggregate history between 7 and 30 days", async () => {

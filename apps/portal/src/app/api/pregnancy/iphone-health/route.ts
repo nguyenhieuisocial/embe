@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { authorizeMutation, photoStore, privateReply } from "../../../../lib/photo-upload-server";
+import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -147,6 +147,24 @@ export async function POST(request: Request): Promise<Response> {
   });
   if (error || typeof data !== "string") return privateReply({ error: "temporarily_unavailable" }, 503);
   return privateReply({ deviceId: data, token, ingestUrl: `${new URL(request.url).origin}/api/pregnancy/iphone-health` }, 201);
+}
+
+export async function DELETE(request: Request): Promise<Response> {
+  const authorization = authorizeMutation(request);
+  if (authorization) return privateReply({ error: authorization === 401 ? "unauthorized" : "forbidden" }, authorization);
+  let input: unknown;
+  try {
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).byteLength > 256) return privateReply({ error: "invalid_request" }, 413);
+    input = JSON.parse(raw);
+  } catch { return privateReply({ error: "invalid_request" }, 400); }
+  const body = input && typeof input === "object" ? input as Record<string, unknown> : null;
+  if (!body || Object.keys(body).length !== 1 || !isUuidV4(body.deviceId)) return privateReply({ error: "invalid_request" }, 400);
+  const store = photoStore();
+  if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
+  const { data, error } = await store.rpc("embe_revoke_iphone_health_device", { p_device_id: body.deviceId });
+  if (error) return privateReply({ error: "temporarily_unavailable" }, 503);
+  return data === true ? privateReply({ revoked: true }, 200) : privateReply({ error: "not_found" }, 404);
 }
 
 export async function GET(request: Request): Promise<Response> {

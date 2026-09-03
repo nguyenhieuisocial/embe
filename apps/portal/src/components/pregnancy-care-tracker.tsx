@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { localDateKey } from "../lib/pregnancy";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
+import { readDeviceRole, type DeviceRole } from "../lib/device-preferences";
 import {
   estimatedEnergyTarget, PREGNANCY_NUTRIENTS,
   type EnergyProfile, type NutrientKey
@@ -131,6 +132,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [iphoneHistoryDays, setIphoneHistoryDays] = useState<IphoneHealthHistoryDays>(7);
   const [iphoneHistoryOpen, setIphoneHistoryOpen] = useState(false);
   const [iphoneRefreshStatus, setIphoneRefreshStatus] = useState<"idle" | "checking" | "updated" | "error">("idle");
+  const [deviceRole, setDeviceRole] = useState<DeviceRole | null>(null);
   const lastIphoneRefreshRef = useRef(0);
 
   async function load(currentDay: string) {
@@ -151,6 +153,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
 
   useEffect(() => {
     const currentDay = localDateKey();
+    setDeviceRole(readDeviceRole(window.localStorage));
     setDay(currentDay);
     void load(currentDay);
   }, []);
@@ -264,6 +267,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   }
 
   async function createIphoneConnection() {
+    if (deviceRole === "father") return;
     setStatus("saving");
     try {
       const response = await fetch("/api/pregnancy/iphone-health", {
@@ -273,6 +277,20 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       if (!response.ok) throw new Error("connection unavailable");
       const value = await response.json() as { token: string; ingestUrl: string };
       setSyncSecret(value);
+      clearPrivateGetCache("/api/pregnancy/care?");
+      await load(day);
+    } catch { setStatus("error"); }
+  }
+
+  async function revokeIphoneConnection(deviceId: string) {
+    if (deviceRole === "father") return;
+    setStatus("saving");
+    try {
+      const response = await fetch("/api/pregnancy/iphone-health", {
+        method: "DELETE", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ deviceId })
+      });
+      if (!response.ok) throw new Error("revoke unavailable");
       clearPrivateGetCache("/api/pregnancy/care?");
       await load(day);
     } catch { setStatus("error"); }
@@ -342,10 +360,10 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
 
       {latestIphoneHealth ? <>
         <div className="iphone-health-glance" aria-label="Chỉ số gần nhất từ iPhone">
-          <span><small>Ngủ</small><strong>{latestIphoneHealth.sleep_minutes ? `${(latestIphoneHealth.sleep_minutes / 60).toFixed(1)}h` : "—"}</strong></span>
+          <span><small>Ngủ</small><strong>{typeof latestIphoneHealth.sleep_minutes === "number" ? `${(latestIphoneHealth.sleep_minutes / 60).toFixed(1)}h` : "—"}</strong></span>
           <span><small>Bước chân</small><strong>{latestIphoneHealth.steps?.toLocaleString("vi-VN") ?? "—"}</strong></span>
-          <span><small>Cân nặng</small><strong>{latestIphoneHealth.weight_kg ? `${latestIphoneHealth.weight_kg} kg` : "—"}</strong></span>
-          <span><small>Chiều cao</small><strong>{latestIphoneHealth.height_cm ? `${latestIphoneHealth.height_cm} cm` : "—"}</strong></span>
+          <span><small>Cân nặng</small><strong>{typeof latestIphoneHealth.weight_kg === "number" ? `${latestIphoneHealth.weight_kg} kg` : "—"}</strong></span>
+          <span><small>Chiều cao</small><strong>{typeof latestIphoneHealth.height_cm === "number" ? `${latestIphoneHealth.height_cm} cm` : "—"}</strong></span>
         </div>
         <div className="iphone-health-actions">
           <a href="shortcuts://">Mở Phím tắt</a>
@@ -360,13 +378,13 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           {iphoneHistoryOpen ? <>
             <div className="iphone-metrics iphone-metrics-complete">
               <span><strong>{latestIphoneHealth.resting_heart_rate_bpm ?? "—"}</strong>nhịp tim nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingHeartRateBpm")}</small></span>
-              <span><strong>{latestIphoneHealth.distance_m ? `${(latestIphoneHealth.distance_m / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km` : "—"}</strong>quãng đường<small>{metricSyncLabel(latestIphoneHealth, "distanceM")}</small></span>
+              <span><strong>{typeof latestIphoneHealth.distance_m === "number" ? `${(latestIphoneHealth.distance_m / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km` : "—"}</strong>quãng đường<small>{metricSyncLabel(latestIphoneHealth, "distanceM")}</small></span>
               <span><strong>{latestIphoneHealth.active_energy_kcal ?? "—"}</strong>kcal vận động<small>{metricSyncLabel(latestIphoneHealth, "activeEnergyKcal")}</small></span>
               <span><strong>{latestIphoneHealth.resting_energy_kcal ?? "—"}</strong>kcal nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingEnergyKcal")}</small></span>
               <span><strong>{latestIphoneHealth.systolic && latestIphoneHealth.diastolic ? `${latestIphoneHealth.systolic}/${latestIphoneHealth.diastolic}` : "—"}</strong>huyết áp<small>{metricSyncLabel(latestIphoneHealth, "systolic")}</small></span>
               <span><strong>{latestIphoneHealth.respiratory_rate ?? "—"}</strong>nhịp thở<small>{metricSyncLabel(latestIphoneHealth, "respiratoryRate")}</small></span>
-              <span><strong>{latestIphoneHealth.oxygen_saturation_percent ? `${latestIphoneHealth.oxygen_saturation_percent}%` : "—"}</strong>SpO₂<small>{metricSyncLabel(latestIphoneHealth, "oxygenSaturationPercent")}</small></span>
-              <span><strong>{latestIphoneHealth.body_temperature_c ?? latestIphoneHealth.wrist_temperature_c ?? "—"}</strong>°C<small>{metricSyncLabel(latestIphoneHealth, latestIphoneHealth.body_temperature_c ? "bodyTemperatureC" : "wristTemperatureC")}</small></span>
+              <span><strong>{typeof latestIphoneHealth.oxygen_saturation_percent === "number" ? `${latestIphoneHealth.oxygen_saturation_percent}%` : "—"}</strong>SpO₂<small>{metricSyncLabel(latestIphoneHealth, "oxygenSaturationPercent")}</small></span>
+              <span><strong>{latestIphoneHealth.body_temperature_c ?? latestIphoneHealth.wrist_temperature_c ?? "—"}</strong>°C<small>{metricSyncLabel(latestIphoneHealth, typeof latestIphoneHealth.body_temperature_c === "number" ? "bodyTemperatureC" : "wristTemperatureC")}</small></span>
               <span><strong>{latestIphoneHealth.hrv_ms ?? "—"}</strong>HRV ms<small>{metricSyncLabel(latestIphoneHealth, "hrvMs")}</small></span>
               <span><strong>{latestIphoneHealth.exercise_minutes ?? "—"}</strong>phút tập<small>{metricSyncLabel(latestIphoneHealth, "exerciseMinutes")}</small></span>
               <span><strong>{latestIphoneHealth.mindfulness_minutes ?? "—"}</strong>phút thư giãn<small>{metricSyncLabel(latestIphoneHealth, "mindfulnessMinutes")}</small></span>
@@ -385,12 +403,15 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
               <div>{iphoneHistory.slice(-iphoneHistoryDays).reverse().map((item) => <article key={item.day}>
                 <time>{item.day ? new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : "—"}</time>
                 <span>{item.steps?.toLocaleString("vi-VN") ?? "—"} bước</span>
-                <span>{item.sleep_minutes ? `${(item.sleep_minutes / 60).toFixed(1)}h ngủ` : "—"}</span>
-                <span>{item.weight_kg ? `${item.weight_kg} kg` : "—"}</span>
+                <span>{typeof item.sleep_minutes === "number" ? `${(item.sleep_minutes / 60).toFixed(1)}h ngủ` : "—"}</span>
+                <span>{typeof item.weight_kg === "number" ? `${item.weight_kg} kg` : "—"}</span>
               </article>)}</div>
             </div>
           </> : null}
         </details>
+        {deviceRole !== "father" && activeIphoneDevices.length ? <div className="iphone-device-list" aria-label="Kết nối sức khỏe iPhone">
+          {activeIphoneDevices.map((device) => <div key={device.id}><span><strong>{device.label}</strong><small>{device.last_synced_at ? `Lần cuối ${new Date(device.last_synced_at).toLocaleDateString("vi-VN")}` : "Chưa gửi dữ liệu"}</small></span><button type="button" onClick={() => void revokeIphoneConnection(device.id)}>Ngắt kết nối</button></div>)}
+        </div> : null}
       </> : <div className="iphone-health-empty">
         <strong>{activeIphoneDevices.length ? "Còn một bước trên iPhone" : "Kết nối một lần"}</strong>
         <p>{activeIphoneDevices.length
@@ -399,10 +420,11 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         <div className="iphone-health-actions">
           <Link href="/me-bau/suc-khoe">Nhập nhanh hôm nay</Link>
           {activeIphoneDevices.length ? <a href="shortcuts://">Mở Phím tắt</a> : null}
-          {!syncSecret ? <button type="button" onClick={() => void createIphoneConnection()}>
+          {!syncSecret && deviceRole !== "father" ? <button type="button" onClick={() => void createIphoneConnection()}>
             {activeIphoneDevices.length ? "Tạo kết nối mới" : "Kết nối iPhone"}
           </button> : null}
         </div>
+        {deviceRole === "father" ? <small>Kết nối Sức khỏe được thực hiện trên iPhone của Mẹ Ngân.</small> : null}
       </div>}
 
       {syncSecret ? <div className="sync-secret" role="status">
