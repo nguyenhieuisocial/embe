@@ -6,6 +6,7 @@ type CacheEntry = {
 // Returning to a tool stays instant. Writes invalidate their own data and the
 // family-activity channel clears all entries when the other phone changes data.
 const CACHE_MS = 5 * 60_000;
+const REQUEST_TIMEOUT_MS = 15_000;
 const entries = new Map<string, CacheEntry>();
 
 /**
@@ -21,7 +22,8 @@ export async function cachedPrivateGet(url: string): Promise<Response> {
   const response = fetch(url, {
     cache: "no-store",
     credentials: "same-origin",
-    headers: { accept: "application/json" }
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   }).then((value) => {
     if (!value.ok) entries.delete(url);
     return value;

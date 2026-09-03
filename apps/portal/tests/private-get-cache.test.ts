@@ -19,6 +19,7 @@ describe("short-lived private GET cache", () => {
     ]);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).signal).toBeInstanceOf(AbortSignal);
     expect(await first.json()).toEqual({ value: 1 });
     expect(await second.json()).toEqual({ value: 1 });
   });

@@ -41,6 +41,7 @@ const pregnancyHelp = [
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 const ASSISTANT_POLL_INTERVAL_MS = 2_000;
 const ASSISTANT_MAX_WAIT_MS = 180_000;
+const ASSISTANT_REQUEST_TIMEOUT_MS = 15_000;
 const JOURNAL_CONTENT_MAX_LENGTH = 1_000;
 
 function conversationJournalContent(question: string, answer: string, authorRole: DeviceRole): string {
@@ -90,6 +91,7 @@ export default function AssistantPage() {
   async function requestAssistant(topic: Topic | "hoi-dap", directQuestion?: string): Promise<string> {
     const submitted = await fetch("/api/assistant", {
       method: "POST", headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(ASSISTANT_REQUEST_TIMEOUT_MS),
       body: JSON.stringify({ topic, days, ...(directQuestion ? { question: directQuestion } : {}), idempotencyKey: crypto.randomUUID() })
     });
     if (!submitted.ok) throw new Error("assistant unavailable");
@@ -97,7 +99,9 @@ export default function AssistantPage() {
     const maxAttempts = Math.ceil(ASSISTANT_MAX_WAIT_MS / ASSISTANT_POLL_INTERVAL_MS) + 1;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       if (attempt > 0) await pause(ASSISTANT_POLL_INTERVAL_MS);
-      const response = await fetch(`/api/assistant?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      const response = await fetch(`/api/assistant?id=${encodeURIComponent(id)}`, {
+        cache: "no-store", signal: AbortSignal.timeout(ASSISTANT_REQUEST_TIMEOUT_MS)
+      });
       if (!response.ok) throw new Error("assistant unavailable");
       const result = await response.json() as { status: string; answer?: string };
       if (result.status === "completed" && result.answer) return result.answer;
@@ -118,6 +122,7 @@ export default function AssistantPage() {
       const saved = await fetch("/api/journal", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(ASSISTANT_REQUEST_TIMEOUT_MS),
         body: JSON.stringify(queuedItem)
       });
       if (saved.ok) {

@@ -32,6 +32,22 @@ describe("session validation cache", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps normal mobile navigation inside one validation window", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-03T08:00:00.000Z"));
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(true));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await activeSessionState(sessionId);
+    await vi.advanceTimersByTimeAsync(25_000);
+    await activeSessionState(sessionId);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(5_001);
+    await activeSessionState(sessionId);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("can invalidate a session immediately after logout", async () => {
     const fetchMock = vi.fn().mockResolvedValue(Response.json(true));
     vi.stubGlobal("fetch", fetchMock);

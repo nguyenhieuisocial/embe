@@ -3,7 +3,10 @@ import { readSessionCookie } from "./portal-auth";
 type RpcResult = { data: unknown; error: boolean };
 type SessionState = "active" | "revoked" | "unavailable";
 type SessionCacheEntry = { expiresAt: number; state: Promise<SessionState> };
-const SESSION_CACHE_MS = 5_000;
+// One iPhone navigation can issue several RSC requests over tens of seconds.
+// Keep successful checks in memory long enough to avoid a Supabase round-trip
+// on every tap. Explicit logout/revoke paths still clear this cache immediately.
+const SESSION_CACHE_MS = 30_000;
 const sessionValidationCache = new Map<string, SessionCacheEntry>();
 export const isSessionId = (value: unknown): value is string => typeof value === "string"
   && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);

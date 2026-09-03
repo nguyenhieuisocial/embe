@@ -1,6 +1,9 @@
 import type { MealAnalysis } from "./meal-analysis-contract";
 import { announceLinkedDailyAction } from "./linked-daily-actions";
 
+const API_TIMEOUT_MS = 15_000;
+const UPLOAD_TIMEOUT_MS = 30_000;
+
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -33,7 +36,8 @@ export async function uploadMealPhoto(uploadUrl: string, file: File): Promise<vo
     form.append("", file);
     try {
       const response = await fetch(uploadUrl, {
-        method: "PUT", headers: { "x-upsert": "false" }, body: form
+        method: "PUT", headers: { "x-upsert": "false" }, body: form,
+        signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS)
       });
       if (response.ok) return;
     } catch {
@@ -51,6 +55,7 @@ export async function createMealNote(input: {
 }): Promise<string> {
   const created = await fetch("/api/meals", {
     method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
     body: JSON.stringify({
       authorRole: input.authorRole, eatenAt: new Date().toISOString(),
       idempotencyKey: crypto.randomUUID(), mealType: input.mealType, note: input.note.trim()
@@ -73,6 +78,7 @@ export async function createMealDraft(input: {
   const idempotencyKey = crypto.randomUUID();
   const created = await fetch("/api/meals", {
     method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
     body: JSON.stringify({
       authorRole: input.authorRole, byteSize: file.size, eatenAt: new Date().toISOString(),
       filename: file.name, idempotencyKey, mealType: input.mealType, mimeType: file.type, note: input.note
@@ -83,7 +89,8 @@ export async function createMealDraft(input: {
   if (!session.entryId || !session.uploadUrl) throw new Error("create_failed");
   await uploadMealPhoto(session.uploadUrl, file);
   const completed = await fetch(`/api/meals/${session.entryId}/complete`, {
-    method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: "{}"
+    method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: "{}",
+    signal: AbortSignal.timeout(API_TIMEOUT_MS)
   });
   if (!completed.ok) throw new Error("complete_failed");
   const completion = await completed.json() as { checklistCompletion?: unknown };
@@ -93,7 +100,9 @@ export async function createMealDraft(input: {
 
 export async function waitForMealDraft(entryId: string, attempts = 150): Promise<{ analysis: MealAnalysis; note: string }> {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const response = await fetch(`/api/meals/${entryId}`, { cache: "no-store" });
+    const response = await fetch(`/api/meals/${entryId}`, {
+      cache: "no-store", signal: AbortSignal.timeout(API_TIMEOUT_MS)
+    });
     if (!response.ok) throw new Error("analysis_failed");
     const value = await response.json() as { status?: string; analysis?: MealAnalysis; note?: string };
     if (value.status === "review" && value.analysis) return { analysis: value.analysis, note: value.note ?? "" };
@@ -105,7 +114,9 @@ export async function waitForMealDraft(entryId: string, attempts = 150): Promise
 
 export async function waitForMealNutrition(entryId: string, attempts = 60): Promise<void> {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const response = await fetch(`/api/meals/${entryId}`, { cache: "no-store" });
+    const response = await fetch(`/api/meals/${entryId}`, {
+      cache: "no-store", signal: AbortSignal.timeout(API_TIMEOUT_MS)
+    });
     if (!response.ok) return;
     const value = await response.json() as { status?: string };
     if (value.status === "confirmed" || value.status === "deleted" || value.status === "rejected") return;

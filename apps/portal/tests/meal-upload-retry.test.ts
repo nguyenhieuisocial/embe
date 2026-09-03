@@ -21,6 +21,7 @@ describe("meal photo upload reliability", () => {
 
     await expect(pending).resolves.toBeUndefined();
     expect(fetch).toHaveBeenCalledTimes(2);
+    expect((fetch.mock.calls[0]?.[1] as RequestInit).signal).toBeInstanceOf(AbortSignal);
   });
 
   it("updates the linked daily action as soon as a text meal is recorded", async () => {
@@ -39,6 +40,7 @@ describe("meal photo upload reliability", () => {
 
     expect(linked).toHaveBeenCalledTimes(1);
     expect(linked.mock.calls[0]?.[0]).toMatchObject({ detail });
+    expect((vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit).signal).toBeInstanceOf(AbortSignal);
     window.removeEventListener("embe:daily-action-completed", linked);
   });
 

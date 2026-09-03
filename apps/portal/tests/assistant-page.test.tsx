@@ -30,6 +30,8 @@ describe("mobile family assistant", () => {
     fireEvent.click(screen.getByRole("button", { name: /giấc ngủ của em bé/i }));
     expect(await screen.findByText("Chưa có dữ liệu giấc ngủ trong 7 ngày qua.")).toBeInTheDocument();
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect((vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit).signal).toBeInstanceOf(AbortSignal);
+    expect((vi.mocked(fetch).mock.calls[1]?.[1] as RequestInit).signal).toBeInstanceOf(AbortSignal);
   });
 
   it("sends a direct pregnancy question as a chat conversation", async () => {
