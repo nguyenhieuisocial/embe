@@ -2243,7 +2243,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .safety-search-box button { background: var(--rose-soft); border: 0; border-radius: 999px; color: var(--rose); font-size: 1.15rem; height: 32px; width: 32px; }
 .safety-search-chips { display: flex; gap: 7px; margin-top: 9px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
 .safety-search-chips::-webkit-scrollbar { display: none; }
-.safety-search-chips button { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); flex: none; font: inherit; font-size: .75rem; min-height: 38px; padding: 7px 11px; }
+.safety-search-chips button { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); flex: none; font: inherit; font-size: .75rem; min-height: 44px; padding: 7px 11px; }
 .safety-search-results { border: 1px solid var(--line); border-radius: 14px; margin-top: 9px; overflow: hidden; }
 .safety-search-results details + details { border-top: 1px solid var(--line); }
 .safety-search-results summary { align-items: center; background: var(--surface); cursor: pointer; display: flex; justify-content: space-between; list-style: none; min-height: 56px; padding: 9px 11px; }
