@@ -66,4 +66,15 @@ describe("mobile journal browser", () => {
     expect(screen.queryByText("Cuối tuần")).not.toBeInTheDocument();
     expect(screen.getByText("1 mục · 1 ngày")).toBeInTheDocument();
   });
+
+  it("makes a newly accepted entry visible while background sync finishes", () => {
+    render(<JournalBrowser events={[{
+      ...events[0],
+      id: "pending-1",
+      pending: true
+    }]} />);
+
+    expect(screen.getByText("Đang đồng bộ")).toBeInTheDocument();
+    expect(screen.getByText("Buổi sáng của Mẹ").closest("article")).toHaveClass("is-pending");
+  });
 });

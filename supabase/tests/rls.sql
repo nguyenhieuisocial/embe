@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(99);
+SELECT plan(101);
 
 -- Prepare deterministic fixture
 SET ROLE postgres;
@@ -91,6 +91,14 @@ SELECT ok(
 SELECT ok(
   has_function_privilege('service_role', 'public.embe_submit_journal(uuid,text,text)', 'EXECUTE'),
   'Only the server role can call the journal submit function'
+);
+SELECT ok(
+  NOT has_table_privilege('anon', 'public.embe_pending_journal', 'SELECT'),
+  'Anonymous clients cannot read pending journal content'
+);
+SELECT ok(
+  has_table_privilege('service_role', 'public.embe_pending_journal', 'SELECT'),
+  'The server role can read pending journal content while it is importing'
 );
 SELECT ok(
   NOT has_function_privilege('anon', 'public.embe_journal_queue_status()', 'EXECUTE'),

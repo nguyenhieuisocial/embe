@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getTimeline, getTimelineFreshness, parseEvent } from "../src/lib/timeline";
+import { getPendingJournalEntries, getTimeline, getTimelineFreshness, parseEvent } from "../src/lib/timeline";
 
 const originalEnvironment = { ...process.env };
 
@@ -75,6 +75,49 @@ describe("curated family timeline", () => {
     await getTimeline(200);
 
     expect(fetchMock.mock.calls[0][0]).toContain("limit=200");
+  });
+
+  it("shows accepted journal entries immediately while the publisher is still working", async () => {
+    process.env.SUPABASE_URL = "https://project.supabase.co/";
+    process.env.SUPABASE_SECRET_KEY = "server-only-secret";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        created_at: "2026-09-03T02:00:00Z",
+        content: "Một buổi sáng dịu dàng.",
+        author_role: "mother",
+        status: "pending"
+      },
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        created_at: "not-a-date",
+        content: "Dữ liệu lỗi không được hiện.",
+        author_role: "father",
+        status: "processing"
+      }
+    ]), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const items = await getPendingJournalEntries(100);
+
+    expect(items).toEqual([expect.objectContaining({
+      id: "pending-11111111-1111-4111-8111-111111111111",
+      title: "Mẹ Ngân ghi lại",
+      caption: "Một buổi sáng dịu dàng.",
+      pending: true
+    })]);
+    expect(fetchMock.mock.calls[0][0]).toContain("embe_pending_journal");
+    expect(fetchMock.mock.calls[0][0]).toContain("limit=50");
+    expect(fetchMock.mock.calls[0][1].headers.apikey).toBe("server-only-secret");
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBeUndefined();
+  });
+
+  it("fails closed when pending journal entries cannot be read", async () => {
+    process.env.SUPABASE_URL = "https://project.supabase.co";
+    process.env.SUPABASE_SECRET_KEY = "server-only-secret";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("forbidden", { status: 403 })));
+
+    expect(await getPendingJournalEntries()).toEqual([]);
   });
 
   it("reports whether the local publication is fresh without exposing credentials", async () => {

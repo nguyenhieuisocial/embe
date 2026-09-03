@@ -7,6 +7,7 @@ export type TimelineEvent = {
   title: string;
   caption: string;
   albumCoverUrl: string | null;
+  pending?: boolean;
 };
 
 export type TimelineFreshness = "fresh" | "stale" | "unavailable";
@@ -18,6 +19,14 @@ type RawTimelineEvent = {
   title?: unknown;
   caption?: unknown;
   album_cover_url?: unknown;
+};
+
+type RawPendingJournal = {
+  id?: unknown;
+  created_at?: unknown;
+  content?: unknown;
+  author_role?: unknown;
+  status?: unknown;
 };
 
 function safeText(value: unknown, maximum: number): string | null {
@@ -63,6 +72,50 @@ export async function getTimeline(requestedLimit = 20): Promise<TimelineEvent[]>
     const payload: unknown = await response.json();
     if (!Array.isArray(payload)) return [];
     return payload.map((item) => parseEvent(item as RawTimelineEvent)).filter((item): item is TimelineEvent => item !== null);
+  } catch {
+    return [];
+  }
+}
+
+export async function getPendingJournalEntries(requestedLimit = 20): Promise<TimelineEvent[]> {
+  const baseUrl = process.env.SUPABASE_URL;
+  const secretKey = process.env.SUPABASE_SECRET_KEY;
+  if (!baseUrl || !secretKey || !baseUrl.startsWith("https://")) return [];
+  const limit = Number.isInteger(requestedLimit) ? Math.max(1, Math.min(50, requestedLimit)) : 20;
+  const query = new URLSearchParams({
+    select: "id,created_at,content,author_role,status",
+    order: "created_at.desc",
+    limit: String(limit)
+  });
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, "")}/rest/v1/embe_pending_journal?${query}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json", apikey: secretKey },
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!response.ok) return [];
+    const payload: unknown = await response.json();
+    if (!Array.isArray(payload)) return [];
+    return payload.flatMap((value): TimelineEvent[] => {
+      if (!value || typeof value !== "object") return [];
+      const row = value as RawPendingJournal;
+      const id = safeText(row.id, 64);
+      const eventAt = safeText(row.created_at, 40);
+      const cleanCaption = typeof row.content === "string" ? cleanJournalCaption(row.content) : null;
+      const caption = safeText(cleanCaption, 1000);
+      const validRole = row.author_role === "mother" || row.author_role === "father";
+      const validStatus = row.status === "pending" || row.status === "processing";
+      if (!id || !eventAt || !caption || !validRole || !validStatus || Number.isNaN(new Date(eventAt).getTime())) return [];
+      return [{
+        id: `pending-${id}`,
+        eventAt,
+        eventType: "journal",
+        title: row.author_role === "mother" ? "Mẹ Ngân ghi lại" : "Ba Hiếu ghi lại",
+        caption,
+        albumCoverUrl: null,
+        pending: true
+      }];
+    });
   } catch {
     return [];
   }

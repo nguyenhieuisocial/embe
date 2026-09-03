@@ -40,9 +40,9 @@ function shortTime(value: string): string {
 
 function EventCard({ event, showTime = true }: { event: TimelineEvent; showTime?: boolean }) {
   return (
-    <article className={`journal-view-entry is-${event.eventType}`}>
+    <article className={`journal-view-entry is-${event.eventType}${event.pending ? " is-pending" : ""}`}>
       <div className="journal-view-entry-head">
-        <span>{event.eventType === "milestone" ? "Cột mốc" : "Ghi chép"}</span>
+        <span>{event.pending ? "Đang đồng bộ" : event.eventType === "milestone" ? "Cột mốc" : "Ghi chép"}</span>
         {showTime ? <time dateTime={event.eventAt}>{shortTime(event.eventAt)}</time> : null}
       </div>
       <strong>{event.title}</strong>

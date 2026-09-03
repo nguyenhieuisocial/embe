@@ -389,7 +389,7 @@ export default function JournalPage() {
             <span>{preparedContent.length}/1000</span>
           </div>
           <button type="submit" disabled={!hasEntry || payloadTooLong || state === "saving"}>{state === "saving" ? "Đang lưu…" : "Lưu vào nhật ký"}</button>
-          {state === "saved" ? <p className="journal-success" role="status">Đã lưu. Nhật ký sẽ xuất hiện sau ít phút.</p> : null}
+          {state === "saved" ? <p className="journal-success" role="status">Đã lưu. <a href="/nhat-ky">Mở Nhật ký để xem ngay.</a></p> : null}
           {state === "queued" ? <p className="journal-queued" role="status">Đã giữ trên điện thoại và sẽ tự đồng bộ khi có mạng.</p> : null}
           {state === "error" ? <p className="journal-error" role="alert">Chưa lưu được. Nội dung vẫn còn ở đây để bạn thử lại.</p> : null}
           {state === "media_error" ? <p className="journal-error" role="alert">Ảnh chưa gửi được. Ghi chú và ảnh vẫn còn để bạn chạm Lưu thử lại.</p> : null}

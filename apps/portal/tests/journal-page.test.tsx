@@ -41,6 +41,7 @@ describe("one-handed family journal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lưu vào nhật ký" }));
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Đã lưu"));
+    expect(screen.getByRole("link", { name: "Mở Nhật ký để xem ngay." })).toHaveAttribute("href", "/nhat-ky");
     expect(screen.getByLabelText("Điều đáng nhớ")).toHaveValue("");
     expect(localStorage.getItem("embe:journal:draft:v1")).toBeNull();
     expect(fetch).toHaveBeenCalledWith("/api/journal", expect.objectContaining({ method: "POST" }));

@@ -1310,6 +1310,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .journal-view-timeline-row > time, .journal-day-group header time { color: var(--ink-soft); font-size: .7rem; text-transform: capitalize; }
 .journal-view-entry { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; display: grid; gap: 5px; overflow: hidden; padding: 12px; }
 .journal-view-entry.is-milestone { background: color-mix(in srgb, var(--rose-soft) 44%, var(--surface)); }
+.journal-view-entry.is-pending { background: color-mix(in srgb, var(--rose-soft) 24%, var(--surface)); border-style: dashed; }
+.journal-view-entry.is-pending .journal-view-entry-head span { color: var(--ink-soft); }
 .journal-view-entry-head { align-items: center; display: flex; justify-content: space-between; }
 .journal-view-entry-head span { color: var(--rose); font-size: .64rem; font-weight: 750; }
 .journal-view-entry-head time { color: var(--ink-soft); font-size: .65rem; }
