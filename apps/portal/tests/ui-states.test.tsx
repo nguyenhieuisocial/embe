@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const clearPrivateGetCache = vi.hoisted(() => vi.fn());
@@ -100,23 +100,30 @@ describe("offline and failure states", () => {
     serviceWorker.register = vi.fn().mockResolvedValue({ update: vi.fn(), active: { postMessage } });
     serviceWorker.getRegistrations = vi.fn().mockResolvedValue([]);
     Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: serviceWorker });
-    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.startsWith("/api/notifications/activity")) return new Response(JSON.stringify({ activities: [{
         id: "33333333-3333-4333-8333-333333333333", kind: "meal",
         title: "Nhà mình vừa cập nhật", url: "/me-bau#bua-an", createdAt: new Date().toISOString()
       }] }), { status: 200 });
       return new Response(JSON.stringify({ status: "ok", version: "development" }), { status: 200 });
-    }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
     render(<PwaRuntime />);
 
-    expect(await screen.findByRole("link", { name: "Mở" })).toBeInTheDocument();
+    const action = await screen.findByRole("link", { name: "Mở" });
     expect(clearPrivateGetCache).toHaveBeenCalled();
     expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "EMBE_DEVICE_CONTEXT" }));
     const contextMessages = postMessage.mock.calls.length;
     serviceWorker.dispatchEvent(new Event("controllerchange"));
     expect(postMessage.mock.calls.length).toBeGreaterThan(contextMessages);
+
+    fireEvent.click(action);
+    window.dispatchEvent(new Event("focus"));
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([input]) =>
+      String(input).startsWith("/api/notifications/activity")).length).toBeGreaterThanOrEqual(2));
+    expect(screen.queryByRole("link", { name: "Mở" })).toBeNull();
   });
 
   it("offers a Vietnamese retry instead of the framework error page", () => {

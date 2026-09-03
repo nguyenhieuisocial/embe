@@ -13,6 +13,7 @@ const ACTIVITY_CHECK_MS = 60 * 1000;
 const STARTUP_IDLE_MS = process.env.NODE_ENV === "test" ? 0 : 1500;
 const DEVICE_ID_KEY = "embe:device-id";
 const ACTIVITY_SINCE_KEY = "embe:activity-since";
+const DISMISSED_ACTIVITY_KEY = "embe:dismissed-activity";
 
 function localDeviceId(storage: Storage): string {
   const current = storage.getItem(DEVICE_ID_KEY);
@@ -25,7 +26,7 @@ function localDeviceId(storage: Storage): string {
 export default function PwaRuntime({ version = "development" }: { version?: string }) {
   const [connection, setConnection] = useState<Connection>("online");
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [familyActivity, setFamilyActivity] = useState<{ title: string; url: string } | null>(null);
+  const [familyActivity, setFamilyActivity] = useState<{ id: string | null; title: string; url: string } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -88,15 +89,16 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
       try {
         const response = await fetch(`/api/notifications/activity?deviceId=${encodeURIComponent(deviceId)}&after=${encodeURIComponent(after)}`, { cache: "no-store" });
         if (!response.ok) return;
-        const payload = await response.json() as { activities?: Array<{ title?: unknown; url?: unknown; createdAt?: unknown }> };
+        const payload = await response.json() as { activities?: Array<{ id?: unknown; title?: unknown; url?: unknown; createdAt?: unknown }> };
         const activities = Array.isArray(payload.activities) ? payload.activities : [];
         const latest = activities.at(-1);
         const latestAt = typeof latest?.createdAt === "string" ? latest.createdAt : new Date().toISOString();
         localStorage.setItem(ACTIVITY_SINCE_KEY, latestAt);
-        if (latest && typeof latest.title === "string" && typeof latest.url === "string"
+        if (latest && typeof latest.id === "string" && latest.id !== localStorage.getItem(DISMISSED_ACTIVITY_KEY)
+            && typeof latest.title === "string" && typeof latest.url === "string"
             && latest.url.startsWith("/") && !latest.url.startsWith("//")) {
           clearPrivateGetCache();
-          setFamilyActivity({ title: latest.title.slice(0, 80), url: latest.url });
+          setFamilyActivity({ id: latest.id, title: latest.title.slice(0, 80), url: latest.url });
         }
       } catch {
         // Push vẫn là đường chính; lần kiểm tra khi app mở sẽ thử lại sau.
@@ -119,7 +121,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
       clearPrivateGetCache();
       const title = typeof event.data.title === "string" ? event.data.title.slice(0, 80) : "Nhà mình vừa cập nhật";
       const url = typeof event.data.url === "string" && event.data.url.startsWith("/") && !event.data.url.startsWith("//") ? event.data.url : "/";
-      setFamilyActivity({ title, url });
+      setFamilyActivity({ id: null, title, url });
     };
     const updateTimer = window.setInterval(() => { void checkRelease(); }, UPDATE_CHECK_MS);
     const activityTimer = window.setInterval(() => { void checkFamilyActivity(); }, ACTIVITY_CHECK_MS);
@@ -163,6 +165,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
       <span><strong>{familyActivity.title}</strong><small>Có dữ liệu mới từ điện thoại còn lại.</small></span>
       <Link href={familyActivity.url} onClick={() => {
         clearPrivateGetCache();
+        if (familyActivity.id) localStorage.setItem(DISMISSED_ACTIVITY_KEY, familyActivity.id);
         setFamilyActivity(null);
       }}>Mở</Link>
     </div>
