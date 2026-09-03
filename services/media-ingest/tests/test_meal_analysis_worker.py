@@ -518,3 +518,11 @@ def test_nutrition_aliases_only_match_a_complete_food_name():
     assert nutrition_search_query("Rau luộc") == "vegetables mixed cooked boiled"
     assert nutrition_search_query("Thịt bò xào") == "beef flank cooked braised"
     assert nutrition_search_query("Cơm gạo lứt với thịt bò") == "Cơm gạo lứt với thịt bò"
+
+
+@pytest.mark.parametrize(("name_vi", "expected"), [
+    ("Dưa hấu", "watermelon raw"),
+    ("Trái cây kiwi vàng", "kiwifruit raw"),
+])
+def test_nutrition_maps_confirmed_fruit_names_from_production(name_vi, expected):
+    assert nutrition_search_query(name_vi) == expected
