@@ -2737,7 +2737,7 @@ GRANT EXECUTE ON FUNCTION public.embe_record_pregnancy_care_intake(uuid,date,sma
 
 COMMENT ON FUNCTION portal_read_model.complete_linked_daily_action(date,text) IS
   'Idempotently completes a bounded daily checklist action only from server-verified semantic evidence.';
-+CREATE TABLE portal_read_model.fetal_movement_session (
+CREATE TABLE portal_read_model.fetal_movement_session (
   id uuid PRIMARY KEY,
   started_at timestamptz NOT NULL,
   ended_at timestamptz,
@@ -2850,7 +2850,7 @@ COMMENT ON TABLE portal_read_model.fetal_movement_session IS
   'Private, non-diagnostic sessions for recording the baby usual movement pattern.';
 COMMENT ON FUNCTION public.embe_list_fetal_movement_sessions(integer) IS
   'Lists a bounded fetal movement history for the private family portal.';
-+CREATE TABLE portal_read_model.family_expense (
+CREATE TABLE portal_read_model.family_expense (
   id uuid PRIMARY KEY,
   incurred_on date NOT NULL,
   kind text NOT NULL CHECK (kind IN ('planned', 'actual')),
