@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import AppHeader from "../../components/app-header";
+import HospitalBagChecklist from "../../components/hospital-bag-checklist";
 
 type Preparation = {
   hospitalName: string;
@@ -98,6 +99,15 @@ export default function BirthPrepPage() {
         ? Math.round((new Date(event.started_at).getTime() - new Date(completed[index + 1].started_at).getTime()) / 60000)
         : null
     })), [events]);
+  const recentPattern = useMemo(() => {
+    if (intervals.length < 2) return null;
+    const averageDuration = Math.round(intervals.reduce((sum, entry) => sum + entry.duration, 0) / intervals.length);
+    const knownIntervals = intervals.flatMap((entry) => entry.interval === null ? [] : [entry.interval]);
+    const averageInterval = knownIntervals.length
+      ? Math.round(knownIntervals.reduce((sum, value) => sum + value, 0) / knownIntervals.length)
+      : null;
+    return { averageDuration, averageInterval, count: intervals.length };
+  }, [intervals]);
 
   function setField(field: keyof Preparation, value: string) {
     setPreparation((current) => ({ ...current, [field]: value }));
@@ -180,8 +190,18 @@ export default function BirthPrepPage() {
             ))}
           </div>
         ) : null}
+        {recentPattern ? <div className="contraction-pattern">
+          <span><small>Nhịp gần đây</small><strong>{recentPattern.count} cơn đã lưu</strong></span>
+          <p>Trung bình {recentPattern.averageDuration} giây{recentPattern.averageInterval === null ? "" : ` · cách ${recentPattern.averageInterval} phút`}.</p>
+        </div> : null}
         <small>Bộ đếm chỉ giúp ghi lại. Khi có dấu hiệu bất thường hoặc được cơ sở y tế hướng dẫn, hãy gọi nơi khám/cấp cứu.</small>
       </section>
+
+      <aside className="labor-urgent" role="note">
+        <strong>Không chờ bộ đếm khi có dấu hiệu khẩn.</strong>
+        <p>Ra máu nhiều, rỉ hoặc vỡ ối, đau liên tục dữ dội, hoặc Bé cử động ít hơn bình thường: gọi nơi sinh/cấp cứu ngay.</p>
+        <a href="https://www.acog.org/womens-health/faqs/how-to-tell-when-labor-begins" target="_blank" rel="noreferrer">Nguồn ACOG ↗</a>
+      </aside>
 
       {message ? <p className="form-status" role="status">{message}</p> : null}
 
@@ -211,10 +231,12 @@ export default function BirthPrepPage() {
         </form>
       </section>
 
+      <HospitalBagChecklist />
+
       <nav className="birth-prep-links" aria-label="Chuẩn bị liên quan">
-        <Link href="/do-dung">Kiểm tra túi đi sinh</Link>
+        <a href="#gio-di-sinh">Kiểm tra giỏ đi sinh</a>
         <Link href="/ke-hoach">Việc cần hoàn tất</Link>
-        <Link href="/me-bau/ho-so">Hồ sơ khám thai</Link>
+        <Link href="/do-dung">Đồ dùng trong nhà</Link>
       </nav>
     </main>
   );
