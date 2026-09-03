@@ -48,6 +48,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
     let registration: ServiceWorkerRegistration | undefined;
     const deviceId = localDeviceId(localStorage);
     const sendDeviceContext = (worker?: ServiceWorker | null) => worker?.postMessage({ type: "EMBE_DEVICE_CONTEXT", deviceId });
+    const resendDeviceContext = () => sendDeviceContext(navigator.serviceWorker?.controller);
     if (process.env.NODE_ENV !== "production" && "serviceWorker" in navigator) {
       void navigator.serviceWorker.getRegistrations().then((registrations) => {
         for (const worker of registrations) void worker.unregister();
@@ -59,6 +60,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
       }).catch(() => undefined);
     }
     sendDeviceContext(navigator.serviceWorker?.controller);
+    navigator.serviceWorker?.addEventListener("controllerchange", resendDeviceContext);
 
     const checkRelease = async () => {
       if (!navigator.onLine || document.visibilityState === "hidden") return;
@@ -130,6 +132,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
       window.removeEventListener("focus", checkOnFocus);
       document.removeEventListener("visibilitychange", refreshWorker);
       navigator.serviceWorker?.removeEventListener("message", receiveFamilyActivity);
+      navigator.serviceWorker?.removeEventListener("controllerchange", resendDeviceContext);
     };
   }, [version]);
 

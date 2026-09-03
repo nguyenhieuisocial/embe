@@ -44,6 +44,15 @@ describe("private family JSON export", () => {
     rpc.mockResolvedValueOnce({ data: {
       schema_version: "embe-family-export/v1", generated_at: "2026-09-02T10:00:00Z",
       data: { pregnancy: { mental_health: [{ mood: 4, anxiety: 2 }] }, tasks: {}, meals: [], lifecycle: [], postpartum: [], baby: {}, inventory: {}, journal: {} }
+    }, error: null }).mockResolvedValueOnce({ data: {
+      published_entries: [{
+        id: "11111111-1111-4111-8111-111111111111", event_at: "2026-09-02T10:00:00Z",
+        event_type: "journal", title: "Một ngày", caption: "Nhẹ nhàng.\n<!-- embe-journal:cc0cd7c4-156f-44d5-818b-53962b699555 -->"
+      }],
+      pending_entries: [{
+        id: "22222222-2222-4222-8222-222222222222", author_role: "mother", status: "pending",
+        created_at: "2026-09-02T10:01:00Z", content: "Đang chờ đồng bộ."
+      }]
     }, error: null });
     const response = await POST(request());
     const body = await response.text();
@@ -53,16 +62,21 @@ describe("private family JSON export", () => {
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(payload.schema_version).toBe("embe-family-export/v1");
     expect(payload.data.pregnancy.mental_health).toEqual([{ mood: 4, anxiety: 2 }]);
+    expect(payload.data.journal.published_entries[0].caption).toBe("Nhẹ nhàng.");
+    expect(payload.data.journal.pending_entries[0].content).toBe("Đang chờ đồng bộ.");
     expect(JSON.stringify(payload)).not.toMatch(/token_hash|storage_path|object_path|binary|secret/i);
     expect(rpc).toHaveBeenCalledWith("embe_export_family_data_v2");
+    expect(rpc).toHaveBeenCalledWith("embe_export_journal_data");
     expect(body).not.toContain("\n  ");
   });
 
   it("refuses an export that is too large or contains a newly named credential", async () => {
-    rpc.mockResolvedValueOnce({ data: { data: { api_key: "must-not-leak" } }, error: null });
+    rpc.mockResolvedValueOnce({ data: { data: { api_key: "must-not-leak" } }, error: null })
+      .mockResolvedValueOnce({ data: { published_entries: [], pending_entries: [] }, error: null });
     expect((await POST(request())).status).toBe(503);
 
-    rpc.mockResolvedValueOnce({ data: { data: { notes: "x".repeat(5 * 1024 * 1024) } }, error: null });
+    rpc.mockResolvedValueOnce({ data: { data: { notes: "x".repeat(5 * 1024 * 1024) } }, error: null })
+      .mockResolvedValueOnce({ data: { published_entries: [], pending_entries: [] }, error: null });
     expect((await POST(request())).status).toBe(413);
   });
 
@@ -77,7 +91,7 @@ describe("private family JSON export", () => {
     }, { status: 200, headers: { "content-disposition": "attachment; filename=\"embe-family-data.json\"" } })));
     render(<FamilyDataExport />);
     expect(screen.getByText(/không gồm file ảnh, video hay tài liệu gốc/i)).toBeInTheDocument();
-    expect(screen.getByText(/nhật ký đã đồng bộ sang Memos không nằm trọn/i)).toBeInTheDocument();
+    expect(screen.getByText(/gồm cả nhật ký đang thấy trong EmBe/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Xuất dữ liệu JSON" }));
     await waitFor(() => expect(click).toHaveBeenCalledOnce());
     expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/dữ liệu sức khỏe riêng tư/i));
@@ -85,6 +99,17 @@ describe("private family JSON export", () => {
     expect(fetch).toHaveBeenCalledWith("/api/family/export", { method: "POST" });
     expect(document.body.querySelector('a[download="embe-family-data.json"]')).toBeNull();
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith("blob:family-export"));
+  });
+
+  it("ships a server-only journal export source", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const sql = readFileSync(join(process.cwd(), "..", "..", "supabase", "migrations", "20260903022702_export_complete_journal.sql"), "utf8");
+    expect(sql).toContain("embe_export_journal_data");
+    expect(sql).toContain("source_system = 'memos'");
+    expect(sql).toContain("approved = true");
+    expect(sql).toContain("TO service_role");
+    expect(sql).toContain("FROM PUBLIC, anon, authenticated");
   });
 
   it("does not start the export when the family cancels the privacy confirmation", () => {

@@ -37,6 +37,15 @@ describe("privacy-safe PWA runtime", () => {
     expect(source).toContain("ACTIVITY_DEDUP_MS");
   });
 
+  it("keeps the device identity when iOS suspends and restarts the service worker", () => {
+    const source = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+
+    expect(source).toContain("persistSourceDeviceId");
+    expect(source).toContain("readSourceDeviceId");
+    expect(source).toContain("DEVICE_CONTEXT_CACHE_KEY");
+    expect(source).toContain("event.waitUntil(persistSourceDeviceId");
+  });
+
   it("notifies open EmBe windows that another family device changed data", () => {
     const source = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
     expect(source).toContain('type: "EMBE_FAMILY_ACTIVITY"');

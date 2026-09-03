@@ -2,8 +2,28 @@ const STATIC_CACHE = "embe-static-v3";
 const OFFLINE_PAGE = "/offline";
 const OPTIONAL_PRECACHE = ["/icon-192.png", "/icon-512.png"];
 const ACTIVITY_DEDUP_MS = 10_000;
+const DEVICE_CONTEXT_CACHE_KEY = "/.well-known/embe-device-context";
+const DEVICE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const recentActivities = new Map();
 let sourceDeviceId = null;
+
+async function persistSourceDeviceId(deviceId) {
+  sourceDeviceId = deviceId;
+  const cache = await caches.open(STATIC_CACHE);
+  await cache.put(DEVICE_CONTEXT_CACHE_KEY, new Response(deviceId, {
+    headers: { "content-type": "text/plain; charset=utf-8" }
+  }));
+}
+
+async function readSourceDeviceId() {
+  if (DEVICE_ID_PATTERN.test(sourceDeviceId || "")) return sourceDeviceId;
+  const cache = await caches.open(STATIC_CACHE);
+  const stored = await cache.match(DEVICE_CONTEXT_CACHE_KEY);
+  const candidate = stored ? await stored.text() : "";
+  if (!DEVICE_ID_PATTERN.test(candidate)) return null;
+  sourceDeviceId = candidate;
+  return candidate;
+}
 
 function familyActivityKind(pathname) {
   if (pathname.startsWith("/api/notifications/") || pathname.startsWith("/api/auth/")) return null;
@@ -24,6 +44,8 @@ async function reportFamilyActivity(pathname, kind) {
   if (now - (recentActivities.get(kind) || 0) < ACTIVITY_DEDUP_MS) return;
   recentActivities.set(kind, now);
   try {
+    const deviceId = await readSourceDeviceId();
+    if (!deviceId) throw new Error("device context unavailable");
     const subscription = await self.registration.pushManager.getSubscription();
     const response = await fetch("/api/notifications/activity", {
       method: "POST",
@@ -31,7 +53,7 @@ async function reportFamilyActivity(pathname, kind) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         eventId: crypto.randomUUID(),
-        sourceDeviceId,
+        sourceDeviceId: deviceId,
         sourceEndpoint: subscription?.endpoint ?? null,
         pathname,
         method: "POST"
@@ -109,8 +131,8 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data === "SKIP_WAITING") self.skipWaiting();
-  if (event.data?.type === "EMBE_DEVICE_CONTEXT" && /^[0-9a-f-]{36}$/i.test(event.data.deviceId || "")) {
-    sourceDeviceId = event.data.deviceId;
+  if (event.data?.type === "EMBE_DEVICE_CONTEXT" && DEVICE_ID_PATTERN.test(event.data.deviceId || "")) {
+    event.waitUntil(persistSourceDeviceId(event.data.deviceId));
   }
 });
 

@@ -3421,6 +3421,8 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .assistant-chat-heading h2 { font-family: var(--font-display), Georgia, serif; font-size: 1.35rem; line-height: 1.15; }
 .assistant-chat-heading > span { align-items: center; color: var(--ink-soft); display: flex; font-size: .7rem; gap: 5px; padding-top: 4px; }
 .assistant-chat-heading > span i { background: #50a879; border-radius: 50%; display: block; height: 7px; width: 7px; }
+.assistant-chat-heading > span.is-sending i { animation: assistant-record 1.2s ease-in-out infinite; background: var(--gold); }
+.assistant-chat-heading > span.is-error i { background: var(--coral); }
 .assistant-messages { display: flex; flex-direction: column; gap: 8px; max-height: 48dvh; min-height: 128px; overflow-y: auto; overscroll-behavior: contain; padding: 2px; scroll-behavior: smooth; }
 .assistant-message { border-radius: 18px; font-size: .875rem; line-height: 1.5; max-width: 88%; overflow: hidden; padding: 10px 12px; }
 .assistant-message.is-assistant { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 6px; }

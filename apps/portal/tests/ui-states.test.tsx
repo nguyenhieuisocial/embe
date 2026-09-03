@@ -108,6 +108,9 @@ describe("offline and failure states", () => {
 
     expect(await screen.findByRole("button", { name: "Xem cập nhật" })).toBeInTheDocument();
     expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "EMBE_DEVICE_CONTEXT" }));
+    const contextMessages = postMessage.mock.calls.length;
+    serviceWorker.dispatchEvent(new Event("controllerchange"));
+    expect(postMessage.mock.calls.length).toBeGreaterThan(contextMessages);
   });
 
   it("offers a Vietnamese retry instead of the framework error page", () => {

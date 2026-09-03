@@ -6,7 +6,7 @@ import { Icon } from "../components/embe-icon";
 import JournalCaption from "../components/journal-caption";
 import StageToday from "../components/stage-today";
 import TodayPrioritiesPanel from "../components/today-priorities-panel";
-import { getTimeline, getTimelineFreshness } from "../lib/timeline";
+import { getPendingJournalEntries, getTimeline, getTimelineFreshness } from "../lib/timeline";
 import { dateInVietnam } from "../lib/family-task-contract";
 import { getTodaySnapshot } from "../lib/today-server";
 
@@ -54,7 +54,14 @@ function vietnameseDate(value: string): string {
 }
 
 async function TimelinePanel() {
-  const [timeline, freshness] = await Promise.all([getTimeline(), getTimelineFreshness()]);
+  const [published, pending, freshness] = await Promise.all([
+    getTimeline(20),
+    getPendingJournalEntries(20),
+    getTimelineFreshness()
+  ]);
+  const timeline = [...pending, ...published]
+    .sort((left, right) => new Date(right.eventAt).getTime() - new Date(left.eventAt).getTime())
+    .slice(0, 20);
 
   return (
     <section className="section timeline-panel" aria-labelledby="timeline-title">
@@ -87,7 +94,9 @@ async function TimelinePanel() {
         </div>
       )}
 
-      <p className="freshness" role="status">{freshnessNote[freshness]}</p>
+      <p className="freshness" role="status">
+        {pending.length ? "Ghi chép mới đang được đồng bộ." : freshnessNote[freshness]}
+      </p>
     </section>
   );
 }

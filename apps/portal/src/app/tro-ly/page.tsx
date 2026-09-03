@@ -178,9 +178,10 @@ export default function AssistantPage() {
       setChatState("ready");
       await saveConversationToJournal(text, response, authorRole);
     } catch {
+      setQuestion((current) => current.trim() ? current : text);
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", text: "Máy nhà chưa trả lời được lúc này. Mẹ Ngân có thể thử lại sau; nội dung vừa nhập không bị đăng công khai." }]);
       setChatState("error");
-      setChatError("Máy nhà chưa trả lời được. Hãy giữ trang mở một lát rồi thử gửi lại.");
+      setChatError("Máy nhà chưa trả lời được. Câu hỏi đã được giữ lại; chạm Gửi để thử lại.");
     }
   }
 
@@ -250,7 +251,7 @@ export default function AssistantPage() {
         <p className="intro">{postpartum ? "Xem lại dữ liệu chăm Bé hoặc chuẩn bị điều cần hỏi ở lần khám tiếp theo." : "Chọn một việc cần xem ngay. Nếu có dấu hiệu bất thường, hãy liên hệ nơi Mẹ Ngân đang khám."}</p>
       </section>
       <section className="assistant-chat" aria-labelledby="assistant-chat-title">
-        <div className="assistant-chat-heading"><div><p className="eyebrow">Hỏi trực tiếp</p><h2 id="assistant-chat-title">Trò chuyện với EmBe</h2></div><span><i /> Máy nhà</span></div>
+        <div className="assistant-chat-heading"><div><p className="eyebrow">Hỏi trực tiếp</p><h2 id="assistant-chat-title">Trò chuyện với EmBe</h2></div><span className={`is-${chatState}`}><i />{chatState === "sending" ? "Đang trả lời" : chatState === "error" ? "Tạm dừng" : "Máy nhà"}</span></div>
         <div className="assistant-messages" aria-live="polite">
           {messages.map((message) => <article className={`assistant-message is-${message.role}`} key={message.id}>
             {message.media ? message.media.kind === "video"

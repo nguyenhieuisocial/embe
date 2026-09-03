@@ -106,4 +106,18 @@ describe("mobile family assistant", () => {
       })
     ]);
   });
+
+  it("keeps a failed question ready for one-tap retry", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
+    render(<AssistantPage />);
+
+    const input = screen.getByRole("textbox", { name: "Câu hỏi cho EmBe" });
+    fireEvent.change(input, { target: { value: "Tôi cần chuẩn bị gì cho ngày mai?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gửi câu hỏi" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Câu hỏi đã được giữ lại");
+    expect(input).toHaveValue("Tôi cần chuẩn bị gì cho ngày mai?");
+    expect(screen.getByText("Tạm dừng")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Gửi câu hỏi" })).toBeEnabled();
+  });
 });
