@@ -11,10 +11,12 @@ function hashTarget(): string {
 export default function DeferredSection({
   children,
   label,
+  placeholderHeight,
   targetIds
 }: {
   children: ReactNode;
   label: string;
+  placeholderHeight?: number;
   targetIds: string;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,13 @@ export default function DeferredSection({
   if (visible) return children;
   const sentence = `${label.charAt(0).toLocaleUpperCase("vi")}${label.slice(1)} sẽ mở khi Mẹ cuộn tới.`;
   return (
-    <div className="deferred-section" ref={rootRef} aria-busy="true" aria-label={`Đang chờ mở ${label}`}>
+    <div
+      className="deferred-section"
+      ref={rootRef}
+      aria-busy="true"
+      aria-label={`Đang chờ mở ${label}`}
+      style={placeholderHeight ? { minHeight: placeholderHeight } : undefined}
+    >
       <span aria-hidden="true" />
       <p>{sentence}</p>
     </div>

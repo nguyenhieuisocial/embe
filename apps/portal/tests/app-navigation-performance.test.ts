@@ -49,10 +49,14 @@ describe("app-like navigation performance", () => {
     expect(source).not.toMatch(/\n\s*void checkRelease\(\);\n\s*void checkFamilyActivity\(\);\n\n\s*return \(\) =>/);
   });
 
-  it("loads the large pregnancy tools only when their deferred section is near view", () => {
+  it("loads each large pregnancy tool only when its own deferred section is near view", () => {
     const source = readFileSync(join(process.cwd(), "src", "app", "me-bau", "page.tsx"), "utf8");
-    expect(source).toContain('dynamic(() => import("../../components/pregnancy-daily-tools")');
+    expect(source).toContain('dynamic(() => import("../../components/meal-photo-tracker")');
+    expect(source).toContain('dynamic(() => import("../../components/pregnancy-care-tracker")');
+    expect(source).toContain('dynamic(() => import("../../components/pregnancy-health-tracker")');
+    expect(source).toContain('dynamic(() => import("../../components/pregnancy-medical-records")');
     expect(source).not.toContain('from "../../components/meal-photo-tracker"');
     expect(source).not.toContain('from "../../components/pregnancy-care-tracker"');
+    expect(source).not.toContain("pregnancy-daily-tools");
   });
 });

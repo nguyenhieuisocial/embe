@@ -22,7 +22,12 @@ function openDetailsByHeading(name: string) {
 
 async function loadDailyTools() {
   await act(async () => {
-    await import("../src/components/pregnancy-daily-tools");
+    await Promise.all([
+      import("../src/components/pregnancy-care-tracker"),
+      import("../src/components/meal-photo-tracker"),
+      import("../src/components/pregnancy-health-tracker"),
+      import("../src/components/pregnancy-medical-records")
+    ]);
     await Promise.resolve();
   });
 }
@@ -77,6 +82,20 @@ describe("pregnancy daily page", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it("keeps each heavy daily tool behind its own mobile loading boundary", () => {
+    vi.stubGlobal("IntersectionObserver", class {
+      observe() {}
+      disconnect() {}
+    });
+
+    render(<PregnancyPage />);
+
+    expect(screen.getByLabelText("Đang chờ mở sức khỏe từ iPhone và vi chất")).toBeInTheDocument();
+    expect(screen.getByLabelText("Đang chờ mở nhật ký bữa ăn")).toBeInTheDocument();
+    expect(screen.getByLabelText("Đang chờ mở nhật ký sức khỏe")).toBeInTheDocument();
+    expect(screen.getByLabelText("Đang chờ mở hồ sơ khám thai")).toBeInTheDocument();
   });
 
   it("shows sourced daily actions, a seven-day menu and medical boundary", async () => {
