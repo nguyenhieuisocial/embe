@@ -160,10 +160,11 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
 
   if (familyActivity) return (
     <div className="app-update-banner" role="status" aria-live="polite">
-      <span><strong>{familyActivity.title}</strong><small>Chạm để xem dữ liệu mới nhất.</small></span>
+      <span><strong>{familyActivity.title}</strong><small>Có dữ liệu mới từ điện thoại còn lại.</small></span>
       <Link href={familyActivity.url} onClick={() => {
         clearPrivateGetCache();
-      }}>Xem cập nhật</Link>
+        setFamilyActivity(null);
+      }}>Mở</Link>
     </div>
   );
 
@@ -171,8 +172,11 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
 
   return (
     <div className="app-update-banner" role="status" aria-live="polite">
-      <span><strong>EmBe có bản mới</strong><small>Tải lại để dùng tính năng vừa cập nhật.</small></span>
-      <button type="button" onClick={() => window.history.go(0)}>Cập nhật ngay</button>
+      <span><strong>Có phiên bản EmBe mới</strong><small>Cập nhật mất vài giây, dữ liệu vẫn được giữ nguyên.</small></span>
+      <button type="button" onClick={() => {
+        setUpdateAvailable(false);
+        window.history.go(0);
+      }}>Cập nhật</button>
     </div>
   );
 }

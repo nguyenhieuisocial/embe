@@ -58,10 +58,11 @@ describe("offline and failure states", () => {
 
     render(<PwaRuntime version="release-1" />);
 
-    const update = await screen.findByRole("button", { name: "Cập nhật ngay" });
-    expect(screen.getByRole("status")).toHaveTextContent("EmBe có bản mới");
+    const update = await screen.findByRole("button", { name: "Cập nhật" });
+    expect(screen.getByRole("status")).toHaveTextContent("Có phiên bản EmBe mới");
     fireEvent.click(update);
     expect(reload).toHaveBeenCalledWith(0);
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("offers one-tap refresh when another family phone changes data", async () => {
@@ -79,11 +80,12 @@ describe("offline and failure states", () => {
       type: "EMBE_FAMILY_ACTIVITY", title: "Mẹ Ngân vừa cập nhật", url: "/me-bau#bua-an"
     } }));
 
-    const action = await screen.findByRole("link", { name: "Xem cập nhật" });
+    const action = await screen.findByRole("link", { name: "Mở" });
     expect(screen.getByRole("status")).toHaveTextContent("Mẹ Ngân vừa cập nhật");
     expect(action).toHaveAttribute("href", "/me-bau#bua-an");
     fireEvent.click(action);
     expect(clearPrivateGetCache).toHaveBeenCalled();
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("shows another phone's update while the app is open without push permission", async () => {
@@ -109,7 +111,7 @@ describe("offline and failure states", () => {
 
     render(<PwaRuntime />);
 
-    expect(await screen.findByRole("link", { name: "Xem cập nhật" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Mở" })).toBeInTheDocument();
     expect(clearPrivateGetCache).toHaveBeenCalled();
     expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "EMBE_DEVICE_CONTEXT" }));
     const contextMessages = postMessage.mock.calls.length;
