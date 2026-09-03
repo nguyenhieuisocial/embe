@@ -130,6 +130,31 @@ nguồn mở.
 - [Traditional medicine](https://www.who.int/news-room/questions-and-answers/item/traditional-medicine),
   WHO, 28-11-2025: y học truyền thống cần cùng tiêu chuẩn đánh giá hiệu quả, an
   toàn, chất lượng và theo dõi phản ứng có hại như các hình thức chăm sóc khác.
+- [Indigestion and heartburn in pregnancy](https://www.nhs.uk/pregnancy/common-symptoms/indigestion-and-heartburn/),
+  NHS: bữa nhỏ hơn, ngồi thẳng khi ăn và tránh ăn trong khoảng ba giờ trước khi
+  ngủ có thể giảm ợ nóng; thuốc cần được kiểm tra là phù hợp với thai kỳ.
+- [Common health problems in pregnancy](https://www.nhs.uk/pregnancy/common-symptoms/common-health-problems/),
+  NHS: chất xơ, nước và vận động đều đặn là các bước đầu hỗ trợ táo bón; không
+  tự ngừng viên sắt mà cần hỏi người đang theo dõi thai.
+- [Swollen ankles, feet and fingers in pregnancy](https://www.nhs.uk/pregnancy/common-symptoms/swollen-ankles-feet-and-fingers/),
+  NHS, rà soát 19-04-2024: phù tăng từ từ có thể giảm bằng nghỉ kê chân, giày
+  thoải mái và vận động nhẹ; phù tăng đột ngột kèm đau đầu, rối loạn thị giác
+  hoặc đau dưới sườn cần được đánh giá ngay.
+- [Back Pain During Pregnancy](https://www.acog.org/womens-health/faqs/back-pain-during-pregnancy),
+  ACOG, rà soát 10-2025: tư thế, giày nâng đỡ, kỹ thuật nhấc đồ và chườm ấm mức
+  thấp có thể giúp; đau nặng hoặc kèm sốt, tiểu buốt hay ra máu cần kiểm tra.
+- [Your baby's movements](https://www.nhs.uk/pregnancy/keeping-well/your-babys-movements/),
+  NHS, rà soát 08-07-2024: Doppler tại nhà không phải cách đáng tin cậy để đánh
+  giá sức khỏe thai; thay đổi cử động cần liên hệ nơi chăm sóc ngay.
+- [Inducing labour — recommendations](https://www.nice.org.uk/guidance/ng207/chapter/Recommendations),
+  NICE NG207: bằng chứng không ủng hộ thảo dược, dầu thầu dầu, tắm nóng, thụt
+  tháo hoặc quan hệ như phương pháp khởi phát chuyển dạ.
+- [Air pollution: personal interventions and risk communication](https://www.who.int/news-room/questions-and-answers/item/air-pollution-personal-interventions-and-risk-communication),
+  WHO: đốt nhang là một nguồn ô nhiễm không khí trong nhà; ưu tiên giảm phơi
+  nhiễm thay vì gắn cho khói tác dụng chữa lành.
+- [Genetics](https://www.medlineplus.gov/ency/article/002048.htm), MedlinePlus,
+  rà soát 2026: màu da, màu tóc và nhiều đặc điểm ngoại hình chịu ảnh hưởng từ
+  gene; không có cơ sở gán các đặc điểm đó cho một món Mẹ ăn trong thai kỳ.
 
 ## Công cụ và dữ liệu đã đánh giá
 
@@ -172,3 +197,11 @@ quốc gia và có thể được cập nhật; cần rà soát nguồn mỗi qu
 | Nhuộm tóc đúng hướng dẫn có mức phơi nhiễm thấp | NHS Hair Dye in Pregnancy | Trung bình; có thể đợi qua 12 tuần và cần thử phản ứng da/thông gió |
 | Không phải mọi vắc-xin đều bị cấm trong thai kỳ | CDC Pregnancy and Vaccines; Bộ Y tế Việt Nam | Cao ở nguyên tắc; lịch và loại cụ thể phải theo nơi khám tại Việt Nam |
 | Tinh dầu, nước lá và bài thuốc “tự nhiên” không mặc nhiên an toàn | WHO Traditional Medicine; FDA Aromatherapy; NHS Medicines | Cao ở nguyên tắc an toàn; từng sản phẩm cần đánh giá thành phần và cách dùng |
+| Chất xơ, nước và vận động nhẹ có thể hỗ trợ táo bón | NHS Common Health Problems in Pregnancy | Cao; không tự dừng viên sắt hoặc dùng thuốc xổ |
+| Kê chân và vận động nhẹ có thể hỗ trợ phù tăng từ từ | NHS Swollen Ankles, Feet and Fingers | Cao; phù đột ngột hoặc kèm triệu chứng cảnh báo cần đánh giá ngay |
+| Tư thế và chườm ấm mức thấp có thể hỗ trợ đau lưng | ACOG Back Pain During Pregnancy | Cao; không áp dụng để trì hoãn kiểm tra đau dữ dội hoặc triệu chứng đi kèm |
+| Doppler tại nhà không thể xác nhận thai đang khỏe | NHS Your Baby's Movements | Cao; thay đổi cử động cần liên hệ ngay dù nghe thấy âm thanh giống nhịp tim |
+| Siêu âm thai trong chăm sóc y tế không có nguy cơ đã biết cho Mẹ hoặc Bé | NHS Ultrasound Scans in Pregnancy | Cao; không có nghĩa siêu âm phát hiện được mọi vấn đề |
+| Không tự dùng mẹo để giục sinh | NICE Inducing Labour NG207 | Cao; bằng chứng không ủng hộ dầu thầu dầu, thảo dược, tắm nóng hoặc quan hệ để khởi phát chuyển dạ |
+| Khói nhang không phải liệu pháp dưỡng thai | WHO Air Pollution Q&A | Cao về việc nhang là nguồn ô nhiễm trong nhà; mức phơi nhiễm thực tế phụ thuộc thông gió và lượng đốt |
+| Một món ăn không quyết định màu da hoặc tóc của Bé | MedlinePlus Genetics | Cao về vai trò di truyền; không dùng kết luận này để cấm thực phẩm vốn an toàn |

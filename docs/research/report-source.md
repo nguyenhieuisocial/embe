@@ -50,6 +50,38 @@
 | Typst hỗ trợ heading numbering, outline, page numbering, table cell inset | [Heading](https://typst.app/docs/reference/model/heading/), [Table](https://typst.app/docs/reference/model/table/), [Page](https://typst.app/docs/reference/layout/page/) | 2026-08-30 | Cao |
 | Restic hỗ trợ snapshot/restore và kiểm tra toàn bộ dữ liệu repository | [Restic quickstart](https://restic.readthedocs.io/en/stable/010_introduction.html), [Repository check](https://restic.readthedocs.io/en/stable/045_working_with_repos.html) | 2026-08-30 | Cao |
 
+## Bổ sung 03-09-2026 — Mẹo và quan niệm dân gian trong thai kỳ
+
+**Đối tượng:** Mẹ Ngân và Ba Hiếu; nội dung tra nhanh trên iPhone, không phải
+phác đồ điều trị. **Phạm vi:** những lời truyền miệng và cách giảm khó chịu hay
+gặp trong gia đình Việt. Không đưa vào mẹo không thể tìm được nguồn y khoa đủ
+tin cậy, không ghi liều thuốc/thảo dược và không thay chỉ dẫn của nơi khám.
+
+Kết luận triển khai là tách “mẹo có thể thử” khỏi “lời truyền miệng”, sau đó gắn
+mỗi nội dung với một trong bốn mức an toàn. Các bổ sung có đủ căn cứ gồm: chia
+nhỏ bữa khi ợ nóng; chất xơ, nước và vận động nhẹ khi táo bón; kê chân và đi lại
+nhẹ khi phù tăng từ từ; tư thế và chườm ấm mức thấp khi đau lưng; không dùng
+Doppler tại nhà để tự trấn an; không tự dùng dầu thầu dầu, thảo dược, tắm nóng
+hoặc quan hệ để giục sinh; giảm khói nhang/trầm trong nhà; và không gán màu da,
+màu tóc của Bé cho một món ăn riêng.
+
+| Tuyên bố | Nguồn chính | Truy cập | Độ tin cậy / giới hạn |
+|---|---|---:|---|
+| Bữa nhỏ, ngồi thẳng và không ăn sát giờ ngủ có thể giảm ợ nóng | [NHS — Indigestion and heartburn](https://www.nhs.uk/pregnancy/common-symptoms/indigestion-and-heartburn/) | 2026-09-03 | Cao; thuốc vẫn phải hỏi nơi khám/dược sĩ |
+| Chất xơ, nước và vận động nhẹ là bước đầu hỗ trợ táo bón | [NHS — Common health problems](https://www.nhs.uk/pregnancy/common-symptoms/common-health-problems/) | 2026-09-03 | Cao; không tự dừng sắt |
+| Phù tăng từ từ có thể hỗ trợ bằng kê chân, giày thoải mái và đi lại nhẹ | [NHS — Swelling in pregnancy](https://www.nhs.uk/pregnancy/common-symptoms/swollen-ankles-feet-and-fingers/) | 2026-09-03 | Cao; phù đột ngột có thể là dấu hiệu cần đánh giá ngay |
+| Tư thế, cách nhấc đồ và chườm ấm mức thấp có thể giúp đau lưng | [ACOG — Back Pain During Pregnancy](https://www.acog.org/womens-health/faqs/back-pain-during-pregnancy) | 2026-09-03 | Cao; đau nặng hoặc triệu chứng kèm cần khám |
+| Doppler tại nhà không đánh giá được thai có đang khỏe | [NHS — Your baby's movements](https://www.nhs.uk/pregnancy/keeping-well/your-babys-movements/) | 2026-09-03 | Cao |
+| Siêu âm thai được thực hiện trong chăm sóc y tế không có nguy cơ đã biết | [NHS — Ultrasound scans](https://www.nhs.uk/pregnancy/your-pregnancy-care/ultrasound-scans/) | 2026-09-03 | Cao; không phát hiện được mọi vấn đề |
+| Không có đủ bằng chứng ủng hộ các mẹo tự giục sinh | [NICE NG207](https://www.nice.org.uk/guidance/ng207/chapter/Recommendations) | 2026-09-03 | Cao |
+| Nhang là nguồn ô nhiễm không khí trong nhà | [WHO — Air pollution Q&A](https://www.who.int/news-room/questions-and-answers/item/air-pollution-personal-interventions-and-risk-communication) | 2026-09-03 | Cao về nguồn phơi nhiễm; không định lượng nguy cơ cá nhân |
+| Màu da và tóc chịu ảnh hưởng di truyền, không do một món Mẹ ăn | [MedlinePlus — Genetics](https://www.medlineplus.gov/ency/article/002048.htm) | 2026-09-03 | Cao về vai trò gene |
+
+Không bổ sung các lời đồn về dây rốn quấn cổ, hình dạng bụng hoặc những nghi lễ
+cụ thể khi không tìm được nguồn chính thống đủ trực tiếp để phát biểu chắc chắn.
+Điểm dừng đạt được khi mọi nội dung mới đều có nguồn chính, hành động cụ thể và
+giới hạn an toàn rõ ràng; tìm thêm các bài lặp lại không làm thay đổi kết luận.
+
 ## Dừng nghiên cứu
 
 Các quyết định ảnh hưởng lớn đã có tài liệu chính thức hoặc source repository hỗ trợ; những phần còn phụ thuộc phần cứng, router, camera, ISP và nhà cung cấp e-commerce cụ thể được chuyển thành discovery/benchmark trong roadmap thay vì đoán cấu hình.

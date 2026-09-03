@@ -12,6 +12,12 @@ const verdicts = [
   { id: "avoid", label: "Nên tránh" }
 ] as const;
 
+const kinds = [
+  { id: "all", label: "Tất cả nội dung" },
+  { id: "tip", label: "Mẹo có thể thử" },
+  { id: "belief", label: "Lời truyền miệng" }
+] as const;
+
 const verdictLabels: Record<(typeof pregnancyMyths)[number]["verdict"], string> = {
   keep: "Có thể áp dụng",
   myth: "Không có cơ sở",
@@ -25,15 +31,17 @@ function searchable(value: string): string {
 
 export default function FolkGuideBrowser() {
   const [query, setQuery] = useState("");
+  const [kind, setKind] = useState<(typeof kinds)[number]["id"]>("all");
   const [verdict, setVerdict] = useState<(typeof verdicts)[number]["id"]>("all");
   const filtered = useMemo(() => {
     const needle = searchable(query.trim());
     return pregnancyMyths.filter((item) => {
+      const matchesKind = kind === "all" || item.kind === kind;
       const matchesVerdict = verdict === "all" || item.verdict === verdict;
       const matchesQuery = !needle || searchable(`${item.question} ${item.answer} ${item.category}`).includes(needle);
-      return matchesVerdict && matchesQuery;
+      return matchesKind && matchesVerdict && matchesQuery;
     });
-  }, [query, verdict]);
+  }, [kind, query, verdict]);
 
   return <>
     <label className="folk-search">
@@ -41,6 +49,9 @@ export default function FolkGuideBrowser() {
       <input autoComplete="off" enterKeyHint="search" inputMode="search" maxLength={60} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm gừng, tóc, xông, đi xa…" type="search" value={query} />
       {query ? <button aria-label="Xóa tìm kiếm" onClick={() => setQuery("")} type="button">×</button> : null}
     </label>
+    <div className="folk-kind-filter" aria-label="Chọn loại nội dung">
+      {kinds.map((item) => <button aria-pressed={kind === item.id} key={item.id} onClick={() => setKind(item.id)} type="button">{item.label}</button>)}
+    </div>
     <div className="folk-filter" aria-label="Lọc theo mức độ">
       {verdicts.map((item) => <button aria-pressed={verdict === item.id} key={item.id} onClick={() => setVerdict(item.id)} type="button">{item.label}</button>)}
     </div>

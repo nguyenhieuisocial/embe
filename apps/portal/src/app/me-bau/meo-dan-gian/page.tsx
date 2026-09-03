@@ -5,7 +5,7 @@ export default function PregnancyFolkGuidePage() {
   return <main className="pregnancy-main folk-guide-page">
     <AppHeader note="Cẩm nang đã đối chiếu nguồn" tone="calm" />
     <header className="pregnancy-hero compact-page-hero">
-      <div><p className="eyebrow">Giữ nét nhà mình, vẫn an toàn</p><h1>Mẹo & dân gian</h1><p className="intro">Tra nhanh một lời truyền miệng trước khi Mẹ làm theo.</p></div>
+      <div><p className="eyebrow">Giữ nét nhà mình, vẫn an toàn</p><h1>Mẹo & dân gian</h1><p className="intro">Tìm một cách giúp dễ chịu hoặc kiểm tra lời truyền miệng trước khi Mẹ làm theo.</p></div>
     </header>
     <aside className="folk-guide-key"><strong>Nhớ một nguyên tắc</strong><p>Mẹo chỉ giúp dễ chịu hơn. Không thay thuốc đã kê, lịch khám hoặc lời dặn riêng của nơi đang theo dõi thai.</p></aside>
     <FolkGuideBrowser />

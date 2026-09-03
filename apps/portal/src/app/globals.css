@@ -2287,6 +2287,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .folk-search input::-webkit-search-cancel-button { display: none; }
 .folk-search button { background: transparent; border: 0; color: var(--ink-soft); font-size: 1.25rem; min-height: 44px; min-width: 44px; }
 .folk-search:focus-within { border-color: color-mix(in srgb, var(--rose) 58%, var(--line)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rose-soft) 72%, transparent); }
+.folk-kind-filter { background: var(--paper); border-radius: var(--radius); display: grid; gap: 4px; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px; }
+.folk-kind-filter button { background: transparent; border: 0; border-radius: calc(var(--radius) - 4px); color: var(--ink-soft); font: inherit; font-size: .72rem; font-weight: 650; line-height: 1.25; min-height: 44px; padding: 6px 4px; }
+.folk-kind-filter button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 5px color-mix(in srgb, var(--ink) 8%, transparent); color: var(--rose); }
 .folk-filter { display: flex; gap: 6px; margin-inline: -16px; overflow-x: auto; padding-inline: 16px; scrollbar-width: none; }
 .folk-filter::-webkit-scrollbar { display: none; }
 .folk-filter button { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-pill); color: var(--ink-soft); flex: none; font: inherit; font-size: .75rem; font-weight: 650; min-height: 44px; padding: 7px 12px; }

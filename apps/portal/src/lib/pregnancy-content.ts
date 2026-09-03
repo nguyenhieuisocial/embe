@@ -340,6 +340,7 @@ export const folkPracticeLevels = [
 export const pregnancyMyths = [
   {
     id: "eat-for-two",
+    kind: "belief",
     category: "Ăn uống",
     verdict: "myth",
     question: "Phải “ăn cho hai”?",
@@ -349,6 +350,7 @@ export const pregnancyMyths = [
   },
   {
     id: "blanket-food-bans",
+    kind: "belief",
     category: "Ăn uống",
     verdict: "myth",
     question: "Phải kiêng mọi món chua, cay, dứa, nước dừa và các loại hạt?",
@@ -358,6 +360,7 @@ export const pregnancyMyths = [
   },
   {
     id: "miscarriage-blame",
+    kind: "belief",
     category: "Vận động",
     verdict: "myth",
     question: "Đi làm hoặc vận động nhẹ gây sảy thai?",
@@ -367,6 +370,7 @@ export const pregnancyMyths = [
   },
   {
     id: "cat",
+    kind: "belief",
     category: "Sinh hoạt",
     verdict: "personal",
     question: "Có mèo thì phải cho đi?",
@@ -376,6 +380,7 @@ export const pregnancyMyths = [
   },
   {
     id: "bed-rest",
+    kind: "belief",
     category: "Vận động",
     verdict: "avoid",
     question: "Phải nằm yên để giữ thai?",
@@ -385,6 +390,7 @@ export const pregnancyMyths = [
   },
   {
     id: "herbal-is-safe",
+    kind: "belief",
     category: "Thuốc & thảo dược",
     verdict: "avoid",
     question: "Thuốc nam và thảo dược luôn an toàn?",
@@ -394,6 +400,7 @@ export const pregnancyMyths = [
   },
   {
     id: "heat",
+    kind: "belief",
     category: "Sinh hoạt",
     verdict: "avoid",
     question: "Xông nóng hoặc ngâm bồn thật nóng giúp khỏe hơn?",
@@ -403,6 +410,7 @@ export const pregnancyMyths = [
   },
   {
     id: "travel",
+    kind: "belief",
     category: "Sinh hoạt",
     verdict: "personal",
     question: "Mang thai là phải kiêng đi xa hoàn toàn?",
@@ -412,6 +420,7 @@ export const pregnancyMyths = [
   },
   {
     id: "ginger-nausea",
+    kind: "tip",
     category: "Khó chịu thường gặp",
     verdict: "keep",
     question: "Gừng có thể giúp giảm nghén?",
@@ -421,6 +430,7 @@ export const pregnancyMyths = [
   },
   {
     id: "sleep-side",
+    kind: "tip",
     category: "Giấc ngủ",
     verdict: "keep",
     question: "Sau 28 tuần nên bắt đầu giấc ngủ ở tư thế nghiêng?",
@@ -429,7 +439,48 @@ export const pregnancyMyths = [
     sourceHref: "https://www.nhs.uk/pregnancy/common-symptoms/tiredness/"
   },
   {
+    id: "heartburn-small-meals",
+    kind: "tip",
+    category: "Khó chịu thường gặp",
+    verdict: "keep",
+    question: "Chia nhỏ bữa có giúp Mẹ đỡ ợ nóng?",
+    answer: "Có thể. Ăn ít hơn mỗi lần, ngồi thẳng khi ăn và tránh ăn trong khoảng 3 giờ trước khi ngủ thường dễ chịu hơn. Không tự dùng thuốc dạ dày; hỏi nơi khám hoặc dược sĩ loại phù hợp khi cần.",
+    sourceLabel: "NHS — ợ nóng trong thai kỳ",
+    sourceHref: "https://www.nhs.uk/pregnancy/common-symptoms/indigestion-and-heartburn/"
+  },
+  {
+    id: "constipation-routine",
+    kind: "tip",
+    category: "Khó chịu thường gặp",
+    verdict: "keep",
+    question: "Thêm chất xơ, nước và đi bộ nhẹ có giúp táo bón?",
+    answer: "Có thể. Tăng dần rau quả, ngũ cốc nguyên hạt và các loại đậu; uống đều và vận động nhẹ nếu cơ thể cho phép. Không tự ngừng viên sắt hoặc dùng thuốc xổ, hãy hỏi nơi khám nếu táo bón kéo dài.",
+    sourceLabel: "NHS — vấn đề thường gặp trong thai kỳ",
+    sourceHref: "https://www.nhs.uk/pregnancy/common-symptoms/common-health-problems/"
+  },
+  {
+    id: "swelling-comfort",
+    kind: "tip",
+    category: "Khó chịu thường gặp",
+    verdict: "personal",
+    question: "Kê chân và đi lại nhẹ có giúp phù chân?",
+    answer: "Có thể giúp phù xuất hiện từ từ: tránh đứng lâu, mang giày thoải mái, kê chân khi nghỉ và đi bộ ngắn. Nếu phù tăng đột ngột ở mặt, tay hoặc chân, kèm đau đầu, hoa mắt hay đau dưới sườn, cần liên hệ nơi khám ngay.",
+    sourceLabel: "NHS — phù trong thai kỳ",
+    sourceHref: "https://www.nhs.uk/pregnancy/common-symptoms/swollen-ankles-feet-and-fingers/"
+  },
+  {
+    id: "back-pain-comfort",
+    kind: "tip",
+    category: "Khó chịu thường gặp",
+    verdict: "keep",
+    question: "Chỉnh tư thế và chườm ấm nhẹ có giúp đau lưng?",
+    answer: "Có thể. Chọn ghế và giày nâng đỡ tốt, gập gối khi nhấc đồ và có thể dùng túi ấm ở nhiệt độ thấp, bọc khăn để tránh bỏng. Đau dữ dội, kéo dài hoặc kèm sốt, tiểu buốt hay ra máu cần được kiểm tra.",
+    sourceLabel: "ACOG — đau lưng trong thai kỳ",
+    sourceHref: "https://www.acog.org/womens-health/faqs/back-pain-during-pregnancy"
+  },
+  {
     id: "hair-care",
+    kind: "belief",
     category: "Làm đẹp",
     verdict: "personal",
     question: "Có thai phải kiêng cắt hoặc nhuộm tóc?",
@@ -439,6 +490,7 @@ export const pregnancyMyths = [
   },
   {
     id: "dental-care",
+    kind: "belief",
     category: "Chăm sóc cơ thể",
     verdict: "keep",
     question: "Mang thai phải hoãn khám và chữa răng?",
@@ -448,6 +500,7 @@ export const pregnancyMyths = [
   },
   {
     id: "vaccines",
+    kind: "belief",
     category: "Phòng bệnh",
     verdict: "personal",
     question: "Có thai thì phải tránh mọi loại vắc-xin?",
@@ -457,6 +510,7 @@ export const pregnancyMyths = [
   },
   {
     id: "sex",
+    kind: "belief",
     category: "Quan hệ",
     verdict: "personal",
     question: "Quan hệ luôn làm hại em bé?",
@@ -466,6 +520,7 @@ export const pregnancyMyths = [
   },
   {
     id: "essential-oils",
+    kind: "belief",
     category: "Thuốc & thảo dược",
     verdict: "avoid",
     question: "Tinh dầu “tự nhiên” thì có thể uống, bôi hoặc xông tùy ý?",
@@ -475,6 +530,7 @@ export const pregnancyMyths = [
   },
   {
     id: "folk-tonics",
+    kind: "belief",
     category: "Thuốc & thảo dược",
     verdict: "avoid",
     question: "Nước lá, rượu thuốc hoặc bài thuốc truyền miệng giúp an thai, dễ sinh?",
@@ -484,6 +540,7 @@ export const pregnancyMyths = [
   },
   {
     id: "gender-guess",
+    kind: "belief",
     category: "Chuyện vui gia đình",
     verdict: "myth",
     question: "Dáng bụng, món thèm hoặc nhịp tim đoán được giới tính Bé?",
@@ -492,7 +549,58 @@ export const pregnancyMyths = [
     sourceHref: "https://www.nhs.uk/pregnancy/your-pregnancy-care/ultrasound-scans/"
   },
   {
+    id: "home-doppler",
+    kind: "belief",
+    category: "Theo dõi thai",
+    verdict: "avoid",
+    question: "Nghe thấy tim thai bằng máy tại nhà là có thể yên tâm?",
+    answer: "Không. Máy Doppler tại nhà không đánh giá được Bé có đang khỏe hay không và có thể khiến gia đình trì hoãn kiểm tra. Khi cử động ít hơn hoặc khác nhịp thường ngày, liên hệ nơi khám ngay dù vẫn nghe thấy âm thanh giống nhịp tim.",
+    sourceLabel: "NHS — cử động của Bé",
+    sourceHref: "https://www.nhs.uk/pregnancy/keeping-well/your-babys-movements/"
+  },
+  {
+    id: "ultrasound-harm",
+    kind: "belief",
+    category: "Khám thai",
+    verdict: "myth",
+    question: "Siêu âm theo chỉ định làm Bé yếu hoặc dị tật?",
+    answer: "Không có nguy cơ đã biết cho Mẹ hoặc Bé từ siêu âm thai được thực hiện trong chăm sóc y tế. Tuy vậy, siêu âm là một lần khám có mục đích, không bảo đảm phát hiện mọi vấn đề và không nên tự thay lịch chỉ vì lời truyền miệng.",
+    sourceLabel: "NHS — siêu âm trong thai kỳ",
+    sourceHref: "https://www.nhs.uk/pregnancy/your-pregnancy-care/ultrasound-scans/"
+  },
+  {
+    id: "induce-labour-at-home",
+    kind: "belief",
+    category: "Cuối thai kỳ",
+    verdict: "avoid",
+    question: "Dầu thầu dầu, nước lá, tắm nóng hoặc quan hệ sẽ giúp giục sinh?",
+    answer: "Không nên tự thử để khởi phát chuyển dạ. Hướng dẫn NICE không ủng hộ các cách này vì bằng chứng hiệu quả chưa đủ; một số cách còn gây buồn nôn, quá nóng hoặc rủi ro không lường trước. Chờ kế hoạch của nơi theo dõi thai.",
+    sourceLabel: "NICE — khởi phát chuyển dạ",
+    sourceHref: "https://www.nice.org.uk/guidance/ng207/chapter/Recommendations"
+  },
+  {
+    id: "incense-smoke",
+    kind: "belief",
+    category: "Không gian sống",
+    verdict: "avoid",
+    question: "Đốt nhiều nhang, trầm hoặc thảo mộc trong phòng kín giúp an thai?",
+    answer: "Không có cơ sở xem khói là cách dưỡng thai. Nhang là một nguồn ô nhiễm không khí trong nhà; nếu gia đình làm nghi thức, giữ lượng tối thiểu, nơi thật thoáng và để Mẹ tránh khỏi vùng khói. Không xông khi khó thở, chóng mặt hoặc buồn nôn.",
+    sourceLabel: "WHO — ô nhiễm không khí trong nhà",
+    sourceHref: "https://www.who.int/news-room/questions-and-answers/item/air-pollution-personal-interventions-and-risk-communication"
+  },
+  {
+    id: "baby-complexion-food",
+    kind: "belief",
+    category: "Ăn uống",
+    verdict: "myth",
+    question: "Nước dừa, trứng ngỗng hoặc một món riêng làm Bé trắng da, tóc đẹp?",
+    answer: "Không có cơ sở để một món ăn quyết định màu da hay tóc của Bé; các đặc điểm này chịu ảnh hưởng lớn từ di truyền. Không cần ép ăn và cũng không cần kiêng riêng các món đó nếu thực phẩm an toàn, Mẹ không dị ứng và nơi khám không dặn khác.",
+    sourceLabel: "MedlinePlus — di truyền và đặc điểm cơ thể",
+    sourceHref: "https://www.medlineplus.gov/ency/article/002048.htm"
+  },
+  {
     id: "family-rituals",
+    kind: "belief",
     category: "Chuyện vui gia đình",
     verdict: "keep",
     question: "Có cần bỏ mọi nghi thức hoặc điều kiêng của gia đình?",
