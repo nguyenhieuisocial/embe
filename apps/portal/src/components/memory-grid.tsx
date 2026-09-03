@@ -10,6 +10,7 @@ import { toLocalDateTime } from "../lib/photo-metadata";
 import { readDeviceRole } from "../lib/device-preferences";
 import PhotoShareButton from "./photo-share-button";
 import PhotoDownloadButton from "./photo-download-button";
+import ViewportImage from "./viewport-image";
 
 const PAGE_SIZE = 24;
 const REACTIONS = [
@@ -78,8 +79,8 @@ function MemoryPhoto({ memory, featured = false, onOpen }: { memory: MediaMemory
   return (
     <article className={featured ? "memory-photo is-featured" : "memory-photo"}>
       <button aria-label={`Mở ảnh ${memory.title}`} className="memory-photo-open" onClick={onOpen} type="button">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+        <ViewportImage alt={memory.title} eager={featured} height={memory.height ?? 900}
+          src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
       </button>
       <div>{calendarLink(memory)}<h3>{memory.title}</h3></div>
       <div className="memory-reactions" aria-label="Phản hồi riêng của gia đình">
@@ -96,12 +97,12 @@ function MemoryPhoto({ memory, featured = false, onOpen }: { memory: MediaMemory
 function AlbumOverview({ albums }: { albums: MediaAlbum[] }) {
   return (
     <section className="memory-albums" aria-label="Các album theo folder gia đình">
-      {albums.map((album) => (
+      {albums.map((album, albumIndex) => (
         <Link className="memory-album" href={`/ky-niem?view=album&album=${encodeURIComponent(album.key)}`} key={album.key}>
           <span className="memory-album-covers" aria-hidden="true">
-            {album.covers.slice(0, 3).map((cover) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img alt="" height={cover.height ?? 900} key={cover.id} loading="lazy" src={`/api/media/${cover.id}`} width={cover.width ?? 1200} />
+            {album.covers.slice(0, 3).map((cover, coverIndex) => (
+              <ViewportImage alt="" eager={albumIndex === 0 && coverIndex === 0}
+                height={cover.height ?? 900} key={cover.id} src={`/api/media/${cover.id}`} width={cover.width ?? 1200} />
             ))}
           </span>
           <span className="memory-album-copy"><strong>{album.title}</strong><small>{album.count.toLocaleString("vi-VN")} ảnh đã chọn</small></span>
@@ -115,7 +116,7 @@ function AlbumOverview({ albums }: { albums: MediaAlbum[] }) {
 function DayAlbumOverview({ memories }: { memories: MediaMemory[] }) {
   return (
     <section className="memory-day-albums" aria-label="Album kỷ niệm theo ngày">
-      {groupByDay(memories).map((group) => {
+      {groupByDay(memories).map((group, index) => {
         const cover = group.memories[0];
         return (
           <Link
@@ -124,8 +125,8 @@ function DayAlbumOverview({ memories }: { memories: MediaMemory[] }) {
             href={`/ky-niem?view=ngay-thang&date=${group.key}`}
             key={group.key}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt="" height={cover.height ?? 900} loading="lazy" src={`/api/media/${cover.id}`} width={cover.width ?? 1200} />
+            <ViewportImage alt="" eager={index === 0} height={cover.height ?? 900}
+              src={`/api/media/${cover.id}`} width={cover.width ?? 1200} />
             <span className="memory-day-album-shade" aria-hidden="true" />
             <span className="memory-day-album-copy">
               <strong>{group.title}</strong>
@@ -152,8 +153,8 @@ function DayAlbumDetail({ memories, onOpen }: { memories: MediaMemory[]; onOpen:
       <div className="memory-album-grid">
         {memories.map((memory, index) => (
           <button aria-label={`Mở ảnh ${memory.title}`} key={memory.id} onClick={() => onOpen(index)} type="button">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+            <ViewportImage alt={memory.title} eager={index === 0} height={memory.height ?? 900}
+              src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
           </button>
         ))}
       </div>
@@ -445,8 +446,8 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
           <div className="memory-album-grid">
             {memories.map((memory, index) => (
               <button aria-label={`Mở ảnh ${memory.title}`} key={memory.id} onClick={() => setActiveIndex(index)} type="button">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+                <ViewportImage alt={memory.title} eager={index === 0} height={memory.height ?? 900}
+                  src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
               </button>
             ))}
           </div>
@@ -467,8 +468,8 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
                 onClick={() => setActiveIndex(memories.findIndex((item) => item.id === trip.memories[0].id))}
                 type="button"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img alt={trip.memories[0].title} height={trip.memories[0].height ?? 900} loading="lazy" src={`/api/media/${trip.memories[0].id}`} width={trip.memories[0].width ?? 1200} />
+                <ViewportImage alt={trip.memories[0].title} height={trip.memories[0].height ?? 900}
+                  src={`/api/media/${trip.memories[0].id}`} width={trip.memories[0].width ?? 1200} />
                 <span>{trip.subtitle}</span>
               </button>
               <div className="memory-trip-copy">
@@ -493,8 +494,8 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
                         onClick={() => setActiveIndex(memories.findIndex((item) => item.id === memory.id))}
                         type="button"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img alt={memory.title} height={memory.height ?? 900} loading="lazy" src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
+                        <ViewportImage alt={memory.title} height={memory.height ?? 900}
+                          src={`/api/media/${memory.id}`} width={memory.width ?? 1200} />
                         <span>{index + 2} / {trip.memories.length}</span>
                       </button>
                     ))}
