@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
 import BirthTransition from "../../components/birth-transition";
+import DeferredSection from "../../components/deferred-section";
 import { Icon } from "../../components/embe-icon";
 import PregnancyCareTracker from "../../components/pregnancy-care-tracker";
 import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
@@ -460,13 +461,17 @@ export default function PregnancyPage() {
         </a>
       </section>
 
-      <PregnancyCareTracker pregnancyWeek={week} />
-
-      <MealPhotoTracker />
-
-      <div id="suc-khoe"><PregnancyHealthTracker pregnancyWeek={week} /></div>
-
-      <PregnancyMedicalRecords />
+      <DeferredSection
+        label="các công cụ chăm sóc"
+        targetIds="suc-khoe-iphone vi-chat-thuoc bua-an suc-khoe ho-so-kham"
+      >
+        <>
+          <PregnancyCareTracker pregnancyWeek={week} />
+          <MealPhotoTracker />
+          <div id="suc-khoe"><PregnancyHealthTracker pregnancyWeek={week} /></div>
+          <PregnancyMedicalRecords />
+        </>
+      </DeferredSection>
 
       <div className="pregnancy-reference-label"><span>Tham khảo khi cần</span></div>
 
