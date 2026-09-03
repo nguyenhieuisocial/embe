@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -7,10 +8,6 @@ import AppHeader from "../../components/app-header";
 import BirthTransition from "../../components/birth-transition";
 import DeferredSection from "../../components/deferred-section";
 import { Icon } from "../../components/embe-icon";
-import PregnancyCareTracker from "../../components/pregnancy-care-tracker";
-import PregnancyHealthTracker from "../../components/pregnancy-health-tracker";
-import PregnancyMedicalRecords from "../../components/pregnancy-medical-records";
-import MealPhotoTracker from "../../components/meal-photo-tracker";
 import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
 import { LINKED_DAILY_ACTION_EVENT, linkedDailyAction } from "../../lib/linked-daily-actions";
 import {
@@ -23,6 +20,15 @@ import {
   weeklyMenu
 } from "../../lib/pregnancy-content";
 import { calculatePregnancyWeek, estimateDueDateFromLmp, localDateKey } from "../../lib/pregnancy";
+
+const PregnancyDailyTools = dynamic(() => import("../../components/pregnancy-daily-tools"), {
+  loading: () => (
+    <div className="deferred-section" role="status" aria-label="Đang mở các công cụ chăm sóc">
+      <span aria-hidden="true" />
+      <p>Đang mở các công cụ chăm sóc…</p>
+    </div>
+  )
+});
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
 const DUE_DATE_DIRTY_KEY = `${DUE_DATE_KEY}:dirty`;
@@ -465,12 +471,7 @@ export default function PregnancyPage() {
         label="các công cụ chăm sóc"
         targetIds="suc-khoe-iphone vi-chat-thuoc bua-an suc-khoe ho-so-kham"
       >
-        <>
-          <PregnancyCareTracker pregnancyWeek={week} />
-          <MealPhotoTracker />
-          <div id="suc-khoe"><PregnancyHealthTracker pregnancyWeek={week} /></div>
-          <PregnancyMedicalRecords />
-        </>
+        <PregnancyDailyTools pregnancyWeek={week} />
       </DeferredSection>
 
       <div className="pregnancy-reference-label"><span>Tham khảo khi cần</span></div>

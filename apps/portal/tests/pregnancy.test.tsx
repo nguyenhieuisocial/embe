@@ -20,6 +20,13 @@ function openDetailsByHeading(name: string) {
   fireEvent(details, new Event("toggle"));
 }
 
+async function loadDailyTools() {
+  await act(async () => {
+    await import("../src/components/pregnancy-daily-tools");
+    await Promise.resolve();
+  });
+}
+
 describe("pregnancy week calculation", () => {
   it("uses the clinician-provided due date within a plausible pregnancy window", () => {
     expect(calculatePregnancyWeek("2026-10-08", new Date("2026-08-30T00:00:00Z"))).toBe(34);
@@ -72,8 +79,9 @@ describe("pregnancy daily page", () => {
     vi.unstubAllGlobals();
   });
 
-  it("shows sourced daily actions, a seven-day menu and medical boundary", () => {
+  it("shows sourced daily actions, a seven-day menu and medical boundary", async () => {
     render(<PregnancyPage />);
+    await loadDailyTools();
 
     expect(screen.getByRole("heading", { level: 1, name: "Mẹ bầu hôm nay" })).toBeInTheDocument();
     expect(screen.getByText("Cài đặt giai đoạn")).toBeInTheDocument();
@@ -134,8 +142,9 @@ describe("pregnancy daily page", () => {
     expect(screen.getAllByRole("link", { name: /ACOG/ })[0]).toHaveAttribute("href", expect.stringContaining("acog.org"));
   }, 10_000);
 
-  it("puts frequent daily actions before occasional records and reference content", () => {
+  it("puts frequent daily actions before occasional records and reference content", async () => {
     render(<PregnancyPage />);
+    await loadDailyTools();
     expect(screen.queryByRole("img", { name: /nước uống, bữa ăn chín/i })).not.toBeInTheDocument();
     const headings = screen.getAllByRole("heading").map((heading) => heading.textContent ?? "");
     const position = (name: string) => headings.findIndex((heading) => heading.includes(name));
@@ -147,8 +156,9 @@ describe("pregnancy daily page", () => {
     expect(position("Hồ sơ khám thai")).toBeLessThan(position("Nên ăn gì, hạn chế gì, kiêng gì?"));
   });
 
-  it("exposes iPhone health import before the long daily content", () => {
+  it("exposes iPhone health import before the long daily content", async () => {
     render(<PregnancyPage />);
+    await loadDailyTools();
 
     const jump = screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" });
     expect(within(jump).getAllByRole("link")).toHaveLength(4);
@@ -164,8 +174,9 @@ describe("pregnancy daily page", () => {
     expect(screen.queryByText(/được gửi tự động mỗi ngày/i)).not.toBeInTheDocument();
   });
 
-  it("keeps the mobile day compact and opens deeper information only when requested", () => {
+  it("keeps the mobile day compact and opens deeper information only when requested", async () => {
     render(<PregnancyPage />);
+    await loadDailyTools();
 
     expect(screen.getByRole("progressbar", { name: "Tiến độ việc hôm nay" })).toHaveAttribute("aria-valuenow", "0");
     expect(screen.getByRole("heading", { level: 3, name: "Ăn uống" }).closest("details")).toHaveAttribute("open");
@@ -195,6 +206,7 @@ describe("pregnancy daily page", () => {
 
   it("saves one bounded daily health snapshot from simple mobile fields", async () => {
     render(<PregnancyPage />);
+    await loadDailyTools();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -245,6 +257,7 @@ describe("pregnancy daily page", () => {
 
   it("stops an incomplete blood-pressure pair before sending private data", async () => {
     render(<PregnancyPage />);
+    await loadDailyTools();
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     vi.mocked(fetch).mockClear();
 
@@ -264,6 +277,7 @@ describe("pregnancy daily page", () => {
       : Response.json({ dueDate: null, completed: [], hasProfile: false, hasDayState: false }));
 
     render(<PregnancyPage />);
+    await loadDailyTools();
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     openHealthInsights();
     const brief = screen.getByRole("heading", { name: "Tóm tắt 7 ngày để đi khám" }).closest("section");
@@ -287,6 +301,7 @@ describe("pregnancy daily page", () => {
     });
 
     render(<PregnancyPage />);
+    await loadDailyTools();
     fireEvent.change(screen.getByLabelText("Cân nặng (kg)"), { target: { value: "57.2" } });
     expect(finishHealthLoad).toBeTypeOf("function");
     await act(async () => {

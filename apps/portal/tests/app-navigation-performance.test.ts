@@ -48,4 +48,11 @@ describe("app-like navigation performance", () => {
     expect(source).toContain("window.setTimeout");
     expect(source).not.toMatch(/\n\s*void checkRelease\(\);\n\s*void checkFamilyActivity\(\);\n\n\s*return \(\) =>/);
   });
+
+  it("loads the large pregnancy tools only when their deferred section is near view", () => {
+    const source = readFileSync(join(process.cwd(), "src", "app", "me-bau", "page.tsx"), "utf8");
+    expect(source).toContain('dynamic(() => import("../../components/pregnancy-daily-tools")');
+    expect(source).not.toContain('from "../../components/meal-photo-tracker"');
+    expect(source).not.toContain('from "../../components/pregnancy-care-tracker"');
+  });
 });
