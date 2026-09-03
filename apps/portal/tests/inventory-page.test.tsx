@@ -53,8 +53,66 @@ describe("mobile inventory page", () => {
     render(<InventoryPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Đã dùng 1 Bỉm sơ sinh" }));
 
+    expect(screen.getByRole("article")).toHaveTextContent("6 cái");
     await waitFor(() => expect(screen.getByText("Đã cập nhật")).toBeInTheDocument());
+    expect(screen.getByRole("article")).toHaveTextContent("6 cái");
     expect(request).toHaveBeenCalledTimes(3);
+  });
+
+  it("restores the last safe amount when an optimistic request is rejected", async () => {
+    const request = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        items: [{ productId: 12, name: "Bỉm sơ sinh", quantity: 7, unit: "cái", minQuantity: 10, needsRestock: true }],
+        pending: 0
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response("unavailable", { status: 503 }));
+    vi.stubGlobal("fetch", request);
+
+    render(<InventoryPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Đã dùng 1 Bỉm sơ sinh" }));
+
+    expect(screen.getByRole("article")).toHaveTextContent("6 cái");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Đang xem danh sách đã lưu");
+    expect(screen.getByRole("article")).toHaveTextContent("7 cái");
+    expect(localStorage.getItem("embe:inventory:pending-amounts")).toBeNull();
+  });
+
+  it("keeps an accepted amount visible after the web-app is reopened while the worker is pending", async () => {
+    localStorage.setItem("embe:inventory:pending-amounts", JSON.stringify({
+      savedAt: new Date().toISOString(), amounts: [[12, 6]]
+    }));
+    localStorage.setItem("embe:inventory:last-snapshot", JSON.stringify({
+      savedAt: new Date().toISOString(),
+      snapshot: {
+        items: [{ productId: 12, name: "Bỉm sơ sinh", quantity: 6, unit: "cái", minQuantity: 10, needsRestock: true }],
+        pending: 1
+      }
+    }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      items: [{ productId: 12, name: "Bỉm sơ sinh", quantity: 7, unit: "cái", minQuantity: 10, needsRestock: true }],
+      pending: 1
+    }), { status: 200 })));
+
+    render(<InventoryPage />);
+
+    expect(await screen.findByRole("article")).toHaveTextContent("6 cái");
+    expect(localStorage.getItem("embe:inventory:pending-amounts")).toContain("[12,6]");
+  });
+
+  it("removes a stale optimistic amount when the queue drains without applying it", async () => {
+    localStorage.setItem("embe:inventory:pending-amounts", JSON.stringify({
+      savedAt: new Date().toISOString(), amounts: [[12, 6]]
+    }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      items: [{ productId: 12, name: "Bỉm sơ sinh", quantity: 7, unit: "cái", minQuantity: 10, needsRestock: true }],
+      pending: 0
+    }), { status: 200 })));
+
+    render(<InventoryPage />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Thay đổi chưa áp dụng được");
+    expect(screen.getByRole("article")).toHaveTextContent("7 cái");
+    expect(localStorage.getItem("embe:inventory:pending-amounts")).toBeNull();
   });
 
   it("keeps the add form intact when the queue is unavailable", async () => {
