@@ -34,7 +34,7 @@ describe("short-lived private GET cache", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps successful private data in memory for one minute", async () => {
+  it("keeps successful private data in memory for five minutes", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-02T08:00:00Z"));
     const fetchMock = vi.fn()
@@ -43,7 +43,7 @@ describe("short-lived private GET cache", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     expect(await (await cachedPrivateGet("/api/pregnancy/records")).json()).toEqual({ value: 1 });
-    vi.advanceTimersByTime(59_000);
+    vi.advanceTimersByTime(299_000);
     expect(await (await cachedPrivateGet("/api/pregnancy/records")).json()).toEqual({ value: 1 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
 

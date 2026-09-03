@@ -3,9 +3,9 @@ type CacheEntry = {
   response: Promise<Response>;
 };
 
-// Long enough to make returning to a page instant, short enough that changes
-// made on the other family phone appear without a manual refresh.
-const CACHE_MS = 60_000;
+// Returning to a tool stays instant. Writes invalidate their own data and the
+// family-activity channel clears all entries when the other phone changes data.
+const CACHE_MS = 5 * 60_000;
 const entries = new Map<string, CacheEntry>();
 
 /**
