@@ -643,6 +643,7 @@ ol, ul { margin: 0; padding: 0; }
 .system-status-list strong { font-size: .75rem; line-height: 1.3; }
 .system-status-list small { color: var(--ink-soft); font-size: .64rem; line-height: 1.3; }
 .system-status-family, .system-status-error, .system-status-loading { color: var(--ink-soft); font-size: .7rem; line-height: 1.45; margin: 0; }
+.system-status-setup-link { align-items: center; color: var(--rose); display: inline-flex; font-size: .75rem; font-weight: 700; min-height: 44px; text-decoration: none; width: fit-content; }
 .system-status-error { color: var(--coral); }
 .family-profile form { display: grid; gap: 9px; }
 .family-profile label { align-items: center; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) minmax(140px, .8fr); }

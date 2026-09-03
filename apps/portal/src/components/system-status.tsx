@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 type ServiceState = "ready" | "limited" | "paused" | "setup";
@@ -71,6 +72,9 @@ export default function SystemStatus() {
       <p className="system-status-family">
         {`Mẹ Ngân ${status.notificationRoles.mother ? "đã bật" : "chưa bật"} · Ba Hiếu ${status.notificationRoles.father ? "đã bật" : "chưa bật"}`}
       </p>
+      {!status.notificationRoles.mother || !status.notificationRoles.father
+        ? <Link className="system-status-setup-link" href="/cai-dat#thiet-lap-dien-thoai">Thiết lập điện thoại còn lại</Link>
+        : null}
     </> : state === "loading" ? <p className="system-status-loading" role="status">Đang kiểm tra các phần quan trọng…</p> : null}
   </section>;
 }

@@ -19,6 +19,7 @@ describe("family system status", () => {
     expect(screen.getByText("Trợ lý đang nghỉ")).toBeInTheDocument();
     expect(screen.getByText("Thông báo cần thiết lập")).toBeInTheDocument();
     expect(screen.getByText("Mẹ Ngân đã bật · Ba Hiếu chưa bật")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Thiết lập điện thoại còn lại" })).toHaveAttribute("href", "/cai-dat#thiet-lap-dien-thoai");
     expect(screen.getAllByText("Sẵn sàng").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Kiểm tra lại tình trạng EmBe" }));

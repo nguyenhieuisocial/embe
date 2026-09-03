@@ -24,7 +24,7 @@ export default function DeviceSetup() {
   }
 
   return (
-    <section className="section device-setup" aria-labelledby="device-setup-title">
+    <section className="section device-setup" id="thiet-lap-dien-thoai" aria-labelledby="device-setup-title">
       <div className="section-head">
         <p className="panel-kicker">Thiết lập điện thoại này</p>
         <h2 id="device-setup-title">EmBe nhớ người đang dùng</h2>
