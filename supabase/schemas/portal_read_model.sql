@@ -2421,7 +2421,10 @@ CREATE OR REPLACE FUNCTION public.embe_save_pregnancy_medical_record_with_task(
   p_next_appointment_at timestamptz, p_measurements jsonb, p_medicines jsonb
 )
 RETURNS uuid LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
-DECLARE result_id uuid := COALESCE(p_id, gen_random_uuid());
+DECLARE
+  result_id uuid := COALESCE(p_id, gen_random_uuid());
+  appointment_at timestamptz;
+  appointment_title text;
 BEGIN
   IF p_kind NOT IN ('appointment', 'ultrasound', 'laboratory', 'prescription', 'other')
      OR p_status NOT IN ('planned', 'completed')
@@ -2452,14 +2455,22 @@ BEGIN
   WHERE portal_read_model.pregnancy_medical_record.deleted_at IS NULL;
 
   IF p_kind = 'appointment' AND p_status = 'planned' THEN
+    appointment_at := p_occurred_at;
+    appointment_title := 'Lịch khám: ' || trim(p_title);
+  ELSIF p_status = 'completed' AND p_next_appointment_at IS NOT NULL THEN
+    appointment_at := p_next_appointment_at;
+    appointment_title := 'Lịch tái khám: ' || trim(p_title);
+  END IF;
+
+  IF appointment_at IS NOT NULL THEN
     INSERT INTO portal_read_model.family_task (
       idempotency_key, title, note, owner_role, category, link_target,
       due_on, due_time, repeat_rule
     ) VALUES (
-      result_id, 'Lịch khám: ' || trim(p_title), trim(COALESCE(p_provider, '')),
+      result_id, appointment_title, trim(COALESCE(p_provider, '')),
       'family', 'appointment', 'calendar',
-      (p_occurred_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date,
-      date_trunc('minute', p_occurred_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::time,
+      (appointment_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date,
+      date_trunc('minute', appointment_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::time,
       'none'
     ) ON CONFLICT (idempotency_key) DO UPDATE SET
       title = EXCLUDED.title, note = EXCLUDED.note, owner_role = EXCLUDED.owner_role,
@@ -3048,15 +3059,25 @@ $function$;
 
 CREATE OR REPLACE FUNCTION public.embe_restore_pregnancy_medical_record_with_task(p_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
-DECLARE record portal_read_model.pregnancy_medical_record%ROWTYPE;
+DECLARE
+  record portal_read_model.pregnancy_medical_record%ROWTYPE;
+  appointment_at timestamptz;
+  appointment_title text;
 BEGIN
   SELECT * INTO record FROM portal_read_model.pregnancy_medical_record WHERE id=p_id AND deleted_at IS NOT NULL FOR UPDATE;
   IF record.id IS NULL THEN RAISE EXCEPTION 'deleted pregnancy medical record not found'; END IF;
   UPDATE portal_read_model.pregnancy_medical_record SET deleted_at=NULL,updated_at=timezone('utc',now()) WHERE id=p_id;
   IF record.kind='appointment' AND record.status='planned' THEN
+    appointment_at := record.occurred_at;
+    appointment_title := 'Lịch khám: ' || record.title;
+  ELSIF record.status='completed' AND record.next_appointment_at IS NOT NULL THEN
+    appointment_at := record.next_appointment_at;
+    appointment_title := 'Lịch tái khám: ' || record.title;
+  END IF;
+  IF appointment_at IS NOT NULL THEN
     INSERT INTO portal_read_model.family_task(idempotency_key,title,note,owner_role,category,link_target,due_on,due_time,repeat_rule)
-    VALUES(record.id,'Lịch khám: '||record.title,record.provider,'family','appointment','calendar',
-      (record.occurred_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date,date_trunc('minute',record.occurred_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::time,'none')
+    VALUES(record.id,appointment_title,record.provider,'family','appointment','calendar',
+      (appointment_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date,date_trunc('minute',appointment_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::time,'none')
     ON CONFLICT(idempotency_key) DO UPDATE SET title=EXCLUDED.title,note=EXCLUDED.note,owner_role=EXCLUDED.owner_role,
       category=EXCLUDED.category,link_target=EXCLUDED.link_target,due_on=EXCLUDED.due_on,due_time=EXCLUDED.due_time,
       repeat_rule=EXCLUDED.repeat_rule,deleted_at=NULL,updated_at=timezone('utc',now());

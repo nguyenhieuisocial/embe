@@ -3957,10 +3957,12 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .appointment-check-summary span { color: var(--ink-soft); font-size: .8125rem; }
 .appointment-check-summary span.is-done { color: var(--ink); font-weight: 650; }
 .appointment-actions { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 10px; }
-.appointment-actions button {
+.appointment-actions button, .appointment-actions a {
+  align-items: center;
   background: var(--paper); border: 1px solid color-mix(in srgb, var(--coral) 35%, var(--line)); border-radius: var(--radius-sm);
-  color: var(--coral); font: inherit; font-size: .75rem; font-weight: 700; min-height: 48px; padding: 8px;
+  color: var(--coral); display: flex; font: inherit; font-size: .75rem; font-weight: 700; justify-content: center; min-height: 48px; padding: 8px;
 }
+.appointment-actions a:only-child { grid-column: 1 / -1; text-decoration: none; }
 .medical-empty-short { background: var(--paper); border: 1px dashed var(--line); border-radius: var(--radius-md); display: grid; gap: 3px; padding: 14px; }
 .medical-empty-short p { color: var(--ink-soft); font-size: .8125rem; margin: 0; }
 .medical-form, .medical-insights {

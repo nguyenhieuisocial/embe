@@ -12,6 +12,8 @@ export type MedicalRecord = {
   documents: MedicalDocument[];
 };
 
+export type MedicalUpcoming = MedicalRecord & { followUpFromCompleted: boolean };
+
 export type AppointmentWorkspace = { questions: string[]; checklist: string[]; outcome: string };
 
 export const APPOINTMENT_CHECKLIST = [
@@ -93,8 +95,19 @@ export function normalizeMedicalRecord(value: unknown): MedicalRecord | null {
 }
 
 export function medicalInsights(records: MedicalRecord[], now = new Date()) {
-  const upcoming = records.filter((record) => record.status === "planned" && new Date(record.occurredAt) >= now)
-    .sort((a, b) => +new Date(a.occurredAt) - +new Date(b.occurredAt))[0] ?? null;
+  const upcoming = [
+    ...records
+      .filter((record) => record.status === "planned" && new Date(record.occurredAt) >= now)
+      .map((record): MedicalUpcoming => ({ ...record, followUpFromCompleted: false })),
+    ...records
+      .filter((record) => record.status === "completed" && record.nextAppointmentAt
+        && new Date(record.nextAppointmentAt) >= now)
+      .map((record): MedicalUpcoming => ({
+        ...record,
+        occurredAt: record.nextAppointmentAt as string,
+        followUpFromCompleted: true
+      }))
+  ].sort((a, b) => +new Date(a.occurredAt) - +new Date(b.occurredAt))[0] ?? null;
   const activeMedicines = records.filter((record) => record.kind === "prescription" && record.status === "completed")
     .flatMap((record) => record.medicines);
   const completed = records.filter((record) => record.status === "completed");

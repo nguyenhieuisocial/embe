@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(11);
+SELECT plan(12);
 
 SELECT ok(has_function_privilege('service_role', 'public.embe_list_family_trash()', 'EXECUTE'), 'Server can list family trash');
 SELECT ok(NOT has_function_privilege('authenticated', 'public.embe_list_family_trash()', 'EXECUTE'), 'Browser cannot list family trash directly');
@@ -38,7 +38,20 @@ SELECT is(
   'true|true', 'Pregnancy record and linked planner task restore together'
 );
 SELECT is((SELECT count(*) FROM portal_read_model.family_audit_event WHERE action = 'restore' AND entity_type = 'pregnancy_medical_record' AND entity_id = '921fe5a0-f59b-4f8c-8eb7-64fb2ef89256'), 1::bigint, 'Medical restore is audited once');
-SELECT is((SELECT count(*) FROM portal_read_model.family_audit_event WHERE action = 'delete'), 2::bigint, 'Both delete mutations are audited');
+
+SELECT public.embe_save_pregnancy_medical_record_with_task(
+  '931fe5a0-f59b-4f8c-8eb7-64fb2ef89256', 'appointment', 'completed', TIMESTAMPTZ '2099-12-28 02:30:00+00',
+  'Khám có lịch tái khám', 'Bệnh viện', '', '', 10, TIMESTAMPTZ '2100-01-12 01:15:00+00', '{}'::jsonb, '[]'::jsonb
+);
+SELECT public.embe_delete_pregnancy_medical_record_with_task('931fe5a0-f59b-4f8c-8eb7-64fb2ef89256');
+SELECT public.embe_restore_pregnancy_medical_record_with_task('931fe5a0-f59b-4f8c-8eb7-64fb2ef89256');
+SELECT is(
+  (SELECT title || '|' || due_on::text || '|' || to_char(due_time, 'HH24:MI') || '|' || (deleted_at IS NULL)::text
+   FROM portal_read_model.family_task WHERE idempotency_key = '931fe5a0-f59b-4f8c-8eb7-64fb2ef89256'),
+  'Lịch tái khám: Khám có lịch tái khám|2100-01-12|08:15|true',
+  'Restoring a completed visit also restores its linked follow-up appointment'
+);
+SELECT is((SELECT count(*) FROM portal_read_model.family_audit_event WHERE action = 'delete'), 3::bigint, 'All delete mutations are audited');
 
 INSERT INTO portal_read_model.family_task (
   idempotency_key, title, note, owner_role, category, link_target, due_on, repeat_rule, deleted_at

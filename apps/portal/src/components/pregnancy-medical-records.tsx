@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import {
@@ -147,7 +148,7 @@ export default function PregnancyMedicalRecords() {
       <div className="medical-subsection-title"><h3>Lịch khám tiếp theo</h3></div>
       {insights.upcoming ? <article className="next-appointment">
         <span aria-hidden="true">○</span><div className="appointment-workspace">
-          <small>Lịch gần nhất</small><h4>Buổi khám sắp tới</h4><strong>{insights.upcoming.title}</strong>
+          <small>{insights.upcoming.followUpFromCompleted ? "Ngày tái khám đã ghi" : "Lịch gần nhất"}</small><h4>Buổi khám sắp tới</h4><strong>{insights.upcoming.title}</strong>
           <p>{displayDate(insights.upcoming.occurredAt)}{insights.upcoming.provider ? ` · ${insights.upcoming.provider}` : ""}</p>
           {(() => {
             const workspace = decodeAppointmentWorkspace(insights.upcoming.notes);
@@ -157,10 +158,12 @@ export default function PregnancyMedicalRecords() {
               {insights.upcoming.documents.length ? <div className="medical-documents">{insights.upcoming.documents.map((document) => <a key={document.id} href={`/api/pregnancy/documents/${document.id}`} target="_blank" rel="noreferrer">{document.mimeType === "application/pdf" ? "PDF" : "Ảnh"} · {document.originalFilename}</a>)}</div> : null}
             </>;
           })()}
-          <div className="appointment-actions">
-            <button type="button" onClick={() => openForm("prepare", insights.upcoming)}>Chuẩn bị buổi khám</button>
-            <button type="button" onClick={() => openForm("outcome", insights.upcoming)}>Ghi kết quả sau khám</button>
-          </div>
+          {insights.upcoming.followUpFromCompleted
+            ? <div className="appointment-actions"><Link href="/lich" prefetch={false}>Mở trong lịch gia đình</Link></div>
+            : <div className="appointment-actions">
+              <button type="button" onClick={() => openForm("prepare", insights.upcoming)}>Chuẩn bị buổi khám</button>
+              <button type="button" onClick={() => openForm("outcome", insights.upcoming)}>Ghi kết quả sau khám</button>
+            </div>}
         </div>
       </article> : <div className="medical-empty-short"><strong>Chưa có lịch khám sắp tới</strong><p>Thêm lịch để EmBe đặt đúng ngày trong dòng thời gian.</p></div>}
 

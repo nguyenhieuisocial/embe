@@ -21,7 +21,25 @@ describe("pregnancy medical record book", () => {
   it("finds the next appointment without interpreting medical results", () => {
     const result = medicalInsights([record], new Date("2026-09-01T00:00:00Z"));
     expect(result.upcoming?.title).toBe("Khám thai định kỳ");
+    expect(result.upcoming?.followUpFromCompleted).toBe(false);
     expect(result.completedCount).toBe(0);
+  });
+
+  it("shows a completed visit's follow-up date as the next appointment", () => {
+    const completed: MedicalRecord = {
+      ...record,
+      status: "completed",
+      occurredAt: "2026-09-02T02:30:00Z",
+      nextAppointmentAt: "2026-09-16T02:30:00Z"
+    };
+
+    const result = medicalInsights([completed], new Date("2026-09-03T00:00:00Z"));
+
+    expect(result.upcoming).toMatchObject({
+      id: completed.id,
+      occurredAt: "2026-09-16T02:30:00Z",
+      followUpFromCompleted: true
+    });
   });
 
   it("opens a compact classified form and shows the private timeline", async () => {
@@ -87,6 +105,22 @@ describe("pregnancy medical record book", () => {
     expect(screen.getByRole("textbox", { name: "Câu hỏi muốn hỏi bác sĩ" })).toHaveValue("Cần làm xét nghiệm nào?");
     expect(screen.getByRole("checkbox", { name: "Mang giấy tờ và sổ khám" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Lưu chuẩn bị" })).toBeInTheDocument();
+  });
+
+  it("links a follow-up date from a completed visit to the family calendar", async () => {
+    const followUp: MedicalRecord = {
+      ...record,
+      status: "completed",
+      occurredAt: "2099-09-10T02:30:00Z",
+      nextAppointmentAt: "2099-09-24T02:30:00Z"
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ records: [followUp] }), { status: 200 })));
+
+    render(<PregnancyMedicalRecords />);
+
+    expect(await screen.findByText("Ngày tái khám đã ghi")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mở trong lịch gia đình" })).toHaveAttribute("href", "/lich");
+    expect(screen.queryByRole("button", { name: "Ghi kết quả sau khám" })).not.toBeInTheDocument();
   });
 
   it("turns a planned appointment into a completed visit while preserving preparation", async () => {

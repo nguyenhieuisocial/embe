@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SET ROLE postgres;
 SET search_path = public, extensions, pg_temp;
 
-SELECT plan(8);
+SELECT plan(11);
 
 SELECT ok(
   has_function_privilege('service_role', 'public.embe_save_pregnancy_medical_record_with_task(uuid,text,text,timestamptz,text,text,text,text,integer,timestamptz,jsonb,jsonb)', 'EXECUTE'),
@@ -55,6 +55,44 @@ SELECT ok(
   (SELECT deleted_at IS NOT NULL FROM portal_read_model.family_task
    WHERE idempotency_key = '711fe5a0-f59b-4f8c-8eb7-64fb2ef89256'),
   'Completing an appointment removes it from the active planner'
+);
+
+SELECT public.embe_save_pregnancy_medical_record_with_task(
+  '711fe5a0-f59b-4f8c-8eb7-64fb2ef89256', 'appointment', 'completed',
+  TIMESTAMPTZ '2099-12-29 03:45:00+00', 'Khám lại', 'Phòng khám', '', '',
+  10, TIMESTAMPTZ '2100-01-12 01:15:00+00', '{}'::jsonb, '[]'::jsonb
+);
+SELECT is(
+  (SELECT title || '|' || due_on::text || '|' || to_char(due_time, 'HH24:MI') || '|' || (deleted_at IS NULL)::text
+   FROM portal_read_model.family_task
+   WHERE idempotency_key = '711fe5a0-f59b-4f8c-8eb7-64fb2ef89256'),
+  'Lịch tái khám: Khám lại|2100-01-12|08:15|true',
+  'A completed visit with a follow-up date creates an active Vietnam-time appointment'
+);
+
+SELECT public.embe_save_pregnancy_medical_record_with_task(
+  '711fe5a0-f59b-4f8c-8eb7-64fb2ef89256', 'appointment', 'completed',
+  TIMESTAMPTZ '2099-12-29 03:45:00+00', 'Khám lại', 'Phòng khám', '', '',
+  10, TIMESTAMPTZ '2100-01-19 02:00:00+00', '{}'::jsonb, '[]'::jsonb
+);
+SELECT is(
+  (SELECT count(*)::text || '|' || due_on::text || '|' || to_char(due_time, 'HH24:MI')
+   FROM portal_read_model.family_task
+   WHERE idempotency_key = '711fe5a0-f59b-4f8c-8eb7-64fb2ef89256'
+   GROUP BY due_on, due_time),
+  '1|2100-01-19|09:00',
+  'Changing the follow-up date updates the same planner task without duplication'
+);
+
+SELECT public.embe_save_pregnancy_medical_record_with_task(
+  '711fe5a0-f59b-4f8c-8eb7-64fb2ef89256', 'appointment', 'completed',
+  TIMESTAMPTZ '2099-12-29 03:45:00+00', 'Khám lại', 'Phòng khám', '', '',
+  10, NULL, '{}'::jsonb, '[]'::jsonb
+);
+SELECT ok(
+  (SELECT deleted_at IS NOT NULL FROM portal_read_model.family_task
+   WHERE idempotency_key = '711fe5a0-f59b-4f8c-8eb7-64fb2ef89256'),
+  'Clearing the follow-up date removes the linked appointment'
 );
 
 SELECT public.embe_save_pregnancy_medical_record_with_task(
