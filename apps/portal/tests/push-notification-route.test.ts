@@ -95,7 +95,7 @@ describe("private family push routes", () => {
     const notification = {
       id: "22222222-2222-4222-8222-222222222222", endpoint: "https://push.example.test/device/2",
       p256dh: "a".repeat(87), auth: "b".repeat(22), title: "Mẹ Ngân vừa cập nhật",
-      body: "Nhật ký bữa ăn có thông tin mới.", url: "/me-bau#bua-an",
+      body: "Nhật ký bữa ăn có thông tin mới.", url: "/me-bau/bua-an",
       tag: "activity:33333333-3333-4333-8333-333333333333"
     };
     rpc.mockResolvedValueOnce({ data: true, error: null })
@@ -135,7 +135,7 @@ describe("private family push routes", () => {
     rpc.mockResolvedValueOnce({ data: [{
       event_id: "33333333-3333-4333-8333-333333333333",
       activity_kind: "meal", title: "Nhà mình vừa cập nhật",
-      target_url: "/me-bau#bua-an", created_at: "2026-09-02T15:00:00Z"
+      target_url: "/me-bau/bua-an", created_at: "2026-09-02T15:00:00Z"
     }], error: null });
 
     const response = await activityRoute.GET(request(
@@ -146,7 +146,7 @@ describe("private family push routes", () => {
     expect(await response.json()).toEqual({ activities: [{
       id: "33333333-3333-4333-8333-333333333333",
       kind: "meal", title: "Nhà mình vừa cập nhật",
-      url: "/me-bau#bua-an", createdAt: "2026-09-02T15:00:00Z"
+      url: "/me-bau/bua-an", createdAt: "2026-09-02T15:00:00Z"
     }] });
     expect(rpc).toHaveBeenCalledWith("embe_list_family_activity", {
       p_device_id: "44444444-4444-4444-8444-444444444444",
