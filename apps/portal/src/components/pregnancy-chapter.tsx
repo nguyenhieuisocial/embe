@@ -47,8 +47,8 @@ export default function PregnancyChapter() {
         <p>{chapter.detail}</p>
       </div>
       <div className="chapter-actions">
-        <Link href="/me-bau">{chapter.action}</Link>
-        <Link href="/lich" aria-label="Mở lịch gia đình">Mở lịch</Link>
+        <Link href="/me-bau" prefetch={false}>{chapter.action}</Link>
+        <Link href="/lich" prefetch={false} aria-label="Mở lịch gia đình">Mở lịch</Link>
       </div>
     </section>
   );

@@ -67,7 +67,7 @@ async function TimelinePanel() {
     <section className="section timeline-panel" aria-labelledby="timeline-title">
       <div className="section-head">
         <div><p className="panel-kicker">Theo dòng thời gian</p><h2 id="timeline-title">Nhật ký</h2></div>
-        <Link className="journal-all-link" href="/nhat-ky" aria-label="Xem toàn bộ nhật ký">Xem tất cả</Link>
+        <Link className="journal-all-link" href="/nhat-ky" prefetch={false} aria-label="Xem toàn bộ nhật ký">Xem tất cả</Link>
       </div>
 
       {timeline.length > 0 ? (
@@ -90,7 +90,7 @@ async function TimelinePanel() {
           <span className="empty-mark" aria-hidden="true"><Icon name="write" /></span>
           <strong>Chưa có ghi chép nào</strong>
           <p>Điều đầu tiên cả nhà ghi lại sẽ xuất hiện ở đây.</p>
-          <Link className="btn btn-quiet" href="/ghi-lai">Ghi điều đầu tiên</Link>
+          <Link className="btn btn-quiet" href="/ghi-lai" prefetch={false}>Ghi điều đầu tiên</Link>
         </div>
       )}
 
@@ -106,7 +106,7 @@ function TimelineLoading() {
     <section className="section timeline-panel" aria-busy="true">
       <div className="section-head">
         <div><p className="panel-kicker">Theo dòng thời gian</p><h2>Nhật ký</h2></div>
-        <Link className="journal-all-link" href="/nhat-ky" aria-label="Xem toàn bộ nhật ký">Xem tất cả</Link>
+        <Link className="journal-all-link" href="/nhat-ky" prefetch={false} aria-label="Xem toàn bộ nhật ký">Xem tất cả</Link>
       </div>
       <div className="skeleton" role="status">
         <span className="skeleton-line is-short" />
@@ -157,7 +157,7 @@ export default function Home() {
           <h2>Mở nhanh</h2>
         </div>
         {shortcuts.map((shortcut) => (
-          <Link className="shortcut" href={shortcut.href} key={shortcut.href} aria-label={shortcut.label}>
+          <Link className="shortcut" href={shortcut.href} prefetch={false} key={shortcut.href} aria-label={shortcut.label}>
             <span className="shortcut-mark" aria-hidden="true"><Icon name={shortcut.icon} /></span>
             <span className="shortcut-text">
               <small>{shortcut.kicker}</small>

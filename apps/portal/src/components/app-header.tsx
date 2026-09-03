@@ -11,7 +11,7 @@ type AppHeaderProps = {
 export default function AppHeader({ note, tone = "calm" }: AppHeaderProps) {
   return (
     <header className="app-header">
-      <Link className="wordmark" href="/" aria-label="EmBe — về trang gia đình">
+      <Link className="wordmark" href="/" prefetch={false} aria-label="EmBe — về trang gia đình">
         <EmBeMark />
         EmBe
       </Link>

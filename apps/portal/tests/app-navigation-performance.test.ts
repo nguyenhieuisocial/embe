@@ -29,6 +29,19 @@ describe("app-like navigation performance", () => {
     expect(source).toContain('prefetch={active ? false : undefined}');
   });
 
+  it("prefetches only the primary bottom navigation instead of every secondary action", () => {
+    const sources = [
+      join(process.cwd(), "src", "components", "app-header.tsx"),
+      join(process.cwd(), "src", "components", "quick-actions.tsx"),
+      join(process.cwd(), "src", "components", "today-priorities-panel.tsx"),
+      join(process.cwd(), "src", "components", "pregnancy-chapter.tsx"),
+      join(process.cwd(), "src", "app", "page.tsx"),
+      join(process.cwd(), "src", "app", "me-bau", "page.tsx")
+    ].map((path) => readFileSync(path, "utf8"));
+
+    for (const source of sources) expect(source).toContain("prefetch={false}");
+  });
+
   it("defers non-critical release and activity checks until after startup", () => {
     const source = readFileSync(join(process.cwd(), "src", "components", "pwa-runtime.tsx"), "utf8");
     expect(source).toContain("STARTUP_IDLE_MS");

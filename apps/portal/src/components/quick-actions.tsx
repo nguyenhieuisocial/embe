@@ -121,7 +121,7 @@ export default function QuickActions() {
                 { href: "/me", icon: "care" as const, title: "Mẹ hồi phục hôm nay", detail: "Ghi thật nhanh các dấu hiệu cần theo dõi" },
                 { href: "/ky-niem#gui-anh", icon: "memory" as const, title: "Chụp một khoảnh khắc", detail: "Gửi vào album gia đình" }
               ] : actionsForStage(dueDate)).map((action) => (
-                <Link className="quick-action" href={action.href} key={action.href} onClick={() => setOpen(false)}>
+                <Link className="quick-action" href={action.href} prefetch={false} key={action.href} onClick={() => setOpen(false)}>
                   <span className="quick-action-mark" aria-hidden="true"><Icon name={action.icon} /></span>
                   <span>
                     <strong>{action.title}</strong>

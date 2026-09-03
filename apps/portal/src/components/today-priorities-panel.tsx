@@ -25,7 +25,7 @@ export default function TodayPrioritiesPanel({
                 <strong>{priority.title}</strong>
                 <small>{priority.detail}</small>
               </span>
-              <Link href={priority.href} aria-label={`${priority.actionLabel}: ${priority.title}`}>
+              <Link href={priority.href} prefetch={false} aria-label={`${priority.actionLabel}: ${priority.title}`}>
                 {priority.actionLabel}
               </Link>
             </li>
@@ -40,7 +40,7 @@ export default function TodayPrioritiesPanel({
           Chưa tải được {unavailableSources.join(", ")}.
         </p>
       ) : null}
-      <Link className="today-priority-plan-link" href="/ke-hoach" aria-label="Mở kế hoạch hôm nay">
+      <Link className="today-priority-plan-link" href="/ke-hoach" prefetch={false} aria-label="Mở kế hoạch hôm nay">
         Xem toàn bộ kế hoạch
       </Link>
     </section>
