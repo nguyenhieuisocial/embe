@@ -2092,7 +2092,7 @@ CREATE OR REPLACE FUNCTION public.embe_list_meal_history(p_days integer DEFAULT 
 RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $function$
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'id', entry.id, 'meal_type', entry.meal_type, 'eaten_at', entry.eaten_at,
-    'note', entry.note, 'status', entry.status,
+    'note', entry.note, 'status', entry.status, 'has_image', entry.storage_path IS NOT NULL,
     'analysis', COALESCE(entry.confirmed_analysis, entry.analysis, jsonb_build_object(
       'entry_mode', 'note', 'foods', '[]'::jsonb, 'needs_user_confirmation', '[]'::jsonb,
       'estimate_notice', CASE WHEN entry.status IN ('failed', 'rejected')

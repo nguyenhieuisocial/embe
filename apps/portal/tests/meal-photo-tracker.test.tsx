@@ -14,6 +14,7 @@ vi.mock("../src/lib/meal-photo-client", () => ({
 
 const history = [{
   id: "11111111-1111-4111-8111-111111111111", mealType: "lunch", eatenAt: "2026-09-01T05:00:00Z", note: "ít cơm",
+  hasImage: true,
   status: "processing" as const,
   analysis: {
     foods: [{ nameVi: "Cơm và rau", searchNameEn: "rice vegetables", estimatedGrams: 200,
@@ -49,6 +50,9 @@ describe("mobile meal journal", () => {
       expect.objectContaining({ cache: "no-store", credentials: "same-origin" })
     ));
     fireEvent.click(screen.getByText("Cơm và rau"));
+    expect(screen.getByRole("img", { name: "Ảnh bữa trưa" })).toHaveAttribute(
+      "src", "/api/meals/11111111-1111-4111-8111-111111111111/image"
+    );
     expect(screen.getByText("ít cơm")).toBeInTheDocument();
     expect(screen.getByText("Đã lưu · đang bổ sung dinh dưỡng")).toBeInTheDocument();
   });

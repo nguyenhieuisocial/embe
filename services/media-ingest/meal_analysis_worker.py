@@ -58,25 +58,25 @@ VIETNAMESE_FOOD_NAMES = (
 )
 VIETNAMESE_NAME_MARKERS = set("ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ")
 VIETNAMESE_NUTRITION_QUERIES = (
-    ("cơm chiên trứng", "fried rice with egg"),
-    ("cơm gạo lứt", "brown rice cooked"),
-    ("cơm chiên", "fried rice"),
-    ("cơm trắng", "white rice cooked"),
-    ("đậu hũ", "tofu"),
-    ("đậu phụ", "tofu"),
-    ("trứng chiên", "fried egg"),
-    ("trứng luộc", "boiled egg"),
-    ("ức gà", "chicken breast"),
-    ("gà nướng", "grilled chicken"),
-    ("cá hồi", "salmon"),
+    ("cơm chiên trứng", "fried rice restaurant chinese"),
+    ("cơm gạo lứt", "rice brown long grain cooked"),
+    ("cơm chiên", "fried rice restaurant chinese"),
+    ("cơm trắng", "rice white long grain cooked"),
+    ("đậu hũ", "tofu raw firm calcium"),
+    ("đậu phụ", "tofu raw firm calcium"),
+    ("trứng chiên", "egg whole cooked fried"),
+    ("trứng luộc", "egg whole cooked hard boiled"),
+    ("ức gà", "chicken breast meat only cooked roasted"),
+    ("gà nướng", "chicken breast meat only cooked grilled"),
+    ("cá hồi", "salmon fish cooked dry heat"),
     ("sữa chua", "plain yogurt"),
-    ("chuối", "banana"),
-    ("táo", "apple"),
-    ("rau luộc", "boiled vegetables"),
-    ("thịt bò xào", "stir fried beef"),
+    ("chuối", "bananas raw"),
+    ("táo", "apples raw skin"),
+    ("rau luộc", "vegetables mixed cooked boiled"),
+    ("thịt bò xào", "beef flank cooked braised"),
     ("bún cá", "fish noodle soup"),
     ("khoai lang", "sweet potato cooked"),
-    ("ớt chuông", "bell pepper"),
+    ("ớt chuông", "peppers sweet raw"),
     ("súp lơ", "cauliflower cooked"),
     ("súp lơ nướng", "cauliflower cooked"),
     ("bông cải xanh", "broccoli cooked"),
@@ -84,8 +84,21 @@ VIETNAMESE_NUTRITION_QUERIES = (
     ("cà rốt", "carrots cooked"),
     ("cà rốt nướng", "carrots cooked"),
     ("dưa leo", "cucumber raw"),
-    ("cà chua", "tomato raw"),
-    ("thịt bò nướng", "beef cooked"),
+    ("cà chua", "tomatoes red raw"),
+    ("thịt bò nướng", "beef flank cooked braised"),
+    ("nước lọc", "water bottled generic"),
+    ("nước suối", "water bottled generic"),
+    ("nước tương", "soy sauce"),
+    ("xì dầu", "soy sauce"),
+    ("trứng gà", "egg whole cooked"),
+)
+
+VIETNAMESE_NUTRITION_PREFIX_QUERIES = (
+    ("ớt chuông", "peppers sweet raw"),
+    ("dưa leo", "cucumber raw"),
+    ("cà chua", "tomatoes red raw"),
+    ("súp lơ", "cauliflower cooked"),
+    ("bông cải xanh", "broccoli cooked"),
 )
 
 
@@ -101,12 +114,18 @@ def vietnamese_food_name(name: str, search_name: str) -> tuple[str, bool]:
     return "Món cần Mẹ xác nhận", True
 
 
-def nutrition_search_query(value: str) -> str:
-    normalized = " ".join(value.casefold().split())
+def nutrition_search_query(name_vi: str, search_name_en: str | None = None) -> str:
+    """Prefer the user-visible Vietnamese identity over an untrusted AI lookup label."""
+    normalized = " ".join(name_vi.casefold().split())
     for vietnamese, english in VIETNAMESE_NUTRITION_QUERIES:
         if vietnamese == normalized:
             return english
-    return value.strip()
+    for vietnamese, english in VIETNAMESE_NUTRITION_PREFIX_QUERIES:
+        if normalized.startswith(f"{vietnamese} "):
+            return english
+    if any(character in VIETNAMESE_NAME_MARKERS for character in normalized):
+        return name_vi.strip()
+    return (search_name_en if search_name_en is not None else name_vi).strip()
 
 
 @dataclass(frozen=True)
@@ -235,7 +254,8 @@ def parse_vision_result(value: Any) -> dict[str, Any]:
             "name_vi": localized_name, "search_name_en": search_name.strip(),
             "estimated_grams": round(float(grams), 1) if grams is not None else None,
             "confidence": round(float(confidence), 2),
-            "food_groups": list(dict.fromkeys(groups)), "safety_flags": derived_flags,
+            "food_groups": list(dict.fromkeys(groups)),
+            "safety_flags": list(dict.fromkeys([*flags, *derived_flags])),
         })
     if any(not isinstance(question, str) or not 1 <= len(question.strip()) <= 120 for question in questions):
         raise ValueError("invalid_vision_result")
@@ -266,10 +286,12 @@ Chỉ trích xuất món có căn cứ trực tiếp từ ảnh hoặc ghi chú.
 không tự đặt mục tiêu calorie. Trường name_vi bắt buộc là tiếng Việt tự nhiên có dấu, ví dụ
 "Cơm chiên trứng", "Cá hồi áp chảo"; tuyệt đối không điền tên tiếng Anh vào trường này.
 Trường search_name_en mới dùng cụm tìm kiếm nguyên liệu tương đương bằng tiếng Anh.
+Mỗi cặp name_vi và search_name_en phải là cùng một thực phẩm; tự kiểm tra lại từng cặp trước khi trả lời.
+Ví dụ ớt chuông là "peppers sweet raw", tuyệt đối không phải cauliflower; nước lọc là water, không phải supplement.
 Ưu tiên tên món Việt Nam quen dùng (phở, bún, cơm tấm, bánh mì, canh, món kho/xào/luộc) thay vì dịch từng nguyên liệu.
 Nhìn toàn bộ khay hoặc đĩa trước, tách các món nhìn thấy rõ nhưng không tách gia vị và đồ trang trí thành món riêng.
 Ghi chú của người dùng là gợi ý để phân biệt món; không dùng ghi chú để bịa món trái với ảnh.
-Ước lượng gram thận trọng; nếu không đủ căn cứ thì dùng null. Mỗi món chỉ xuất hiện
+Ước lượng gram phần ăn được, không tính đĩa/tô/ly; nếu không đủ căn cứ thì dùng null. Mỗi món chỉ xuất hiện
 một lần, không lặp và không điền thêm cho đủ số lượng. Đánh dấu an toàn chỉ khi có dấu hiệu thực sự
 hoặc cần người dùng xác nhận. Trả về đúng JSON theo schema, tối đa 8 món phân biệt."""
 
@@ -384,11 +406,6 @@ class MealAnalysisWorker:
         except (KeyError, TypeError, json.JSONDecodeError, ValueError) as error:
             raise WorkerFailure("invalid_vision_output" if body is not None else "invalid_text_analysis_output") from error
 
-    def _cleanup(self, storage_path: str) -> None:
-        encoded = "/".join(quote(part, safe="") for part in storage_path.split("/"))
-        self.transport("DELETE", f"{self.config.supabase_url}/storage/v1/object/{self.config.bucket}/{encoded}",
-                       self.supabase_headers)
-
     def _lookup_local_food(self, query: str) -> dict[str, Any] | None:
         if not self.config.nutrition_local_db_path:
             return None
@@ -421,7 +438,7 @@ class MealAnalysisWorker:
 
     def _lookup_food(self, query: str) -> dict[str, Any] | None:
         local_match = self._lookup_local_food(query)
-        if local_match:
+        if self.config.nutrition_local_db_path and Path(self.config.nutrition_local_db_path).is_file():
             return local_match
         cache_path = Path(self.config.nutrition_cache_path) if self.config.nutrition_cache_path != ":memory:" else None
         if cache_path:
@@ -503,7 +520,8 @@ class MealAnalysisWorker:
         for food in parsed["foods"]:
             grams = food["estimated_grams"]
             try:
-                match = self._lookup_food(nutrition_search_query(food["search_name_en"])) if grams is not None else None
+                query = nutrition_search_query(food["name_vi"], food["search_name_en"])
+                match = self._lookup_food(query) if grams is not None else None
             except WorkerFailure as error:
                 if error.code != "nutrition_provider_unavailable":
                     raise
@@ -576,8 +594,6 @@ class MealAnalysisWorker:
                 "p_id": entry_id, "p_checksum_sha256": hashlib.sha256(checksum_source).hexdigest(),
                 "p_model_name": self.config.ollama_model, "p_analysis": analysis,
             })
-            if has_image:
-                self._cleanup(str(item["storage_path"]))
             return {"status": "review", "entry_id": entry_id, "food_count": len(analysis["foods"])}
         except WorkerFailure as error:
             attempts = int(item.get("attempts", 1))

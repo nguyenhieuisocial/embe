@@ -93,6 +93,7 @@ export async function POST(request: Request): Promise<Response> {
 
 type HistoryEntry = {
   id: string;
+  hasImage: boolean;
   mealType: string;
   eatenAt: string;
   note: string;
@@ -144,7 +145,8 @@ export async function GET(request: Request): Promise<Response> {
         ? "processing" : value.status === "uploaded" || value.status === "analyzing"
           ? "analyzing" : value.status === "review" ? "needs_review"
             : value.status === "failed" || value.status === "rejected" ? "failed" : "ready";
-      return [{ id: value.id, mealType: value.meal_type, eatenAt: value.eaten_at, note: value.note, status, analysis }];
+      return [{ id: value.id, hasImage: value.has_image === true, mealType: value.meal_type,
+        eatenAt: value.eaten_at, note: value.note, status, analysis }];
     });
     const heartbeat = await store.rpc("embe_get_worker_heartbeat", { p_worker_name: "meal-analysis" });
     return privateReply({

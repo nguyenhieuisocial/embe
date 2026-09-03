@@ -363,6 +363,11 @@ export default function MealPhotoTracker() {
                           : "Đang bổ sung dinh dưỡng"}</small></span>
                   </summary>
                   <div className="meal-history-detail">
+                    {entry.hasImage ? <img className="meal-history-photo"
+                      src={`/api/meals/${entry.id}/image`}
+                      alt={`Ảnh bữa ${(labels[entry.mealType] ?? "ăn").toLocaleLowerCase("vi")}`}
+                      loading="lazy" decoding="async"
+                      onError={(event) => { event.currentTarget.hidden = true; }} /> : null}
                     {historyEditor?.id === entry.id ? <div className="meal-history-editor">
                       {historyEditor.analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
                         <label>Sửa tên món<input maxLength={80} value={food.nameVi} onChange={(event) => updateSavedFood(index, "nameVi", event.target.value)} /></label>

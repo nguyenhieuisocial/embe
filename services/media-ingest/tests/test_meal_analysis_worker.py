@@ -60,8 +60,6 @@ class FakeTransport:
             })}}).encode())
         if url.endswith("/rest/v1/rpc/embe_finish_meal_analysis"):
             return HttpResponse(204, {}, b"")
-        if "/storage/v1/object/embe-meal-inbox/" in url and method == "DELETE":
-            return HttpResponse(200, {}, b"{}")
         raise AssertionError((method, url))
 
 
@@ -88,7 +86,7 @@ def test_rejects_unbounded_or_invented_vision_payloads():
         raise AssertionError("unbounded model output was accepted")
 
 
-def test_downloads_analyzes_stores_review_draft_and_removes_staging_image():
+def test_downloads_analyzes_stores_review_draft_and_keeps_private_source_image():
     transport = FakeTransport()
     result = MealAnalysisWorker(config(), transport).run_once()
 
@@ -99,7 +97,7 @@ def test_downloads_analyzes_stores_review_draft_and_removes_staging_image():
     assert payload["p_model_name"] == "qwen3-vl:4b-instruct"
     assert payload["p_analysis"]["estimate_notice"].startswith("Ước lượng từ ảnh")
     assert payload["p_analysis"]["foods"][1]["safety_flags"] == ["high_mercury_possible"]
-    assert transport.calls[-1][0] == "DELETE"
+    assert not any(call[0] == "DELETE" for call in transport.calls)
 
 
 def test_prewarms_the_vision_model_without_sending_user_data():
@@ -295,7 +293,7 @@ def test_local_usda_snapshot_keeps_known_food_available_when_the_api_is_limited(
         fiber_g REAL, calcium_mg REAL, iron_mg REAL, folate_ug REAL
       );
       CREATE VIRTUAL TABLE food_search USING fts5(description, content='foods', content_rowid='fdc_id');
-      INSERT INTO foods VALUES (169711, 'Rice, white, cooked', 130, 2.7, 0.3, 28.2, 0.4, 10, 0.2, 58);
+      INSERT INTO foods VALUES (169711, 'Rice, white, long grain, cooked', 130, 2.7, 0.3, 28.2, 0.4, 10, 0.2, 58);
       INSERT INTO food_search(food_search) VALUES ('rebuild');
     """)
     connection.commit()
@@ -322,6 +320,65 @@ def test_local_usda_snapshot_keeps_known_food_available_when_the_api_is_limited(
     assert nutrition["status"] == "estimated"
     assert nutrition["totals"]["calories"] == 260.0
     assert "1 món chưa ghép" in nutrition["notice"]
+
+
+def test_nutrition_never_uses_a_contradictory_ai_food_mapping(tmp_path):
+    database = tmp_path / "usda.sqlite"
+    connection = sqlite3.connect(database)
+    connection.executescript("""
+      CREATE TABLE foods (
+        fdc_id INTEGER PRIMARY KEY, description TEXT NOT NULL,
+        calories REAL, protein_g REAL, fat_g REAL, carbs_g REAL,
+        fiber_g REAL, calcium_mg REAL, iron_mg REAL, folate_ug REAL
+      );
+      CREATE VIRTUAL TABLE food_search USING fts5(description, content='foods', content_rowid='fdc_id');
+      INSERT INTO foods VALUES (1, 'Cauliflower, roasted', 23, 1.8, 0.4, 4.1, 2.3, 16, 0.3, 44);
+      INSERT INTO foods VALUES (2, 'Peppers, sweet, red, raw', 26, 1, 0.3, 6, 2.1, 7, 0.4, 46);
+      INSERT INTO food_search(food_search) VALUES ('rebuild');
+    """)
+    connection.commit()
+    connection.close()
+
+    worker = MealAnalysisWorker(Config(
+        supabase_url="https://project.supabase.co", supabase_secret_key="server-secret",
+        nutrition_local_db_path=str(database),
+    ), lambda *_args, **_kwargs: HttpResponse(429, {}, b""))
+    nutrition = worker._calculate_nutrition({
+        "foods": [{"name_vi": "Ớt chuông", "search_name_en": "roasted cauliflower",
+                   "estimated_grams": 100, "confidence": 0.7,
+                   "food_groups": ["vegetables"], "safety_flags": []}],
+        "needs_user_confirmation": [], "estimate_notice": "reviewed",
+    })
+
+    assert nutrition["totals"]["calories"] == 26
+    assert nutrition["items"][0]["source_description"] == "Peppers, sweet, red, raw"
+
+
+def test_local_nutrition_snapshot_fails_closed_instead_of_searching_a_remote_guess(tmp_path):
+    database = tmp_path / "usda.sqlite"
+    connection = sqlite3.connect(database)
+    connection.executescript("""
+      CREATE TABLE foods (
+        fdc_id INTEGER PRIMARY KEY, description TEXT NOT NULL,
+        calories REAL, protein_g REAL, fat_g REAL, carbs_g REAL,
+        fiber_g REAL, calcium_mg REAL, iron_mg REAL, folate_ug REAL
+      );
+      CREATE VIRTUAL TABLE food_search USING fts5(description, content='foods', content_rowid='fdc_id');
+      INSERT INTO foods VALUES (1, 'Bananas, raw', 89, 1.1, 0.3, 22.8, 2.6, 5, 0.3, 20);
+      INSERT INTO food_search(food_search) VALUES ('rebuild');
+    """)
+    connection.commit()
+    connection.close()
+
+    def no_remote_guess(*_args, **_kwargs):
+        raise AssertionError("remote nutrition search must not run when the complete local snapshot is available")
+
+    worker = MealAnalysisWorker(Config(
+        supabase_url="https://project.supabase.co", supabase_secret_key="server-secret",
+        nutrition_local_db_path=str(database),
+    ), no_remote_guess)
+
+    assert worker._lookup_food("unmapped vietnamese dish") is None
 
 
 def test_vision_result_localizes_common_english_food_names_for_vietnamese_ui():
@@ -367,10 +424,34 @@ def test_vision_result_never_exposes_an_unknown_english_name_as_vietnamese():
 
 
 def test_user_corrected_vietnamese_food_uses_a_safe_usda_query_instead_of_the_old_dish():
-    assert nutrition_search_query("Đậu hũ") == "tofu"
-    assert nutrition_search_query("Cơm gạo lứt") == "brown rice cooked"
-    assert nutrition_search_query("Ớt chuông") == "bell pepper"
+    assert nutrition_search_query("Đậu hũ") == "tofu raw firm calcium"
+    assert nutrition_search_query("Cơm gạo lứt") == "rice brown long grain cooked"
+    assert nutrition_search_query("Ớt chuông") == "peppers sweet raw"
     assert nutrition_search_query("Dưa leo") == "cucumber raw"
+
+
+def test_confirmed_vietnamese_name_overrides_a_contradictory_ai_search_name():
+    assert nutrition_search_query("Ớt chuông", "roasted cauliflower") == "peppers sweet raw"
+    assert nutrition_search_query("Dưa leo", "cucumber slices") == "cucumber raw"
+    assert nutrition_search_query("Cà chua cocktail", "tomato cocktail") == "tomatoes red raw"
+    assert nutrition_search_query("Thịt kho trứng", "chocolate cake") == "Thịt kho trứng"
+
+
+def test_common_vietnamese_ingredients_have_local_snapshot_queries():
+    assert nutrition_search_query("Nước lọc", "supplement") == "water bottled generic"
+    assert nutrition_search_query("Nước tương", "soy sauce") == "soy sauce"
+    assert nutrition_search_query("Trứng gà", "egg") == "egg whole cooked"
+
+
+def test_model_safety_flags_are_not_discarded_during_normalization():
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": "Trứng lòng đào", "search_name_en": "soft boiled egg",
+                   "estimated_grams": 50, "confidence": 0.8,
+                   "food_groups": ["protein"], "safety_flags": ["raw_or_undercooked"]}],
+        "needs_user_confirmation": [],
+    })
+
+    assert parsed["foods"][0]["safety_flags"] == ["raw_or_undercooked"]
 
 
 def test_valid_detailed_vietnamese_food_name_is_preserved_verbatim():
@@ -397,6 +478,6 @@ def test_unmapped_english_food_names_fail_closed_for_vietnamese_ui(english_name)
 
 
 def test_nutrition_aliases_only_match_a_complete_food_name():
-    assert nutrition_search_query("Rau luộc") == "boiled vegetables"
-    assert nutrition_search_query("Thịt bò xào") == "stir fried beef"
+    assert nutrition_search_query("Rau luộc") == "vegetables mixed cooked boiled"
+    assert nutrition_search_query("Thịt bò xào") == "beef flank cooked braised"
     assert nutrition_search_query("Cơm gạo lứt với thịt bò") == "Cơm gạo lứt với thịt bò"

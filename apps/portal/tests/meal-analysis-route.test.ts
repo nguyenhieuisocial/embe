@@ -4,16 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const rpc = vi.fn();
 const createSignedUploadUrl = vi.fn();
 const info = vi.fn();
+const download = vi.fn();
 const revalidateFamilyViews = vi.hoisted(() => vi.fn());
 
 vi.mock("@supabase/supabase-js", () => ({
-  createClient: () => ({ rpc, storage: { from: () => ({ createSignedUploadUrl, info }) } })
+  createClient: () => ({ rpc, storage: { from: () => ({ createSignedUploadUrl, info, download }) } })
 }));
 vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
 
 import { GET as history, POST as createMeal } from "../src/app/api/meals/route";
 import { POST as completeMeal } from "../src/app/api/meals/[id]/complete/route";
 import { GET as getMeal, PATCH as confirmMeal } from "../src/app/api/meals/[id]/route";
+import { GET as getMealImage } from "../src/app/api/meals/[id]/image/route";
 
 const originalEnvironment = { ...process.env };
 const entryId = "11111111-1111-4111-8111-111111111111";
@@ -38,7 +40,7 @@ describe("private review-first meal analysis API", () => {
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-key";
-    rpc.mockReset(); createSignedUploadUrl.mockReset(); info.mockReset();
+    rpc.mockReset(); createSignedUploadUrl.mockReset(); info.mockReset(); download.mockReset();
     revalidateFamilyViews.mockClear();
   });
   afterEach(() => { process.env = { ...originalEnvironment }; });
@@ -70,6 +72,22 @@ describe("private review-first meal analysis API", () => {
       idempotencyKey: entryId, mealType: "brunch", mimeType: "image/svg+xml", note: ""
     }));
     expect(invalid.status).toBe(400);
+  });
+
+  it("serves a retained meal photo only through the authenticated app", async () => {
+    const context = { params: Promise.resolve({ id: entryId }) };
+    expect((await getMealImage(request(`https://embe.hieu.asia/api/meals/${entryId}/image`, undefined, "GET", false), context)).status).toBe(401);
+
+    rpc.mockResolvedValueOnce({ data: {
+      id: entryId, status: "confirmed", storage_path: storagePath,
+      mime_type: "image/jpeg", original_filename: "bua-trua.jpg"
+    }, error: null });
+    download.mockResolvedValueOnce({ data: new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: "image/jpeg" }), error: null });
+
+    const response = await getMealImage(request(`https://embe.hieu.asia/api/meals/${entryId}/image`, undefined, "GET"), context);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("image/jpeg");
+    expect(response.headers.get("cache-control")).toContain("private");
   });
 
   it("queues a written meal note for recognition without requiring a photo", async () => {
@@ -305,7 +323,7 @@ describe("private review-first meal analysis API", () => {
   });
 
   it("describes trends without treating missing logs as deficiency", async () => {
-    rpc.mockResolvedValueOnce({ data: [{ id: entryId, meal_type: "lunch", eaten_at: "2026-09-01T05:00:00Z", note: "", analysis: rawAnalysis }], error: null });
+    rpc.mockResolvedValueOnce({ data: [{ id: entryId, meal_type: "lunch", eaten_at: "2026-09-01T05:00:00Z", note: "", has_image: true, analysis: rawAnalysis }], error: null });
     rpc.mockResolvedValueOnce({ data: { state: "online", last_seen_at: new Date().toISOString() }, error: null });
     const response = await history(request("https://embe.hieu.asia/api/meals?days=7", undefined, "GET"));
     const payload = await response.json();
@@ -313,6 +331,7 @@ describe("private review-first meal analysis API", () => {
     expect(payload.suggestions[0]).toContain("Ghi ít nhất 3 bữa");
     expect(payload.notice).toContain("không chẩn đoán thiếu chất");
     expect(payload.worker.status).toBe("online");
+    expect(payload.history[0]).toEqual(expect.objectContaining({ hasImage: true }));
   });
 
   it("returns a saved meal while background nutrition is still pending", async () => {

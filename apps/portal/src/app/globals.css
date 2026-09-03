@@ -4176,6 +4176,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .meal-history-card summary > span:last-child b { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meal-history-card summary b { font-size: .8125rem; }
 .meal-history-detail { background: var(--surface); border-top: 1px solid var(--line); display: grid; gap: 8px; padding: 12px; }
+.meal-history-photo { aspect-ratio: 4 / 3; border-radius: 12px; display: block; height: auto; max-height: 280px; object-fit: cover; width: 100%; }
 .meal-history-detail p, .meal-history-detail ul { margin: 0; }
 .meal-history-detail ul { display: grid; gap: 4px; padding-left: 18px; }
 .meal-history-detail li { font-size: .8125rem; }

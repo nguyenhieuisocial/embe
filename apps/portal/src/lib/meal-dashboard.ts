@@ -2,6 +2,7 @@ import type { MealAnalysis } from "./meal-analysis-contract";
 
 export type MealHistoryEntry = {
   id: string;
+  hasImage?: boolean;
   mealType: string;
   eatenAt: string;
   note: string;
