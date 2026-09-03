@@ -13,7 +13,8 @@ import { suggestPopularFoods, VIETNAMESE_POPULAR_FOODS } from "../lib/vietnamese
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
 const nutrientLabels = [
-  ["protein_g", "Đạm", "g"], ["fiber_g", "Chất xơ", "g"],
+  ["protein_g", "Đạm", "g"], ["carbs_g", "Tinh bột", "g"],
+  ["fat_g", "Chất béo", "g"], ["fiber_g", "Chất xơ", "g"],
   ["calcium_mg", "Canxi", "mg"], ["iron_mg", "Sắt", "mg"], ["folate_ug", "Folate", "µg"]
 ] as const;
 const UNCONFIRMED_FOOD_NAME = "món cần mẹ xác nhận";
@@ -51,6 +52,49 @@ function mealDate(value: string): string {
   return new Intl.DateTimeFormat("vi-VN", {
     timeZone: "Asia/Ho_Chi_Minh", weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit"
   }).format(new Date(value));
+}
+
+function formatNutritionValue(value: number): string {
+  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value);
+}
+
+function MealNutritionFacts({ entry }: { entry: MealHistoryEntry }) {
+  const nutrition = entry.analysis.nutrition;
+  const totals = nutrition?.totals ?? {};
+  const nutrients = nutrientLabels.filter(([key]) => (totals[key] ?? 0) > 0);
+  if (!nutrition || (!nutrition.calorieRange && nutrients.length === 0)) return null;
+  const mealLabel = (labels[entry.mealType] ?? "bữa ăn").toLocaleLowerCase("vi");
+  return <section className="meal-entry-nutrition" aria-label={`Dinh dưỡng ước lượng của bữa ${mealLabel}`}>
+    <div className="meal-entry-nutrition-heading">
+      <strong>Dinh dưỡng ước lượng</strong>
+      <small>theo khẩu phần đã xác nhận</small>
+    </div>
+    <div className="meal-entry-nutrients">
+      {nutrition.calorieRange ? <span><b>{Math.round(nutrition.calorieRange.low)}–{Math.round(nutrition.calorieRange.high)}</b><small>kcal</small></span> : null}
+      {nutrients.map(([key, label, unit]) => <span key={key}>
+        <b>{formatNutritionValue(totals[key])} {unit}</b><small>{label}</small>
+      </span>)}
+    </div>
+    {nutrition.source ? <small className="meal-nutrition-source">Nguồn: {nutrition.source}</small> : null}
+  </section>;
+}
+
+function mealHistoryNutritionSummary(entry: MealHistoryEntry): string {
+  if (entry.status === "analyzing") return "Đang nhận diện món";
+  if (entry.status === "needs_review") return "Chờ Mẹ kiểm tra";
+  if (entry.status === "failed") return "Chưa nhận diện được · ghi chú vẫn còn";
+  if (entry.status === "processing") return "Đã lưu · đang bổ sung dinh dưỡng";
+  if (entry.analysis.entryMode === "note") return "Chỉ có ghi chú";
+  if (entry.analysis.nutrition?.status === "unavailable") return "Chưa tính được dinh dưỡng · chạm để sửa";
+  const nutrition = entry.analysis.nutrition;
+  if (!nutrition?.calorieRange) return "Đang bổ sung dinh dưỡng";
+  const parts = [`${Math.round(nutrition.calorieRange.low)}–${Math.round(nutrition.calorieRange.high)} kcal`];
+  for (const [key, label, unit] of nutrientLabels) {
+    const value = nutrition.totals?.[key] ?? 0;
+    if (value > 0) parts.push(`${label} ${formatNutritionValue(value)} ${unit}`);
+    if (parts.length === 3) break;
+  }
+  return parts.join(" · ");
 }
 
 type Worker = { status: "online" | "degraded" | "offline" | "unknown"; lastSeenAt?: string };
@@ -440,14 +484,7 @@ export default function MealPhotoTracker() {
                   <summary>
                     <span><b>{labels[entry.mealType] ?? "Bữa ăn"}</b><small>{mealDate(entry.eatenAt)}</small></span>
                     <span><b>{entry.analysis.foods.map((food) => food.nameVi).join(", ") || entry.note || "Ghi chú bữa ăn"}</b>
-                      <small>{entry.status === "analyzing" ? "Đang nhận diện món"
-                        : entry.status === "needs_review" ? "Chờ Mẹ kiểm tra"
-                        : entry.status === "failed" ? "Chưa nhận diện được · ghi chú vẫn còn"
-                        : entry.status === "processing" ? "Đã lưu · đang bổ sung dinh dưỡng"
-                        : entry.analysis.entryMode === "note" ? "Chỉ có ghi chú"
-                        : entry.analysis.nutrition?.calorieRange ? `${Math.round(entry.analysis.nutrition.calorieRange.low)}–${Math.round(entry.analysis.nutrition.calorieRange.high)} kcal`
-                          : entry.analysis.nutrition?.status === "unavailable" ? "Chưa tính được dinh dưỡng · chạm để sửa"
-                            : "Đang bổ sung dinh dưỡng"}</small></span>
+                      <small>{mealHistoryNutritionSummary(entry)}</small></span>
                   </summary>
                   <div className="meal-history-detail">
                     {entry.hasImage ? <MealHistoryPhoto entryId={entry.id}
@@ -467,6 +504,7 @@ export default function MealPhotoTracker() {
                     </div> : <>
                       {entry.note ? <p>{entry.note}</p> : null}
                       <ul>{entry.analysis.foods.map((food, index) => <li key={`${entry.id}-${index}`}>{food.nameVi}{food.estimatedGrams ? ` · ${food.estimatedGrams} g` : ""}</li>)}</ul>
+                      <MealNutritionFacts entry={entry} />
                       {hasMealSafetyConcern(entry.analysis.foods.flatMap((food) => [
                         ...food.safetyFlags, ...deriveMealSafetyFlags(food.nameVi)
                       ])) ? <p className="meal-risk">Món này cần kiểm tra độ chín hoặc tiệt trùng, loại cá và thành phần trước khi dùng.</p> : null}

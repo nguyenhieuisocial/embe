@@ -4230,6 +4230,15 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .meal-history-detail p, .meal-history-detail ul { margin: 0; }
 .meal-history-detail ul { display: grid; gap: 4px; padding-left: 18px; }
 .meal-history-detail li { font-size: .8125rem; }
+.meal-entry-nutrition { background: color-mix(in srgb, var(--coral-soft) 46%, var(--paper)); border-radius: 12px; display: grid; gap: 8px; padding: 10px; }
+.meal-entry-nutrition-heading { align-items: baseline; display: flex; gap: 6px; justify-content: space-between; }
+.meal-entry-nutrition-heading strong { color: var(--ink); font-size: .8125rem; }
+.meal-entry-nutrition-heading small { font-size: .6875rem; text-align: right; }
+.meal-entry-nutrients { display: grid; gap: 6px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.meal-entry-nutrients span { background: var(--paper); border-radius: 9px; display: grid; gap: 1px; min-width: 0; padding: 7px 5px; text-align: center; }
+.meal-entry-nutrients b { color: var(--ink); font-size: .75rem; line-height: 1.2; overflow-wrap: anywhere; }
+.meal-entry-nutrients small { font-size: .625rem; line-height: 1.2; }
+.meal-nutrition-source { font-size: .625rem; overflow-wrap: anywhere; }
 .meal-history-editor { display: grid; gap: 10px; }
 .meal-edit-actions { align-items: center; display: flex; gap: 8px; justify-content: flex-end; }
 .meal-history-actions { align-items: center; display: flex; justify-content: flex-end; }

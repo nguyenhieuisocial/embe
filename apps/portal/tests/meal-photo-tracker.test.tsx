@@ -20,7 +20,10 @@ const history = [{
     foods: [{ nameVi: "Cơm và rau", searchNameEn: "rice vegetables", estimatedGrams: 200,
       confidence: 0.8, foodGroups: ["starch", "vegetables"], safetyFlags: [] }],
     needsUserConfirmation: [], estimateNotice: "Ước lượng",
-    nutrition: { status: "estimated", totals: { calories: 260, fiber_g: 4 },
+    nutrition: { status: "estimated", source: "USDA FoodData Central", totals: {
+      calories: 260, protein_g: 12.4, carbs_g: 46.2, fat_g: 5.1, fiber_g: 4,
+      calcium_mg: 88, iron_mg: 2.3, folate_ug: 74
+    },
       calorieRange: { low: 210, mid: 260, high: 310 }, notice: "Ước lượng" }
   }
 }];
@@ -95,6 +98,28 @@ describe("mobile meal journal", () => {
     );
     expect(screen.getByText("ít cơm")).toBeInTheDocument();
     expect(screen.getByText("Đã lưu · đang bổ sung dinh dưỡng")).toBeInTheDocument();
+    const mealNutrition = screen.getByLabelText("Dinh dưỡng ước lượng của bữa trưa");
+    expect(within(mealNutrition).getByText("Đạm")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("12,4 g")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("Tinh bột")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("46,2 g")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("Chất béo")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("5,1 g")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("Chất xơ")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("Canxi")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("Sắt")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("Folate")).toBeInTheDocument();
+    expect(within(mealNutrition).getByText("Nguồn: USDA FoodData Central")).toBeInTheDocument();
+  });
+
+  it("shows useful macros beside calories before the saved meal is opened", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: [{ ...history[0], status: "ready" }], suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+
+    render(<MealPhotoTracker />);
+
+    expect(await screen.findByText("210–310 kcal · Đạm 12,4 g · Tinh bột 46,2 g")).toBeInTheDocument();
   });
 
   it("recognizes a written meal and asks the mother to review it when no photo is selected", async () => {
