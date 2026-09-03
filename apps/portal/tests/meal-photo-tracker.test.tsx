@@ -114,6 +114,21 @@ describe("mobile meal journal", () => {
     expect(screen.getByRole("button", { name: "Lưu bữa này" })).toBeEnabled();
   });
 
+  it("offers fast Vietnamese dish suggestions even when the mother types without accents", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: [], suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+
+    render(<MealPhotoTracker />);
+    fireEvent.change(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh"), {
+      target: { value: "bun rieu" }
+    });
+
+    expect(screen.getByRole("button", { name: "Bún riêu cua" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Bún riêu cua" }));
+    expect(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh")).toHaveValue("Bún riêu cua");
+  });
+
   it("lets the mother save or add a missing food when a written note is ambiguous", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
       history: [], suggestions: [], worker: { status: "online" }
@@ -164,6 +179,8 @@ describe("mobile meal journal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Nhận diện bữa ăn" }));
 
     const detected = await screen.findByDisplayValue("Fried rice");
+    expect(detected).toHaveAttribute("list", "vietnamese-popular-foods");
+    expect(document.querySelector('option[value="Bún riêu cua"]')).toBeInTheDocument();
     fireEvent.change(detected, { target: { value: "Cơm chiên" } });
     fireEvent.click(screen.getByRole("button", { name: "Thêm món còn thiếu" }));
     fireEvent.change(screen.getAllByLabelText("Tên món")[1], { target: { value: "Trứng chiên" } });

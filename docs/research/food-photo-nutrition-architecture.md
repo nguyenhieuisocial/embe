@@ -59,6 +59,16 @@ Một ảnh 2D không cho biết chắc nguyên liệu, dầu/gia vị, cách n�
 - Đã có màn hình iPhone-first: chọn bữa, chụp, ghi chú, xem độ chắc chắn, sửa tên/gram, xác nhận, xem gợi ý 7 ngày.
 - Model không được tự tạo số calorie/macro. Sau khi người dùng xác nhận tên món và gram, worker tra FoodData Central, lưu nguồn đối chiếu và trả một khoảng calorie có biên sai số. Mapping món Việt vẫn cần benchmark; món không tìm được sẽ để trống thay vì đoán.
 
+## Nâng cấp danh mục món Việt và tốc độ — 03/09/2026
+
+- Danh mục cục bộ hiện có 137 món, thức uống và trái cây quen thuộc tại Việt Nam, kèm 200 tên gọi không dấu hoặc tên vùng miền. Danh mục dùng để gợi ý khi nhập và khóa tên đầu ra của AI; không sao chép bảng dinh dưỡng thương mại.
+- Ảnh chụp nhanh không ghi chú chỉ nhận diện món chính nổi bật nhất. Cách này tránh mô hình tự thêm món ăn kèm không thực sự có trong ảnh; Mẹ vẫn có thể thêm món phụ trước khi lưu.
+- Cảnh báo thai kỳ và nhóm thực phẩm được kiểm tra lại bằng quy tắc cục bộ. Cờ do mô hình gắn sai, như thủy ngân cao cho phở hoặc rau, không còn được tin trực tiếp.
+- Ảnh iPhone được thu nhỏ còn tối đa 960 px. Đây là mức cân bằng cho bài toán nhận diện món, giảm lượng pixel thị giác so với 1.280 px mà vẫn giữ đủ chi tiết của một tô hoặc đĩa thức ăn.
+- Benchmark cục bộ bằng ba ảnh Creative Commons công khai (phở bò, bánh mì thịt và bún riêu): 3/3 tên món chính đúng, 1,66–1,94 giây/ảnh khi model đã nóng. Trước thay đổi, ảnh phở mất khoảng 7,96 giây và sinh thêm món/cảnh báo không có thật. Đây là kiểm tra kỹ thuật nhỏ, chưa phải độ chính xác thống kê trên mọi bữa Việt.
+
+Nguồn đối chiếu thêm: tài liệu chính thức của [Qwen3-VL](https://github.com/QwenLM/Qwen3-VL) về giới hạn pixel để cân bằng tốc độ/chất lượng; [FAO/INFOODS](https://www.fao.org/food-composition/tables-and-databases/detail/%28viet-nam--2017%29-vietnamese-food-composition-table/en) xác nhận bảng Việt Nam 2017 hiện ở dạng in; phần mềm thực đơn miễn phí của [Bộ Y tế](https://moh.gov.vn/hoat-dong-cua-lanh-dao-bo/-/asset_publisher/k206Q9qkZOqn/content/trien-khai-tap-huan-phan-mem-xay-dung-thuc-on-can-bang-dinh-duong-cho-phu-nu-mang-thai-ba-me-cho-con-bu-va-tre-em-tu-7-thang-en-60-thang-tuoi-tren-toa) được dùng làm nguồn tham khảo, không thu thập dữ liệu khi chưa có API hoặc giấy phép tái sử dụng rõ ràng.
+
 ## Cổng nghiệm thu tiếp theo
 
 1. Bộ ảnh test không chứa dữ liệu riêng: 30 bữa Việt, trong đó có món trộn, canh, suất nhiều đĩa và ảnh thiếu sáng.

@@ -4108,6 +4108,9 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .meal-photo-preview { aspect-ratio: 4 / 3; border-radius: var(--radius-md); display: block; max-height: 280px; object-fit: cover; width: 100%; }
 .meal-note { display: grid; font-size: .875rem; font-weight: 600; gap: 6px; }
 .meal-note textarea { min-height: 72px; resize: vertical; }
+.meal-food-suggestions { display: flex; gap: 6px; margin-top: -2px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.meal-food-suggestions::-webkit-scrollbar { display: none; }
+.meal-food-suggestions button { background: var(--coral-soft); border: 0; border-radius: 999px; color: var(--ink); flex: 0 0 auto; font: inherit; font-size: .75rem; min-height: 38px; padding: 7px 11px; }
 .meal-medicine-shortcut { color: var(--coral); font-size: .75rem; font-weight: 700; justify-self: start; min-height: 44px; padding-block: 11px; text-decoration: none; }
 .meal-medication-route { background: var(--coral-soft); border-radius: var(--radius-sm); display: grid; gap: 6px; padding: 11px; }
 .meal-medication-route p { color: var(--ink-soft); font-size: .75rem; margin: 0; }

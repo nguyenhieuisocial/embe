@@ -7,7 +7,7 @@ const UPLOAD_TIMEOUT_MS = 30_000;
 
 export async function prepareMealPhoto(file: File): Promise<File> {
   return prepareImageForUpload(file, {
-    filename: "bua-an.jpg", maxBytes: 12_000_000, maxDimension: 1280, quality: 0.78
+    filename: "bua-an.jpg", maxBytes: 12_000_000, maxDimension: 960, quality: 0.76
   });
 }
 

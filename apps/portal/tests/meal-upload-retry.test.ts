@@ -73,9 +73,9 @@ describe("meal photo upload reliability", () => {
 
     const result = await prepareMealPhoto(new File([new Uint8Array([1])], "iphone.heic", { type: "image/heic" }));
 
-    expect(canvas.width).toBe(1280);
-    expect(canvas.height).toBe(960);
-    expect(quality).toBe(0.78);
+    expect(canvas.width).toBe(960);
+    expect(canvas.height).toBe(720);
+    expect(quality).toBe(0.76);
     expect(result.type).toBe("image/jpeg");
     globalThis.Image = originalImage;
     URL.createObjectURL = originalCreateObjectURL;

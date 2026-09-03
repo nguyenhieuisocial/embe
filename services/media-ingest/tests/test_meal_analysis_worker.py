@@ -14,6 +14,7 @@ from meal_analysis_worker import (  # noqa: E402
     Config,
     HttpResponse,
     MealAnalysisWorker,
+    popular_food_suggestions,
     nutrition_search_query,
     parse_vision_result,
     run_worker_loop,
@@ -453,11 +454,113 @@ def test_vision_result_never_exposes_an_unknown_english_name_as_vietnamese():
     assert "Please confirm the dish and portion" not in parsed["needs_user_confirmation"]
 
 
+def test_popular_vietnamese_catalog_handles_unaccented_and_regional_names():
+    assert popular_food_suggestions("bun rieu", limit=3)[0] == "Bún riêu cua"
+    assert popular_food_suggestions("nem ran", limit=3)[0] == "Chả giò"
+    assert popular_food_suggestions("com suon", limit=3)[0] == "Cơm tấm sườn nướng"
+
+
+def test_short_accented_food_names_are_not_folded_into_a_different_food():
+    assert parse_vision_result({
+        "foods": [{"name_vi": "Bò", "search_name_en": "beef",
+                   "estimated_grams": 100, "confidence": 0.8,
+                   "food_groups": ["protein"], "safety_flags": []}],
+        "needs_user_confirmation": [],
+    })["foods"][0]["name_vi"] == "Bò"
+
+
+def test_vision_result_canonicalizes_a_popular_vietnamese_dish_and_discards_spurious_risk():
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": "Pho bo chin", "search_name_en": "cooked beef pho",
+                   "estimated_grams": 420, "confidence": 0.91,
+                   "food_groups": ["starch", "protein"], "safety_flags": ["high_mercury_possible"]}],
+        "needs_user_confirmation": [],
+    })
+
+    assert parsed["foods"][0]["name_vi"] == "Phở bò"
+    assert parsed["foods"][0]["search_name_en"] == "soup beef noodle prepared with equal volume water"
+    assert parsed["foods"][0]["safety_flags"] == []
+    assert parsed["foods"][0]["food_groups"] == ["starch", "protein"]
+
+
+def test_a_rare_beef_dish_keeps_only_the_relevant_cooking_warning():
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": "Phở bò tái", "search_name_en": "rare beef pho",
+                   "estimated_grams": 420, "confidence": 0.9,
+                   "food_groups": ["dairy", "other"], "safety_flags": []}],
+        "needs_user_confirmation": [],
+    })
+
+    assert parsed["foods"][0]["name_vi"] == "Phở bò"
+    assert parsed["foods"][0]["safety_flags"] == ["raw_or_undercooked"]
+    assert parsed["needs_user_confirmation"] == ["Thịt, cá, trứng hoặc hải sản đã nấu chín kỹ chưa?"]
+
+
+def test_food_safety_terms_match_words_not_substrings():
+    parsed = parse_vision_result({
+        "foods": [{"name_vi": "Cà chua cocktail", "search_name_en": "cocktail tomato",
+                   "estimated_grams": 100, "confidence": 0.9,
+                   "food_groups": ["vegetables"], "safety_flags": []}],
+        "needs_user_confirmation": [],
+    })
+
+    assert parsed["foods"][0]["safety_flags"] == []
+
+
+def test_a_quick_food_photo_returns_only_the_primary_visible_dish():
+    class TooManyDishesTransport:
+        def __call__(self, method, url, headers, body=None):
+            if url.endswith("/api/chat"):
+                request = json.loads(body)
+                assert request["format"]["properties"]["foods"]["maxItems"] == 1
+                return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
+                    "foods": [
+                        {"name_vi": "Phở bò", "search_name_en": "beef pho", "estimated_grams": 420,
+                         "confidence": 0.9, "food_groups": ["starch", "protein"], "safety_flags": []},
+                        {"name_vi": "Cá hồi áp chảo", "search_name_en": "salmon", "estimated_grams": 120,
+                         "confidence": 0.9, "food_groups": ["protein"], "safety_flags": []},
+                    ],
+                    "needs_user_confirmation": [],
+                })}}).encode())
+            raise AssertionError((method, url))
+
+    result = MealAnalysisWorker(config(), TooManyDishesTransport())._analyze(JPEG, "")
+
+    assert [food["name_vi"] for food in result["foods"]] == ["Phở bò"]
+
+
+def test_food_vision_prompt_constrains_the_model_to_the_local_vietnamese_catalog():
+    class PromptTransport:
+        def __init__(self):
+            self.content = ""
+
+        def __call__(self, method, url, headers, body=None):
+            if url.endswith("/api/chat"):
+                self.content = json.loads(body)["messages"][0]["content"]
+                return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
+                    "foods": [{
+                        "name_vi": "Bún riêu cua", "search_name_en": "crab noodle soup",
+                        "estimated_grams": 450, "confidence": 0.8,
+                        "food_groups": ["starch", "protein"], "safety_flags": [],
+                    }],
+                    "needs_user_confirmation": [],
+                })}}).encode())
+            raise AssertionError((method, url))
+
+    transport = PromptTransport()
+    MealAnalysisWorker(config(), transport)._analyze(JPEG, "")
+
+    assert "Bún riêu cua" in transport.content
+    assert "mỗi tô, bát, đĩa hoặc hộp là một món hoàn chỉnh" in transport.content
+    assert "nước dùng đỏ cam" in transport.content
+
+
 def test_user_corrected_vietnamese_food_uses_a_safe_usda_query_instead_of_the_old_dish():
     assert nutrition_search_query("Đậu hũ") == "tofu raw firm calcium"
     assert nutrition_search_query("Cơm gạo lứt") == "rice brown long grain cooked"
     assert nutrition_search_query("Ớt chuông") == "peppers sweet raw"
     assert nutrition_search_query("Dưa leo") == "cucumber raw"
+    assert nutrition_search_query("Bún riêu cua") == "soup beef noodle prepared with equal volume water"
 
 
 def test_common_vietnamese_dishes_and_unaccented_names_use_safe_queries():
@@ -471,7 +574,7 @@ def test_confirmed_vietnamese_name_overrides_a_contradictory_ai_search_name():
     assert nutrition_search_query("Ớt chuông", "roasted cauliflower") == "peppers sweet raw"
     assert nutrition_search_query("Dưa leo", "cucumber slices") == "cucumber raw"
     assert nutrition_search_query("Cà chua cocktail", "tomato cocktail") == "tomatoes red raw"
-    assert nutrition_search_query("Thịt kho trứng", "chocolate cake") == "Thịt kho trứng"
+    assert nutrition_search_query("Thịt kho trứng", "chocolate cake") == "pork cooked braised"
 
 
 def test_common_vietnamese_ingredients_have_local_snapshot_queries():

@@ -26,6 +26,115 @@ SAFETY_FLAGS = {
     "raw_or_undercooked", "unpasteurized", "high_mercury_possible", "alcohol", "unknown"
 }
 
+FOOD_CATALOG_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "apps" / "portal" / "src" / "lib" / "vietnamese-food-catalog.json"
+)
+
+
+def _fold_food_name(value: str) -> str:
+    normalized = "".join(
+        character for character in unicodedata.normalize("NFKD", value.casefold())
+        if not unicodedata.combining(character)
+    ).replace("đ", "d")
+    return " ".join(re.findall(r"[a-z0-9]+", normalized))
+
+
+def _load_food_catalog() -> tuple[dict[str, Any], ...]:
+    try:
+        value = json.loads(FOOD_CATALOG_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("Vietnamese food catalog is unavailable") from error
+    if not isinstance(value, list) or len(value) < 100:
+        raise RuntimeError("Vietnamese food catalog is incomplete")
+    result: list[dict[str, Any]] = []
+    for item in value:
+        if (not isinstance(item, dict) or set(item) != {"name", "query", "aliases"}
+                or not isinstance(item["name"], str) or not isinstance(item["query"], str)
+                or not isinstance(item["aliases"], list)
+                or any(not isinstance(alias, str) for alias in item["aliases"])):
+            raise RuntimeError("Vietnamese food catalog is invalid")
+        result.append({
+            "name": item["name"].strip(), "query": item["query"].strip(),
+            "surfaces": tuple(dict.fromkeys(value.casefold().strip() for value in [item["name"], *item["aliases"]])),
+            "aliases": tuple(dict.fromkeys(_fold_food_name(value) for value in [item["name"], *item["aliases"]])),
+        })
+    return tuple(result)
+
+
+VIETNAMESE_POPULAR_DISHES = _load_food_catalog()
+POPULAR_DISH_PROMPT = ", ".join(item["name"] for item in VIETNAMESE_POPULAR_DISHES)
+
+
+def _catalog_food(value: str, *, allow_variant: bool = True) -> dict[str, Any] | None:
+    folded = _fold_food_name(value)
+    if not folded:
+        return None
+    surface = " ".join(value.casefold().split())
+    surface_exact = next((item for item in VIETNAMESE_POPULAR_DISHES if surface in item["surfaces"]), None)
+    if surface_exact:
+        return surface_exact
+    if len(folded) < 3:
+        return None
+    exact = next((item for item in VIETNAMESE_POPULAR_DISHES if folded in item["aliases"]), None)
+    if exact or not allow_variant:
+        return exact
+    candidates = [
+        (len(alias), item)
+        for item in VIETNAMESE_POPULAR_DISHES for alias in item["aliases"]
+        if len(alias) >= 4 and (folded.startswith(f"{alias} ") or alias.startswith(f"{folded} "))
+    ]
+    return max(candidates, default=(0, None), key=lambda candidate: candidate[0])[1]
+
+
+def popular_food_suggestions(value: str, limit: int = 5) -> list[str]:
+    folded = _fold_food_name(value)
+    if len(folded) < 2 or limit < 1:
+        return []
+    ranked: list[tuple[int, str]] = []
+    for item in VIETNAMESE_POPULAR_DISHES:
+        aliases = item["aliases"]
+        score = (0 if folded in aliases else 1 if any(alias.startswith(folded) for alias in aliases)
+                 else 2 if any(folded in alias for alias in aliases) else 3)
+        if score < 3:
+            ranked.append((score, item["name"]))
+    return [name for _, name in sorted(ranked, key=lambda value: (value[0], value[1]))[:limit]]
+
+
+def _trusted_safety_flags(name: str, model_flags: list[str], confidence: float) -> list[str]:
+    folded = _fold_food_name(name)
+    words = set(folded.split())
+    present = lambda term: term in folded if " " in term else term in words
+    terms = {
+        "alcohol": ("ruou", "bia", "alcohol", "wine", "beer"),
+        "high_mercury_possible": ("ca kiem", "ca map", "ca thu vua", "ca kinh", "swordfish", "shark", "king mackerel", "tilefish"),
+        "raw_or_undercooked": ("song", "tai", "rare", "long dao", "chua chin", "sushi", "sashimi"),
+        "unpasteurized": ("chua tiet trung", "khong tiet trung", "sua tuoi tho", "unpasteurized"),
+    }
+    trusted = [flag for flag, keywords in terms.items() if any(present(term) for term in keywords)]
+    if confidence < 0.5 or "unknown" in model_flags:
+        trusted.append("unknown")
+    return list(dict.fromkeys(trusted))
+
+
+def _trusted_food_groups(name: str, model_groups: list[str]) -> list[str]:
+    folded = _fold_food_name(name)
+    words = set(folded.split())
+    present = lambda term: term in folded if " " in term else term in words
+    rules = (
+        ("starch", ("pho", "bun", "mi", "mien", "banh", "com", "chao", "xoi", "nui", "khoai", "bap")),
+        ("protein", ("bo", "ga", "thit", "ca", "tom", "muc", "cua", "trung", "dau hu", "ngheu", "oc", "suon", "cha", "nem")),
+        ("vegetables", ("rau", "canh", "bi", "cai", "gia", "goi", "nom", "ca chua", "dua leo", "bong cai")),
+        ("fruit", ("chuoi", "tao", "cam", "buoi", "oi", "xoai", "dua hau", "thanh long", "nho", "du du", "dau tay", "kiwi", "trai bo")),
+        ("dairy", ("sua", "yaourt", "yogurt")),
+        ("fat", ("dau an", "bo lac", "mayonnaise")),
+    )
+    trusted = [group for group, terms in rules if any(present(term) for term in terms)]
+    if trusted:
+        return trusted[:4]
+    fallback = [group for group in model_groups if group not in {"dairy", "fat"}]
+    return list(dict.fromkeys(fallback or ["other"]))[:4]
+
 VIETNAMESE_FOOD_NAMES = (
     ("roasted cauliflower", "Súp lơ nướng"),
     ("roasted broccoli", "Bông cải xanh nướng"),
@@ -116,6 +225,9 @@ VIETNAMESE_NUTRITION_PREFIX_QUERIES = (
 
 def vietnamese_food_name(name: str, search_name: str) -> tuple[str, bool]:
     """Keep Vietnamese output, localize common English labels, otherwise request correction."""
+    catalog_match = _catalog_food(name) or _catalog_food(f"{name} {search_name}")
+    if catalog_match:
+        return catalog_match["name"], False
     normalized_name = name.casefold()
     if any(character in VIETNAMESE_NAME_MARKERS for character in normalized_name):
         return name.strip(), False
@@ -128,6 +240,9 @@ def vietnamese_food_name(name: str, search_name: str) -> tuple[str, bool]:
 
 def nutrition_search_query(name_vi: str, search_name_en: str | None = None) -> str:
     """Prefer the user-visible Vietnamese identity over an untrusted AI lookup label."""
+    catalog_match = _catalog_food(name_vi, allow_variant=False)
+    if catalog_match:
+        return catalog_match["query"]
     normalized = " ".join(name_vi.casefold().split())
     folded = "".join(
         character for character in unicodedata.normalize("NFKD", normalized)
@@ -264,22 +379,18 @@ def parse_vision_result(value: Any) -> dict[str, Any]:
             or not isinstance(flags, list) or len(flags) > 4 or not set(flags) <= SAFETY_FLAGS
         ):
             raise ValueError("invalid_vision_result")
-        safety_text = f"{name_vi} {search_name}".casefold()
-        derived_flags: list[str] = []
-        if any(term in safety_text for term in ("rượu", "bia", "wine", "beer", "alcohol")):
-            derived_flags.append("alcohol")
-        if any(term in safety_text for term in ("cá kiếm", "cá mập", "cá thu vua", "swordfish", "shark", "king mackerel", "tilefish")):
-            derived_flags.append("high_mercury_possible")
-        if float(confidence) < 0.5:
-            derived_flags.append("unknown")
         localized_name, food_needs_name_confirmation = vietnamese_food_name(name_vi.strip(), search_name.strip())
+        catalog_match = _catalog_food(localized_name)
         needs_name_confirmation = needs_name_confirmation or food_needs_name_confirmation
         normalized_foods.append({
-            "name_vi": localized_name, "search_name_en": search_name.strip(),
+            "name_vi": localized_name,
+            "search_name_en": catalog_match["query"] if catalog_match else search_name.strip(),
             "estimated_grams": round(float(grams), 1) if grams is not None else None,
             "confidence": round(float(confidence), 2),
-            "food_groups": list(dict.fromkeys(groups)),
-            "safety_flags": list(dict.fromkeys([*flags, *derived_flags])),
+            "food_groups": _trusted_food_groups(localized_name, groups),
+            "safety_flags": _trusted_safety_flags(
+                f"{localized_name} {name_vi} {search_name}", flags, float(confidence)
+            ),
         })
     if any(not isinstance(question, str) or not 1 <= len(question.strip()) <= 120 for question in questions):
         raise ValueError("invalid_vision_result")
@@ -293,10 +404,10 @@ def parse_vision_result(value: Any) -> dict[str, Any]:
     confirmations: list[str] = []
     if needs_name_confirmation:
         confirmations.append("Nhập lại tên món bằng tiếng Việt.")
-    all_groups = {group for food in distinct for group in food["food_groups"]}
-    if "protein" in all_groups and "Thịt, cá, trứng hoặc hải sản đã nấu chín kỹ chưa?" not in confirmations:
+    all_flags = {flag for food in distinct for flag in food["safety_flags"]}
+    if "raw_or_undercooked" in all_flags:
         confirmations.append("Thịt, cá, trứng hoặc hải sản đã nấu chín kỹ chưa?")
-    if "dairy" in all_groups and "Sữa hoặc chế phẩm sữa có ghi đã tiệt trùng không?" not in confirmations:
+    if "unpasteurized" in all_flags:
         confirmations.append("Sữa hoặc chế phẩm sữa có ghi đã tiệt trùng không?")
     return {
         "foods": distinct,
@@ -312,12 +423,17 @@ không tự đặt mục tiêu calorie. Trường name_vi bắt buộc là tiế
 Trường search_name_en mới dùng cụm tìm kiếm nguyên liệu tương đương bằng tiếng Anh.
 Mỗi cặp name_vi và search_name_en phải là cùng một thực phẩm; tự kiểm tra lại từng cặp trước khi trả lời.
 Ví dụ ớt chuông là "peppers sweet raw", tuyệt đối không phải cauliflower; nước lọc là water, không phải supplement.
-Ưu tiên tên món Việt Nam quen dùng (phở, bún, cơm tấm, bánh mì, canh, món kho/xào/luộc) thay vì dịch từng nguyên liệu.
-Nhìn toàn bộ khay hoặc đĩa trước, tách các món nhìn thấy rõ nhưng không tách gia vị và đồ trang trí thành món riêng.
+Phân biệt món nước bằng dấu hiệu nhìn thấy: Bún riêu cua thường có nước dùng đỏ cam, cà chua, riêu cua/đậu hũ
+và sợi bún tròn; phở có bánh phở bản dẹt cùng nước dùng trong hoặc nâu; bún bò Huế thường đỏ, sợi tròn to,
+có sả và thịt bò/giò; mì Quảng ít nước, sợi vàng; bánh canh có sợi ngắn và dày.
+Ưu tiên chọn đúng tên trong DANH MỤC MÓN VIỆT bên dưới. Nếu cùng món có biến thể nhỏ thì dùng tên gần nhất trong danh mục.
+Nhìn toàn bộ khay trước: mỗi tô, bát, đĩa hoặc hộp là một món hoàn chỉnh; không tách nguyên liệu, rau thơm,
+chanh, nước chấm hoặc đồ trang trí thành món riêng. Không thêm món chỉ vì nó thường ăn kèm.
 Ghi chú của người dùng là gợi ý để phân biệt món; không dùng ghi chú để bịa món trái với ảnh.
 Ước lượng gram phần ăn được, không tính đĩa/tô/ly; nếu không đủ căn cứ thì dùng null. Mỗi món chỉ xuất hiện
-một lần, không lặp và không điền thêm cho đủ số lượng. Đánh dấu an toàn chỉ khi có dấu hiệu thực sự
-hoặc cần người dùng xác nhận. Trả về đúng JSON theo schema, tối đa 8 món phân biệt."""
+một lần, không lặp và không điền thêm cho đủ số lượng. safety_flags luôn để [] vì máy chủ sẽ kiểm tra riêng.
+Trả về đúng JSON theo schema, tối đa 8 món phân biệt.
+DANH MỤC MÓN VIỆT: """ + POPULAR_DISH_PROMPT
 
 
 class MealAnalysisWorker:
@@ -368,12 +484,13 @@ class MealAnalysisWorker:
         return response.body
 
     def _analyze(self, body: bytes | None, note: str) -> dict[str, Any]:
+        quick_photo = body is not None and not note.strip()
         schema = {
             "type": "object", "required": ["foods", "needs_user_confirmation"],
             "additionalProperties": False,
             "properties": {
                 "foods": {
-                    "type": "array", "minItems": 0 if body is None else 1, "maxItems": 8,
+                    "type": "array", "minItems": 0 if body is None else 1, "maxItems": 1 if quick_photo else 8,
                     "items": {
                         "type": "object", "additionalProperties": False,
                         "required": ["name_vi", "search_name_en", "estimated_grams", "confidence", "food_groups", "safety_flags"],
@@ -394,7 +511,7 @@ class MealAnalysisWorker:
         }
         message: dict[str, Any] = {
             "role": "user",
-            "content": f"{PROMPT}\n{'Chỉ trích xuất món được viết rõ trong ghi chú.' if body is None else 'Đối chiếu cả ảnh và ghi chú.'}\nGhi chú của người dùng: {note[:300] or '(không có)'}",
+            "content": f"{PROMPT}\n{'Chỉ trích xuất món được viết rõ trong ghi chú.' if body is None else 'Chỉ trả món chính nổi bật nhất trong ảnh.' if quick_photo else 'Đối chiếu cả ảnh và ghi chú.'}\nGhi chú của người dùng: {note[:300] or '(không có)'}",
         }
         if body is not None:
             message["images"] = [base64.b64encode(body).decode()]
@@ -428,6 +545,8 @@ class MealAnalysisWorker:
                         "estimate_notice": "Không thấy món cụ thể nên EmBe không tự đoán. Mẹ có thể thêm món hoặc chỉ lưu ghi chú.",
                     }
                 result = parse_vision_result(raw_result)
+                if quick_photo:
+                    result["foods"] = result["foods"][:1]
                 if body is None:
                     result["estimate_notice"] = "Ước lượng từ ghi chú; cần xác nhận món và khẩu phần trước khi lưu."
                 return result

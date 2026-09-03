@@ -9,6 +9,7 @@ import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition
 import { deriveMealSafetyFlags, hasMealSafetyConcern } from "../lib/meal-safety";
 import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { suggestPopularFoods, VIETNAMESE_POPULAR_FOODS } from "../lib/vietnamese-food-catalog";
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
 const nutrientLabels = [
@@ -113,6 +114,7 @@ export default function MealPhotoTracker() {
   const maxGroup = Math.max(1, ...groups.map(([, count]) => count));
   const medicationLike = looksLikeMedication(note);
   const medicationRouteOpen = medicationLike && confirmedMedicationText !== note.trim();
+  const popularSuggestions = useMemo(() => suggestPopularFoods(note), [note]);
 
   async function analyze() {
     if ((!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving") return;
@@ -306,6 +308,9 @@ export default function MealPhotoTracker() {
         <label className="meal-note">Ghi chú món ăn · có thể lưu không cần ảnh
           <textarea maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: nửa bát cơm, cá hồi, không có nước chấm" />
         </label>
+        {popularSuggestions.length ? <div className="meal-food-suggestions" aria-label="Món Việt gợi ý">
+          {popularSuggestions.map((name) => <button key={name} type="button" onClick={() => setNote(name)}>{name}</button>)}
+        </div> : null}
         {medicationRouteOpen ? <aside className="meal-medication-route" aria-live="polite">
           <strong>Có vẻ đây là thuốc hoặc vitamin</strong>
           <p>Đơn thuốc và liều dùng nên nằm trong hồ sơ riêng để không bị tính thành món ăn.</p>
@@ -330,7 +335,7 @@ export default function MealPhotoTracker() {
         <div><p className="panel-kicker">Cần Mẹ kiểm tra</p><h3>Máy nhìn thấy</h3></div>
         {analysis.foods.length === 0 ? <p className="meal-empty">{analysis.estimateNotice}</p> : null}
         {analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
-          <label>Tên món<input value={food.nameVi} maxLength={80} onChange={(event) => updateFood(index, "nameVi", event.target.value)} /></label>
+          <label>Tên món<input list="vietnamese-popular-foods" value={food.nameVi} maxLength={80} onChange={(event) => updateFood(index, "nameVi", event.target.value)} /></label>
           <label>Khẩu phần (g)<input inputMode="decimal" type="number" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateFood(index, "estimatedGrams", event.target.value)} /></label>
           <small>Độ chắc chắn {Math.round(food.confidence * 100)}%</small>
           {analysis.foods.length > 1 ? <button className="meal-remove-food" type="button" aria-label={`Bỏ ${food.nameVi || `món ${index + 1}`}`} onClick={() => removeFood(index)}>Bỏ món</button> : null}
@@ -413,7 +418,7 @@ export default function MealPhotoTracker() {
                       label={`Ảnh bữa ${(labels[entry.mealType] ?? "ăn").toLocaleLowerCase("vi")}`} /> : null}
                     {historyEditor?.id === entry.id ? <div className="meal-history-editor">
                       {historyEditor.analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
-                        <label>Sửa tên món<input maxLength={80} value={food.nameVi} onChange={(event) => updateSavedFood(index, "nameVi", event.target.value)} /></label>
+                        <label>Sửa tên món<input list="vietnamese-popular-foods" maxLength={80} value={food.nameVi} onChange={(event) => updateSavedFood(index, "nameVi", event.target.value)} /></label>
                         <label>Sửa khẩu phần (g)<input type="number" inputMode="decimal" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateSavedFood(index, "estimatedGrams", event.target.value)} /></label>
                         {historyEditor.analysis.foods.length > 1 ? <button className="meal-remove-food" type="button" aria-label={`Bỏ ${food.nameVi || `món ${index + 1}`}`} onClick={() => removeSavedFood(index)}>Bỏ món</button> : null}
                       </div>)}
@@ -444,6 +449,9 @@ export default function MealPhotoTracker() {
           <small className="meal-safety-note">Không tự kết luận thiếu chất hoặc tự đề nghị uống thêm vi chất.</small>
         </div>
       </details>
+      <datalist id="vietnamese-popular-foods">
+        {VIETNAMESE_POPULAR_FOODS.map((food) => <option key={food.name} value={food.name} />)}
+      </datalist>
     </section>
   );
 }
