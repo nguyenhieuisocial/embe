@@ -236,6 +236,56 @@ describe("mobile meal journal", () => {
     ]));
   });
 
+  it("lets the mother repair a failed recognition instead of trapping the meal", async () => {
+    const failedHistory = [{
+      ...history[0], status: "failed" as const, note: "bữa trưa",
+      analysis: {
+        entryMode: "note" as const, foods: [], needsUserConfirmation: [],
+        estimateNotice: "Chưa nhận diện được; ghi chú vẫn được giữ lại."
+      }
+    }];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: failedHistory, suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+
+    render(<MealPhotoTracker />);
+    fireEvent.click(await screen.findByText("Chưa nhận diện được · ghi chú vẫn còn"));
+    fireEvent.click(screen.getByRole("button", { name: "Sửa bữa này" }));
+    fireEvent.click(screen.getByRole("button", { name: "Thêm món vào bữa đã lưu" }));
+
+    expect(screen.getByLabelText("Sửa tên món")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Lưu thay đổi" })).toBeDisabled();
+  });
+
+  it("moves a broken meal to trash after an explicit inline confirmation", async () => {
+    const failedHistory = [{ ...history[0], status: "failed" as const }];
+    let deleted = false;
+    const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).startsWith("/api/meals/") && init?.method === "DELETE") {
+        deleted = true;
+        return new Response(JSON.stringify({ status: "deleted" }), { status: 200 });
+      }
+      return new Response(JSON.stringify({
+        history: deleted ? [] : failedHistory, suggestions: [], worker: { status: "online" }
+      }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+
+    render(<MealPhotoTracker />);
+    fireEvent.click(await screen.findByText("Chưa nhận diện được · ghi chú vẫn còn"));
+    fireEvent.click(screen.getByRole("button", { name: "Xóa bữa này" }));
+
+    expect(screen.getByText("Đưa bữa này vào Thùng rác?")).toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalledWith(expect.stringContaining("/api/meals/"), expect.objectContaining({ method: "DELETE" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Đưa vào Thùng rác" }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(
+      "/api/meals/11111111-1111-4111-8111-111111111111",
+      expect.objectContaining({ method: "DELETE" })
+    ));
+    expect(await screen.findByText("Đã chuyển bữa ăn vào Thùng rác.")).toBeInTheDocument();
+  });
+
   it("lets the mother resume and confirm a recognized written meal after reopening the app", async () => {
     const pendingHistory = [{
       ...history[0], note: "Hôm nay ăn ngon", status: "needs_review" as const,

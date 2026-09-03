@@ -1,4 +1,4 @@
-import { databaseMealAnalysis, normalizeMealAnalysis } from "../../../../lib/meal-analysis-contract";
+import { databaseMealAnalysis, normalizeMealAnalysis, type MealAnalysis } from "../../../../lib/meal-analysis-contract";
 import { deriveMealSafetyFlags } from "../../../../lib/meal-safety";
 import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
 import { verifySessionCookie } from "../../../../lib/portal-auth";
@@ -58,14 +58,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const stored = draft.data as Record<string, unknown> | null;
     const current = normalizeMealAnalysis(stored?.confirmed_analysis)
       ?? normalizeMealAnalysis(stored?.analysis);
-    if (draft.error || !current) {
+    const repairableFailure = stored?.status === "failed" || stored?.status === "rejected";
+    if (draft.error || (!current && !repairableFailure)) {
       return privateReply({ error: "not_found" }, 404);
     }
-    const confirmed = analysis.entryMode === "note" ? analysis : {
-      ...current,
+    const confirmed: MealAnalysis = analysis.entryMode === "note" ? analysis : {
       entryMode: undefined,
+      needsUserConfirmation: current?.needsUserConfirmation ?? analysis.needsUserConfirmation,
+      estimateNotice: current?.estimateNotice ?? analysis.estimateNotice,
       foods: analysis.foods.map((food) => {
-        const unchanged = current.foods.find((candidate) => candidate.searchNameEn === food.searchNameEn
+        const unchanged = current?.foods.find((candidate) => candidate.searchNameEn === food.searchNameEn
           && candidate.nameVi === food.nameVi);
         if (unchanged) return { ...unchanged, estimatedGrams: food.estimatedGrams };
         const derivedSafetyFlags = deriveMealSafetyFlags(food.nameVi);

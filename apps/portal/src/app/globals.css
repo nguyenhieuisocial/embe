@@ -4221,9 +4221,15 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .meal-history-detail li { font-size: .8125rem; }
 .meal-history-editor { display: grid; gap: 10px; }
 .meal-edit-actions { align-items: center; display: flex; gap: 8px; justify-content: flex-end; }
+.meal-history-actions { align-items: center; display: flex; justify-content: flex-end; }
 .meal-edit-actions > button:first-child,
 .meal-edit-saved { background: transparent; border: 0; color: var(--coral); font: inherit; font-size: .8125rem; font-weight: 700; min-height: 44px; padding: 6px 10px; }
 .meal-edit-saved { justify-self: end; }
+.meal-delete-saved { background: transparent; border: 0; color: var(--ink-muted); font: inherit; font-size: .8125rem; min-height: 44px; padding: 6px 10px; }
+.meal-delete-confirm { align-items: center; background: var(--coral-soft); border-radius: 12px; display: grid; gap: 6px; grid-template-columns: 1fr auto; padding: 8px 10px; }
+.meal-delete-confirm span { color: var(--ink); font-size: .8125rem; font-weight: 700; grid-column: 1 / -1; }
+.meal-delete-confirm button { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); font: inherit; font-size: .8125rem; min-height: 44px; padding: 7px 12px; }
+.meal-delete-confirm button:last-child { color: var(--coral); font-weight: 700; }
 .meal-edit-actions .health-save { min-height: 44px; width: auto; }
 .meal-safety-note { border-top: 1px solid var(--line); padding-top: 12px; }
 

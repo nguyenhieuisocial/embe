@@ -14,7 +14,7 @@ vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews })
 
 import { GET as history, POST as createMeal } from "../src/app/api/meals/route";
 import { POST as completeMeal } from "../src/app/api/meals/[id]/complete/route";
-import { GET as getMeal, PATCH as confirmMeal } from "../src/app/api/meals/[id]/route";
+import { DELETE as deleteMeal, GET as getMeal, PATCH as confirmMeal } from "../src/app/api/meals/[id]/route";
 import { GET as getMealImage } from "../src/app/api/meals/[id]/image/route";
 
 const originalEnvironment = { ...process.env };
@@ -157,6 +157,20 @@ describe("private review-first meal analysis API", () => {
     expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
+  it("moves a meal to the recoverable family trash", async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: null });
+
+    const response = await deleteMeal(
+      request(`https://embe.hieu.asia/api/meals/${entryId}`, undefined, "DELETE"),
+      { params: Promise.resolve({ id: entryId }) }
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ status: "deleted" });
+    expect(rpc).toHaveBeenCalledWith("embe_delete_meal_analysis", { p_id: entryId });
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
+  });
+
   it("confirms an ambiguous text-only note without queueing fake nutrition", async () => {
     const noteAnalysis = {
       entry_mode: "note", foods: [], needs_user_confirmation: [],
@@ -191,6 +205,25 @@ describe("private review-first meal analysis API", () => {
     expect(response.status).toBe(202);
     const confirmation = rpc.mock.calls.at(-1)?.[1] as { p_confirmed_analysis: Record<string, unknown> };
     expect(confirmation.p_confirmed_analysis).not.toHaveProperty("entry_mode");
+  });
+
+  it("accepts a manual correction after recognition failed without a server draft", async () => {
+    rpc.mockResolvedValueOnce({ data: {
+      id: entryId, status: "failed", analysis: null, confirmed_analysis: null
+    }, error: null });
+    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "nutrition_pending" }, error: null });
+
+    const response = await confirmMeal(request(`https://embe.hieu.asia/api/meals/${entryId}`, {
+      note: "Cơm", analysis: rawAnalysis
+    }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
+
+    expect(response.status).toBe(202);
+    const confirmation = rpc.mock.calls.at(-1)?.[1] as {
+      p_confirmed_analysis: { foods: Array<Record<string, unknown>> }
+    };
+    expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
+      name_vi: "Cơm trắng", confidence: 0, safety_flags: ["unknown"]
+    }));
   });
 
   it("can turn a saved food entry into a note without reusing stale food metadata", async () => {

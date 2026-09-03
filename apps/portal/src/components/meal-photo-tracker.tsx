@@ -73,7 +73,10 @@ export default function MealPhotoTracker() {
   const [worker, setWorker] = useState<Worker>({ status: "unknown" });
   const [historyEditor, setHistoryEditor] = useState<{ id: string; note: string; analysis: MealAnalysis } | null>(null);
   const [historySaving, setHistorySaving] = useState(false);
+  const [historyDeletingId, setHistoryDeletingId] = useState("");
+  const [historyDeleteConfirmId, setHistoryDeleteConfirmId] = useState("");
   const [historyMessage, setHistoryMessage] = useState("");
+  const [historyMessageKind, setHistoryMessageKind] = useState<"success" | "error">("success");
   const [status, setStatus] = useState<"idle" | "sending" | "analyzing" | "queued" | "review" | "saving" | "saved" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [confirmedMedicationText, setConfirmedMedicationText] = useState("");
@@ -219,6 +222,7 @@ export default function MealPhotoTracker() {
 
   function editSavedMeal(entry: MealHistoryEntry) {
     setHistoryMessage("");
+    setHistoryDeleteConfirmId("");
     setHistoryEditor({
       id: entry.id, note: entry.note,
       analysis: { ...entry.analysis, nutrition: undefined, foods: entry.analysis.foods.map((food) => ({ ...food })) }
@@ -274,11 +278,33 @@ export default function MealPhotoTracker() {
       announceLinkedDailyAction(payload.checklistCompletion);
       const savedId = historyEditor.id;
       setHistoryEditor(null);
+      setHistoryMessageKind("success");
+      setHistoryMessage("Đã lưu thay đổi.");
       await loadHistory(range, true);
       void waitForMealNutrition(savedId).then(() => loadHistory(range, true));
     } catch {
+      setHistoryMessageKind("error");
       setHistoryMessage("Chưa lưu được thay đổi. Hãy thử lại.");
     } finally { setHistorySaving(false); }
+  }
+
+  async function deleteSavedMeal(id: string) {
+    if (historyDeletingId) return;
+    setHistoryMessage("");
+    setHistoryDeletingId(id);
+    try {
+      const response = await fetch(`/api/meals/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("delete_failed");
+      setHistory((current) => current.filter((entry) => entry.id !== id));
+      setHistoryEditor((current) => current?.id === id ? null : current);
+      setHistoryDeleteConfirmId("");
+      setHistoryMessageKind("success");
+      setHistoryMessage("Đã chuyển bữa ăn vào Thùng rác.");
+      await loadHistory(range, true);
+    } catch {
+      setHistoryMessageKind("error");
+      setHistoryMessage("Chưa xóa được bữa ăn. Hãy thử lại.");
+    } finally { setHistoryDeletingId(""); }
   }
 
   const workerCopy = worker.status === "online" ? "Nhận diện sẵn sàng"
@@ -358,6 +384,7 @@ export default function MealPhotoTracker() {
             {[7, 28].map((days) => <button key={days} type="button" aria-pressed={range === days} onClick={() => setRange(days as 7 | 28)}>{days} ngày</button>)}
           </div>
           </div>
+          {historyMessage ? <p className={`meal-state is-${historyMessageKind}`} role="status">{historyMessage}</p> : null}
 
         {historyLoading ? <p className="meal-empty" aria-live="polite">Đang mở sổ bữa ăn…</p>
           : history.length === 0 ? <p className="meal-empty">Chưa có bữa nào trong khoảng này. Chụp món đầu tiên để bắt đầu.</p>
@@ -424,7 +451,6 @@ export default function MealPhotoTracker() {
                       </div>)}
                       {historyEditor.analysis.foods.length < 8 ? <button className="meal-add-food" type="button" onClick={addSavedFood}>Thêm món vào bữa đã lưu</button> : null}
                       <label className="meal-note">Sửa ghi chú<textarea maxLength={300} rows={2} value={historyEditor.note} onChange={(event) => setHistoryEditor((current) => current ? { ...current, note: event.target.value } : current)} /></label>
-                      {historyMessage ? <p className="meal-state is-error" aria-live="polite">{historyMessage}</p> : null}
                       <div className="meal-edit-actions">
                         <button type="button" onClick={() => setHistoryEditor(null)}>Hủy</button>
                         <button className="health-save" type="button" disabled={historySaving || hasInvalidFood(historyEditor.analysis)} onClick={() => void saveHistoryEdit()}>{historySaving ? "Đang lưu…" : "Lưu thay đổi"}</button>
@@ -436,11 +462,18 @@ export default function MealPhotoTracker() {
                         ...food.safetyFlags, ...deriveMealSafetyFlags(food.nameVi)
                       ])) ? <p className="meal-risk">Món này cần kiểm tra độ chín hoặc tiệt trùng, loại cá và thành phần trước khi dùng.</p> : null}
                       <small>{entry.analysis.nutrition?.notice ?? entry.analysis.estimateNotice}</small>
-                      {(entry.status === "ready" && entry.analysis.foods.length > 0)
-                        || (entry.status === "needs_review" && (entry.analysis.foods.length > 0 || entry.analysis.entryMode === "note"))
-                        ? <button className="meal-edit-saved" type="button" onClick={() => editSavedMeal(entry)}>
+                      {historyDeleteConfirmId === entry.id ? <div className="meal-delete-confirm" role="group" aria-label="Xác nhận xóa bữa ăn">
+                        <span>Đưa bữa này vào Thùng rác?</span>
+                        <button type="button" onClick={() => setHistoryDeleteConfirmId("")}>Giữ lại</button>
+                        <button type="button" disabled={historyDeletingId === entry.id} onClick={() => void deleteSavedMeal(entry.id)}>
+                          {historyDeletingId === entry.id ? "Đang xóa…" : "Đưa vào Thùng rác"}
+                        </button>
+                      </div> : <div className="meal-history-actions">
+                        {entry.status !== "analyzing" ? <button className="meal-edit-saved" type="button" onClick={() => editSavedMeal(entry)}>
                           {entry.status === "needs_review" ? "Kiểm tra và lưu" : "Sửa bữa này"}
                         </button> : null}
+                        <button className="meal-delete-saved" type="button" onClick={() => { setHistoryEditor(null); setHistoryMessage(""); setHistoryDeleteConfirmId(entry.id); }}>Xóa bữa này</button>
+                      </div>}
                     </>}
                   </div>
                 </details>)}

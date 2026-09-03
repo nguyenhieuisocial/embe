@@ -2114,7 +2114,7 @@ RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function
 BEGIN
   UPDATE portal_read_model.meal_analysis
   SET status = 'deleted', deleted_at = timezone('utc', now()), claimed_at = NULL
-  WHERE id = p_id AND status NOT IN ('deleted', 'analyzing');
+  WHERE id = p_id AND status <> 'deleted' AND deleted_at IS NULL;
   IF NOT FOUND THEN RAISE EXCEPTION 'meal cannot be deleted'; END IF;
 END;
 $function$;
@@ -2678,8 +2678,14 @@ BEGIN
         THEN 'confirmed' ELSE 'nutrition_pending' END,
       confirmed_analysis = p_confirmed_analysis,
       note = btrim(COALESCE(p_note, '')),
-      confirmed_at = timezone('utc', now())
-  WHERE id = p_id AND status IN ('review', 'nutrition_pending', 'confirmed')
+      confirmed_at = timezone('utc', now()),
+      claimed_at = NULL,
+      last_error_code = NULL,
+      attempts = 0,
+      next_attempt_at = timezone('utc', now())
+  WHERE id = p_id
+    AND deleted_at IS NULL
+    AND status IN ('failed', 'rejected', 'review', 'nutrition_pending', 'confirmed')
   RETURNING * INTO result_row;
   IF result_row.id IS NULL THEN RAISE EXCEPTION 'meal is not ready for confirmation'; END IF;
   checklist_task_id := CASE result_row.meal_type
@@ -3091,7 +3097,7 @@ CREATE OR REPLACE FUNCTION public.embe_delete_meal_analysis(p_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $function$
 BEGIN
   UPDATE portal_read_model.meal_analysis SET status='deleted',deleted_at=timezone('utc',now()),claimed_at=NULL
-  WHERE id=p_id AND status NOT IN('deleted','analyzing');
+  WHERE id=p_id AND status<>'deleted' AND deleted_at IS NULL;
   IF NOT FOUND THEN RAISE EXCEPTION 'meal cannot be deleted'; END IF;
   INSERT INTO portal_read_model.family_audit_event(entity_type,entity_id,action) VALUES('meal_analysis',p_id::text,'delete');
 END;
