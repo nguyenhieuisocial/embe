@@ -2,6 +2,7 @@ import { databaseMealAnalysis, normalizeMealAnalysis } from "../../../../lib/mea
 import { deriveMealSafetyFlags } from "../../../../lib/meal-safety";
 import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
 import { verifySessionCookie } from "../../../../lib/portal-auth";
+import { revalidateFamilyViews } from "../../../../lib/family-view-revalidation";
 
 function cookieValue(header: string | null): string | undefined {
   return header?.split(";").map((part) => part.trim().split("="))
@@ -86,6 +87,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       && typeof result.checklist_day === "string"
       ? { taskId: result.checklist_task_id, day: result.checklist_day }
       : null;
+    revalidateFamilyViews();
     return privateReply({
       id,
       status: result.status === "confirmed" ? "confirmed" : "nutrition_pending",
@@ -104,5 +106,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
   const result = await store.rpc("embe_delete_meal_analysis", { p_id: id });
-  return result.error ? privateReply({ error: "temporarily_unavailable" }, 503) : privateReply({ status: "deleted" }, 200);
+  if (result.error) return privateReply({ error: "temporarily_unavailable" }, 503);
+  revalidateFamilyViews();
+  return privateReply({ status: "deleted" }, 200);
 }

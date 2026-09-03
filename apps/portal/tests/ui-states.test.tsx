@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const clearPrivateGetCache = vi.hoisted(() => vi.fn());
+vi.mock("../src/lib/private-get-cache", () => ({ clearPrivateGetCache }));
+
 import AppError from "../src/app/error";
 import InventoryPage from "../src/app/do-dung/page";
 import OfflinePage from "../src/app/offline/page";
@@ -12,6 +15,7 @@ function setOnline(value: boolean) {
 
 describe("offline and failure states", () => {
   afterEach(() => {
+    clearPrivateGetCache.mockClear();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     Reflect.deleteProperty(navigator, "onLine");
@@ -70,17 +74,16 @@ describe("offline and failure states", () => {
     serviceWorker.getRegistrations = vi.fn().mockResolvedValue([]);
     Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: serviceWorker });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "ok", version: "development" }), { status: 200 })));
-    const reload = vi.spyOn(window.history, "go").mockImplementation(() => undefined);
-
     render(<PwaRuntime />);
     serviceWorker.dispatchEvent(new MessageEvent("message", { data: {
       type: "EMBE_FAMILY_ACTIVITY", title: "Mẹ Ngân vừa cập nhật", url: "/me-bau#bua-an"
     } }));
 
-    const action = await screen.findByRole("button", { name: "Xem cập nhật" });
+    const action = await screen.findByRole("link", { name: "Xem cập nhật" });
     expect(screen.getByRole("status")).toHaveTextContent("Mẹ Ngân vừa cập nhật");
+    expect(action).toHaveAttribute("href", "/me-bau#bua-an");
     fireEvent.click(action);
-    expect(reload).toHaveBeenCalledWith(0);
+    expect(clearPrivateGetCache).toHaveBeenCalled();
   });
 
   it("shows another phone's update while the app is open without push permission", async () => {
@@ -106,7 +109,8 @@ describe("offline and failure states", () => {
 
     render(<PwaRuntime />);
 
-    expect(await screen.findByRole("button", { name: "Xem cập nhật" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Xem cập nhật" })).toBeInTheDocument();
+    expect(clearPrivateGetCache).toHaveBeenCalled();
     expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "EMBE_DEVICE_CONTEXT" }));
     const contextMessages = postMessage.mock.calls.length;
     serviceWorker.dispatchEvent(new Event("controllerchange"));

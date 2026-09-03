@@ -4,10 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const rpc = vi.fn();
 const createSignedUploadUrl = vi.fn();
 const info = vi.fn();
+const revalidateFamilyViews = vi.hoisted(() => vi.fn());
 
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({ rpc, storage: { from: () => ({ createSignedUploadUrl, info }) } })
 }));
+vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
 
 import { GET as history, POST as createMeal } from "../src/app/api/meals/route";
 import { POST as completeMeal } from "../src/app/api/meals/[id]/complete/route";
@@ -37,6 +39,7 @@ describe("private review-first meal analysis API", () => {
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-key";
     rpc.mockReset(); createSignedUploadUrl.mockReset(); info.mockReset();
+    revalidateFamilyViews.mockClear();
   });
   afterEach(() => { process.env = { ...originalEnvironment }; });
 
@@ -120,6 +123,7 @@ describe("private review-first meal analysis API", () => {
       checklistCompletion: { taskId: "lunch", day: "2026-09-01" }
     });
     expect(rpc).toHaveBeenLastCalledWith("embe_confirm_meal_analysis", expect.objectContaining({ p_id: entryId }));
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
   it("confirms an ambiguous text-only note without queueing fake nutrition", async () => {

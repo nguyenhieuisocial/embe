@@ -1023,6 +1023,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .app-update-banner strong { color: var(--jade); font-size: .82rem; }
 .app-update-banner small { color: var(--ink-soft); font-size: .68rem; line-height: 1.35; }
 .app-update-banner button,
+.app-update-banner a,
 .app-refresh-control button {
   background: var(--jade);
   border: 0;
@@ -1034,6 +1035,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   font-weight: 700;
   min-height: 44px;
   padding: 8px 13px;
+  text-decoration: none;
 }
 
 /* ── Bottom sheet ────────────────────────────────────────────── */

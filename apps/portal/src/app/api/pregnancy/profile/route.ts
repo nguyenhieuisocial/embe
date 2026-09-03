@@ -1,5 +1,6 @@
 import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
 import { verifySessionCookie } from "../../../../lib/portal-auth";
+import { revalidateFamilyViews } from "../../../../lib/family-view-revalidation";
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const GESTATION_TYPES = new Set(["singleton", "twins", "multiples"]);
@@ -150,5 +151,6 @@ export async function PATCH(request: Request): Promise<Response> {
   }
 
   const profile = await refresh();
+  if (profile) revalidateFamilyViews();
   return profile ? privateReply({ profile }, 200) : privateReply({ error: "temporarily_unavailable" }, 503);
 }

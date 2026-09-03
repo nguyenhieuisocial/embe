@@ -1,6 +1,7 @@
 import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
 import { PREGNANCY_NUTRIENTS } from "../../../../lib/pregnancy-nutrition";
 import { verifySessionCookie } from "../../../../lib/portal-auth";
+import { revalidateFamilyViews } from "../../../../lib/family-view-revalidation";
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const CATEGORIES = new Set(["medicine", "supplement"]);
@@ -167,5 +168,6 @@ export async function PATCH(request: Request): Promise<Response> {
     && allConfirmedDosesTaken(snapshot)
     ? { taskId: "supplements", day }
     : null;
+  revalidateFamilyViews();
   return privateReply({ snapshot, ...(checklistCompletion ? { checklistCompletion } : {}) }, 200);
 }

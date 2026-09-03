@@ -4,6 +4,7 @@ import {
 } from "../../../lib/family-task-contract";
 import { getFamilyTasks, taskRpc } from "../../../lib/family-tasks-server";
 import { verifySessionCookie } from "../../../lib/portal-auth";
+import { revalidateFamilyViews } from "../../../lib/family-view-revalidation";
 
 const owners = new Set<string>(OWNER_ROLES);
 const categories = new Set<string>(TASK_CATEGORIES);
@@ -83,6 +84,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const result = await taskRpc("embe_create_family_task", { p_idempotency_key: input.idempotencyKey, ...writeRpcBody(input) });
     if (!result || typeof result !== "object" || !isTaskId((result as Record<string, unknown>).id)) throw new Error();
+    revalidateFamilyViews();
     return privateReply({ id: (result as Record<string, unknown>).id }, 201);
   } catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
 }
@@ -105,6 +107,7 @@ export async function PATCH(request: Request): Promise<Response> {
       if (!validTaskWrite(input) || !onlyKeys(input, ["action", "id", "title", "note", "ownerRole", "category", "linkTarget", "dueOn", "dueTime", "repeatRule"])) return privateReply({ error: "invalid_request" }, 400);
       await taskRpc("embe_update_family_task", { p_id: input.id, ...writeRpcBody(input) });
     }
+    revalidateFamilyViews();
     return privateReply({ ok: true }, 200);
   } catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
 }
@@ -114,6 +117,10 @@ export async function DELETE(request: Request): Promise<Response> {
   if (auth) return privateReply({ error: auth === 401 ? "unauthorized" : "forbidden" }, auth);
   const input = await body(request);
   if (!input || !isTaskId(input.id) || Object.keys(input).some((key) => key !== "id")) return privateReply({ error: "invalid_request" }, 400);
-  try { await taskRpc("embe_delete_family_task", { p_id: input.id }); return privateReply({ ok: true }, 200); }
+  try {
+    await taskRpc("embe_delete_family_task", { p_id: input.id });
+    revalidateFamilyViews();
+    return privateReply({ ok: true }, 200);
+  }
   catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
 }

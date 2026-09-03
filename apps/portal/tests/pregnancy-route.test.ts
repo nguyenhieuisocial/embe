@@ -1,6 +1,9 @@
 import { createSessionCookie } from "../src/lib/portal-auth";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const revalidateFamilyViews = vi.hoisted(() => vi.fn());
+vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
+
 import { GET, PATCH } from "../src/app/api/pregnancy/route";
 
 const originalEnvironment = { ...process.env };
@@ -23,6 +26,7 @@ function patchRequest(body: unknown, authenticated = true, origin = "https://emb
 
 describe("private pregnancy state endpoint", () => {
   beforeEach(() => {
+    revalidateFamilyViews.mockClear();
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-key";
@@ -124,6 +128,7 @@ describe("private pregnancy state endpoint", () => {
         method: "POST"
       })
     );
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
   it("supports clearing the due date without overwriting the checklist", async () => {
@@ -148,5 +153,6 @@ describe("private pregnancy state endpoint", () => {
     const response = await PATCH(patchRequest({ day: "2026-08-31", completed: [] }));
 
     expect(response.status).toBe(503);
+    expect(revalidateFamilyViews).not.toHaveBeenCalled();
   });
 });

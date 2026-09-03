@@ -5,6 +5,7 @@ import {
   MEAL_BUCKET, MEAL_MAX_BYTES, MEAL_MIME_TYPES, MEAL_TYPES, normalizeMealAnalysis
 } from "../../../lib/meal-analysis-contract";
 import { verifySessionCookie } from "../../../lib/portal-auth";
+import { revalidateFamilyViews } from "../../../lib/family-view-revalidation";
 
 type MealRequest = {
   authorRole: "father" | "mother";
@@ -63,6 +64,7 @@ export async function POST(request: Request): Promise<Response> {
       });
       const result = data as Record<string, unknown> | null;
       if (error || !result || !isUuidV4(result.id)) throw new Error("meal note unavailable");
+      revalidateFamilyViews();
       return privateReply({ entryId: result.id, status: "analyzing" }, 201);
     }
     const { data, error } = await store.rpc("embe_create_meal_analysis", {
@@ -74,6 +76,7 @@ export async function POST(request: Request): Promise<Response> {
     if (error || !result || !isUuidV4(result.id) || typeof result.storage_path !== "string") throw new Error("queue unavailable");
     const signed = await store.storage.from(MEAL_BUCKET).createSignedUploadUrl(result.storage_path, { upsert: false });
     if (signed.error || !signed.data?.signedUrl) throw new Error("signing unavailable");
+    revalidateFamilyViews();
     return privateReply({ entryId: result.id, uploadUrl: signed.data.signedUrl }, 201);
   } catch {
     return privateReply({ error: "temporarily_unavailable" }, 503);

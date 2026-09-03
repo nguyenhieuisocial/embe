@@ -1,6 +1,9 @@
 import { createSessionCookie } from "../src/lib/portal-auth";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const revalidateFamilyViews = vi.hoisted(() => vi.fn());
+vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
+
 import { GET, PATCH } from "../src/app/api/pregnancy/health/route";
 
 const originalEnvironment = { ...process.env };
@@ -40,6 +43,7 @@ const databaseMetric = {
 
 describe("private pregnancy health endpoint", () => {
   beforeEach(() => {
+    revalidateFamilyViews.mockClear();
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-key";
@@ -159,6 +163,7 @@ describe("private pregnancy health endpoint", () => {
       })
     );
     expect(JSON.stringify(await response.json())).not.toContain("server-only-key");
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
   it("rejects one-sided blood pressure and mismatched glucose context", async () => {
@@ -175,5 +180,6 @@ describe("private pregnancy health endpoint", () => {
     const response = await PATCH(request({ day: "2026-09-01", weightKg: 56 }));
 
     expect(response.status).toBe(503);
+    expect(revalidateFamilyViews).not.toHaveBeenCalled();
   });
 });

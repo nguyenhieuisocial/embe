@@ -1,5 +1,6 @@
 import { verifySessionCookie } from "../../../../lib/portal-auth";
 import { authorizeMutation } from "../../../../lib/photo-upload-server";
+import { revalidateFamilyViews } from "../../../../lib/family-view-revalidation";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ALLOWED_DAYS = new Set([7, 28, 90]);
@@ -237,5 +238,6 @@ export async function PATCH(request: Request): Promise<Response> {
   });
   const candidate = Array.isArray(result) ? result[0] : result;
   const metric = normalizeMetric(candidate);
+  if (metric) revalidateFamilyViews();
   return metric ? reply({ metric }, 200) : reply({ error: "temporarily_unavailable" }, 503);
 }

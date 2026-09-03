@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import { clearPrivateGetCache } from "../lib/private-get-cache";
 
@@ -94,6 +95,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
         localStorage.setItem(ACTIVITY_SINCE_KEY, latestAt);
         if (latest && typeof latest.title === "string" && typeof latest.url === "string"
             && latest.url.startsWith("/") && !latest.url.startsWith("//")) {
+          clearPrivateGetCache();
           setFamilyActivity({ title: latest.title.slice(0, 80), url: latest.url });
         }
       } catch {
@@ -159,10 +161,9 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
   if (familyActivity) return (
     <div className="app-update-banner" role="status" aria-live="polite">
       <span><strong>{familyActivity.title}</strong><small>Chạm để xem dữ liệu mới nhất.</small></span>
-      <button type="button" onClick={() => {
-        window.history.pushState(null, "", familyActivity.url);
-        window.history.go(0);
-      }}>Xem cập nhật</button>
+      <Link href={familyActivity.url} onClick={() => {
+        clearPrivateGetCache();
+      }}>Xem cập nhật</Link>
     </div>
   );
 

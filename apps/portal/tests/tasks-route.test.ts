@@ -1,6 +1,9 @@
 import { createSessionCookie } from "../src/lib/portal-auth";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const revalidateFamilyViews = vi.hoisted(() => vi.fn());
+vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
+
 import { DELETE, GET, PATCH, POST } from "../src/app/api/tasks/route";
 
 const originalEnvironment = { ...process.env };
@@ -22,6 +25,7 @@ function request(method: string, body?: unknown, authenticated = true): Request 
 
 describe("private family task endpoint", () => {
   beforeEach(() => {
+    revalidateFamilyViews.mockClear();
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-key";
@@ -54,7 +58,6 @@ describe("private family task endpoint", () => {
       "https://project.supabase.co/rest/v1/rpc/embe_list_family_tasks",
       expect.objectContaining({ body: JSON.stringify({ p_from: "2026-09-01", p_to: "2026-09-07" }) })
     );
-
     expect((await GET(new Request("https://embe.hieu.asia/api/tasks?from=2026-01-01&to=2026-12-31", {
       headers: { cookie: cookie() }
     }))).status).toBe(400);
@@ -78,6 +81,7 @@ describe("private family task endpoint", () => {
       expect.stringContaining("embe_create_family_task"),
       expect.objectContaining({ method: "POST" })
     );
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
   it("rejects unknown links, malformed IDs and oversized text", async () => {
@@ -106,5 +110,6 @@ describe("private family task endpoint", () => {
       expect.stringContaining("embe_update_family_task"),
       expect.stringContaining("embe_delete_family_task")
     ]));
+    expect(revalidateFamilyViews).toHaveBeenCalledTimes(3);
   });
 });

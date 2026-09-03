@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSessionCookie } from "../src/lib/portal-auth";
 
 const rpc = vi.fn();
+const revalidateFamilyViews = vi.hoisted(() => vi.fn());
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc }) }));
+vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
 
 import { GET, PATCH } from "../src/app/api/pregnancy/profile/route";
 
@@ -39,6 +41,7 @@ describe("pregnancy profile API", () => {
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only";
     rpc.mockReset();
+    revalidateFamilyViews.mockClear();
   });
 
   afterEach(() => { process.env = { ...originalEnvironment }; });
@@ -72,6 +75,7 @@ describe("pregnancy profile API", () => {
     expect(rpc).toHaveBeenNthCalledWith(1, "embe_save_pregnancy_profile", expect.objectContaining({
       p_due_date: "2027-04-20", p_due_date_source: "estimated_lmp", p_lmp_date: "2026-07-14", p_gestation_type: "singleton"
     }));
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
   it("adds a callable care contact without exposing provider details", async () => {

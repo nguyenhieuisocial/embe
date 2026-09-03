@@ -1,4 +1,5 @@
 import { dailyChecklist } from "../../../lib/pregnancy-content";
+import { revalidateFamilyViews } from "../../../lib/family-view-revalidation";
 import { authorizeMutation } from "../../../lib/photo-upload-server";
 import { verifySessionCookie } from "../../../lib/portal-auth";
 
@@ -143,5 +144,6 @@ export async function PATCH(request: Request): Promise<Response> {
     p_write_due_date: writesDueDate,
     p_write_completed: writesCompleted
   });
+  if (state) revalidateFamilyViews();
   return state ? reply(state, 200) : reply({ error: "temporarily_unavailable" }, 503);
 }

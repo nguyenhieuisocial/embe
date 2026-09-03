@@ -2,7 +2,9 @@ import { createSessionCookie } from "../src/lib/portal-auth";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const rpc = vi.fn();
+const revalidateFamilyViews = vi.hoisted(() => vi.fn());
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc }) }));
+vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
 
 import { GET, PATCH } from "../src/app/api/pregnancy/care/route";
 import { GET as probeHealth, POST as createDevice, PUT as ingestHealth } from "../src/app/api/pregnancy/iphone-health/route";
@@ -27,6 +29,7 @@ describe("private pregnancy care and iPhone health APIs", () => {
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-key";
     rpc.mockReset();
+    revalidateFamilyViews.mockClear();
   });
   afterEach(() => { process.env = { ...originalEnvironment }; });
 
@@ -80,6 +83,7 @@ describe("private pregnancy care and iPhone health APIs", () => {
     expect(rpc).toHaveBeenNthCalledWith(1, "embe_save_pregnancy_wellness_profile", expect.objectContaining({
       p_height_cm: 160, p_clinician_weight_gain_min_kg: 11.5, p_clinician_weight_gain_max_kg: 16
     }));
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
   it("stores only an explicit doctor plan and whitelisted nutrient amounts", async () => {
