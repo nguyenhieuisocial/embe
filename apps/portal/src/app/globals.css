@@ -4439,6 +4439,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 
 /* Hôm nay & hồ sơ thai kỳ: danh sách sợi chỉ, không thêm dashboard card. */
 .today-priorities { display: grid; gap: 6px; }
+.today-priorities.skeleton { align-content: start; min-height: 278px; }
 .today-priority-list { display: grid; list-style: none; margin: 0; padding: 0; }
 .today-priority {
   align-items: center;

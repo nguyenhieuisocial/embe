@@ -80,6 +80,12 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/@media \(max-width: 480px\)[\s\S]*\.planner-form-row,[\s\S]*\.inventory-form-row\s*\{[^}]*grid-template-columns:\s*1fr/s);
   });
 
+  it("reserves the Today priorities height while private data is streaming", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+
+    expect(ruleBody(css, ".today-priorities.skeleton")).toMatch(/min-height:\s*27[0-9]px/);
+  });
+
   it("gives compact text links a full iPhone touch target", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
