@@ -534,7 +534,15 @@ ol, ul { margin: 0; padding: 0; }
 .settings-family > a { align-items: center; border-top: 1px solid var(--line); color: var(--rose); display: flex; font-size: .8rem; font-weight: 650; justify-content: space-between; min-height: 50px; text-decoration: none; }
 .settings-family > a .icon { height: 18px; width: 18px; }
 .settings-family > p { color: var(--ink-soft); font-size: .69rem; line-height: 1.55; padding-top: 8px; }
-.family-trash { display: grid; gap: 8px; }
+.family-trash { display: block; }
+.family-trash > details { display: grid; gap: 8px; }
+.family-trash-summary { align-items: center; cursor: pointer; display: flex; justify-content: space-between; list-style: none; min-height: 38px; }
+.family-trash-summary::-webkit-details-marker { display: none; }
+.family-trash-summary > span { display: grid; gap: 2px; }
+.family-trash-summary > span:last-child { align-items: center; color: var(--ink-soft); display: flex; gap: 8px; }
+.family-trash-summary strong { font-size: 1rem; }
+.family-trash-summary i { font-style: normal; transition: transform .18s ease; }
+.family-trash details[open] .family-trash-summary i { transform: rotate(180deg); }
 .family-trash-empty { color: var(--ink-soft); font-size: .74rem; line-height: 1.5; }
 .family-trash-list { display: grid; list-style: none; margin: 0; padding: 0; }
 .family-trash-list li { align-items: center; border-top: 1px solid var(--line); display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) auto; min-height: 58px; }

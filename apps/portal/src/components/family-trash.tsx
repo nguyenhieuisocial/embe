@@ -44,18 +44,20 @@ export default function FamilyTrash() {
   }
 
   return <section className="section family-trash" aria-labelledby="family-trash-title">
-    <div className="section-head">
-      <p className="panel-kicker">Có thể lấy lại</p>
-      <h2 id="family-trash-title">Thùng rác</h2>
-    </div>
-    {loading ? <p className="state-note">Đang mở…</p> : null}
-    {!loading && items.length === 0 ? <p className="family-trash-empty">Chưa có dữ liệu nào bị xóa.</p> : null}
-    {items.length ? <ul className="family-trash-list">{items.map((item) => <li key={`${item.kind}-${item.id}`}>
-      <span><strong>{item.title}</strong><small>{kindLabel[item.kind]} · {item.detail}</small></span>
-      <button className="trash-restore" type="button" disabled={Boolean(workingId)} onClick={() => void restore(item)} aria-label={`Khôi phục ${item.title}`}>
-        {workingId === item.id ? "Đang lấy…" : "Khôi phục"}
-      </button>
-    </li>)}</ul> : null}
-    {message ? <p className="settings-saved" role="status" aria-live="polite">{message}</p> : null}
+    <details>
+      <summary className="family-trash-summary">
+        <span><small className="panel-kicker">Có thể lấy lại</small><strong id="family-trash-title">Thùng rác</strong></span>
+        <span><small>{loading ? "Đang kiểm tra" : items.length ? `${items.length} mục` : "Trống"}</small><i aria-hidden="true">⌄</i></span>
+      </summary>
+      {loading ? <p className="state-note">Đang mở…</p> : null}
+      {!loading && items.length === 0 ? <p className="family-trash-empty">Chưa có dữ liệu nào bị xóa.</p> : null}
+      {items.length ? <ul className="family-trash-list">{items.map((item) => <li key={`${item.kind}-${item.id}`}>
+        <span><strong>{item.title}</strong><small>{kindLabel[item.kind]} · {item.detail}</small></span>
+        <button className="trash-restore" type="button" disabled={Boolean(workingId)} onClick={() => void restore(item)} aria-label={`Khôi phục ${item.title}`}>
+          {workingId === item.id ? "Đang lấy…" : "Khôi phục"}
+        </button>
+      </li>)}</ul> : null}
+      {message ? <p className="settings-saved" role="status" aria-live="polite">{message}</p> : null}
+    </details>
   </section>;
 }

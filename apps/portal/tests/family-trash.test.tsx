@@ -18,6 +18,8 @@ describe("family trash", () => {
 
     render(<FamilyTrash />);
     await screen.findByText("Khám thai");
+    expect(screen.getByText("Thùng rác").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByText("3 mục")).toBeInTheDocument();
     expect(screen.getByText("Hồ sơ thai kỳ · Bệnh viện")).toBeInTheDocument();
     expect(screen.getByText("Bữa ăn · Cơm và cá")).toBeInTheDocument();
     expect(screen.getByText("Khoản chi · Thuốc · 320.000 ₫")).toBeInTheDocument();
