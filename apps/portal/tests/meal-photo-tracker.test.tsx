@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import MealPhotoTracker from "../src/components/meal-photo-tracker";
+import MealPhotoTracker, { looksLikeMedication } from "../src/components/meal-photo-tracker";
 
 const mealClient = vi.hoisted(() => ({
   createMealDraft: vi.fn(), createMealNote: vi.fn(),
@@ -27,6 +27,35 @@ const history = [{
 
 describe("mobile meal journal", () => {
   afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
+
+  it("routes medicine-like notes away from meals until the mother explicitly continues", async () => {
+    expect(looksLikeMedication("Uống vitamin D 1 viên")).toBe(true);
+    expect(looksLikeMedication("Rau giàu sắt và thịt bò")).toBe(false);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: [], suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+    mealClient.createMealNote.mockResolvedValue("11111111-1111-4111-8111-111111111111");
+    mealClient.waitForMealDraft.mockResolvedValue({ note: "Uống vitamin D 1 viên", analysis: {
+      entryMode: "note", foods: [], needsUserConfirmation: [], estimateNotice: "Cần Mẹ kiểm tra."
+    } });
+
+    render(<MealPhotoTracker />);
+    fireEvent.change(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh"), {
+      target: { value: "Uống vitamin D 1 viên" }
+    });
+
+    expect(screen.getByRole("link", { name: "Lưu thuốc & vitamin" })).toHaveAttribute(
+      "href", "/me-bau/ho-so?quick=prescription#ho-so-kham"
+    );
+    const recognize = screen.getByRole("button", { name: "Nhận diện từ ghi chú" });
+    expect(recognize).toBeDisabled();
+    expect(mealClient.createMealNote).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Vẫn ghi là bữa ăn" }));
+    expect(recognize).toBeEnabled();
+    fireEvent.click(recognize);
+    await waitFor(() => expect(mealClient.createMealNote).toHaveBeenCalledOnce());
+  });
 
   it("shows worker availability, charts and full meal details for 7 or 28 days", async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({

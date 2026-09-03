@@ -8,6 +8,7 @@ import {
   medicalInsights,
   type MedicalRecord
 } from "../src/lib/pregnancy-medical";
+import { clearPrivateGetCache } from "../src/lib/private-get-cache";
 
 const record: MedicalRecord = {
   id: "11111111-1111-4111-8111-111111111111", kind: "appointment", status: "planned",
@@ -16,7 +17,11 @@ const record: MedicalRecord = {
 };
 
 describe("pregnancy medical record book", () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    clearPrivateGetCache();
+    window.history.replaceState({}, "", "/");
+    vi.unstubAllGlobals();
+  });
 
   it("finds the next appointment without interpreting medical results", () => {
     const result = medicalInsights([record], new Date("2026-09-01T00:00:00Z"));
@@ -52,6 +57,34 @@ describe("pregnancy medical record book", () => {
     fireEvent.click(within(classifier).getByRole("button", { name: "Đơn thuốc" }));
     await waitFor(() => expect(screen.getByText("Thuốc ghi trên đơn")).toBeInTheDocument());
     expect(screen.getByText(/Chỉ Hiếu và Ngân xem được/)).toBeInTheDocument();
+  });
+
+  it("opens the prescription form directly from a quick link", async () => {
+    window.history.replaceState({}, "", "/me-bau/ho-so?quick=prescription#ho-so-kham");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ records: [] }), { status: 200 })));
+
+    render(<PregnancyMedicalRecords />);
+
+    expect(await screen.findByRole("heading", { name: "Thêm đơn thuốc" })).toBeInTheDocument();
+    expect(screen.getByText("Có thể nhập ngay hoặc để trống rồi chụp ảnh đơn thuốc bên dưới.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tên thuốc")).not.toBeRequired();
+  });
+
+  it("hydrates medicines when editing a saved prescription", async () => {
+    const prescription: MedicalRecord = {
+      ...record, kind: "prescription", status: "completed", title: "Đơn thuốc ngày khám",
+      medicines: [{ name: "Sắt", dose: "1 viên", frequency: "mỗi sáng", instructions: "Sau ăn" }]
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ records: [prescription] }), { status: 200 })));
+
+    render(<PregnancyMedicalRecords />);
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa" }));
+
+    expect(screen.getByRole("heading", { name: "Sửa đơn thuốc" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Tên thuốc")).toHaveValue("Sắt");
+    expect(screen.getByLabelText("Liều")).toHaveValue("1 viên");
+    expect(screen.getByLabelText("Số lần")).toHaveValue("mỗi sáng");
+    expect(screen.getByLabelText("Cách dùng")).toHaveValue("Sau ăn");
   });
 
   it("separates the next appointment from saved records when empty", async () => {

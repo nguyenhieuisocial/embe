@@ -6,14 +6,21 @@ const rpc = vi.fn();
 const createSignedUploadUrl = vi.fn();
 const info = vi.fn();
 const download = vi.fn();
+const revalidateFamilyViews = vi.hoisted(() => vi.fn());
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({ rpc, storage: { from: () => ({ createSignedUploadUrl, info, download }) } })
 }));
+vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
 
 import { GET as listRecords, POST as saveRecord } from "../src/app/api/pregnancy/records/route";
 import { DELETE as deleteRecord } from "../src/app/api/pregnancy/records/[id]/route";
 import { POST as createDocument } from "../src/app/api/pregnancy/records/[id]/documents/route";
 import { GET as viewDocument, POST as completeDocument } from "../src/app/api/pregnancy/documents/[id]/route";
+import {
+  GET as getMedicationScan,
+  PATCH as confirmMedicationScan,
+  POST as queueMedicationScan
+} from "../src/app/api/pregnancy/documents/[id]/medication-scan/route";
 
 const originalEnvironment = { ...process.env };
 const recordId = "11111111-1111-4111-8111-111111111111";
@@ -38,6 +45,7 @@ describe("private pregnancy medical records", () => {
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-key";
     rpc.mockReset(); createSignedUploadUrl.mockReset(); info.mockReset(); download.mockReset();
+    revalidateFamilyViews.mockClear();
   });
   afterEach(() => { process.env = { ...originalEnvironment }; });
 
@@ -98,5 +106,60 @@ describe("private pregnancy medical records", () => {
     expect(viewed.status).toBe(200);
     expect(viewed.headers.get("cache-control")).toBe("private, no-store");
     expect(viewed.headers.get("content-type")).toBe("application/pdf");
+  });
+
+  it("queues and returns a private medication transcription without storage details", async () => {
+    rpc.mockResolvedValueOnce({ data: { document_id: documentId, status: "queued" }, error: null });
+    const queued = await queueMedicationScan(
+      request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}/medication-scan`, "POST", {}),
+      { params: Promise.resolve({ id: documentId }) }
+    );
+    expect(queued.status).toBe(202);
+    expect(rpc).toHaveBeenLastCalledWith("embe_queue_medication_scan", { p_document_id: documentId });
+
+    rpc.mockResolvedValueOnce({ data: {
+      document_id: documentId, status: "review", analysis: {
+        medicines: [{ name: "Sắt", dose: "1 viên", frequency: "mỗi ngày", instructions: "Sau ăn", confidence: 0.83 }],
+        questions: ["Kiểm tra lại hàm lượng trên nhãn."]
+      }
+    }, error: null });
+    const viewed = await getMedicationScan(
+      request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}/medication-scan`),
+      { params: Promise.resolve({ id: documentId }) }
+    );
+    const payload = await viewed.json();
+    expect(viewed.status).toBe(200);
+    expect(payload.analysis.medicines[0].name).toBe("Sắt");
+    expect(JSON.stringify(payload)).not.toContain("storage_path");
+  });
+
+  it("requires explicit confirmation and rejects prescribing fields", async () => {
+    const invalid = await confirmMedicationScan(
+      request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}/medication-scan`, "PATCH", {
+        medicines: [{ name: "Thuốc A", dose: "1 viên", frequency: "mỗi ngày", instructions: "", safeInPregnancy: true }]
+      }), { params: Promise.resolve({ id: documentId }) }
+    );
+    expect(invalid.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+
+    rpc.mockResolvedValueOnce({ data: null, error: null });
+    const confirmed = await confirmMedicationScan(
+      request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}/medication-scan`, "PATCH", {
+        medicines: [{ name: "Thuốc A", dose: "1 viên", frequency: "mỗi ngày", instructions: "Sau ăn" }]
+      }), { params: Promise.resolve({ id: documentId }) }
+    );
+    expect(confirmed.status).toBe(200);
+    expect(rpc).toHaveBeenLastCalledWith("embe_confirm_medication_scan", {
+      p_confirmed_analysis: { medicines: [{ name: "Thuốc A", dose: "1 viên", frequency: "mỗi ngày", instructions: "Sau ăn" }] },
+      p_document_id: documentId
+    });
+  });
+
+  it("requires family authentication for medication scans", async () => {
+    const response = await getMedicationScan(
+      request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}/medication-scan`, "GET", undefined, false),
+      { params: Promise.resolve({ id: documentId }) }
+    );
+    expect(response.status).toBe(401);
   });
 });

@@ -4026,6 +4026,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .medical-timeline { position: relative; }
 .medical-record-head { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
 .medical-record-head span { color: var(--coral); font-size: .6875rem; font-weight: 750; letter-spacing: .02em; }
+.medical-record-head > div { display: flex; gap: 2px; }
 .medical-record-head button { background: transparent; border: 0; color: var(--ink-soft); font: inherit; font-size: .75rem; min-height: 44px; padding: 4px 6px; }
 .medical-timeline time, .medical-timeline > article > small { color: var(--ink-soft); font-size: .75rem; }
 .medical-timeline > article > p { color: var(--ink-soft); font-size: .8125rem; margin: 0; }
@@ -4042,6 +4043,22 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .medical-documents a { align-items: center; background: var(--surface); border-radius: 999px; color: var(--ink); display: inline-flex; font-size: .75rem; max-width: 100%; min-height: 44px; overflow: hidden; padding: 8px 10px; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
 .medical-status { color: var(--ink-soft); font-size: .75rem; margin: 0; }
 .medical-status.is-error { color: var(--coral); }
+.medication-scan-review {
+  background: var(--paper); border: 1px solid color-mix(in srgb, var(--coral) 28%, var(--line));
+  border-radius: var(--radius-lg); display: grid; gap: 12px; overflow: hidden; padding: 13px;
+}
+.medication-scan-review > header { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.medication-scan-review > header > div { display: grid; gap: 2px; }
+.medication-scan-review > header small { color: var(--ink-soft); font-size: .75rem; }
+.medication-scan-review > header > span { background: var(--coral-soft); border-radius: 999px; color: var(--coral); font-size: .6875rem; font-weight: 700; padding: 6px 9px; white-space: nowrap; }
+.medication-scan-review > img { background: var(--surface); border-radius: var(--radius-sm); display: block; max-height: min(52dvh, 520px); object-fit: contain; width: 100%; }
+.medication-scan-editor, .medication-scan-message { display: grid; gap: 10px; }
+.medication-scan-editor > p, .medication-scan-message p { color: var(--ink-soft); font-size: .75rem; margin: 0; }
+.medication-scan-editor > ul { display: grid; gap: 4px; margin: 0; padding-left: 18px; }
+.medication-scan-editor > ul li { color: var(--ink-soft); font-size: .8125rem; }
+.medication-scan-editor .medical-medicine-row > small { color: var(--ink-soft); font-size: .6875rem; }
+.medication-scan-editor .medical-medicine-row > button,
+.medication-scan-message button { background: transparent; border: 0; color: var(--coral); font: inherit; font-size: .8125rem; font-weight: 700; min-height: 44px; justify-self: end; }
 
 .meal-tracker { display: grid; gap: 16px; scroll-margin-top: 16px; }
 .meal-capture-card,
@@ -4091,6 +4108,13 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .meal-photo-preview { aspect-ratio: 4 / 3; border-radius: var(--radius-md); display: block; max-height: 280px; object-fit: cover; width: 100%; }
 .meal-note { display: grid; font-size: .875rem; font-weight: 600; gap: 6px; }
 .meal-note textarea { min-height: 72px; resize: vertical; }
+.meal-medicine-shortcut { color: var(--coral); font-size: .75rem; font-weight: 700; justify-self: start; min-height: 44px; padding-block: 11px; text-decoration: none; }
+.meal-medication-route { background: var(--coral-soft); border-radius: var(--radius-sm); display: grid; gap: 6px; padding: 11px; }
+.meal-medication-route p { color: var(--ink-soft); font-size: .75rem; margin: 0; }
+.meal-medication-route > div { display: grid; gap: 6px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.meal-medication-route a, .meal-medication-route button { align-items: center; border-radius: 999px; display: flex; font: inherit; font-size: .75rem; font-weight: 700; justify-content: center; min-height: 44px; padding: 7px 9px; text-align: center; }
+.meal-medication-route a { background: var(--coral); color: white; text-decoration: none; }
+.meal-medication-route button { background: var(--paper); border: 1px solid color-mix(in srgb, var(--coral) 35%, var(--line)); color: var(--coral); }
 .meal-state { font-size: .8125rem; margin: 0; }
 .meal-state.is-error, .meal-risk { color: var(--coral); }
 .meal-review h3 { margin: 0; }

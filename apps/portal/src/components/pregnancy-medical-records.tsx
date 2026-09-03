@@ -11,6 +11,8 @@ import {
   type MedicalMedicine,
   type MedicalRecord
 } from "../lib/pregnancy-medical";
+import { prepareImageForUpload } from "../lib/image-preparation-client";
+import type { MedicationScanMedicine } from "../lib/medication-scan-contract";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 
 const kinds: Record<string, string> = {
@@ -35,29 +37,43 @@ function optionalNumber(data: FormData, key: string): number | null {
   return value && Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
-async function uploadDocument(recordId: string, file: File): Promise<void> {
+type MedicationScan = {
+  documentId: string;
+  medicines: MedicationScanMedicine[];
+  questions: string[];
+  status: "queued" | "processing" | "review" | "saving" | "confirmed" | "failed";
+};
+
+const emptyMedicine = (): MedicalMedicine => ({ name: "", dose: "", frequency: "", instructions: "" });
+
+async function uploadDocument(recordId: string, file: File): Promise<{ documentId: string; mimeType: string }> {
+  const prepared = file.type === "application/pdf" ? file : await prepareImageForUpload(file, {
+    filename: "tai-lieu-y-te.jpg", maxBytes: 15_000_000, maxDimension: 2200, quality: 0.86
+  });
   const documentId = crypto.randomUUID();
   const created = await fetch(`/api/pregnancy/records/${recordId}/documents`, {
     method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ documentId, filename: file.name || "tai-lieu", mimeType: file.type, byteSize: file.size })
+    body: JSON.stringify({ documentId, filename: prepared.name || "tai-lieu", mimeType: prepared.type, byteSize: prepared.size })
   });
   if (!created.ok) throw new Error("create_document_failed");
   const session = await created.json() as { uploadUrl?: string };
   if (!session.uploadUrl) throw new Error("create_document_failed");
-  const form = new FormData(); form.append("cacheControl", "0"); form.append("", file);
+  const form = new FormData(); form.append("cacheControl", "0"); form.append("", prepared);
   const uploaded = await fetch(session.uploadUrl, { method: "PUT", headers: { "x-upsert": "false" }, body: form });
   if (!uploaded.ok) throw new Error("upload_failed");
   const completed = await fetch(`/api/pregnancy/documents/${documentId}`, {
     method: "POST", headers: { "content-type": "application/json" }, body: "{}"
   });
   if (!completed.ok) throw new Error("complete_failed");
+  return { documentId, mimeType: prepared.type };
 }
 
 export default function PregnancyMedicalRecords() {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [kind, setKind] = useState("appointment");
-  const [medicines, setMedicines] = useState<MedicalMedicine[]>([{ name: "", dose: "", frequency: "", instructions: "" }]);
+  const [medicines, setMedicines] = useState<MedicalMedicine[]>([emptyMedicine()]);
+  const [medicationScans, setMedicationScans] = useState<MedicationScan[]>([]);
   const [filter, setFilter] = useState("all");
   const [formMode, setFormMode] = useState<"new" | "prepare" | "outcome">("new");
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
@@ -73,7 +89,11 @@ export default function PregnancyMedicalRecords() {
   }
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("quick") === "appointment") setShowForm(true);
+    const quick = new URLSearchParams(window.location.search).get("quick");
+    if (quick === "appointment" || quick === "prescription") {
+      setKind(quick === "prescription" ? "prescription" : "appointment");
+      setShowForm(true);
+    }
     void load();
   }, []);
   const insights = useMemo(() => medicalInsights(records), [records]);
@@ -81,7 +101,78 @@ export default function PregnancyMedicalRecords() {
   const appointmentWorkspace = decodeAppointmentWorkspace(editingRecord?.notes ?? "");
 
   function openForm(mode: "new" | "prepare" | "outcome", record: MedicalRecord | null = null) {
-    setFormMode(mode); setEditingRecord(record); setKind(record?.kind ?? "appointment"); setShowForm(true);
+    setFormMode(mode); setEditingRecord(record); setKind(record?.kind ?? "appointment");
+    setMedicines(record?.kind === "prescription" && record.medicines.length
+      ? record.medicines.map((medicine) => ({ ...medicine })) : [emptyMedicine()]);
+    setShowForm(true);
+    requestAnimationFrame(() => {
+      const form = document.getElementById("medical-record-form");
+      if (typeof form?.scrollIntoView === "function") form.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function updateMedicationScan(documentId: string, update: (scan: MedicationScan) => MedicationScan) {
+    setMedicationScans((current) => current.map((scan) => scan.documentId === documentId ? update(scan) : scan));
+  }
+
+  async function queueMedicationScan(documentId: string) {
+    setMedicationScans((current) => current.some((scan) => scan.documentId === documentId)
+      ? current : [...current, { documentId, medicines: [], questions: [], status: "queued" }]);
+    try {
+      const queued = await fetch(`/api/pregnancy/documents/${documentId}/medication-scan`, {
+        method: "POST", headers: { "content-type": "application/json" }, body: "{}"
+      });
+      if (!queued.ok) throw new Error("scan_queue_failed");
+      for (let attempt = 0; attempt < 80; attempt += 1) {
+        const response = await fetch(`/api/pregnancy/documents/${documentId}/medication-scan`, { cache: "no-store" });
+        if (!response.ok) throw new Error("scan_status_failed");
+        const payload = await response.json() as {
+          status?: string;
+          analysis?: { medicines?: MedicationScanMedicine[]; questions?: string[] };
+        };
+        if (payload.status === "review" && payload.analysis) {
+          const extracted = Array.isArray(payload.analysis.medicines)
+            ? payload.analysis.medicines.filter((medicine) => typeof medicine?.name === "string") : [];
+          updateMedicationScan(documentId, (scan) => ({
+            ...scan, medicines: extracted.length ? extracted : [emptyMedicine()],
+            questions: Array.isArray(payload.analysis?.questions) ? payload.analysis.questions : [], status: "review"
+          }));
+          return;
+        }
+        if (payload.status === "failed") throw new Error("scan_failed");
+        updateMedicationScan(documentId, (scan) => ({ ...scan, status: "processing" }));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      throw new Error("scan_timeout");
+    } catch {
+      updateMedicationScan(documentId, (scan) => ({ ...scan, status: "failed" }));
+    }
+  }
+
+  function updateScannedMedicine(documentId: string, index: number, field: keyof MedicalMedicine, value: string) {
+    updateMedicationScan(documentId, (scan) => ({
+      ...scan,
+      medicines: scan.medicines.map((medicine, itemIndex) => itemIndex === index ? { ...medicine, [field]: value } : medicine)
+    }));
+  }
+
+  async function confirmMedicationScan(scan: MedicationScan) {
+    const confirmed = scan.medicines
+      .filter((medicine) => medicine.name.trim())
+      .map(({ name, dose, frequency, instructions }) => ({ name, dose, frequency, instructions }));
+    if (!confirmed.length) return;
+    updateMedicationScan(scan.documentId, (current) => ({ ...current, status: "saving" }));
+    try {
+      const response = await fetch(`/api/pregnancy/documents/${scan.documentId}/medication-scan`, {
+        method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ medicines: confirmed })
+      });
+      if (!response.ok) throw new Error("scan_confirm_failed");
+      updateMedicationScan(scan.documentId, (current) => ({ ...current, status: "confirmed" }));
+      clearPrivateGetCache("/api/pregnancy/records");
+      await load();
+    } catch {
+      updateMedicationScan(scan.documentId, (current) => ({ ...current, status: "review" }));
+    }
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -114,8 +205,14 @@ export default function PregnancyMedicalRecords() {
       const result = await response.json() as { id?: string };
       if (!result.id) throw new Error("save_failed");
       clearPrivateGetCache("/api/pregnancy/records");
-      for (const file of files.slice(0, 6)) await uploadDocument(result.id, file);
-      form.reset(); setKind("appointment"); setMedicines([{ name: "", dose: "", frequency: "", instructions: "" }]);
+      const uploaded: Array<{ documentId: string; mimeType: string }> = [];
+      for (const file of files.slice(0, 6)) uploaded.push(await uploadDocument(result.id, file));
+      if (kind === "prescription") {
+        for (const document of uploaded.filter((item) => item.mimeType.startsWith("image/"))) {
+          void queueMedicationScan(document.documentId);
+        }
+      }
+      form.reset(); setKind("appointment"); setMedicines([emptyMedicine()]);
       setEditingRecord(null); setFormMode("new"); setShowForm(false); await load();
     } catch { setStatus("error"); }
   }
@@ -167,14 +264,14 @@ export default function PregnancyMedicalRecords() {
         </div>
       </article> : <div className="medical-empty-short"><strong>Chưa có lịch khám sắp tới</strong><p>Thêm lịch để EmBe đặt đúng ngày trong dòng thời gian.</p></div>}
 
-      {showForm ? <form className="medical-form" key={`${formMode}-${editingRecord?.id ?? "new"}`} onSubmit={(event) => void save(event)}>
-        <h3>{formMode === "prepare" ? "Chuẩn bị buổi khám" : formMode === "outcome" ? "Ghi kết quả sau khám" : "Thêm hồ sơ khám"}</h3>
+      {showForm ? <form className="medical-form" id="medical-record-form" key={`${formMode}-${editingRecord?.id ?? "new"}`} onSubmit={(event) => void save(event)}>
+        <h3>{formMode === "prepare" ? "Chuẩn bị buổi khám" : formMode === "outcome" ? "Ghi kết quả sau khám" : editingRecord ? `Sửa ${kinds[editingRecord.kind]?.toLocaleLowerCase("vi") ?? "hồ sơ"}` : kind === "prescription" ? "Thêm đơn thuốc" : "Thêm hồ sơ khám"}</h3>
         {formMode === "new" ? <div className="medical-kind-picker" role="group" aria-label="Phân loại hồ sơ">
           {Object.entries(kinds).map(([value, label]) => <button key={value} type="button" aria-pressed={kind === value} onClick={() => setKind(value)}>{label}</button>)}
         </div> : null}
         <div className="medical-form-grid">
           <label>Tiêu đề<input name="title" required maxLength={100} defaultValue={editingRecord?.title} placeholder={kind === "prescription" ? "Đơn thuốc ngày khám" : "Khám thai định kỳ"} /></label>
-          {formMode === "new" ? <label>Trạng thái<select name="status" defaultValue="planned"><option value="planned">Sắp tới</option><option value="completed">Đã hoàn thành</option></select></label> : null}
+          {formMode === "new" ? <label>Trạng thái<select name="status" defaultValue={editingRecord?.status ?? (kind === "prescription" ? "completed" : "planned")}><option value="planned">Sắp tới</option><option value="completed">Đã hoàn thành</option></select></label> : null}
           <label>Ngày và giờ<input name="occurredAt" type="datetime-local" required defaultValue={editingRecord ? localDateTime(new Date(editingRecord.occurredAt)) : localDateTime()} /></label>
           <label>Tuần thai<input name="gestationalWeek" type="number" inputMode="numeric" min="1" max="42" defaultValue={editingRecord?.gestationalWeek ?? undefined} /></label>
           <label>Nơi khám<input name="provider" maxLength={120} defaultValue={editingRecord?.provider} placeholder="Bệnh viện hoặc phòng khám" /></label>
@@ -183,10 +280,10 @@ export default function PregnancyMedicalRecords() {
         </div>
         <details className="medical-measurements">
           <summary>Chỉ số được ghi tại nơi khám <span>⌄</span></summary>
-          <div><label>Cân nặng (kg)<input name="weightKg" type="number" inputMode="decimal" min="25" max="300" step="0.1" /></label>
-            <label>Huyết áp trên<input name="systolic" type="number" inputMode="numeric" min="40" max="300" /></label>
-            <label>Huyết áp dưới<input name="diastolic" type="number" inputMode="numeric" min="30" max="200" /></label>
-            <label>Nhịp tim thai<input name="fetalHeartRate" type="number" inputMode="numeric" min="30" max="300" /></label></div>
+          <div><label>Cân nặng (kg)<input name="weightKg" type="number" inputMode="decimal" min="25" max="300" step="0.1" defaultValue={editingRecord?.measurements.weightKg} /></label>
+            <label>Huyết áp trên<input name="systolic" type="number" inputMode="numeric" min="40" max="300" defaultValue={editingRecord?.measurements.systolic} /></label>
+            <label>Huyết áp dưới<input name="diastolic" type="number" inputMode="numeric" min="30" max="200" defaultValue={editingRecord?.measurements.diastolic} /></label>
+            <label>Nhịp tim thai<input name="fetalHeartRate" type="number" inputMode="numeric" min="30" max="300" defaultValue={editingRecord?.measurements.fetalHeartRate} /></label></div>
         </details>
         {kind === "appointment" ? <fieldset className="appointment-preparation">
           <legend>Câu hỏi và checklist trước khám</legend>
@@ -205,21 +302,43 @@ export default function PregnancyMedicalRecords() {
         </fieldset> : null}
         {kind === "prescription" ? <div className="medical-medicines">
           <strong>Thuốc ghi trên đơn</strong>
+          <small>Có thể nhập ngay hoặc để trống rồi chụp ảnh đơn thuốc bên dưới.</small>
           {medicines.map((medicine, index) => <div className="medical-medicine-row" key={index}>
-            <label>Tên thuốc<input required value={medicine.name} maxLength={100} onChange={(event) => updateMedicine(index, "name", event.target.value)} /></label>
+            <label>Tên thuốc<input value={medicine.name} maxLength={100} onChange={(event) => updateMedicine(index, "name", event.target.value)} /></label>
             <label>Liều<input value={medicine.dose} maxLength={80} placeholder="1 viên" onChange={(event) => updateMedicine(index, "dose", event.target.value)} /></label>
             <label>Số lần<input value={medicine.frequency} maxLength={80} placeholder="Sau ăn sáng" onChange={(event) => updateMedicine(index, "frequency", event.target.value)} /></label>
             <label>Cách dùng<input value={medicine.instructions} maxLength={200} onChange={(event) => updateMedicine(index, "instructions", event.target.value)} /></label>
           </div>)}
-          {medicines.length < 12 ? <button type="button" onClick={() => setMedicines((current) => [...current, { name: "", dose: "", frequency: "", instructions: "" }])}>+ Thêm thuốc</button> : null}
+          {medicines.length < 12 ? <button type="button" onClick={() => setMedicines((current) => [...current, emptyMedicine()])}>+ Thêm thuốc</button> : null}
         </div> : null}
         {kind !== "appointment" ? <label className="medical-notes">Ghi chú<textarea name="notes" rows={3} maxLength={2000} defaultValue={editingRecord?.notes} placeholder="Điều bác sĩ dặn, câu hỏi cần nhớ…" /></label> : null}
         <label className="medical-files">{formMode === "outcome" ? "Hồ sơ hoặc tài liệu sau khám" : "Hồ sơ hoặc tài liệu mang theo"}
-          <input name="documents" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" />
-          <small>Tối đa 6 file mỗi lần, 15 MB/file. Chỉ Hiếu và Ngân xem được.</small>
+          <input name="documents" type="file" multiple accept="image/*,application/pdf" />
+          <small>{kind === "prescription" ? "Ảnh đơn thuốc sẽ được đọc thử để Mẹ kiểm tra. PDF chỉ được lưu, không tự đọc. " : ""}Tối đa 6 file mỗi lần. Chỉ Hiếu và Ngân xem được.</small>
         </label>
         <button className="health-save" type="submit" disabled={status === "saving"}>{status === "saving" ? "Đang lưu…" : formMode === "prepare" ? "Lưu chuẩn bị" : formMode === "outcome" ? "Lưu kết quả" : "Lưu hồ sơ"}</button>
       </form> : null}
+
+      {medicationScans.map((scan) => <article className="medication-scan-review" key={scan.documentId} aria-label="Kiểm tra đơn thuốc từ ảnh">
+        <header><div><strong>Kiểm tra đơn thuốc</strong><small>Đối chiếu từng dòng với ảnh gốc</small></div>
+          <span>{scan.status === "queued" || scan.status === "processing" ? "Đang đọc…" : scan.status === "confirmed" ? "Đã xác nhận" : scan.status === "failed" ? "Chưa đọc được" : "Cần Mẹ kiểm tra"}</span></header>
+        <img src={`/api/pregnancy/documents/${scan.documentId}`} alt="Ảnh đơn thuốc gốc" />
+        {scan.status === "failed" ? <div className="medication-scan-message"><p>Máy chưa đọc được ảnh này. Ảnh vẫn được lưu an toàn.</p><button type="button" onClick={() => void queueMedicationScan(scan.documentId)}>Thử đọc lại</button></div> : null}
+        {scan.status === "review" || scan.status === "saving" ? <div className="medication-scan-editor">
+          {scan.medicines.map((medicine, index) => <div className="medical-medicine-row" key={index}>
+            <label>Tên thuốc<input value={medicine.name} maxLength={100} onChange={(event) => updateScannedMedicine(scan.documentId, index, "name", event.target.value)} /></label>
+            <label>Liều<input value={medicine.dose} maxLength={80} onChange={(event) => updateScannedMedicine(scan.documentId, index, "dose", event.target.value)} /></label>
+            <label>Số lần<input value={medicine.frequency} maxLength={80} onChange={(event) => updateScannedMedicine(scan.documentId, index, "frequency", event.target.value)} /></label>
+            <label>Cách dùng<input value={medicine.instructions} maxLength={200} onChange={(event) => updateScannedMedicine(scan.documentId, index, "instructions", event.target.value)} /></label>
+            {medicine.confidence !== undefined ? <small>Độ chắc chắn {Math.round(medicine.confidence * 100)}%</small> : null}
+            {scan.medicines.length > 1 ? <button type="button" onClick={() => updateMedicationScan(scan.documentId, (current) => ({ ...current, medicines: current.medicines.filter((_, itemIndex) => itemIndex !== index) }))}>Bỏ dòng</button> : null}
+          </div>)}
+          {scan.questions.length ? <ul>{scan.questions.map((question) => <li key={question}>{question}</li>)}</ul> : null}
+          <button className="medical-add" type="button" onClick={() => updateMedicationScan(scan.documentId, (current) => ({ ...current, medicines: [...current.medicines, emptyMedicine()] }))}>+ Thêm thuốc còn thiếu</button>
+          <p>Chỉ chép lại nội dung trên đơn. Không tự đổi thuốc hoặc liều dùng.</p>
+          <button className="health-save" type="button" disabled={scan.status === "saving" || !scan.medicines.some((medicine) => medicine.name.trim())} onClick={() => void confirmMedicationScan(scan)}>{scan.status === "saving" ? "Đang lưu…" : "Xác nhận đúng theo đơn"}</button>
+        </div> : null}
+      </article>)}
 
       <div className="medical-subsection-title">
         <h3>Hồ sơ đã lưu</h3>
@@ -240,7 +359,7 @@ export default function PregnancyMedicalRecords() {
           {visibleRecords.map((record) => <article key={record.id}>
             <i aria-hidden="true" />
             <div className="medical-record-head"><span>{kinds[record.kind] ?? "Hồ sơ"} · {record.status === "planned" ? "sắp tới" : "đã xong"}</span>
-              <button type="button" onClick={() => void remove(record.id)}>Xóa</button></div>
+              <div><button type="button" onClick={() => openForm("new", record)}>Sửa</button><button type="button" onClick={() => void remove(record.id)}>Xóa</button></div></div>
             <strong>{record.title}</strong><time>{displayDate(record.occurredAt)}</time>
             {(record.provider || record.clinician) ? <p>{[record.provider, record.clinician].filter(Boolean).join(" · ")}</p> : null}
             {record.gestationalWeek ? <small>Tuần thai {record.gestationalWeek}</small> : null}

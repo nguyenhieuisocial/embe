@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { MealAnalysis } from "../lib/meal-analysis-contract";
@@ -15,6 +16,15 @@ const nutrientLabels = [
   ["calcium_mg", "Canxi", "mg"], ["iron_mg", "Sắt", "mg"], ["folate_ug", "Folate", "µg"]
 ] as const;
 const UNCONFIRMED_FOOD_NAME = "món cần mẹ xác nhận";
+
+export function looksLikeMedication(value: string): boolean {
+  const text = value.trim().toLocaleLowerCase("vi");
+  if (!text) return false;
+  if (/\b(thuốc|đơn thuốc|vitamin|vi chất|thuốc bổ|thực phẩm bổ sung)\b/u.test(text)) return true;
+  const supplement = /\b(sắt|canxi|dha|acid folic|folic acid|omega[ -]?3)\b/u.test(text);
+  const intake = /\b(uống|dùng|viên|liều|mg|mcg|µg|iu)\b/u.test(text);
+  return supplement && intake;
+}
 
 function hasInvalidFood(analysis: MealAnalysis): boolean {
   return analysis.foods.some((food) => {
@@ -65,6 +75,7 @@ export default function MealPhotoTracker() {
   const [historyMessage, setHistoryMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "analyzing" | "queued" | "review" | "saving" | "saved" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
+  const [confirmedMedicationText, setConfirmedMedicationText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setMealType(defaultMealType()); }, []);
@@ -100,9 +111,15 @@ export default function MealPhotoTracker() {
   ]) ?? []), [analysis]);
   const groups = Object.entries(dashboard.groupCounts).sort((a, b) => b[1] - a[1]);
   const maxGroup = Math.max(1, ...groups.map(([, count]) => count));
+  const medicationLike = looksLikeMedication(note);
+  const medicationRouteOpen = medicationLike && confirmedMedicationText !== note.trim();
 
   async function analyze() {
     if ((!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving") return;
+    if (medicationRouteOpen) {
+      setStatusMessage("Nội dung này giống thuốc hoặc vitamin. Chọn nơi lưu phù hợp trước khi tiếp tục.");
+      return;
+    }
     setAnalysis(null); setStatusMessage("");
     if (!file) {
       setStatus("analyzing");
@@ -289,7 +306,15 @@ export default function MealPhotoTracker() {
         <label className="meal-note">Ghi chú món ăn · có thể lưu không cần ảnh
           <textarea maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: nửa bát cơm, cá hồi, không có nước chấm" />
         </label>
-        <button className="health-save" type="button" disabled={(!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving"} onClick={() => void analyze()}>
+        {medicationRouteOpen ? <aside className="meal-medication-route" aria-live="polite">
+          <strong>Có vẻ đây là thuốc hoặc vitamin</strong>
+          <p>Đơn thuốc và liều dùng nên nằm trong hồ sơ riêng để không bị tính thành món ăn.</p>
+          <div>
+            <Link href="/me-bau/ho-so?quick=prescription#ho-so-kham">Lưu thuốc &amp; vitamin</Link>
+            <button type="button" onClick={() => setConfirmedMedicationText(note.trim())}>Vẫn ghi là bữa ăn</button>
+          </div>
+        </aside> : <Link className="meal-medicine-shortcut" href="/me-bau/ho-so?quick=prescription#ho-so-kham">Cần lưu thuốc &amp; vitamin?</Link>}
+        <button className="health-save" type="button" disabled={(!file && !note.trim()) || medicationRouteOpen || status === "sending" || status === "analyzing" || status === "saving"} onClick={() => void analyze()}>
           {status === "sending" ? "Đang gửi ảnh…" : status === "analyzing" ? "Đang nhận diện…"
             : status === "saving" ? "Đang lưu…" : file ? "Nhận diện bữa ăn" : "Nhận diện từ ghi chú"}
         </button>

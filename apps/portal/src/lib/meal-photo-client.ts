@@ -1,32 +1,14 @@
 import type { MealAnalysis } from "./meal-analysis-contract";
+import { prepareImageForUpload } from "./image-preparation-client";
 import { announceLinkedDailyAction } from "./linked-daily-actions";
 
 const API_TIMEOUT_MS = 15_000;
 const UPLOAD_TIMEOUT_MS = 30_000;
 
-function loadImage(file: File): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
-    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error("invalid_image")); };
-    image.src = url;
-  });
-}
-
 export async function prepareMealPhoto(file: File): Promise<File> {
-  if ((file.type && !file.type.startsWith("image/")) || file.size < 1) throw new Error("invalid_image");
-  const image = await loadImage(file);
-  const scale = Math.min(1, 1280 / Math.max(image.naturalWidth, image.naturalHeight));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("invalid_image");
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.78));
-  if (!blob || blob.size > 12_000_000) throw new Error("image_too_large");
-  return new File([blob], "bua-an.jpg", { type: "image/jpeg", lastModified: file.lastModified || Date.now() });
+  return prepareImageForUpload(file, {
+    filename: "bua-an.jpg", maxBytes: 12_000_000, maxDimension: 1280, quality: 0.78
+  });
 }
 
 export async function uploadMealPhoto(uploadUrl: string, file: File): Promise<void> {

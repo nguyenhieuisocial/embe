@@ -328,6 +328,9 @@ export default function PregnancyPage() {
         <Link id="ho-so-kham" href="/me-bau/ho-so">
           <span><strong>Hồ sơ thai kỳ</strong><small>Lịch khám, kết quả và đơn thuốc</small></span><b>Mở</b>
         </Link>
+        <Link href="/me-bau/ho-so?quick=prescription#ho-so-kham">
+          <span><strong>Thuốc &amp; vitamin</strong><small>Chụp đơn, kiểm tra tên thuốc và liều dùng</small></span><b>Mở</b>
+        </Link>
       </nav>
 
       <div className="pregnancy-reference-label pregnancy-private-tools">
