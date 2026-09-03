@@ -21,7 +21,7 @@ describe("pregnancy week journey", () => {
 
     await waitFor(() => expect(screen.getByRole("heading", { name: /Tuần \d+/ })).toBeInTheDocument());
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
-    expect(screen.getByRole("link", { name: /NHS/ })).toHaveAttribute("href", expect.stringContaining("week-"));
+    expect(screen.getByRole("link", { name: /Nguồn NHS tuần/ })).toHaveAttribute("href", expect.stringContaining("week-"));
     expect(screen.getByText("Không tự chẩn đoán từ nội dung theo tuần.")).toBeInTheDocument();
   });
 

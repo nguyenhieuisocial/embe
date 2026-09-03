@@ -8,6 +8,7 @@ import AppHeader from "../../components/app-header";
 import BirthTransition from "../../components/birth-transition";
 import DeferredSection from "../../components/deferred-section";
 import { Icon } from "../../components/embe-icon";
+import PregnancySafetySearch from "../../components/pregnancy-safety-search";
 import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
 import { LINKED_DAILY_ACTION_EVENT, linkedDailyAction } from "../../lib/linked-daily-actions";
 import {
@@ -479,6 +480,8 @@ export default function PregnancyPage() {
           <span aria-hidden="true">›</span>
         </a>
       </section>
+
+      <PregnancySafetySearch />
 
       <DeferredSection label="sức khỏe từ iPhone và vi chất" targetIds="suc-khoe-iphone vi-chat-thuoc" placeholderHeight={1400}>
         <PregnancyCareTracker pregnancyWeek={week} />

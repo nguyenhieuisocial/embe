@@ -3,8 +3,10 @@
 import Link from "next/link";
 
 import AppHeader from "../../../components/app-header";
+import { fetalSizeForWeek, fetalSizeSourceUrl } from "../../../lib/fetal-size";
 import { calculatePregnancyWeek } from "../../../lib/pregnancy";
 import { upcomingPregnancyCareWindows } from "../../../lib/pregnancy-care-windows";
+import { prenatalGuideSources, prenatalStageGuide } from "../../../lib/prenatal-stage-guide";
 import { usePregnancyDueDate } from "../../../lib/use-pregnancy-due-date";
 
 function stageFor(week: number): { name: string; focus: string } {
@@ -32,6 +34,8 @@ export default function PregnancyWeekPage() {
   const dueDate = usePregnancyDueDate();
   const week = calculatePregnancyWeek(dueDate);
   const careWindows = week === null ? [] : upcomingPregnancyCareWindows(dueDate, week);
+  const fetalSize = week === null ? null : fetalSizeForWeek(week);
+  const prenatalGuide = week === null ? null : prenatalStageGuide(week);
 
   return (
     <main className="pregnancy-main">
@@ -60,6 +64,15 @@ export default function PregnancyWeekPage() {
             <div className="care-progress" role="progressbar" aria-label="Tiến độ thai kỳ" aria-valuemin={0} aria-valuemax={40} aria-valuenow={Math.min(40, week)}>
               <i style={{ width: `${Math.min(100, Math.max(2, (week / 40) * 100))}%` }} />
             </div>
+            {fetalSize ? <div className="fetal-size" aria-label={`Bé ở tuần ${fetalSize.week}`}>
+              <span className="fetal-size-visual" aria-hidden="true">{fetalSize.emoji}</span>
+              <span>
+                <small>Bé đang lớn từng ngày</small>
+                <strong>Cỡ {fetalSize.comparison}</strong>
+                <p>{fetalSize.lengthCm === null ? "Bé vẫn còn rất nhỏ." : `Dài khoảng ${fetalSize.lengthCm.toLocaleString("vi-VN")} cm.`} So sánh chỉ để dễ hình dung.</p>
+                <a href={fetalSizeSourceUrl(fetalSize.week)} target="_blank" rel="noreferrer">Nguồn NHS tuần {fetalSize.week} ↗</a>
+              </span>
+            </div> : null}
           </section>
 
           <section className="section" aria-labelledby="week-actions-title">
@@ -72,6 +85,26 @@ export default function PregnancyWeekPage() {
               {week >= 16 ? <li><Link href="/me-bau/thai-may"><span><strong>Ghi nhịp thai máy</strong><small>Theo dõi nhịp hoạt động quen thuộc của Bé</small></span><b>Ghi</b></Link></li> : null}
             </ul>
           </section>
+
+          {prenatalGuide ? <section className="section prenatal-week-guide" aria-labelledby="prenatal-guide-title">
+            <p className="panel-kicker">Nhẹ nhàng trong tuần</p>
+            <h2 id="prenatal-guide-title">Chăm Mẹ, gần Bé</h2>
+            <div className="prenatal-guide-grid">
+              <article><span aria-hidden="true">⌁</span><div><strong>Vận động</strong><p>{prenatalGuide.movement}</p></div></article>
+              <article><span aria-hidden="true">♡</span><div><strong>Dễ chịu hơn</strong><p>{prenatalGuide.comfort}</p></div></article>
+              <article><span aria-hidden="true">♪</span><div><strong>Gắn kết</strong><p>{prenatalGuide.bonding}</p></div></article>
+              <article><span aria-hidden="true">∞</span><div><strong>Cùng Ba Hiếu</strong><p>{prenatalGuide.partner}</p></div></article>
+            </div>
+            <div className="prenatal-guide-actions">
+              <Link href="/me-bau/thu-gian">Thở nhẹ 2–8 phút</Link>
+              <Link href="/ghi-lai">Lưu khoảnh khắc</Link>
+              <Link href="/ke-hoach">Việc hai người</Link>
+            </div>
+            <details className="prenatal-guide-sources"><summary>Nguồn và giới hạn an toàn <span>⌄</span></summary><div>
+              {prenatalGuideSources.map((source) => <a key={source.href} href={source.href} target="_blank" rel="noreferrer">{source.label} ↗</a>)}
+              <p>Hãy hỏi nơi khám trước khi bắt đầu hoặc đổi bài tập. Nội dung này không thay chỉ dẫn riêng.</p>
+            </div></details>
+          </section> : null}
 
           {careWindows.length ? <section className="section" aria-labelledby="care-window-title">
             <p className="panel-kicker">Mốc sắp tới</p><h2 id="care-window-title">Chủ động hỏi nơi khám</h2>

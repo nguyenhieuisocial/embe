@@ -6,6 +6,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -31,6 +32,12 @@ export type PregnancyHealthMetric = {
 
 type ChartKey = keyof Omit<PregnancyHealthMetric, "day">;
 
+export type PregnancyWeightPlan = {
+  prePregnancyWeightKg: number | null;
+  clinicianGainMinKg: number | null;
+  clinicianGainMaxKg: number | null;
+};
+
 function shortDay(day: string): string {
   return `${day.slice(8, 10)}/${day.slice(5, 7)}`;
 }
@@ -46,10 +53,12 @@ function latestValue(history: PregnancyHealthMetric[], key: ChartKey): number | 
 function ChartCard({
   title,
   summary,
+  note,
   children
 }: {
   title: string;
   summary: string;
+  note?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -58,6 +67,7 @@ function ChartCard({
         <strong>{title}</strong>
         <span>{summary}</span>
       </figcaption>
+      {note ? <p className="health-chart-note">{note}</p> : null}
       <div className="health-chart-canvas">{children}</div>
     </figure>
   );
@@ -71,7 +81,13 @@ const tooltipStyle = {
   fontSize: 12
 };
 
-export default function PregnancyHealthCharts({ history }: { history: PregnancyHealthMetric[] }) {
+export default function PregnancyHealthCharts({
+  history,
+  weightPlan
+}: {
+  history: PregnancyHealthMetric[];
+  weightPlan?: PregnancyWeightPlan;
+}) {
   const data = history.map((item) => ({
     ...item,
     label: shortDay(item.day),
@@ -87,16 +103,34 @@ export default function PregnancyHealthCharts({ history }: { history: PregnancyH
   const glucose = latestValue(history, "bloodGlucoseMgDl");
   const fetalMovement = latestValue(history, "fetalMovementCount");
   const checklist = latestValue(history, "checklistPercent");
+  const hasWeightPlan = typeof weightPlan?.prePregnancyWeightKg === "number"
+    && typeof weightPlan.clinicianGainMinKg === "number"
+    && typeof weightPlan.clinicianGainMaxKg === "number";
+  const weightGain = weight !== null && typeof weightPlan?.prePregnancyWeightKg === "number"
+    ? Number((weight - weightPlan.prePregnancyWeightKg).toFixed(1))
+    : null;
+  const targetMinimum = hasWeightPlan
+    ? Number(weightPlan.prePregnancyWeightKg) + Number(weightPlan.clinicianGainMinKg)
+    : null;
+  const targetMaximum = hasWeightPlan
+    ? Number(weightPlan.prePregnancyWeightKg) + Number(weightPlan.clinicianGainMaxKg)
+    : null;
 
   return (
     <div className="health-chart-scroll" aria-label="Các biểu đồ sức khỏe 28 ngày">
-      <ChartCard title="Cân nặng" summary={weight === null ? "Chưa ghi" : `${weight} kg`}>
+      <ChartCard
+        title="Cân nặng"
+        summary={weightGain === null ? (weight === null ? "Chưa ghi" : `${weight} kg`) : `Đã tăng ${weightGain.toLocaleString("vi-VN")} kg`}
+        note={hasWeightPlan ? `Mục tiêu cả thai kỳ do bác sĩ đặt: ${weightPlan.clinicianGainMinKg}–${weightPlan.clinicianGainMaxKg} kg.` : undefined}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -20 }}>
             <CartesianGrid stroke="#edf1ee" vertical={false} />
             <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} minTickGap={18} />
             <YAxis tick={axis} tickLine={false} axisLine={false} domain={["dataMin - 1", "dataMax + 1"]} />
             <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value} kg`, "Cân nặng"]} />
+            {targetMinimum !== null ? <ReferenceLine y={targetMinimum} stroke="#c58ca0" strokeDasharray="4 4" ifOverflow="extendDomain" /> : null}
+            {targetMaximum !== null ? <ReferenceLine y={targetMaximum} stroke="#c58ca0" strokeDasharray="4 4" ifOverflow="extendDomain" /> : null}
             <Line type="monotone" dataKey="weightKg" stroke="#17624a" strokeWidth={3} dot={{ r: 3 }} connectNulls />
           </LineChart>
         </ResponsiveContainer>

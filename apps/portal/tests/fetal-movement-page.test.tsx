@@ -26,6 +26,7 @@ describe("fetal movement pattern tool", () => {
     render(<FetalMovementPage />);
     fireEvent.click(screen.getByRole("button", { name: "Bắt đầu ghi" }));
     const movementButton = await screen.findByRole("button", { name: "Bé vừa cử động" });
+    expect(screen.getByText(/1–2 giờ/)).toBeInTheDocument();
     fireEvent.click(movementButton);
     await waitFor(() => expect(screen.getByText("1 lần")).toBeInTheDocument());
   });

@@ -9,6 +9,7 @@ import {
   estimatedEnergyTarget, PREGNANCY_NUTRIENTS,
   type EnergyProfile, type NutrientKey
 } from "../lib/pregnancy-nutrition";
+import { supplementTimingConflicts } from "../lib/supplement-spacing";
 
 type CarePlan = {
   id: string;
@@ -285,6 +286,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   }
 
   const activePlans = snapshot.plans.filter((plan) => plan.active);
+  const timingConflicts = supplementTimingConflicts(activePlans);
   const pausedPlans = snapshot.plans.filter((plan) => !plan.active);
   const confirmedPlans = activePlans.filter((plan) => plan.confirmed_by_clinician);
   const doseCount = confirmedPlans.reduce((sum, plan) => sum + plan.times_per_day, 0);
@@ -444,6 +446,12 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <p>{energyTarget ? `Mốc cá nhân tham khảo khoảng ${energyTarget} kcal/ngày.` : "Thêm hồ sơ cơ bản để có mốc năng lượng cá nhân."}</p>
         </article>
       </div>
+
+      {timingConflicts.length ? <aside className="supplement-timing-alert">
+        <strong>Giờ sắt và canxi đang trùng nhau</strong>
+        <p>{[...new Set(timingConflicts.map((item) => item.time))].join(", ")}. WHO khuyên dùng hai loại ở thời điểm khác nhau trong ngày. Hãy chỉnh theo đúng lời dặn của bác sĩ hoặc dược sĩ.</p>
+        <a href="https://www.who.int/news-room/fact-sheets/detail/anaemia" target="_blank" rel="noreferrer">Nguồn WHO ↗</a>
+      </aside> : null}
 
       {activePlans.length ? <div className="dose-list">
         {activePlans.map((plan) => <article key={plan.id}>

@@ -11,11 +11,12 @@ type CareWindow = {
 };
 
 const WINDOWS = [
-  { startWeek: 11, endWeek: 13, title: "Khám mốc ba tháng đầu", note: "Mang theo câu hỏi, kết quả đã có và danh sách thuốc/vi chất đang dùng." },
-  { startWeek: 18, endWeek: 20, title: "Khám giữa thai kỳ", note: "Xác nhận với nơi khám những đánh giá hoặc siêu âm phù hợp cho Mẹ và Bé." },
-  { startWeek: 24, endWeek: 27, title: "Khám cuối ba tháng giữa", note: "Hỏi nơi khám về huyết áp, đường huyết và các xét nghiệm phù hợp với hồ sơ của Mẹ." },
+  { startWeek: 10, endWeek: 13, title: "Sàng lọc ba tháng đầu", note: "Hỏi bác sĩ về lựa chọn phù hợp như NIPT, siêu âm và xét nghiệm sàng lọc; không tự chọn chỉ dựa trên ứng dụng." },
+  { startWeek: 18, endWeek: 22, title: "Siêu âm giữa thai kỳ", note: "Xác nhận lịch siêu âm hình thái và các đánh giá phù hợp với hồ sơ của Mẹ và Bé." },
+  { startWeek: 24, endWeek: 28, title: "Khám và theo dõi đường huyết", note: "Hỏi nơi khám về xét nghiệm dung nạp đường, huyết áp và những xét nghiệm cần thiết khác." },
   { startWeek: 28, endWeek: 32, title: "Khám đầu ba tháng cuối", note: "Rà lại tăng trưởng của Bé, sức khỏe của Mẹ và kế hoạch các lần tái khám." },
-  { startWeek: 36, endWeek: 40, title: "Khám và chuẩn bị sinh", note: "Giữ kế hoạch sinh, dấu hiệu cần đi viện và số liên hệ trong tầm tay." }
+  { startWeek: 35, endWeek: 37, title: "Chốt kế hoạch sinh", note: "Hỏi nơi khám về những xét nghiệm cuối thai kỳ, dấu hiệu cần gọi và thời điểm đến viện dành riêng cho Mẹ." },
+  { startWeek: 38, endWeek: 40, title: "Theo dõi sát ngày sinh", note: "Giữ hồ sơ, giỏ đi sinh, đường đến viện và số liên hệ trong tầm tay." }
 ] as const;
 
 function dueDateUtc(value: string): Date | null {

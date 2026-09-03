@@ -4,7 +4,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } 
 
 import { localDateKey } from "../lib/pregnancy";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
-import type { PregnancyHealthMetric } from "./pregnancy-health-charts";
+import type { PregnancyHealthMetric, PregnancyWeightPlan } from "./pregnancy-health-charts";
 
 const PregnancyHealthCharts = lazy(() => import("./pregnancy-health-charts"));
 
@@ -96,6 +96,7 @@ function metricToForm(metric: PregnancyHealthMetric | undefined): FormState {
 export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregnancyWeek?: number | null }) {
   const [today, setToday] = useState("");
   const [history, setHistory] = useState<PregnancyHealthMetric[]>([]);
+  const [weightPlan, setWeightPlan] = useState<PregnancyWeightPlan>();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "saved" | "invalid" | "error">("loading");
   const [validationError, setValidationError] = useState("");
@@ -109,11 +110,27 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
     let active = true;
     async function load() {
       try {
-        const response = await cachedPrivateGet(`/api/pregnancy/health?end=${day}&days=28`);
+        const [response, careResponse] = await Promise.all([
+          cachedPrivateGet(`/api/pregnancy/health?end=${day}&days=28`),
+          cachedPrivateGet(`/api/pregnancy/care?day=${day}&days=0`)
+        ]);
         if (!response.ok) throw new Error("health unavailable");
         const payload = await response.json() as { history?: PregnancyHealthMetric[] };
         if (!active || !Array.isArray(payload.history)) return;
         setHistory(payload.history);
+        if (careResponse.ok) {
+          const care = await careResponse.json() as { snapshot?: { profile?: {
+            pre_pregnancy_weight_kg?: number | null;
+            clinician_weight_gain_min_kg?: number | null;
+            clinician_weight_gain_max_kg?: number | null;
+          } | null } };
+          const profile = care.snapshot?.profile;
+          if (profile) setWeightPlan({
+            prePregnancyWeightKg: profile.pre_pregnancy_weight_kg ?? null,
+            clinicianGainMinKg: profile.clinician_weight_gain_min_kg ?? null,
+            clinicianGainMaxKg: profile.clinician_weight_gain_max_kg ?? null
+          });
+        }
         if (!dirtyRef.current) {
           const todayMetric = payload.history.find((metric) => metric.day === day);
           setForm(metricToForm(todayMetric));
@@ -310,7 +327,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           </div>
           {hasHealthValues ? (
             <Suspense fallback={<p className="health-chart-loading">Đang mở biểu đồ…</p>}>
-              <PregnancyHealthCharts history={history} />
+              <PregnancyHealthCharts history={history} weightPlan={weightPlan} />
             </Suspense>
           ) : (
             <div className="health-empty">

@@ -4,7 +4,7 @@ import { upcomingPregnancyCareWindows } from "../src/lib/pregnancy-care-windows"
 describe("Vietnam pregnancy care windows", () => {
   it("returns the next relevant windows with calendar ranges", () => {
     const result = upcomingPregnancyCareWindows("2027-04-01", 14, 3);
-    expect(result.map((item) => item.weekLabel)).toEqual(["18–20 tuần", "24–27 tuần", "28–32 tuần"]);
+    expect(result.map((item) => item.weekLabel)).toEqual(["18–22 tuần", "24–28 tuần", "28–32 tuần"]);
     expect(result[0].dateLabel).toMatch(/^\d{2}\/\d{2}–\d{2}\/\d{2}\/\d{4}$/);
   });
 
@@ -12,5 +12,15 @@ describe("Vietnam pregnancy care windows", () => {
     const result = upcomingPregnancyCareWindows("2027-04-01", 24, 3);
     expect(result.every((item) => item.kind === "suggested_window")).toBe(true);
     expect(result[0].title.toLowerCase()).toContain("khám");
+  });
+
+  it("names the common discussion points without turning them into appointments", () => {
+    const result = upcomingPregnancyCareWindows("2027-04-01", 9, 5);
+    const copy = result.map((item) => `${item.title} ${item.note}`).join(" ");
+
+    expect(copy).toContain("NIPT");
+    expect(copy).toContain("siêu âm hình thái");
+    expect(copy).toContain("đường huyết");
+    expect(result.every((item) => item.kind === "suggested_window")).toBe(true);
   });
 });
