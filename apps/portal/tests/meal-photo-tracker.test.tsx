@@ -242,6 +242,54 @@ describe("mobile meal journal", () => {
     expect(screen.getByRole("button", { name: "Lưu bữa này" })).toBeEnabled();
   });
 
+  it("previews the selected meal photo before upload", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: [], suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+    const createObjectURL = vi.fn(() => "blob:meal-preview");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL });
+
+    const { unmount } = render(<MealPhotoTracker />);
+    const image = new File(["photo"], "meal.jpg", { type: "image/jpeg" });
+    fireEvent.change(screen.getByLabelText(/Chụp bữa ăn/), { target: { files: [image] } });
+
+    expect(screen.getByRole("img", { name: "Ảnh bữa ăn vừa chọn" })).toHaveAttribute("src", "blob:meal-preview");
+    unmount();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:meal-preview");
+  });
+
+  it("does not claim unavailable nutrition is still processing", async () => {
+    const unavailableHistory = [{
+      ...history[0], status: "ready" as const,
+      analysis: {
+        ...history[0].analysis,
+        nutrition: { status: "unavailable" as const, notice: "Chưa ghép được nguồn dinh dưỡng." }
+      }
+    }];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: unavailableHistory, suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+
+    render(<MealPhotoTracker />);
+    expect(await screen.findByText("Chưa tính được dinh dưỡng · chạm để sửa")).toBeInTheDocument();
+    expect(screen.queryByText("Đang bổ sung dinh dưỡng")).not.toBeInTheDocument();
+  });
+
+  it("shows a retry action instead of hiding a meal photo that failed to load", async () => {
+    const savedHistory = [{ ...history[0], status: "ready" as const }];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: savedHistory, suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+
+    render(<MealPhotoTracker />);
+    fireEvent.click(await screen.findByText("Cơm và rau"));
+    fireEvent.error(screen.getByRole("img", { name: "Ảnh bữa trưa" }));
+
+    expect(screen.getByText("Chưa mở được ảnh.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thử lại ảnh" })).toBeEnabled();
+  });
+
   it("shows a pregnancy safety warning immediately when the corrected name needs it", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
       history: [], suggestions: [], worker: { status: "online" }

@@ -36,10 +36,23 @@ function mealDate(value: string): string {
 
 type Worker = { status: "online" | "degraded" | "offline" | "unknown"; lastSeenAt?: string };
 
+function MealHistoryPhoto({ entryId, label }: { entryId: string; label: string }) {
+  const [attempt, setAttempt] = useState(0);
+  const [failed, setFailed] = useState(false);
+  if (failed) return <div className="meal-photo-error" role="status">
+    <span>Chưa mở được ảnh.</span>
+    <button type="button" onClick={() => { setFailed(false); setAttempt((value) => value + 1); }}>Thử lại ảnh</button>
+  </div>;
+  return <img className="meal-history-photo" key={attempt}
+    src={`/api/meals/${entryId}/image${attempt ? `?retry=${attempt}` : ""}`}
+    alt={label} loading="lazy" decoding="async" onError={() => setFailed(true)} />;
+}
+
 export default function MealPhotoTracker() {
   const [mealType, setMealType] = useState("lunch");
   const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [analysis, setAnalysis] = useState<MealAnalysis | null>(null);
   const [entryId, setEntryId] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -56,6 +69,12 @@ export default function MealPhotoTracker() {
 
   useEffect(() => { setMealType(defaultMealType()); }, []);
   useEffect(() => { void loadHistory(range); }, [range]);
+  useEffect(() => {
+    if (!file || typeof URL.createObjectURL !== "function") { setPreviewUrl(""); return; }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   async function loadHistory(days = range, fresh = false) {
     setHistoryLoading(true);
@@ -266,6 +285,7 @@ export default function MealPhotoTracker() {
           <span aria-hidden="true">◎</span><strong>{file ? "Đã chọn ảnh — chạm để đổi" : "Chụp bữa ăn"}</strong>
           <small>Ảnh được thu nhỏ và bỏ vị trí trước khi gửi.</small>
         </label>
+        {previewUrl ? <img className="meal-photo-preview" src={previewUrl} alt="Ảnh bữa ăn vừa chọn" /> : null}
         <label className="meal-note">Ghi chú món ăn · có thể lưu không cần ảnh
           <textarea maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: nửa bát cơm, cá hồi, không có nước chấm" />
         </label>
@@ -313,7 +333,7 @@ export default function MealPhotoTracker() {
           : history.length === 0 ? <p className="meal-empty">Chưa có bữa nào trong khoảng này. Chụp món đầu tiên để bắt đầu.</p>
             : <>
               <div className="meal-summary-row">
-                <span><b>{history.length}</b><small>bữa đã lưu</small></span>
+                <span><b>{completedHistory.length}</b><small>bữa đã lưu</small></span>
                 {dashboard.calorieRange ? <span><b>{Math.round(dashboard.calorieRange.low).toLocaleString("vi-VN")}–{Math.round(dashboard.calorieRange.high).toLocaleString("vi-VN")}</b><small>kcal đã ghi</small></span> : null}
               </div>
 
@@ -360,14 +380,12 @@ export default function MealPhotoTracker() {
                         : entry.status === "processing" ? "Đã lưu · đang bổ sung dinh dưỡng"
                         : entry.analysis.entryMode === "note" ? "Chỉ có ghi chú"
                         : entry.analysis.nutrition?.calorieRange ? `${Math.round(entry.analysis.nutrition.calorieRange.low)}–${Math.round(entry.analysis.nutrition.calorieRange.high)} kcal`
-                          : "Đang bổ sung dinh dưỡng"}</small></span>
+                          : entry.analysis.nutrition?.status === "unavailable" ? "Chưa tính được dinh dưỡng · chạm để sửa"
+                            : "Đang bổ sung dinh dưỡng"}</small></span>
                   </summary>
                   <div className="meal-history-detail">
-                    {entry.hasImage ? <img className="meal-history-photo"
-                      src={`/api/meals/${entry.id}/image`}
-                      alt={`Ảnh bữa ${(labels[entry.mealType] ?? "ăn").toLocaleLowerCase("vi")}`}
-                      loading="lazy" decoding="async"
-                      onError={(event) => { event.currentTarget.hidden = true; }} /> : null}
+                    {entry.hasImage ? <MealHistoryPhoto entryId={entry.id}
+                      label={`Ảnh bữa ${(labels[entry.mealType] ?? "ăn").toLocaleLowerCase("vi")}`} /> : null}
                     {historyEditor?.id === entry.id ? <div className="meal-history-editor">
                       {historyEditor.analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
                         <label>Sửa tên món<input maxLength={80} value={food.nameVi} onChange={(event) => updateSavedFood(index, "nameVi", event.target.value)} /></label>

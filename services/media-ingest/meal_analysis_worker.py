@@ -9,6 +9,7 @@ import os
 import re
 import sqlite3
 import time
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping
@@ -94,6 +95,11 @@ VIETNAMESE_NUTRITION_QUERIES = (
 )
 
 VIETNAMESE_NUTRITION_PREFIX_QUERIES = (
+    ("phở bò", "soup beef noodle prepared with equal volume water"),
+    ("phở gà", "soup chicken noodle prepared with equal volume water"),
+    ("phở", "rice noodles cooked"),
+    ("bún bò huế", "soup beef noodle prepared with equal volume water"),
+    ("bún bò", "soup beef noodle prepared with equal volume water"),
     ("ớt chuông", "peppers sweet raw"),
     ("dưa leo", "cucumber raw"),
     ("cà chua", "tomatoes red raw"),
@@ -117,11 +123,23 @@ def vietnamese_food_name(name: str, search_name: str) -> tuple[str, bool]:
 def nutrition_search_query(name_vi: str, search_name_en: str | None = None) -> str:
     """Prefer the user-visible Vietnamese identity over an untrusted AI lookup label."""
     normalized = " ".join(name_vi.casefold().split())
+    folded = "".join(
+        character for character in unicodedata.normalize("NFKD", normalized)
+        if not unicodedata.combining(character)
+    ).replace("đ", "d")
     for vietnamese, english in VIETNAMESE_NUTRITION_QUERIES:
-        if vietnamese == normalized:
+        alias = "".join(
+            character for character in unicodedata.normalize("NFKD", vietnamese.casefold())
+            if not unicodedata.combining(character)
+        ).replace("đ", "d")
+        if folded == alias:
             return english
     for vietnamese, english in VIETNAMESE_NUTRITION_PREFIX_QUERIES:
-        if normalized.startswith(f"{vietnamese} "):
+        alias = "".join(
+            character for character in unicodedata.normalize("NFKD", vietnamese.casefold())
+            if not unicodedata.combining(character)
+        ).replace("đ", "d")
+        if folded == alias or folded.startswith(f"{alias} "):
             return english
     if any(character in VIETNAMESE_NAME_MARKERS for character in normalized):
         return name_vi.strip()
@@ -376,35 +394,47 @@ class MealAnalysisWorker:
             message["images"] = [base64.b64encode(body).decode()]
         payload = {
             "model": self.config.ollama_model, "stream": False, "think": False, "format": schema,
-            "keep_alive": "24h", "options": {"temperature": 0, "num_predict": 512},
+            "keep_alive": "24h", "options": {"temperature": 0, "num_predict": 1024},
             "messages": [message],
         }
-        response = self.transport("POST", f"{self.config.ollama_url}/api/chat",
-                                  {"content-type": "application/json"}, json.dumps(payload, ensure_ascii=False).encode())
-        if response.status != 200:
-            raise WorkerFailure("vision_unavailable" if body is not None else "text_analysis_unavailable")
-        try:
-            outer = json.loads(response.body)
-            raw_result = json.loads(outer["message"]["content"])
-            if body is None and isinstance(raw_result, dict) and raw_result.get("foods") == []:
-                questions = raw_result.get("needs_user_confirmation")
-                if (set(raw_result) - {"foods", "needs_user_confirmation"}
-                        or not isinstance(questions, list)
-                        or len(questions) > 6
-                        or any(not isinstance(question, str) or not 1 <= len(question.strip()) <= 120
-                               for question in questions)):
-                    raise ValueError("invalid_text_analysis_result")
-                return {
-                    "entry_mode": "note", "foods": [],
-                    "needs_user_confirmation": [question.strip() for question in questions],
-                    "estimate_notice": "Không thấy món cụ thể nên EmBe không tự đoán. Mẹ có thể thêm món hoặc chỉ lưu ghi chú.",
-                }
-            result = parse_vision_result(raw_result)
-            if body is None:
-                result["estimate_notice"] = "Ước lượng từ ghi chú; cần xác nhận món và khẩu phần trước khi lưu."
-            return result
-        except (KeyError, TypeError, json.JSONDecodeError, ValueError) as error:
-            raise WorkerFailure("invalid_vision_output" if body is not None else "invalid_text_analysis_output") from error
+        last_error: Exception | None = None
+        for attempt in range(2):
+            response = self.transport(
+                "POST", f"{self.config.ollama_url}/api/chat", {"content-type": "application/json"},
+                json.dumps(payload, ensure_ascii=False).encode(),
+            )
+            if response.status != 200:
+                raise WorkerFailure("vision_unavailable" if body is not None else "text_analysis_unavailable")
+            try:
+                outer = json.loads(response.body)
+                raw_result = json.loads(outer["message"]["content"])
+                if body is None and isinstance(raw_result, dict) and raw_result.get("foods") == []:
+                    questions = raw_result.get("needs_user_confirmation")
+                    if (set(raw_result) - {"foods", "needs_user_confirmation"}
+                            or not isinstance(questions, list)
+                            or len(questions) > 6
+                            or any(not isinstance(question, str) or not 1 <= len(question.strip()) <= 120
+                                   for question in questions)):
+                        raise ValueError("invalid_text_analysis_result")
+                    return {
+                        "entry_mode": "note", "foods": [],
+                        "needs_user_confirmation": [question.strip() for question in questions],
+                        "estimate_notice": "Không thấy món cụ thể nên EmBe không tự đoán. Mẹ có thể thêm món hoặc chỉ lưu ghi chú.",
+                    }
+                result = parse_vision_result(raw_result)
+                if body is None:
+                    result["estimate_notice"] = "Ước lượng từ ghi chú; cần xác nhận món và khẩu phần trước khi lưu."
+                return result
+            except (KeyError, TypeError, json.JSONDecodeError, ValueError) as error:
+                last_error = error
+                if attempt == 0:
+                    payload["messages"][0]["content"] += (
+                        "\nJSON trước bị cắt hoặc sai cấu trúc. Trả lại JSON thật gọn, không lặp món, "
+                        "không lặp phần tử trong mảng và không thêm giải thích."
+                    )
+        raise WorkerFailure(
+            "invalid_vision_output" if body is not None else "invalid_text_analysis_output"
+        ) from last_error
 
     def _lookup_local_food(self, query: str) -> dict[str, Any] | None:
         if not self.config.nutrition_local_db_path:

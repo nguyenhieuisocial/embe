@@ -48,7 +48,7 @@ class FakeTransport:
             assert request["model"] == "qwen3-vl:4b-instruct"
             assert request["messages"][0]["images"] == [base64.b64encode(JPEG).decode()]
             assert request["keep_alive"] == "24h"
-            assert request["options"]["num_predict"] == 512
+            assert request["options"]["num_predict"] == 1024
             return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
                 "foods": [
                     {"name_vi": "Cơm trắng", "search_name_en": "white rice cooked", "estimated_grams": 120,
@@ -184,6 +184,36 @@ def test_analyzes_a_written_meal_without_downloading_or_deleting_an_image():
     payload = json.loads(finish[3])
     assert payload["p_checksum_sha256"] == hashlib.sha256("Một ly sữa và một quả chuối".encode()).hexdigest()
     assert not any("/storage/v1/object/" in call[1] for call in transport.calls)
+
+
+def test_retries_once_when_the_vision_model_returns_truncated_json():
+    valid = {
+        "foods": [{
+            "name_vi": "Phở bò", "search_name_en": "beef pho noodle soup",
+            "estimated_grams": 450, "confidence": 0.82,
+            "food_groups": ["starch", "protein"], "safety_flags": [],
+        }],
+        "needs_user_confirmation": [],
+    }
+
+    class TruncatedThenValidTransport:
+        def __init__(self):
+            self.requests = []
+
+        def __call__(self, method, url, headers, body=None):
+            if url.endswith("/api/chat"):
+                self.requests.append(json.loads(body))
+                content = '{"foods":[{"name_vi":"Phở' if len(self.requests) == 1 else json.dumps(valid)
+                return HttpResponse(200, {}, json.dumps({"message": {"content": content}}).encode())
+            raise AssertionError((method, url))
+
+    transport = TruncatedThenValidTransport()
+    result = MealAnalysisWorker(config(), transport)._analyze(JPEG, "")
+
+    assert result["foods"][0]["name_vi"] == "Phở bò"
+    assert len(transport.requests) == 2
+    assert transport.requests[0]["options"]["num_predict"] >= 1024
+    assert "JSON trước bị cắt" in transport.requests[1]["messages"][0]["content"]
 
 
 def test_keeps_an_ambiguous_written_note_without_inventing_food():
@@ -428,6 +458,13 @@ def test_user_corrected_vietnamese_food_uses_a_safe_usda_query_instead_of_the_ol
     assert nutrition_search_query("Cơm gạo lứt") == "rice brown long grain cooked"
     assert nutrition_search_query("Ớt chuông") == "peppers sweet raw"
     assert nutrition_search_query("Dưa leo") == "cucumber raw"
+
+
+def test_common_vietnamese_dishes_and_unaccented_names_use_safe_queries():
+    assert nutrition_search_query("Phở bò bắp lăn") == "soup beef noodle prepared with equal volume water"
+    assert nutrition_search_query("Pho bo") == "soup beef noodle prepared with equal volume water"
+    assert nutrition_search_query("Nuoc tuong", "dipping sauce") == "soy sauce"
+    assert nutrition_search_query("Bún bò Huế") == "soup beef noodle prepared with equal volume water"
 
 
 def test_confirmed_vietnamese_name_overrides_a_contradictory_ai_search_name():
