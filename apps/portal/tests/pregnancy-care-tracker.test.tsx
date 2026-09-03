@@ -146,6 +146,36 @@ describe("iPhone health connection state", () => {
     })));
   });
 
+  it("opens a separate self-purchased flow with safe quick suggestions", async () => {
+    window.history.pushState({}, "", "/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc");
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).startsWith("/api/pregnancy/care")) return Response.json({
+        snapshot: { profile: null, plans: [], iphone_health: null, iphone_health_history: [], iphone_devices: [] }
+      });
+      return Response.json({ history: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+
+    expect(await screen.findByRole("heading", { name: "Thêm thuốc hoặc vi chất" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Tự mua / không có đơn" })).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "DHA / Omega-3" }));
+    expect(screen.getByLabelText("Tên")).toHaveValue("DHA / Omega-3");
+    expect(screen.getByLabelText("Loại")).toHaveValue("supplement");
+    expect(screen.getByLabelText("Liều ghi trên nhãn/đơn")).toHaveValue("");
+    fireEvent.change(screen.getByLabelText("Liều ghi trên nhãn/đơn"), { target: { value: "1 viên theo nhãn" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu kế hoạch" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
+      method: "PATCH",
+      body: expect.stringContaining('"careSource":"self_purchased"')
+    })));
+    const mutation = fetchMock.mock.calls.find(([, init]) => init?.method === "PATCH");
+    expect(String(mutation?.[1]?.body)).toContain('"confirmedByClinician":false');
+    window.history.pushState({}, "", "/");
+  });
+
   it("shows daily progress and saved adherence history without suggesting a dose", async () => {
     const linked = vi.fn();
     window.addEventListener("embe:daily-action-completed", linked);

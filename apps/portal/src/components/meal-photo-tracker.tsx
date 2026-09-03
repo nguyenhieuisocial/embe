@@ -27,6 +27,14 @@ export function looksLikeMedication(value: string): boolean {
   return supplement && intake;
 }
 
+export function medicationCareDestination(value: string): { href: string; label: string; description: string } {
+  const text = value.trim().toLocaleLowerCase("vi");
+  const isPrescription = /(đơn thuốc|toa thuốc|bác sĩ (kê|dặn)|theo đơn)/u.test(text);
+  return isPrescription
+    ? { href: "/me-bau/ho-so?quick=prescription#ho-so-kham", label: "Lưu đơn thuốc", description: "Đây có vẻ là đơn hoặc lời dặn của bác sĩ. Hãy lưu cùng hồ sơ khám." }
+    : { href: "/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc", label: "Lưu thuốc / vi chất tự mua", description: "Đây có vẻ là sản phẩm tự mua. Hãy lưu riêng để không bị tính thành món ăn." };
+}
+
 function hasInvalidFood(analysis: MealAnalysis): boolean {
   return analysis.foods.some((food) => {
     const name = food.nameVi.trim().toLocaleLowerCase("vi");
@@ -117,6 +125,7 @@ export default function MealPhotoTracker() {
   const maxGroup = Math.max(1, ...groups.map(([, count]) => count));
   const medicationLike = looksLikeMedication(note);
   const medicationRouteOpen = medicationLike && confirmedMedicationText !== note.trim();
+  const medicationDestination = medicationCareDestination(note);
   const popularSuggestions = useMemo(() => suggestPopularFoods(note), [note]);
 
   async function analyze() {
@@ -339,12 +348,12 @@ export default function MealPhotoTracker() {
         </div> : null}
         {medicationRouteOpen ? <aside className="meal-medication-route" aria-live="polite">
           <strong>Có vẻ đây là thuốc hoặc vitamin</strong>
-          <p>Đơn thuốc và liều dùng nên nằm trong hồ sơ riêng để không bị tính thành món ăn.</p>
+          <p>{medicationDestination.description}</p>
           <div>
-            <Link href="/me-bau/ho-so?quick=prescription#ho-so-kham">Lưu thuốc &amp; vitamin</Link>
+            <Link href={medicationDestination.href}>{medicationDestination.label}</Link>
             <button type="button" onClick={() => setConfirmedMedicationText(note.trim())}>Vẫn ghi là bữa ăn</button>
           </div>
-        </aside> : <Link className="meal-medicine-shortcut" href="/me-bau/ho-so?quick=prescription#ho-so-kham">Cần lưu thuốc &amp; vitamin?</Link>}
+        </aside> : <Link className="meal-medicine-shortcut" href="/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc">Cần lưu thuốc / vi chất tự mua?</Link>}
         <button className="health-save" type="button" disabled={(!file && !note.trim()) || medicationRouteOpen || status === "sending" || status === "analyzing" || status === "saving"} onClick={() => void analyze()}>
           {status === "sending" ? "Đang gửi ảnh…" : status === "analyzing" ? "Đang nhận diện…"
             : status === "saving" ? "Đang lưu…" : file ? "Nhận diện bữa ăn" : "Nhận diện từ ghi chú"}

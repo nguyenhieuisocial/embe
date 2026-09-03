@@ -236,9 +236,9 @@ export default function FamilyBookExport() {
         </section>
 
         <section className="family-book-section">
-          <div className="family-book-section-title"><span>04</span><div><p>Theo đúng điều đã được dặn</p><h2>Thuốc &amp; vi chất đang ghi</h2></div></div>
+          <div className="family-book-section-title"><span>04</span><div><p>Lịch dùng gia đình đã ghi</p><h2>Thuốc &amp; vi chất đang dùng</h2></div></div>
           {data.plans.length ? <div className="family-book-plans">{data.plans.map((plan) => <article key={plan.id}>
-            <span>{plan.category === "medicine" ? "Thuốc" : "Vi chất"}{plan.confirmed_by_clinician ? " · đã xác nhận" : " · cần xác nhận lại"}</span>
+            <span>{plan.category === "medicine" ? "Thuốc" : "Vi chất"}{plan.entry_source === "self_purchased" ? " · tự mua, không có đơn" : " · theo đơn / bác sĩ dặn"}{plan.confirmed_by_clinician ? " · đã xác nhận" : ""}</span>
             <h3>{plan.name}</h3><p>{plan.dose_display} · {plan.times_per_day} lần/ngày{plan.instructions ? ` · ${plan.instructions}` : ""}</p>
           </article>)}</div> : <p className="family-book-empty">Chưa có thuốc hoặc vi chất đang dùng được ghi trong EmBe.</p>}
           <footer>Chỉ dùng thuốc và vi chất theo hướng dẫn của bác sĩ hoặc dược sĩ. Sổ này dùng để xem lại, không thay thế đơn thuốc hay hồ sơ bệnh án.</footer>

@@ -317,6 +317,17 @@
   font-weight: 700;
 }
 .care-plan-form { display: grid; gap: .85rem; margin-top: .7rem; padding: .85rem; border-radius: 18px; background: #fff7f9; }
+.care-plan-form > h3 { margin: 0; font-size: 1rem; }
+.care-source-picker { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; margin: 0; padding: 0; border: 0; }
+.care-source-picker legend { grid-column: 1 / -1; margin-bottom: .1rem; color: #806a72; font-size: .7rem; font-weight: 700; }
+.care-source-picker label { min-height: 44px; padding: .55rem .65rem; border: 1px solid #e4cbd4; border-radius: 14px; background: #fff; grid-template-columns: 18px 1fr !important; align-items: center; }
+.care-source-picker input { width: 18px; min-height: 18px; accent-color: #b95477; }
+.care-quick-suggestions { display: grid; gap: .4rem; }
+.care-quick-suggestions > span { color: #806a72; font-size: .7rem; font-weight: 700; }
+.care-quick-suggestions > div { display: flex; gap: .4rem; overflow-x: auto; padding-bottom: .15rem; scrollbar-width: none; }
+.care-quick-suggestions > div::-webkit-scrollbar { display: none; }
+.care-quick-suggestions button { flex: 0 0 auto; min-height: 44px; padding: .55rem .72rem; border: 1px solid #e8cdd6; border-radius: 999px; background: #fff; color: #8f3f5c; font: inherit; font-size: .74rem; font-weight: 700; }
+.care-quick-suggestions small { color: #796a70; font-size: .7rem; line-height: 1.45; }
 .care-form-grid, .energy-profile form { display: grid; gap: .65rem; }
 .care-plan-form label, .energy-profile label, .nutrient-entry label { display: grid; gap: .28rem; color: #604f55; font-size: .75rem; font-weight: 650; }
 .care-plan-form input, .care-plan-form select, .energy-profile input, .energy-profile select {

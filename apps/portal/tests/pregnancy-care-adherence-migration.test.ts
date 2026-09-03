@@ -3,6 +3,19 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("pregnancy care adherence migration", () => {
+  it("persists clinician-plan and self-purchased sources as separate bounded values", () => {
+    const path = join(process.cwd(), "..", "..", "supabase", "migrations", "20260903173000_separate_self_purchased_care.sql");
+    expect(existsSync(path)).toBe(true);
+    if (!existsSync(path)) return;
+    const sql = readFileSync(path, "utf8");
+    expect(sql).toContain("entry_source");
+    expect(sql).toContain("'clinician_plan', 'self_purchased'");
+    expect(sql).toContain("p_entry_source");
+    expect(sql).toContain("SECURITY INVOKER");
+    expect(sql).toContain("TO service_role");
+    expect(sql).toContain("FROM PUBLIC, anon, authenticated");
+  });
+
   it("stores bounded dose states and exposes service-role-only RPCs", () => {
     const path = join(process.cwd(), "..", "..", "supabase", "migrations", "20260902100000_expand_pregnancy_care_adherence.sql");
     expect(existsSync(path)).toBe(true);

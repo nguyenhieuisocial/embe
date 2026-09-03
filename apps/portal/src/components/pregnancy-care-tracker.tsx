@@ -16,6 +16,7 @@ import { supplementTimingConflicts } from "../lib/supplement-spacing";
 type CarePlan = {
   id: string;
   category: "medicine" | "supplement";
+  entry_source?: "clinician_plan" | "self_purchased";
   name: string;
   dose_display: string;
   times_per_day: number;
@@ -27,6 +28,18 @@ type CarePlan = {
   taken_slots: number[];
   dose_states?: DoseState[];
 };
+
+type CareSource = "clinician_plan" | "self_purchased";
+type CareCategory = CarePlan["category"];
+
+const SELF_PURCHASED_SUGGESTIONS: Array<{ name: string; category: CareCategory }> = [
+  { name: "Vitamin tổng hợp thai kỳ", category: "supplement" },
+  { name: "Acid folic", category: "supplement" },
+  { name: "Sắt", category: "supplement" },
+  { name: "Canxi", category: "supplement" },
+  { name: "DHA / Omega-3", category: "supplement" },
+  { name: "Vitamin D", category: "supplement" }
+];
 
 type DoseState = { slot: number; status: "taken" | "skipped" | "deferred"; reason: string; recorded_at: string };
 type AdherenceHistory = DoseState & { plan_id: string; plan_name: string; day: string };
@@ -127,6 +140,9 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
   const [showPlan, setShowPlan] = useState(false);
   const [planTimesPerDay, setPlanTimesPerDay] = useState(1);
+  const [planSource, setPlanSource] = useState<CareSource>("clinician_plan");
+  const [planCategory, setPlanCategory] = useState<CareCategory>("supplement");
+  const [planName, setPlanName] = useState("");
   const [syncSecret, setSyncSecret] = useState<{ token: string; ingestUrl: string } | null>(null);
   const [copied, setCopied] = useState<"token" | "url" | null>(null);
   const [iphoneHistoryDays, setIphoneHistoryDays] = useState<IphoneHealthHistoryDays>(7);
@@ -153,6 +169,10 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
 
   useEffect(() => {
     const currentDay = localDateKey();
+    if (new URLSearchParams(window.location.search).get("quick") === "self-purchased") {
+      setPlanSource("self_purchased");
+      setShowPlan(true);
+    }
     setDeviceRole(readDeviceRole(window.localStorage));
     setDay(currentDay);
     void load(currentDay);
@@ -234,13 +254,16 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       String(data.get(`reminderTime${index + 1}`) ?? "")
     ).sort();
     await mutate({ action: "plan", plan: {
-      id: null, category: data.get("category"), name: data.get("name"),
+      id: null, category: data.get("category"), careSource: planSource, name: data.get("name"),
       doseDisplay: data.get("doseDisplay"), timesPerDay: planTimesPerDay, reminderTimes,
       instructions: data.get("instructions") ?? "", nutrientAmounts,
       confirmedByClinician: data.get("confirmedByClinician") === "on", active: true
     } });
     form.reset();
     setPlanTimesPerDay(1);
+    setPlanSource("clinician_plan");
+    setPlanCategory("supplement");
+    setPlanName("");
     setShowPlan(false);
   }
 
@@ -307,11 +330,11 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const activePlans = snapshot.plans.filter((plan) => plan.active);
   const timingConflicts = supplementTimingConflicts(activePlans);
   const pausedPlans = snapshot.plans.filter((plan) => !plan.active);
-  const confirmedPlans = activePlans.filter((plan) => plan.confirmed_by_clinician);
-  const doseCount = confirmedPlans.reduce((sum, plan) => sum + plan.times_per_day, 0);
-  const takenCount = confirmedPlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "taken").length, 0);
-  const skippedCount = confirmedPlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "skipped").length, 0);
-  const deferredCount = confirmedPlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "deferred").length, 0);
+  const trackablePlans = activePlans.filter((plan) => plan.confirmed_by_clinician || plan.entry_source === "self_purchased");
+  const doseCount = trackablePlans.reduce((sum, plan) => sum + plan.times_per_day, 0);
+  const takenCount = trackablePlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "taken").length, 0);
+  const skippedCount = trackablePlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "skipped").length, 0);
+  const deferredCount = trackablePlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "deferred").length, 0);
   const adherence = doseCount ? Math.round(takenCount * 100 / doseCount) : 0;
   const mealTotals = useMemo(() => dailyMealTotals(meals, day), [meals, day]);
   const nutrientTotals = useMemo(() => {
@@ -450,10 +473,10 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     <section className="care-tracker" id="vi-chat-thuoc" aria-labelledby="care-tracker-title">
       <div className="section-heading-row">
         <div>
-          <p className="panel-kicker">Theo đúng điều đã được dặn</p>
+          <p className="panel-kicker">Tách rõ nguồn · theo dõi đúng lịch</p>
           <h2 id="care-tracker-title">Thuốc, vi chất &amp; dinh dưỡng</h2>
         </div>
-        <p>EmBe chỉ ghi lại kế hoạch của bác sĩ và lượng từ các bữa đã xác nhận; không tự kê thuốc hay kết luận thiếu chất.</p>
+        <p>Đơn của bác sĩ và món tự mua được lưu riêng. EmBe chỉ ghi lại điều Mẹ nhập, không tự kê thuốc hay kết luận thiếu chất.</p>
       </div>
 
       <div className="care-today-grid">
@@ -461,7 +484,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <div className="adherence-ring" style={{ "--progress": `${adherence * 3.6}deg` } as React.CSSProperties}>
             <strong>{doseCount ? `${adherence}%` : "—"}</strong><span>đã dùng</span>
           </div>
-          <div><h3>Hôm nay</h3><p>{doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : "Chưa có kế hoạch đã được bác sĩ xác nhận"}</p></div>
+          <div><h3>Hôm nay</h3><p>{doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : "Chưa có lịch dùng đang theo dõi"}</p></div>
         </article>
         <article className="energy-card">
           <span>Ước lượng từ bữa đã ghi</span>
@@ -479,11 +502,11 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       {activePlans.length ? <div className="dose-list">
         {activePlans.map((plan) => <article key={plan.id}>
           <div className="dose-copy">
-            <span>{plan.category === "medicine" ? "Thuốc" : "Vi chất"}{plan.confirmed_by_clinician ? " · đã xác nhận với bác sĩ" : " · cần xác nhận"}</span>
+            <span>{plan.category === "medicine" ? "Thuốc" : "Vi chất"}{plan.entry_source === "self_purchased" ? " · tự mua, không có đơn" : " · theo đơn / bác sĩ dặn"}{plan.confirmed_by_clinician ? " · đã xác nhận" : ""}</span>
             <strong>{plan.name}</strong><small>{plan.dose_display}{plan.instructions ? ` · ${plan.instructions}` : ""}</small>
             <button className="care-add-button" type="button" disabled={status === "saving"} onClick={() => void mutate({ action: "planState", planId: plan.id, active: false })}>Tạm dừng {plan.name}</button>
           </div>
-          {plan.confirmed_by_clinician ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
+          {plan.confirmed_by_clinician || plan.entry_source === "self_purchased" ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
             {Array.from({ length: plan.times_per_day }, (_, index) => index + 1).map((slot) => {
               const dose = (plan.dose_states ?? []).find((item) => item.slot === slot);
               const reminderTime = plan.reminder_times?.[slot - 1]?.slice(0, 5);
@@ -519,9 +542,23 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         {showPlan ? "Đóng" : "+ Thêm thuốc hoặc vi chất"}
       </button>
       {showPlan && <form className="care-plan-form" onSubmit={(event) => void addPlan(event)}>
+        <h3>Thêm thuốc hoặc vi chất</h3>
+        <fieldset className="care-source-picker">
+          <legend>Nguồn</legend>
+          <label><input type="radio" name="careSource" value="clinician_plan" checked={planSource === "clinician_plan"} onChange={() => setPlanSource("clinician_plan")} /> Theo đơn / bác sĩ dặn</label>
+          <label><input type="radio" name="careSource" value="self_purchased" checked={planSource === "self_purchased"} onChange={() => setPlanSource("self_purchased")} /> Tự mua / không có đơn</label>
+        </fieldset>
+        {planSource === "self_purchased" ? <div className="care-quick-suggestions" aria-label="Gợi ý chọn nhanh">
+          <span>Chọn nhanh</span>
+          <div>{SELF_PURCHASED_SUGGESTIONS.map((item) => <button key={item.name} type="button" onClick={() => {
+            setPlanName(item.name);
+            setPlanCategory(item.category);
+          }}>{item.name}</button>)}</div>
+          <small>Chỉ điền tên, không tự đặt liều. Mẹ chép đúng nhãn và hỏi bác sĩ/dược sĩ về độ phù hợp.</small>
+        </div> : null}
         <div className="care-form-grid">
-          <label>Loại<select name="category" defaultValue="supplement"><option value="supplement">Vitamin / khoáng chất</option><option value="medicine">Thuốc bác sĩ dặn</option></select></label>
-          <label>Tên<input name="name" required maxLength={80} placeholder="Ví dụ: viên bổ sung đang dùng" /></label>
+          <label>Loại<select name="category" value={planCategory} onChange={(event) => setPlanCategory(event.target.value as CareCategory)}><option value="supplement">Vitamin / khoáng chất</option><option value="medicine">Thuốc</option></select></label>
+          <label>Tên<input name="name" required maxLength={80} value={planName} onChange={(event) => setPlanName(event.target.value)} placeholder="Ví dụ: viên bổ sung đang dùng" /></label>
           <label>Liều ghi trên nhãn/đơn<input name="doseDisplay" required maxLength={80} placeholder="Ví dụ: 1 viên sau ăn" /></label>
           <label>Số lần mỗi ngày<select name="timesPerDay" value={planTimesPerDay}
             onChange={(event) => setPlanTimesPerDay(Number(event.target.value))}>
@@ -532,7 +569,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           </label>)}
           <label className="care-wide">Ghi chú<input name="instructions" maxLength={240} placeholder="Giờ dùng, dùng cùng thức ăn…" /></label>
         </div>
-        <label className="clinician-check"><input name="confirmedByClinician" type="checkbox" /> Kế hoạch này đã được bác sĩ/dược sĩ xác nhận</label>
+        <label className="clinician-check"><input name="confirmedByClinician" type="checkbox" /> Đã hỏi bác sĩ/dược sĩ về sản phẩm và cách dùng này</label>
         <details className="nutrient-entry">
           <summary>Nhập lượng vi chất trên nhãn (không bắt buộc) <span>⌄</span></summary>
           <p>Lượng cho mỗi lần dùng. Chép đúng đơn vị; EmBe sẽ cộng với bữa ăn đã xác nhận.</p>

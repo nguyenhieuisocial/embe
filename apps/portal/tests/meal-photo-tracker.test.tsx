@@ -44,8 +44,8 @@ describe("mobile meal journal", () => {
       target: { value: "Uống vitamin D 1 viên" }
     });
 
-    expect(screen.getByRole("link", { name: "Lưu thuốc & vitamin" })).toHaveAttribute(
-      "href", "/me-bau/ho-so?quick=prescription#ho-so-kham"
+    expect(screen.getByRole("link", { name: "Lưu thuốc / vi chất tự mua" })).toHaveAttribute(
+      "href", "/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc"
     );
     const recognize = screen.getByRole("button", { name: "Nhận diện từ ghi chú" });
     expect(recognize).toBeDisabled();
@@ -55,6 +55,17 @@ describe("mobile meal journal", () => {
     expect(recognize).toBeEnabled();
     fireEvent.click(recognize);
     await waitFor(() => expect(mealClient.createMealNote).toHaveBeenCalledOnce());
+  });
+
+  it("keeps an explicit prescription in the medical-record flow", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ history: [], suggestions: [], worker: { status: "online" } })));
+    render(<MealPhotoTracker />);
+    fireEvent.change(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh"), {
+      target: { value: "Đơn thuốc bác sĩ kê hôm nay" }
+    });
+    expect(screen.getByRole("link", { name: "Lưu đơn thuốc" })).toHaveAttribute(
+      "href", "/me-bau/ho-so?quick=prescription#ho-so-kham"
+    );
   });
 
   it("shows worker availability, charts and full meal details for 7 or 28 days", async () => {

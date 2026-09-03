@@ -154,11 +154,14 @@ describe("pregnancy daily page", () => {
     render(<PregnancyPage />);
 
     const jump = screen.getByRole("navigation", { name: "Công cụ hằng ngày" });
-    expect(within(jump).getAllByRole("link")).toHaveLength(5);
+    expect(within(jump).getAllByRole("link")).toHaveLength(6);
     expect(within(jump).getByRole("link", { name: /Ghi sức khỏe/i })).toHaveAttribute("href", "/me-bau/suc-khoe");
     expect(within(jump).getByRole("link", { name: /Hồ sơ thai kỳ/i })).toHaveAttribute("href", "/me-bau/ho-so");
-    expect(within(jump).getByRole("link", { name: /Thuốc & vitamin/i })).toHaveAttribute(
+    expect(within(jump).getByRole("link", { name: /^Đơn thuốc/i })).toHaveAttribute(
       "href", "/me-bau/ho-so?quick=prescription#ho-so-kham"
+    );
+    expect(within(jump).getByRole("link", { name: /Tự mua \/ không đơn/i })).toHaveAttribute(
+      "href", "/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc"
     );
 
     const entry = screen.getByRole("link", { name: /Sức khỏe từ iPhone/i });

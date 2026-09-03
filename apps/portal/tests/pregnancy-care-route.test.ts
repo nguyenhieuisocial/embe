@@ -90,14 +90,29 @@ describe("private pregnancy care and iPhone health APIs", () => {
     rpc.mockResolvedValueOnce({ data: planId, error: null }).mockResolvedValueOnce({ data: snapshot, error: null });
     const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
       action: "plan", day: "2026-09-01", plan: {
-        id: null, category: "supplement", name: "Prenatal theo đơn", doseDisplay: "1 viên",
+        id: null, category: "supplement", careSource: "clinician_plan", name: "Prenatal theo đơn", doseDisplay: "1 viên",
         timesPerDay: 1, instructions: "Sau ăn", confirmedByClinician: true, active: true,
         reminderTimes: ["08:00"], nutrientAmounts: { iron_mg: 27, folate_ug: 600, invented_drug: 999 }
       }
     }));
     expect(response.status).toBe(200);
     expect(rpc).toHaveBeenNthCalledWith(1, "embe_save_pregnancy_care_plan", expect.objectContaining({
-      p_nutrient_amounts: { iron_mg: 27, folate_ug: 600 }, p_reminder_times: ["08:00"]
+      p_entry_source: "clinician_plan", p_nutrient_amounts: { iron_mg: 27, folate_ug: 600 }, p_reminder_times: ["08:00"]
+    }));
+  });
+
+  it("stores a self-purchased item separately without treating it as clinician-confirmed", async () => {
+    rpc.mockResolvedValueOnce({ data: planId, error: null }).mockResolvedValueOnce({ data: snapshot, error: null });
+    const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
+      action: "plan", day: "2026-09-01", plan: {
+        id: null, category: "supplement", careSource: "self_purchased", name: "DHA / Omega-3",
+        doseDisplay: "1 viên theo nhãn", timesPerDay: 1, instructions: "Sau ăn",
+        confirmedByClinician: false, active: true, reminderTimes: ["08:00"], nutrientAmounts: {}
+      }
+    }));
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenNthCalledWith(1, "embe_save_pregnancy_care_plan", expect.objectContaining({
+      p_entry_source: "self_purchased", p_confirmed_by_clinician: false
     }));
   });
 
@@ -163,7 +178,7 @@ describe("private pregnancy care and iPhone health APIs", () => {
 
   it("rejects missing, duplicate or unsorted dose reminder times", async () => {
     const base = {
-      id: null, category: "supplement", name: "Prenatal theo đơn", doseDisplay: "1 viên",
+      id: null, category: "supplement", careSource: "clinician_plan", name: "Prenatal theo đơn", doseDisplay: "1 viên",
       timesPerDay: 2, instructions: "Sau ăn", confirmedByClinician: true, active: true,
       nutrientAmounts: {}
     };
@@ -179,7 +194,7 @@ describe("private pregnancy care and iPhone health APIs", () => {
   it("rejects impossible doses before storage", async () => {
     const response = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {
       action: "plan", day: "2026-09-01", plan: {
-        id: null, category: "medicine", name: "", doseDisplay: "1 viên",
+        id: null, category: "medicine", careSource: "self_purchased", name: "", doseDisplay: "1 viên",
         timesPerDay: 9, reminderTimes: [], instructions: "", confirmedByClinician: false, active: true, nutrientAmounts: {}
       }
     }));

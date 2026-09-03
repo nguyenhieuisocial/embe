@@ -323,13 +323,16 @@ export default function PregnancyPage() {
           <span><strong>Ghi bữa ăn</strong><small>Chụp món, sửa nhận diện rồi lưu</small></span><b>Mở</b>
         </Link>
         <Link id="suc-khoe-iphone" href="/me-bau/suc-khoe-iphone">
-          <span><strong>Sức khỏe từ iPhone</strong><small>Đồng bộ, thuốc và vi chất theo đơn</small></span><b>Mở</b>
+          <span><strong>Sức khỏe từ iPhone</strong><small>Đồng bộ chỉ số và lịch dùng hằng ngày</small></span><b>Mở</b>
         </Link>
         <Link id="ho-so-kham" href="/me-bau/ho-so">
           <span><strong>Hồ sơ thai kỳ</strong><small>Lịch khám, kết quả và đơn thuốc</small></span><b>Mở</b>
         </Link>
         <Link href="/me-bau/ho-so?quick=prescription#ho-so-kham">
-          <span><strong>Thuốc &amp; vitamin</strong><small>Chụp đơn, kiểm tra tên thuốc và liều dùng</small></span><b>Mở</b>
+          <span><strong>Đơn thuốc</strong><small>Chụp đơn, lưu cùng hồ sơ khám</small></span><b>Mở</b>
+        </Link>
+        <Link href="/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc">
+          <span><strong>Tự mua / không đơn</strong><small>Thuốc lẻ, vitamin và vi chất tự mua</small></span><b>Thêm</b>
         </Link>
       </nav>
 

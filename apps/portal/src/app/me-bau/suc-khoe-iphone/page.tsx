@@ -16,9 +16,9 @@ export default function IPhoneHealthPage() {
       <AppHeader note="Đồng bộ riêng giữa iPhone và EmBe" />
       <header className="pregnancy-tool-intro">
         <Link href="/me-bau">← Mẹ bầu</Link>
-        <p className="eyebrow">Apple Health · thuốc và vi chất</p>
-        <h1>Sức khỏe từ iPhone</h1>
-        <p className="intro">Xem dữ liệu đã gửi, lần đồng bộ gần nhất và lịch dùng theo đúng đơn.</p>
+        <p className="eyebrow">Apple Health · lịch dùng hằng ngày</p>
+        <h1>Sức khỏe &amp; thuốc, vi chất</h1>
+        <p className="intro">Xem dữ liệu từ iPhone; theo dõi riêng món theo đơn và món tự mua.</p>
       </header>
       <PregnancyCareTracker pregnancyWeek={week} />
     </main>

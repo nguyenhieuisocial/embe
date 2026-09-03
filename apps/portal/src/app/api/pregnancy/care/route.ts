@@ -5,6 +5,7 @@ import { revalidateFamilyViews } from "../../../../lib/family-view-revalidation"
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const CATEGORIES = new Set(["medicine", "supplement"]);
+const CARE_SOURCES = new Set(["clinician_plan", "self_purchased"]);
 const ACTIVITY_LEVELS = new Set(["sedentary", "low_active", "active", "very_active"]);
 const NUTRIENTS = new Set<string>(PREGNANCY_NUTRIENTS.map((item) => item.key));
 const INTAKE_STATUSES = new Set(["taken", "skipped", "deferred"]);
@@ -37,14 +38,15 @@ async function refresh(day: string) {
   return error || !data || typeof data !== "object" ? null : data;
 }
 
-function allConfirmedDosesTaken(value: unknown): boolean {
+function allTrackableDosesTaken(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   const plans = (value as Record<string, unknown>).plans;
   if (!Array.isArray(plans)) return false;
   const active = plans.filter((plan): plan is Record<string, unknown> => Boolean(
     plan && typeof plan === "object"
       && (plan as Record<string, unknown>).active === true
-      && (plan as Record<string, unknown>).confirmed_by_clinician === true
+      && ((plan as Record<string, unknown>).confirmed_by_clinician === true
+        || (plan as Record<string, unknown>).entry_source === "self_purchased")
   ));
   return active.length > 0 && active.every((plan) => {
     if (!Number.isInteger(plan.times_per_day) || Number(plan.times_per_day) < 1) return false;
@@ -124,6 +126,7 @@ export async function PATCH(request: Request): Promise<Response> {
       && reminderTimes.every((value) => typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value))
       && reminderTimes.every((value, index) => index === 0 || value > reminderTimes[index - 1]);
     const valid = (plan.id === null || isUuidV4(plan.id)) && typeof plan.category === "string" && CATEGORIES.has(plan.category)
+      && typeof plan.careSource === "string" && CARE_SOURCES.has(plan.careSource)
       && typeof plan.name === "string" && plan.name.trim().length >= 1 && plan.name.trim().length <= 80
       && typeof plan.doseDisplay === "string" && plan.doseDisplay.trim().length >= 1 && plan.doseDisplay.trim().length <= 80
       && Number.isInteger(plan.timesPerDay) && Number(plan.timesPerDay) >= 1 && Number(plan.timesPerDay) <= 6
@@ -135,7 +138,7 @@ export async function PATCH(request: Request): Promise<Response> {
     const doseDisplay = plan.doseDisplay as string;
     const instructions = plan.instructions as string;
     const { error } = await store.rpc("embe_save_pregnancy_care_plan", {
-      p_id: plan.id, p_category: plan.category, p_name: name.trim(),
+      p_id: plan.id, p_category: plan.category, p_entry_source: plan.careSource, p_name: name.trim(),
       p_dose_display: doseDisplay.trim(), p_times_per_day: plan.timesPerDay,
       p_reminder_times: reminderTimes,
       p_instructions: instructions.trim(), p_nutrient_amounts: nutrients,
@@ -165,7 +168,7 @@ export async function PATCH(request: Request): Promise<Response> {
   const snapshot = await refresh(day);
   if (!snapshot) return privateReply({ error: "temporarily_unavailable" }, 503);
   const checklistCompletion = body.action === "intake" && body.status === "taken"
-    && allConfirmedDosesTaken(snapshot)
+    && allTrackableDosesTaken(snapshot)
     ? { taskId: "supplements", day }
     : null;
   revalidateFamilyViews();

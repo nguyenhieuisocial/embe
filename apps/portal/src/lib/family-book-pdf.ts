@@ -15,6 +15,7 @@ export type HealthMetric = {
 export type CarePlan = {
   id: string;
   category: "medicine" | "supplement";
+  entry_source?: "clinician_plan" | "self_purchased";
   name: string;
   dose_display: string;
   times_per_day: number;
@@ -164,10 +165,10 @@ export function buildFamilyBookDocument({ data, days, generatedAt, week }: PdfIn
       section("03", "THEO DÕI THAI KỲ", "Khám thai & thông tin của Bé"),
       ...recordNodes,
 
-      section("04", "THEO ĐÚNG ĐIỀU ĐÃ ĐƯỢC DẶN", "Thuốc & vi chất đang ghi"),
+      section("04", "LỊCH DÙNG GIA ĐÌNH ĐÃ GHI", "Thuốc & vi chất đang dùng"),
       ...(data.plans.length ? data.plans.map((plan) => ({
         stack: [
-          { text: `${plan.category === "medicine" ? "Thuốc" : "Vi chất"}${plan.confirmed_by_clinician ? " · đã xác nhận" : " · cần xác nhận lại"}`, style: "tag" },
+          { text: `${plan.category === "medicine" ? "Thuốc" : "Vi chất"}${plan.entry_source === "self_purchased" ? " · tự mua, không có đơn" : " · theo đơn / bác sĩ dặn"}${plan.confirmed_by_clinician ? " · đã xác nhận" : ""}`, style: "tag" },
           { text: plan.name, style: "cardTitle" },
           { text: `${plan.dose_display} · ${plan.times_per_day} lần/ngày${plan.instructions ? ` · ${plan.instructions}` : ""}`, style: "muted" }
         ], style: "card", unbreakable: true
