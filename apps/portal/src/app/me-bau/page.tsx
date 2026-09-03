@@ -70,6 +70,9 @@ export default function PregnancyPage() {
   const [todayKey, setTodayKey] = useState("");
   const [ready, setReady] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("loading");
+  const [guidanceReady, setGuidanceReady] = useState(false);
+  const [menuReady, setMenuReady] = useState(false);
+  const [sourcesReady, setSourcesReady] = useState(false);
   const revisionRef = useRef(0);
   const writeQueueRef = useRef<Promise<void>>(Promise.resolve());
   const checklistKey = todayKey ? `embe:pregnancy:checklist:${todayKey}` : "";
@@ -468,7 +471,9 @@ export default function PregnancyPage() {
       <div className="pregnancy-reference-label"><span>Tham khảo khi cần</span></div>
 
       <section className="guidance-section" id="cam-nang" aria-labelledby="guidance-title">
-        <details className="reference-disclosure">
+        <details className="reference-disclosure" onToggle={(event) => {
+          if (event.currentTarget.open) setGuidanceReady(true);
+        }}>
           <summary className="section-heading-row">
             <div>
               <p className="panel-kicker">Cẩm nang ăn uống</p>
@@ -476,7 +481,7 @@ export default function PregnancyPage() {
             </div>
             <i aria-hidden="true">⌄</i>
           </summary>
-          <div className="reference-disclosure-body">
+          {guidanceReady ? <div className="reference-disclosure-body">
             <p className="reference-intro">Phân biệt điều cần tránh thật sự với lời truyền miệng. Chỉ dẫn riêng của nơi đang khám luôn được ưu tiên.</p>
             <div className="guidance-levels">
           {pregnancyGuidanceLevels.map((level) => (
@@ -513,12 +518,14 @@ export default function PregnancyPage() {
               <strong>Không cần “kiêng” mọi món theo truyền miệng</strong>
               <p>Đồ cay hoặc chua chỉ cần giảm nếu làm Mẹ Ngân khó chịu. Các loại hạt vẫn dùng được nếu không dị ứng và bác sĩ không dặn tránh. Cũng không cần “ăn cho hai”.</p>
             </aside>
-          </div>
+          </div> : null}
         </details>
       </section>
 
       <section className="menu-section" aria-labelledby="menu-title">
-        <details className="reference-disclosure">
+        <details className="reference-disclosure" onToggle={(event) => {
+          if (event.currentTarget.open) setMenuReady(true);
+        }}>
           <summary className="section-heading-row">
             <div>
               <p className="panel-kicker">Gợi ý khi cần đổi món</p>
@@ -526,7 +533,7 @@ export default function PregnancyPage() {
             </div>
             <i aria-hidden="true">⌄</i>
           </summary>
-          <div className="reference-disclosure-body">
+          {menuReady ? <div className="reference-disclosure-body">
             <p className="reference-intro">Điều chỉnh theo thể trạng, dị ứng, khẩu vị và hướng dẫn của bác sĩ. Thịt, cá, trứng và hải sản cần được nấu chín kỹ.</p>
             <div className="menu-scroll">
           {weeklyMenu.map((menu) => (
@@ -540,7 +547,7 @@ export default function PregnancyPage() {
             </article>
           ))}
             </div>
-          </div>
+          </div> : null}
         </details>
       </section>
 
@@ -562,15 +569,17 @@ export default function PregnancyPage() {
         </ul>
       </section>
 
-      <details className="source-section">
+      <details className="source-section" onToggle={(event) => {
+        if (event.currentTarget.open) setSourcesReady(true);
+      }}>
         <summary><h2>Nguồn đã đối chiếu</h2><span aria-hidden="true">⌄</span></summary>
-        <ul>
+        {sourcesReady ? <ul>
           {pregnancySources.map((source) => (
             <li key={source.href}>
               <a href={source.href} rel="noreferrer" target="_blank">{source.label}</a>
             </li>
           ))}
-        </ul>
+        </ul> : null}
       </details>
 
       <footer>

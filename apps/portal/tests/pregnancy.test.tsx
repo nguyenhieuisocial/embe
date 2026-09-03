@@ -13,6 +13,13 @@ function openHealthInsights() {
   fireEvent(details, new Event("toggle"));
 }
 
+function openDetailsByHeading(name: string) {
+  const details = screen.getByRole("heading", { name }).closest("details");
+  if (!details) throw new Error(`Details not found for ${name}`);
+  details.open = true;
+  fireEvent(details, new Event("toggle"));
+}
+
 describe("pregnancy week calculation", () => {
   it("uses the clinician-provided due date within a plausible pregnancy window", () => {
     expect(calculatePregnancyWeek("2026-10-08", new Date("2026-08-30T00:00:00Z"))).toBe(34);
@@ -89,6 +96,7 @@ describe("pregnancy daily page", () => {
     expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nên ăn gì, hạn chế gì, kiêng gì?" })).toBeInTheDocument();
+    openDetailsByHeading("Nên ăn gì, hạn chế gì, kiêng gì?");
     expect(screen.getByRole("heading", { name: "Nên ưu tiên" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nên hạn chế" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nên tránh" })).toBeInTheDocument();
@@ -121,7 +129,7 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText(/không thay thế tư vấn/iu)).toBeInTheDocument();
     const sources = screen.getByText("Nguồn đã đối chiếu").closest("details");
     expect(sources).not.toHaveAttribute("open");
-    if (sources) fireEvent.click(within(sources).getByText("Nguồn đã đối chiếu"));
+    openDetailsByHeading("Nguồn đã đối chiếu");
     expect(screen.getAllByRole("link", { name: /WHO/ })[0]).toHaveAttribute("href", expect.stringContaining("who.int"));
     expect(screen.getAllByRole("link", { name: /ACOG/ })[0]).toHaveAttribute("href", expect.stringContaining("acog.org"));
   }, 10_000);
@@ -166,6 +174,23 @@ describe("pregnancy daily page", () => {
     expect(screen.getByRole("heading", { name: "Nên ăn gì, hạn chế gì, kiêng gì?" }).closest("details")).not.toHaveAttribute("open");
     expect(screen.getByRole("link", { name: "Mẹo & dân gian" })).toHaveAttribute("href", "/me-bau/meo-dan-gian");
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" }).closest("details")).not.toHaveAttribute("open");
+  });
+
+  it("does not build long reference sections until the family opens them", () => {
+    render(<PregnancyPage />);
+
+    expect(screen.queryByText("Ăn chín, tách sống – chín")).not.toBeInTheDocument();
+    expect(screen.queryByText("Yến mạch, sữa tiệt trùng, chuối")).not.toBeInTheDocument();
+    expect(document.querySelector(".source-section a")).toBeNull();
+
+    openDetailsByHeading("Nên ăn gì, hạn chế gì, kiêng gì?");
+    expect(screen.getByText("Ăn chín, tách sống – chín")).toBeInTheDocument();
+
+    openDetailsByHeading("Thực đơn 7 ngày tham khảo");
+    expect(screen.getByText("Yến mạch, sữa tiệt trùng, chuối")).toBeInTheDocument();
+
+    openDetailsByHeading("Nguồn đã đối chiếu");
+    expect(document.querySelector(".source-section a")).not.toBeNull();
   });
 
   it("saves one bounded daily health snapshot from simple mobile fields", async () => {
