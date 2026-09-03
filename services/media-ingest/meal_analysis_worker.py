@@ -17,6 +17,8 @@ from urllib.error import HTTPError
 from urllib.parse import quote, urlencode, urlparse
 from urllib.request import Request, urlopen
 
+from medication_scan_worker import MAX_MEDICATION_IMAGE_BYTES, MedicationScanWorker
+
 MAX_BYTES = 12_000_000
 UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
 FOOD_GROUPS = {"starch", "protein", "vegetables", "fruit", "dairy", "fat", "other"}
@@ -164,7 +166,7 @@ def default_transport(method: str, url: str, headers: Mapping[str, str], body: b
     request = Request(url, method=method, headers=dict(headers), data=body)
     try:
         with urlopen(request, timeout=120) as response:
-            raw = response.read(MAX_BYTES + 1)
+            raw = response.read(max(MAX_BYTES, MAX_MEDICATION_IMAGE_BYTES) + 1)
             return HttpResponse(response.status, dict(response.headers.items()), raw)
     except HTTPError as error:
         return HttpResponse(error.code, dict(error.headers.items()), error.read(4096))
@@ -611,10 +613,14 @@ class MealAnalysisWorker:
             })
             return {"status": "retry", "entry_id": entry_id, "error": error.code}
 
+    def _run_medication_once(self) -> dict[str, object]:
+        result = MedicationScanWorker(self.config, self.transport, self._rpc).run_once()
+        return self._run_nutrition_once() if result.get("status") == "idle" else result
+
     def run_once(self) -> dict[str, object]:
         item = self._rpc("embe_claim_meal_analysis", {})
         if item is None:
-            return self._run_nutrition_once()
+            return self._run_medication_once()
         if not isinstance(item, dict) or not UUID.match(str(item.get("id", ""))):
             raise RuntimeError("invalid meal queue response")
         entry_id = str(item["id"])
