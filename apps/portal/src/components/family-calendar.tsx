@@ -1,4 +1,5 @@
 import { getCalendarGrid } from "@lichta/core";
+import Link from "next/link";
 
 import { adjacentMonth, dateKey, lunarDateLabel, monthKey } from "../lib/calendar";
 
@@ -45,7 +46,7 @@ export default function FamilyCalendar({
         <label htmlFor="calendar-month">Đi đến tháng</label>
         <input id="calendar-month" name="month" type="month" min="1800-01" max="2199-12" defaultValue={currentMonth} />
         <button type="submit">Mở</button>
-        <a href="/lich">Hôm nay</a>
+        <Link href="/lich">Hôm nay</Link>
       </form>
 
       <div className="calendar-weekdays" aria-hidden="true">

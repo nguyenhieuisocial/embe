@@ -8,7 +8,8 @@ type Connection = "online" | "offline" | "back";
 
 const RECONNECTED_MS = 5000;
 const UPDATE_CHECK_MS = 5 * 60 * 1000;
-const ACTIVITY_CHECK_MS = 20 * 1000;
+const ACTIVITY_CHECK_MS = 60 * 1000;
+const STARTUP_IDLE_MS = process.env.NODE_ENV === "test" ? 0 : 1500;
 const DEVICE_ID_KEY = "embe:device-id";
 const ACTIVITY_SINCE_KEY = "embe:activity-since";
 
@@ -104,9 +105,13 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
       if (document.visibilityState === "visible") {
         void registration?.update();
         void checkRelease();
+        void checkFamilyActivity();
       }
     };
-    const checkOnFocus = () => { void checkRelease(); };
+    const checkOnFocus = () => {
+      void checkRelease();
+      void checkFamilyActivity();
+    };
     const receiveFamilyActivity = (event: MessageEvent) => {
       if (!event.data || event.data.type !== "EMBE_FAMILY_ACTIVITY") return;
       clearPrivateGetCache();
@@ -116,15 +121,18 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
     };
     const updateTimer = window.setInterval(() => { void checkRelease(); }, UPDATE_CHECK_MS);
     const activityTimer = window.setInterval(() => { void checkFamilyActivity(); }, ACTIVITY_CHECK_MS);
+    const startupTimer = window.setTimeout(() => {
+      void checkRelease();
+      void checkFamilyActivity();
+    }, STARTUP_IDLE_MS);
     document.addEventListener("visibilitychange", refreshWorker);
     window.addEventListener("focus", checkOnFocus);
     navigator.serviceWorker?.addEventListener("message", receiveFamilyActivity);
-    void checkRelease();
-    void checkFamilyActivity();
 
     return () => {
       active = false;
       clearTimeout(backTimer);
+      window.clearTimeout(startupTimer);
       window.clearInterval(updateTimer);
       window.clearInterval(activityTimer);
       window.removeEventListener("online", goOnline);

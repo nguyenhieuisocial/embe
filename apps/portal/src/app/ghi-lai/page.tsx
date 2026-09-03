@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
@@ -314,7 +315,7 @@ export default function JournalPage() {
         <p className="eyebrow">Một dòng cho mai sau</p>
         <h1>Hôm nay có gì đáng nhớ?</h1>
         <p className="intro">Một câu ngắn cũng đủ. EmBe sẽ tự đưa vào dòng thời gian gia đình.</p>
-        <a className="journal-browse-link" href="/nhat-ky">Xem nhật ký</a>
+        <Link className="journal-browse-link" href="/nhat-ky">Xem nhật ký</Link>
         <form className="journal-form" id="viet-nhat-ky" onSubmit={submit}>
           <input ref={cameraInput} aria-hidden="true" tabIndex={-1} className="sr-only" type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={choosePhotos} />
@@ -389,14 +390,14 @@ export default function JournalPage() {
             <span>{preparedContent.length}/1000</span>
           </div>
           <button type="submit" disabled={!hasEntry || payloadTooLong || state === "saving"}>{state === "saving" ? "Đang lưu…" : "Lưu vào nhật ký"}</button>
-          {state === "saved" ? <p className="journal-success" role="status">Đã lưu. <a href="/nhat-ky">Mở Nhật ký để xem ngay.</a></p> : null}
+          {state === "saved" ? <p className="journal-success" role="status">Đã lưu. <Link href="/nhat-ky">Mở Nhật ký để xem ngay.</Link></p> : null}
           {state === "queued" ? <p className="journal-queued" role="status">Đã giữ trên điện thoại và sẽ tự đồng bộ khi có mạng.</p> : null}
           {state === "error" ? <p className="journal-error" role="alert">Chưa lưu được. Nội dung vẫn còn ở đây để bạn thử lại.</p> : null}
           {state === "media_error" ? <p className="journal-error" role="alert">Ảnh chưa gửi được. Ghi chú và ảnh vẫn còn để bạn chạm Lưu thử lại.</p> : null}
-          {state === "expired" ? <p className="journal-error" role="alert">Cần đăng nhập lại để lưu. Nội dung vẫn còn ở đây — <a href="/login?next=/ghi-lai">đăng nhập lại</a> rồi chạm Lưu một lần nữa.</p> : null}
+          {state === "expired" ? <p className="journal-error" role="alert">Cần đăng nhập lại để lưu. Nội dung vẫn còn ở đây — <Link href="/login?next=/ghi-lai">đăng nhập lại</Link> rồi chạm Lưu một lần nữa.</p> : null}
           {state === "rejected" ? <p className="journal-error" role="alert">Ghi chú này chưa lưu được vì quá dài hoặc còn trống. Hãy sửa lại rồi chạm Lưu.</p> : null}
           {queueNeedsLogin && pendingCount > 0 && state !== "expired"
-            ? <p className="journal-error" role="alert">Còn {pendingCount} ghi chú đang chờ gửi. Hãy <a href="/login?next=/ghi-lai">đăng nhập lại</a> để EmBe gửi tiếp.</p>
+            ? <p className="journal-error" role="alert">Còn {pendingCount} ghi chú đang chờ gửi. Hãy <Link href="/login?next=/ghi-lai">đăng nhập lại</Link> để EmBe gửi tiếp.</p>
             : pendingCount > 0 && state !== "queued" ? <p className="journal-queued" role="status">Còn {pendingCount} ghi chú đang chờ đồng bộ.</p> : null}
           {discardedCount > 0 ? <p className="journal-error" role="status">Có {discardedCount} ghi chú cũ không gửi được nên EmBe đã bỏ khỏi hàng chờ.</p> : null}
         </form>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import AppHeader from "../../components/app-header";
@@ -211,9 +212,9 @@ export default function BirthPrepPage() {
       </section>
 
       <nav className="birth-prep-links" aria-label="Chuẩn bị liên quan">
-        <a href="/do-dung">Kiểm tra túi đi sinh</a>
-        <a href="/ke-hoach">Việc cần hoàn tất</a>
-        <a href="/me-bau/ho-so">Hồ sơ khám thai</a>
+        <Link href="/do-dung">Kiểm tra túi đi sinh</Link>
+        <Link href="/ke-hoach">Việc cần hoàn tất</Link>
+        <Link href="/me-bau/ho-so">Hồ sơ khám thai</Link>
       </nav>
     </main>
   );

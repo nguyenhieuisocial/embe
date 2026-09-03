@@ -1,6 +1,7 @@
 "use client";
 
 import { getCalendarGrid } from "@lichta/core";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { adjacentMonth, dateKey, lunarDateLabel, monthKey, parseDateKey } from "../lib/calendar";
@@ -105,7 +106,7 @@ export default function JournalBrowser({ events }: { events: TimelineEvent[] }) 
     <div className="empty-state journal-browser-empty">
       <strong>Nhật ký đang chờ điều đầu tiên</strong>
       <p>Một câu ngắn, một tấm ảnh hay một cột mốc đều có thể bắt đầu.</p>
-      <a className="btn btn-primary" href="/ghi-lai">Ghi lại ngay</a>
+      <Link className="btn btn-primary" href="/ghi-lai">Ghi lại ngay</Link>
     </div>
   );
 

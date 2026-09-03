@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { readDeviceRole, type DeviceRole } from "../lib/device-preferences";
@@ -109,7 +110,7 @@ export default function DeviceAccessPrompt() {
 
         <div className="access-guide-item">
           <div><strong>Sức khỏe từ iPhone</strong><p>Apple yêu cầu kết nối qua Phím tắt; Safari không thể tự đọc dữ liệu Health.</p></div>
-          <a href="/me-bau#suc-khoe-iphone" onClick={dismiss}>Mở kết nối Sức khỏe</a>
+          <Link href="/me-bau#suc-khoe-iphone" onClick={dismiss}>Mở kết nối Sức khỏe</Link>
         </div>
 
         <button className="access-guide-later" type="button" onClick={dismiss}>Để sau</button>

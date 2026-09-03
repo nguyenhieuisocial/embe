@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { Icon } from "./embe-icon";
@@ -193,8 +194,8 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
         <div className="planner-suggestions" aria-label="Gợi ý việc nhanh">
           <p>GỢI Ý NHANH</p>
           <a href={`/ke-hoach?date=${selectedDate}&them=1#them-viec`}>Ghi câu hỏi cho lần khám</a>
-          <a href="/do-dung">Xem đồ sắp hết</a>
-          <a href="/ghi-lai#viet-nhat-ky">Ghi lại một điều hôm nay</a>
+          <Link href="/do-dung">Xem đồ sắp hết</Link>
+          <Link href="/ghi-lai#viet-nhat-ky">Ghi lại một điều hôm nay</Link>
         </div>
       </section>
 

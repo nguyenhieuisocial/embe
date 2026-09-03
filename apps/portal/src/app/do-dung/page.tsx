@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import AppHeader from "../../components/app-header";
@@ -171,7 +172,7 @@ export default function InventoryPage() {
         Đang xem danh sách đã lưu {cachedAt ? <time dateTime={cachedAt}>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(cachedAt))}</time> : "gần nhất"}. Chạm thử lại khi có mạng.
       </p> : null}
       <aside className="inventory-boundary"><strong>EmBe chỉ nhắc, không tự đặt mua.</strong></aside>
-      <a className="inventory-budget-link" href="/ngan-sach">Mở ngân sách khám, sinh và đồ dùng →</a>
+      <Link className="inventory-budget-link" href="/ngan-sach">Mở ngân sách khám, sinh và đồ dùng →</Link>
     </main>
   );
 }

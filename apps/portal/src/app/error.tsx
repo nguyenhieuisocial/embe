@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { Icon } from "../components/embe-icon";
 
 export default function AppError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
@@ -14,7 +16,7 @@ export default function AppError({ reset }: { error: Error & { digest?: string }
           ít phút là đủ.
         </p>
         <button className="btn btn-primary btn-block" type="button" onClick={reset}>Thử mở lại</button>
-        <a className="btn btn-text" href="/">Về trang gia đình</a>
+        <Link className="btn btn-text" href="/">Về trang gia đình</Link>
       </section>
     </main>
   );

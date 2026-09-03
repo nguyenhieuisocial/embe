@@ -26,16 +26,21 @@ export default function FamilyNav() {
   const destinations = postpartum ? postpartumDestinations : pregnancyDestinations;
   return (
     <nav className="family-nav" aria-label="Điều hướng gia đình">
-      {destinations.map((destination) => (
-        <Link
-          href={destination.href}
-          key={destination.href}
-          aria-current={pathname === destination.href || destination.href !== "/" && pathname?.startsWith(`${destination.href}/`) ? "page" : undefined}
-        >
-          <Icon name={destination.icon} className="nav-icon" />
-          {destination.label}
-        </Link>
-      ))}
+      {destinations.map((destination) => {
+        const active = pathname === destination.href
+          || destination.href !== "/" && pathname?.startsWith(`${destination.href}/`);
+        return (
+          <Link
+            href={destination.href}
+            key={destination.href}
+            aria-current={active ? "page" : undefined}
+            prefetch={active ? false : undefined}
+          >
+            <Icon name={destination.icon} className="nav-icon" />
+            {destination.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

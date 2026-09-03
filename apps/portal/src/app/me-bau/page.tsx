@@ -313,21 +313,21 @@ export default function PregnancyPage() {
       </section>
 
       <BirthTransition />
-      <Link className="stage-feature-link" href="/me-bau/tuan-nay"><span><small>Tự đổi theo ngày dự sinh</small><strong>Tuần này của Mẹ và Bé</strong></span><span aria-hidden="true">›</span></Link>
-      <Link className="stage-feature-link" href="/me-bau/ho-so"><span><small>Dùng chung cho lịch và hồ sơ khám</small><strong>Hồ sơ thai kỳ</strong></span><span aria-hidden="true">›</span></Link>
-      <Link className="stage-feature-link" href="/chuan-bi-sinh"><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></Link>
+      <Link className="stage-feature-link" href="/me-bau/tuan-nay" prefetch={false}><span><small>Tự đổi theo ngày dự sinh</small><strong>Tuần này của Mẹ và Bé</strong></span><span aria-hidden="true">›</span></Link>
+      <Link className="stage-feature-link" href="/me-bau/ho-so" prefetch={false}><span><small>Dùng chung cho lịch và hồ sơ khám</small><strong>Hồ sơ thai kỳ</strong></span><span aria-hidden="true">›</span></Link>
+      <Link className="stage-feature-link" href="/chuan-bi-sinh" prefetch={false}><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></Link>
 
       <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
         <a href="#viec-hom-nay">Hôm nay</a>
         <a href="#suc-khoe">Sức khỏe</a>
-        <a href="/me-bau/ho-so">Hồ sơ</a>
+        <Link href="/me-bau/ho-so" prefetch={false}>Hồ sơ</Link>
         <a href="#cam-nang">Cẩm nang</a>
       </nav>
 
       <div className="pregnancy-reference-label pregnancy-private-tools">
-        <Link href="/me-bau/tam-trang">Ghi tâm trạng</Link>
-        <Link href="/me-bau/trieu-chung">Ghi triệu chứng</Link>
-        <Link href="/me-bau/meo-dan-gian">Mẹo & dân gian</Link>
+        <Link href="/me-bau/tam-trang" prefetch={false}>Ghi tâm trạng</Link>
+        <Link href="/me-bau/trieu-chung" prefetch={false}>Ghi triệu chứng</Link>
+        <Link href="/me-bau/meo-dan-gian" prefetch={false}>Mẹo & dân gian</Link>
       </div>
 
       <a className="iphone-health-entry" href="#suc-khoe-iphone">

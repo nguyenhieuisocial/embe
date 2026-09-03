@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import AppHeader from "../../components/app-header";
@@ -178,8 +179,8 @@ export default function MotherPostpartumPage() {
 
       <section className="postpartum-care-links">
         <h2>Việc chăm sóc tiếp theo</h2>
-        <a href="/me-bau#ho-so-kham">Lịch tái khám, đơn thuốc và tài liệu</a>
-        <a href="/ke-hoach">Kế hoạch hỗ trợ của Ba Hiếu</a>
+        <Link href="/me-bau#ho-so-kham">Lịch tái khám, đơn thuốc và tài liệu</Link>
+        <Link href="/ke-hoach">Kế hoạch hỗ trợ của Ba Hiếu</Link>
       </section>
 
       <section className="urgent-care" id="dau-hieu-can-goi">

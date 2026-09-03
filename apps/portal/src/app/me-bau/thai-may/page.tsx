@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "../../../components/app-header";
 
@@ -64,7 +65,7 @@ export default function FetalMovementPage() {
     <section className="movement-counter" aria-live="polite"><span>{active ? clockDuration(active.startedAt, null, now) : "Sẵn sàng"}</span><strong>{active ? `${active.movementCount} lần` : "Bắt đầu khi Mẹ muốn ghi"}</strong>
       {active ? <><button className="movement-tap" type="button" onClick={() => void action("movement")}>Bé vừa cử động</button><textarea aria-label="Ghi chú phiên thai máy" maxLength={500} placeholder="Ghi chú ngắn, không bắt buộc" rows={2} value={note} onChange={(event) => setNote(event.target.value)} /><button className="movement-finish" disabled={busy} type="button" onClick={() => void action("finish")}>Kết thúc và lưu</button></> : <button className="movement-start" disabled={busy} type="button" onClick={() => void action("start")}>Bắt đầu ghi</button>}<small>{message}</small>
     </section>
-    <aside className="medical-boundary urgent-movement-note"><strong>Quan trọng: không có một con số chuẩn áp dụng cho mọi em bé.</strong><p>Nếu Bé cử động ít hơn thường lệ, ngừng cử động hoặc nhịp quen thuộc thay đổi, liên hệ nơi theo dõi thai ngay và không đợi đến ngày hôm sau.</p><a href="/chuan-bi-sinh">Gọi nơi khám ngay</a></aside>
+    <aside className="medical-boundary urgent-movement-note"><strong>Quan trọng: không có một con số chuẩn áp dụng cho mọi em bé.</strong><p>Nếu Bé cử động ít hơn thường lệ, ngừng cử động hoặc nhịp quen thuộc thay đổi, liên hệ nơi theo dõi thai ngay và không đợi đến ngày hôm sau.</p><Link href="/chuan-bi-sinh">Gọi nơi khám ngay</Link></aside>
     {history.length ? <section className="section" aria-labelledby="movement-history-title"><p className="panel-kicker">Gần đây</p><h2 id="movement-history-title">Các phiên đã lưu</h2><ul className="movement-history">{history.map((session) => <li key={session.id}><span><strong>{new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(session.startedAt))}</strong><small>{session.note || "Không có ghi chú"}</small></span><b>{session.movementCount} lần · {clockDuration(session.startedAt, session.endedAt, now)}</b></li>)}</ul></section> : null}
     <p className="movement-source">Tham khảo an toàn: <a href="https://www.nhs.uk/pregnancy/keeping-well/your-babys-movements/" target="_blank" rel="noreferrer">NHS · Cử động của thai nhi ↗</a></p>
   </main>;

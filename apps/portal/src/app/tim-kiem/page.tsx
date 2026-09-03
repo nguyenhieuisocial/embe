@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import AppHeader from "../../components/app-header";
 import { normalizeFamilySearch, searchFamilyContent } from "../../lib/family-search";
 
@@ -64,10 +66,10 @@ export default async function SearchPage({ searchParams }: {
           <div className="section-head"><p className="panel-kicker">Trong lời đã ghi</p><h2 id="search-journal-title">Nhật ký</h2></div>
           <div className="family-search-journal">
             {results.journal.map((entry) => (
-              <a href="/#timeline-title" key={entry.id}>
+              <Link href="/#timeline-title" key={entry.id}>
                 <time dateTime={entry.eventAt}>{dateLabel(entry.eventAt)}</time>
                 <strong>{entry.title}</strong><p>{entry.caption}</p>
-              </a>
+              </Link>
             ))}
           </div>
         </section>

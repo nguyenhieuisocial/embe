@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import AppHeader from "../../../components/app-header";
 import FolkGuideBrowser from "../../../components/folk-guide-browser";
 
@@ -9,6 +11,6 @@ export default function PregnancyFolkGuidePage() {
     </header>
     <aside className="folk-guide-key"><strong>Nhớ một nguyên tắc</strong><p>Mẹo chỉ giúp dễ chịu hơn. Không thay thuốc đã kê, lịch khám hoặc lời dặn riêng của nơi đang theo dõi thai.</p></aside>
     <FolkGuideBrowser />
-    <aside className="folk-safety"><strong>Khi có dấu hiệu lạ</strong><p>Không chờ thử mẹo. Liên hệ nơi đang khám và ghi lại Mẹ đã dùng gì, lượng bao nhiêu, lúc nào.</p><a href="/me-bau#can-lien-he">Xem dấu hiệu cần liên hệ ngay</a></aside>
+    <aside className="folk-safety"><strong>Khi có dấu hiệu lạ</strong><p>Không chờ thử mẹo. Liên hệ nơi đang khám và ghi lại Mẹ đã dùng gì, lượng bao nhiêu, lúc nào.</p><Link href="/me-bau#can-lien-he">Xem dấu hiệu cần liên hệ ngay</Link></aside>
   </main>;
 }

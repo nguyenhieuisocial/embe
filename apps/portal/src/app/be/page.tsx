@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import AppHeader from "../../components/app-header";
@@ -159,7 +160,7 @@ export default function BabyDailyPage() {
         <div><p className="panel-kicker">{day || "Hôm nay"}</p><h2>Dòng chăm sóc</h2></div>
         {events.length ? <ol>{events.map((event) => <li key={event.id}><time>{clock(event.occurredAt)}</time><span><strong>{labels[event.kind]}</strong><small>{eventDetail(event)} · {event.caregiver === "mother" ? "Mẹ Ngân" : "Ba Hiếu"}</small></span><i title={event.syncStatus === "synced" ? "Đã đồng bộ BabyBuddy" : "Đang chờ đồng bộ"}>{event.syncStatus === "synced" ? "✓" : "↻"}</i></li>)}</ol> : <p className="empty-copy">Chưa có hoạt động nào hôm nay.</p>}
       </section>
-      <nav className="baby-hub-links" aria-label="Hồ sơ và phát triển của Bé"><a href="/be/ho-so"><span>Khám, tiêm & tài liệu</span><b>Hồ sơ của Bé</b></a><a href="/be/phat-trien"><span>Số đo & điều mới biết</span><b>Tăng trưởng và cột mốc</b></a></nav>
+      <nav className="baby-hub-links" aria-label="Hồ sơ và phát triển của Bé"><Link href="/be/ho-so"><span>Khám, tiêm & tài liệu</span><b>Hồ sơ của Bé</b></Link><Link href="/be/phat-trien"><span>Số đo & điều mới biết</span><b>Tăng trưởng và cột mốc</b></Link></nav>
     </main>
   );
 }

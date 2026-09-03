@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import AppHeader from "../../components/app-header";
 import AppRefreshControl from "../../components/app-refresh-control";
 import { Icon, type IconName } from "../../components/embe-icon";
@@ -101,7 +103,7 @@ export default function FamilyHomePage() {
         ) : (
           <p className="state-note is-wait">Địa chỉ kết nối chỉ hiện khi máy nhà sẵn sàng.</p>
         )}
-        <a className="btn btn-quiet btn-block" href="/huong-dan#iphone-title">Xem cách kết nối iPhone</a>
+        <Link className="btn btn-quiet btn-block" href="/huong-dan#iphone-title">Xem cách kết nối iPhone</Link>
       </section>
 
       <section className="section family-privacy" aria-labelledby="family-privacy-title">

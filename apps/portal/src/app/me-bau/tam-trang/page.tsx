@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import AppHeader from "../../../components/app-header";
@@ -153,7 +154,7 @@ export default function PregnancyMentalHealthPage() {
         <p className="intro">Ghi cảm nhận nhẹ nhàng để nhìn lại và chia sẻ với người Mẹ tin tưởng khi cần.</p>
       </header>
 
-      <a className="mental-relax-link" href="/me-bau/thu-gian"><span aria-hidden="true">◌</span><div><strong>Thở nhẹ 2–8 phút</strong><small>Một khoảng yên, không chấm điểm</small></div><b> Mở</b></a>
+      <Link className="mental-relax-link" href="/me-bau/thu-gian"><span aria-hidden="true">◌</span><div><strong>Thở nhẹ 2–8 phút</strong><small>Một khoảng yên, không chấm điểm</small></div><b> Mở</b></Link>
 
       <form className="section medical-form mental-checkin-form" onSubmit={(event) => void save(event)}>
         <div className="section-head"><h2>Hôm nay Mẹ thấy thế nào?</h2></div>

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import AppHeader from "../../../components/app-header";
 import { calculatePregnancyWeek } from "../../../lib/pregnancy";
 import { upcomingPregnancyCareWindows } from "../../../lib/pregnancy-care-windows";
@@ -47,7 +49,7 @@ export default function PregnancyWeekPage() {
           <p className="panel-kicker">Cần một thông tin</p>
           <h2 id="week-empty-title">Thêm ngày dự sinh</h2>
           <p>EmBe sẽ tự tính tuần thai và chỉ hiện nội dung phù hợp với giai đoạn hiện tại.</p>
-          <a className="btn btn-primary" href="/me-bau/ho-so">Cài ngày dự sinh</a>
+          <Link className="btn btn-primary" href="/me-bau/ho-so">Cài ngày dự sinh</Link>
         </section>
       ) : (
         <>
@@ -64,10 +66,10 @@ export default function PregnancyWeekPage() {
             <p className="panel-kicker">Ba việc trong tầm tay</p>
             <h2 id="week-actions-title">Mở đúng chỗ khi cần</h2>
             <ul className="today-priority-list">
-              <li><a href="/me-bau#suc-khoe"><span><strong>Ghi sức khỏe</strong><small>Số đo, giấc ngủ và cảm nhận hôm nay</small></span><b>Ghi</b></a></li>
-              <li><a href="/me-bau/trieu-chung"><span><strong>Ghi triệu chứng</strong><small>Lưu diễn biến để trao đổi khi khám</small></span><b>Mở</b></a></li>
-              <li><a href="/me-bau?quick=appointment#ho-so-kham"><span><strong>Chuẩn bị lần khám</strong><small>Lịch, câu hỏi và hồ sơ liên quan</small></span><b>Xem</b></a></li>
-              {week >= 16 ? <li><a href="/me-bau/thai-may"><span><strong>Ghi nhịp thai máy</strong><small>Theo dõi nhịp hoạt động quen thuộc của Bé</small></span><b>Ghi</b></a></li> : null}
+              <li><Link href="/me-bau#suc-khoe"><span><strong>Ghi sức khỏe</strong><small>Số đo, giấc ngủ và cảm nhận hôm nay</small></span><b>Ghi</b></Link></li>
+              <li><Link href="/me-bau/trieu-chung"><span><strong>Ghi triệu chứng</strong><small>Lưu diễn biến để trao đổi khi khám</small></span><b>Mở</b></Link></li>
+              <li><Link href="/me-bau?quick=appointment#ho-so-kham"><span><strong>Chuẩn bị lần khám</strong><small>Lịch, câu hỏi và hồ sơ liên quan</small></span><b>Xem</b></Link></li>
+              {week >= 16 ? <li><Link href="/me-bau/thai-may"><span><strong>Ghi nhịp thai máy</strong><small>Theo dõi nhịp hoạt động quen thuộc của Bé</small></span><b>Ghi</b></Link></li> : null}
             </ul>
           </section>
 
@@ -77,7 +79,7 @@ export default function PregnancyWeekPage() {
               <span>{item.weekLabel}<small>{item.dateLabel}</small></span>
               <div><strong>{item.title}</strong><p>{item.note}</p></div>
             </article>)}</div>
-            <div className="care-window-actions"><a href="/me-bau?quick=appointment#ho-so-kham">Thêm lịch đã xác nhận</a><a href="https://vnpa.moh.gov.vn/wp-content/uploads/2026/05/QD-1139-Tai-lieu-huong-dan-cham-soc-SKSS.pdf" target="_blank" rel="noreferrer">Nguồn Bộ Y tế ↗</a></div>
+            <div className="care-window-actions"><Link href="/me-bau?quick=appointment#ho-so-kham">Thêm lịch đã xác nhận</Link><a href="https://vnpa.moh.gov.vn/wp-content/uploads/2026/05/QD-1139-Tai-lieu-huong-dan-cham-soc-SKSS.pdf" target="_blank" rel="noreferrer">Nguồn Bộ Y tế ↗</a></div>
             <small className="care-window-disclaimer">Đây là khoảng gợi ý để chuẩn bị, không phải lịch hẹn. Lịch của bác sĩ/nơi khám luôn được ưu tiên.</small>
           </section> : null}
 
