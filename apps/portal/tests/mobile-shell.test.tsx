@@ -99,6 +99,10 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/\.rhythm-item a[^\{]*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.source-section a\s*\{[^}]*min-height:\s*44px/s);
     expect(ruleBody(css, ".app-store-link")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".stage-nutrition-sources a")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".safety-search-box input")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".safety-search-box button")).toMatch(/height:\s*44px/);
+    expect(ruleBody(css, ".safety-search-chips button")).toMatch(/min-width:\s*44px/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.family-calendar[^{]*\{[^}]*margin-inline:\s*calc\(-1 \* var\(--gutter\)\)/s);
   });
 
