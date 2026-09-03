@@ -14,8 +14,8 @@ describe("mobile quick actions", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("dialog", { name: "Ghi nhanh" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Cài giai đoạn thai kỳ/ })).toHaveAttribute("href", "/me-bau#cai-dat-giai-doan");
-    expect(screen.getByRole("link", { name: /Thêm lịch khám/ })).toHaveAttribute("href", "/me-bau?quick=appointment#ho-so-kham");
-    expect(screen.getByRole("link", { name: /Chụp bữa ăn/ })).toHaveAttribute("href", "/me-bau?quick=meal#bua-an");
+    expect(screen.getByRole("link", { name: /Thêm lịch khám/ })).toHaveAttribute("href", "/me-bau/ho-so?quick=appointment#ho-so-kham");
+    expect(screen.getByRole("link", { name: /Chụp bữa ăn/ })).toHaveAttribute("href", "/me-bau/bua-an");
     expect(screen.getByRole("link", { name: /Thêm việc cần làm/ })).toHaveAttribute("href", "/ke-hoach?them=1#them-viec");
     expect(screen.getByRole("link", { name: /Ghi một dòng/ })).toHaveAttribute("href", "/ghi-lai#viet-nhat-ky");
     expect(screen.getByRole("link", { name: /Chụp hoặc chọn ảnh/ })).toHaveAttribute("href", "/ky-niem#gui-anh");

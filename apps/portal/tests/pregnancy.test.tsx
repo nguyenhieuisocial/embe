@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import PregnancyPage from "../src/app/me-bau/page";
+import PregnancyHealthPage from "../src/app/me-bau/suc-khoe/page";
 import { calculatePregnancyWeek, estimateDueDateFromLmp, localDateKey } from "../src/lib/pregnancy";
 
 function openHealthInsights() {
@@ -18,18 +19,6 @@ function openDetailsByHeading(name: string) {
   if (!details) throw new Error(`Details not found for ${name}`);
   details.open = true;
   fireEvent(details, new Event("toggle"));
-}
-
-async function loadDailyTools() {
-  await act(async () => {
-    await Promise.all([
-      import("../src/components/pregnancy-care-tracker"),
-      import("../src/components/meal-photo-tracker"),
-      import("../src/components/pregnancy-health-tracker"),
-      import("../src/components/pregnancy-medical-records")
-    ]);
-    await Promise.resolve();
-  });
 }
 
 describe("pregnancy week calculation", () => {
@@ -84,30 +73,24 @@ describe("pregnancy daily page", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps each heavy daily tool behind its own mobile loading boundary", () => {
-    vi.stubGlobal("IntersectionObserver", class {
-      observe() {}
-      disconnect() {}
-    });
-
+  it("keeps the daily page short and routes each heavy tool to its own screen", () => {
     render(<PregnancyPage />);
 
-    expect(screen.getByLabelText("Đang chờ mở sức khỏe từ iPhone và vi chất")).toBeInTheDocument();
-    expect(screen.getByLabelText("Đang chờ mở nhật ký bữa ăn")).toBeInTheDocument();
-    expect(screen.getByLabelText("Đang chờ mở nhật ký sức khỏe")).toBeInTheDocument();
-    expect(screen.getByLabelText("Đang chờ mở hồ sơ khám thai")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ghi sức khỏe/i })).toHaveAttribute("href", "/me-bau/suc-khoe");
+    expect(screen.getByRole("link", { name: /Ghi bữa ăn/i })).toHaveAttribute("href", "/me-bau/bua-an");
+    expect(screen.getByRole("link", { name: /Sức khỏe từ iPhone/i })).toHaveAttribute("href", "/me-bau/suc-khoe-iphone");
+    expect(screen.queryByRole("heading", { name: "Nhật ký sức khỏe" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Nhật ký bữa ăn" })).not.toBeInTheDocument();
   });
 
-  it("shows sourced daily actions, a seven-day menu and medical boundary", async () => {
+  it("shows sourced daily actions, a seven-day menu and medical boundary", () => {
     render(<PregnancyPage />);
-    await loadDailyTools();
 
     expect(screen.getByRole("heading", { level: 1, name: "Mẹ bầu hôm nay" })).toBeInTheDocument();
     expect(screen.getByText("Cài đặt giai đoạn")).toBeInTheDocument();
     expect(screen.getByText("Giai đoạn hiện tại")).toBeInTheDocument();
     expect(screen.getByText("Mới mang thai")).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Hôm nay" })).toHaveAttribute("href", "#viec-hom-nay");
+    expect(screen.getByRole("navigation", { name: "Công cụ hằng ngày" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Hồ sơ thai kỳ/i })).toHaveAttribute("href", "/me-bau/ho-so");
     expect(screen.getByRole("heading", { name: "Có dấu hiệu bất thường?" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Xem ngay" })).toHaveAttribute("href", "#can-lien-he");
@@ -144,14 +127,8 @@ describe("pregnancy daily page", () => {
     expect(within(stageNutrition).getByText(/đạm.*sắt.*canxi.*choline/i)).toBeInTheDocument();
     expect(within(stageNutrition).getByText(/chia thành bữa nhỏ/i)).toBeInTheDocument();
     expect(within(stageNutrition).getByText("Quy tắc an toàn áp dụng suốt thai kỳ")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Nhật ký sức khỏe" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Đường huyết (mg/dL)")).toBeInTheDocument();
-    expect(screen.getByLabelText("Số cử động thai")).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Dấu hiệu cần ghi lại" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Biểu đồ 28 ngày" })).not.toBeInTheDocument();
-    openHealthInsights();
-    expect(screen.getByRole("heading", { name: "Biểu đồ 28 ngày" })).toBeInTheDocument();
-    expect(screen.getByText("Chưa có số liệu sức khỏe")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ghi sức khỏe/i })).toHaveAttribute("href", "/me-bau/suc-khoe");
+    expect(screen.getByRole("link", { name: /Ghi bữa ăn/i })).toHaveAttribute("href", "/me-bau/bua-an");
     expect(screen.getByRole("heading", { name: "Khi nào cần liên hệ ngay" })).toBeInTheDocument();
     expect(screen.getByText(/không thay thế tư vấn/iu)).toBeInTheDocument();
     const sources = screen.getByText("Nguồn đã đối chiếu").closest("details");
@@ -161,46 +138,40 @@ describe("pregnancy daily page", () => {
     expect(screen.getAllByRole("link", { name: /ACOG/ })[0]).toHaveAttribute("href", expect.stringContaining("acog.org"));
   }, 10_000);
 
-  it("puts frequent daily actions before occasional records and reference content", async () => {
+  it("puts frequent daily actions before reference content", () => {
     render(<PregnancyPage />);
-    await loadDailyTools();
     expect(screen.queryByRole("img", { name: /nước uống, bữa ăn chín/i })).not.toBeInTheDocument();
     const headings = screen.getAllByRole("heading").map((heading) => heading.textContent ?? "");
     const position = (name: string) => headings.findIndex((heading) => heading.includes(name));
     expect(position("Việc của hôm nay")).toBeLessThan(position("Ăn uống theo giai đoạn"));
-    expect(position("Ăn uống theo giai đoạn")).toBeLessThan(position("Thuốc, vi chất & dinh dưỡng"));
-    expect(position("Thuốc, vi chất & dinh dưỡng")).toBeLessThan(position("Nhật ký bữa ăn"));
-    expect(position("Nhật ký bữa ăn")).toBeLessThan(position("Nhật ký sức khỏe"));
-    expect(position("Nhật ký sức khỏe")).toBeLessThan(position("Hồ sơ khám thai"));
-    expect(position("Hồ sơ khám thai")).toBeLessThan(position("Nên ăn gì, hạn chế gì, kiêng gì?"));
+    expect(position("Ăn uống theo giai đoạn")).toBeLessThan(position("Nên ăn gì, hạn chế gì, kiêng gì?"));
+    const tools = screen.getByRole("navigation", { name: "Công cụ hằng ngày" });
+    const references = screen.getByRole("heading", { name: "Nên ăn gì, hạn chế gì, kiêng gì?" });
+    expect(tools.compareDocumentPosition(references) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("exposes iPhone health import before the long daily content", async () => {
+  it("exposes each focused tool before the long reference content", () => {
     render(<PregnancyPage />);
-    await loadDailyTools();
 
-    const jump = screen.getByRole("navigation", { name: "Đi nhanh trong trang Mẹ bầu" });
+    const jump = screen.getByRole("navigation", { name: "Công cụ hằng ngày" });
     expect(within(jump).getAllByRole("link")).toHaveLength(4);
-    expect(within(jump).getByRole("link", { name: "Sức khỏe" })).toHaveAttribute("href", "#suc-khoe");
-    expect(within(jump).getByRole("link", { name: "Hồ sơ" })).toHaveAttribute("href", "/me-bau/ho-so");
+    expect(within(jump).getByRole("link", { name: /Ghi sức khỏe/i })).toHaveAttribute("href", "/me-bau/suc-khoe");
+    expect(within(jump).getByRole("link", { name: /Hồ sơ thai kỳ/i })).toHaveAttribute("href", "/me-bau/ho-so");
 
     const entry = screen.getByRole("link", { name: /Sức khỏe từ iPhone/i });
     const dailyBoard = document.querySelector<HTMLElement>("#viec-hom-nay");
-    expect(entry).toHaveAttribute("href", "#suc-khoe-iphone");
+    expect(entry).toHaveAttribute("href", "/me-bau/suc-khoe-iphone");
     expect(dailyBoard).not.toBeNull();
     expect(entry.compareDocumentPosition(dailyBoard as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Nhập nhanh hôm nay" })).toHaveAttribute("href", "#suc-khoe");
     expect(screen.queryByText(/được gửi tự động mỗi ngày/i)).not.toBeInTheDocument();
   });
 
-  it("keeps the mobile day compact and opens deeper information only when requested", async () => {
+  it("keeps the mobile day compact and opens deeper information only when requested", () => {
     render(<PregnancyPage />);
-    await loadDailyTools();
 
     expect(screen.getByRole("progressbar", { name: "Tiến độ việc hôm nay" })).toHaveAttribute("aria-valuenow", "0");
     expect(screen.getByRole("heading", { level: 3, name: "Ăn uống" }).closest("details")).toHaveAttribute("open");
     expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" }).closest("details")).not.toHaveAttribute("open");
-    expect(screen.getByText("Xem biểu đồ và lịch sử").closest("details")).not.toHaveAttribute("open");
     expect(screen.getByRole("heading", { name: "Nên ăn gì, hạn chế gì, kiêng gì?" }).closest("details")).not.toHaveAttribute("open");
     expect(screen.getByRole("link", { name: "Mẹo & dân gian" })).toHaveAttribute("href", "/me-bau/meo-dan-gian");
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" }).closest("details")).not.toHaveAttribute("open");
@@ -224,8 +195,7 @@ describe("pregnancy daily page", () => {
   });
 
   it("saves one bounded daily health snapshot from simple mobile fields", async () => {
-    render(<PregnancyPage />);
-    await loadDailyTools();
+    render(<PregnancyHealthPage />);
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -275,8 +245,7 @@ describe("pregnancy daily page", () => {
   });
 
   it("stops an incomplete blood-pressure pair before sending private data", async () => {
-    render(<PregnancyPage />);
-    await loadDailyTools();
+    render(<PregnancyHealthPage />);
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     vi.mocked(fetch).mockClear();
 
@@ -295,8 +264,7 @@ describe("pregnancy daily page", () => {
         ] })
       : Response.json({ dueDate: null, completed: [], hasProfile: false, hasDayState: false }));
 
-    render(<PregnancyPage />);
-    await loadDailyTools();
+    render(<PregnancyHealthPage />);
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     openHealthInsights();
     const brief = screen.getByRole("heading", { name: "Tóm tắt 7 ngày để đi khám" }).closest("section");
@@ -319,8 +287,7 @@ describe("pregnancy daily page", () => {
       return Response.json({});
     });
 
-    render(<PregnancyPage />);
-    await loadDailyTools();
+    render(<PregnancyHealthPage />);
     fireEvent.change(screen.getByLabelText("Cân nặng (kg)"), { target: { value: "57.2" } });
     expect(finishHealthLoad).toBeTypeOf("function");
     await act(async () => {

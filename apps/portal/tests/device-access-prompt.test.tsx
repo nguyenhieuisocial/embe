@@ -22,7 +22,7 @@ describe("iPhone access guide", () => {
     expect(screen.getByRole("dialog", { name: "Hoàn tất trên iPhone" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cho phép vị trí" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bật thông báo" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Mở kết nối Sức khỏe" })).toHaveAttribute("href", "/me-bau#suc-khoe-iphone");
+    expect(screen.getByRole("link", { name: "Mở kết nối Sức khỏe" })).toHaveAttribute("href", "/me-bau/suc-khoe-iphone");
   });
 
   it("requests location only after a tap and remembers it on this phone", async () => {

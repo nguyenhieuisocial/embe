@@ -21,12 +21,12 @@ function actionsForStage(dueDate: string): QuickAction[] {
     ? { href: "/me-bau#cai-dat-giai-doan", icon: "care", title: "Cài giai đoạn thai kỳ", detail: "Nhập ngày dự sinh khi đã có" }
     : week >= 28
       ? { href: "/do-dung", icon: "supply", title: "Xem đồ cần chuẩn bị", detail: "Nhẹ nhàng rà lại trước ngày sinh" }
-      : { href: "/me-bau#health-title", icon: "care", title: "Lưu sức khỏe hôm nay", detail: "Cân nặng, ngủ, nước và vận động" };
+      : { href: "/me-bau/suc-khoe", icon: "care", title: "Lưu sức khỏe hôm nay", detail: "Cân nặng, ngủ, nước và vận động" };
 
   return [
     stageAction,
-    { href: "/me-bau?quick=appointment#ho-so-kham", icon: "calendar", title: "Thêm lịch khám", detail: "Lưu ngày hẹn và hồ sơ đi cùng" },
-    { href: "/me-bau?quick=meal#bua-an", icon: "meal", title: "Chụp bữa ăn", detail: "Mở camera và nhận diện món" },
+    { href: "/me-bau/ho-so?quick=appointment#ho-so-kham", icon: "calendar", title: "Thêm lịch khám", detail: "Lưu ngày hẹn và hồ sơ đi cùng" },
+    { href: "/me-bau/bua-an", icon: "meal", title: "Chụp bữa ăn", detail: "Mở camera và nhận diện món" },
     { href: "/ke-hoach?them=1#them-viec", icon: "check", title: "Thêm việc cần làm", detail: "Giao cho Mẹ Ngân, Ba Hiếu hoặc cả nhà" },
     { href: "/ghi-lai#viet-nhat-ky", icon: "write", title: "Ghi một dòng", detail: "Lưu điều vừa xảy ra" },
     { href: "/ky-niem#gui-anh", icon: "memory", title: "Chụp hoặc chọn ảnh", detail: "Gửi vào album gia đình" }

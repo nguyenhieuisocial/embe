@@ -179,7 +179,7 @@ export default function MotherPostpartumPage() {
 
       <section className="postpartum-care-links">
         <h2>Việc chăm sóc tiếp theo</h2>
-        <Link href="/me-bau#ho-so-kham">Lịch tái khám, đơn thuốc và tài liệu</Link>
+        <Link href="/me-bau/ho-so#ho-so-kham">Lịch tái khám, đơn thuốc và tài liệu</Link>
         <Link href="/ke-hoach">Kế hoạch hỗ trợ của Ba Hiếu</Link>
       </section>
 

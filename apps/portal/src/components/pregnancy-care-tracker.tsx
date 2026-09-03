@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
@@ -396,7 +397,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           ? "Mở Phím tắt, chạy EmBe rồi quay lại. Trang sẽ tự kiểm tra dữ liệu mới."
           : "Apple không cho Safari tự đọc Sức khỏe. Có thể nhập nhanh ngay hoặc kết nối Phím tắt để gửi những chỉ số đã chọn."}</p>
         <div className="iphone-health-actions">
-          <a href="#suc-khoe">Nhập nhanh hôm nay</a>
+          <Link href="/me-bau/suc-khoe">Nhập nhanh hôm nay</Link>
           {activeIphoneDevices.length ? <a href="shortcuts://">Mở Phím tắt</a> : null}
           {!syncSecret ? <button type="button" onClick={() => void createIphoneConnection()}>
             {activeIphoneDevices.length ? "Tạo kết nối mới" : "Kết nối iPhone"}

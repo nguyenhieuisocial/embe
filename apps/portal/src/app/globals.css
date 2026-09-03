@@ -64,6 +64,69 @@
   --shadow-lift: 0 -12px 40px -12px rgba(51, 39, 43, .28);
 }
 
+/* Focused pregnancy tools: one task per screen on iPhone. */
+.pregnancy-tool-menu {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 0;
+}
+.pregnancy-tool-menu > a {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 88%, var(--rose-soft));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 9px 11px;
+  scroll-margin-top: calc(12px + env(safe-area-inset-top));
+  text-decoration: none;
+}
+.pregnancy-tool-menu > a > span { display: grid; gap: 2px; min-width: 0; }
+.pregnancy-tool-menu strong { font-size: .84rem; font-weight: 680; }
+.pregnancy-tool-menu small { color: var(--ink-soft); font-size: .7rem; line-height: 1.35; }
+.pregnancy-tool-menu b {
+  color: var(--rose);
+  flex: 0 0 auto;
+  font-size: .72rem;
+  font-weight: 750;
+}
+.pregnancy-tool-intro { display: grid; gap: 5px; margin: 12px 0 16px; }
+.pregnancy-tool-intro > a {
+  align-items: center;
+  color: var(--rose);
+  display: inline-flex;
+  font-size: .78rem;
+  font-weight: 700;
+  min-height: 44px;
+  text-decoration: none;
+  width: fit-content;
+}
+.pregnancy-tool-intro h1 { font-size: clamp(1.55rem, 7vw, 2rem); margin: 0; }
+.pregnancy-tool-intro .intro { margin: 0; max-width: 42rem; }
+.pregnancy-tool-page > .health-tracker,
+.pregnancy-tool-page > .meal-tracker,
+.pregnancy-profile-page > .medical-records { margin-top: 0; }
+.pregnancy-route-loading { min-height: 70dvh; padding-top: max(16px, env(safe-area-inset-top)); }
+.route-loading-wordmark { color: var(--rose); font-size: 1rem; font-weight: 800; margin-bottom: 32px; }
+.route-loading-line,
+.route-loading-card {
+  animation: embe-route-pulse 1.2s ease-in-out infinite alternate;
+  background: color-mix(in srgb, var(--rose-soft) 58%, var(--surface));
+  border-radius: 999px;
+}
+.route-loading-line { height: 11px; margin-top: 10px; width: 58%; }
+.route-loading-line.is-short { width: 28%; }
+.route-loading-line.is-title { height: 24px; width: 72%; }
+.route-loading-card { border-radius: 18px; height: 190px; margin-top: 24px; width: 100%; }
+@keyframes embe-route-pulse { to { opacity: .48; } }
+@media (prefers-reduced-motion: reduce) {
+  .route-loading-line,
+  .route-loading-card { animation: none; }
+}
+
 /* Tuần này: một thước lớn lên nhỏ gọn, không biến trang thành dashboard. */
 .fetal-size {
   align-items: center;

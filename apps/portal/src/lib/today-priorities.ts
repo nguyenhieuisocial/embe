@@ -40,8 +40,8 @@ type RankedPriority = TodayPriority & { rank: number; order: string };
 
 function taskHref(task: FamilyTask): string {
   if (task.category === "appointment") return "/lich";
-  if (task.linkTarget === "health") return "/me-bau#suc-khoe";
-  if (task.linkTarget === "meal") return "/me-bau#bua-an";
+  if (task.linkTarget === "health") return "/me-bau/suc-khoe";
+  if (task.linkTarget === "meal") return "/me-bau/bua-an";
   if (task.linkTarget === "inventory") return "/do-dung";
   return "/ke-hoach";
 }
@@ -88,7 +88,7 @@ export function selectTodayPriorities(input: TodayPriorityInput): TodayPriority[
       kind: "medicine",
       title: plan.name,
       detail: reminderTime ? `${reminderTime}${reminderTime <= nowTime ? " · đến giờ" : ""}` : "Theo kế hoạch hôm nay",
-      href: "/me-bau#vi-chat-thuoc",
+      href: "/me-bau/suc-khoe-iphone#vi-chat-thuoc",
       actionLabel: "Ghi đã dùng",
       rank: 10,
       order: reminderTime || "99:99"
@@ -97,7 +97,7 @@ export function selectTodayPriorities(input: TodayPriorityInput): TodayPriority[
 
   if (input.hasHealthEntry === false) candidates.push({
     id: "health:today", kind: "health", title: "Ghi sức khỏe", detail: "Một check-in ngắn cho Mẹ Ngân",
-    href: "/me-bau#suc-khoe", actionLabel: "Ghi nhanh", rank: 20, order: ""
+    href: "/me-bau/suc-khoe", actionLabel: "Ghi nhanh", rank: 20, order: ""
   });
   if (input.inventoryItems.length) {
     const first = input.inventoryItems[0];
@@ -115,7 +115,7 @@ export function selectTodayPriorities(input: TodayPriorityInput): TodayPriority[
   }
   if (input.hasMealEntry === false) candidates.push({
     id: "meal:today", kind: "meal", title: "Ghi bữa ăn", detail: "Chụp ảnh hoặc chỉ ghi chú",
-    href: "/me-bau#bua-an", actionLabel: "Ghi bữa", rank: 40, order: ""
+    href: "/me-bau/bua-an", actionLabel: "Ghi bữa", rank: 40, order: ""
   });
   if (input.profileComplete === false) candidates.push({
     id: "profile:pregnancy", kind: "profile", title: "Hoàn thiện hồ sơ thai kỳ",

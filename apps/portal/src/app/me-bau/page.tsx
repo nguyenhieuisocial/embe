@@ -1,13 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
 import BirthTransition from "../../components/birth-transition";
-import DeferredSection from "../../components/deferred-section";
-import { Icon } from "../../components/embe-icon";
 import PregnancySafetySearch from "../../components/pregnancy-safety-search";
 import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
 import { LINKED_DAILY_ACTION_EVENT, linkedDailyAction } from "../../lib/linked-daily-actions";
@@ -21,28 +18,6 @@ import {
   weeklyMenu
 } from "../../lib/pregnancy-content";
 import { calculatePregnancyWeek, estimateDueDateFromLmp, localDateKey } from "../../lib/pregnancy";
-
-function ToolLoading({ label, height }: { label: string; height: number }) {
-  return (
-    <div className="deferred-section" role="status" aria-label={`Đang mở ${label}`} style={{ minHeight: height }}>
-      <span aria-hidden="true" />
-      <p>Đang mở {label}…</p>
-    </div>
-  );
-}
-
-const PregnancyCareTracker = dynamic(() => import("../../components/pregnancy-care-tracker"), {
-  loading: () => <ToolLoading label="sức khỏe từ iPhone và vi chất" height={1400} />
-});
-const MealPhotoTracker = dynamic(() => import("../../components/meal-photo-tracker"), {
-  loading: () => <ToolLoading label="nhật ký bữa ăn" height={1200} />
-});
-const PregnancyHealthTracker = dynamic(() => import("../../components/pregnancy-health-tracker"), {
-  loading: () => <ToolLoading label="nhật ký sức khỏe" height={1200} />
-});
-const PregnancyMedicalRecords = dynamic(() => import("../../components/pregnancy-medical-records"), {
-  loading: () => <ToolLoading label="hồ sơ khám thai" height={900} />
-});
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";
 const DUE_DATE_DIRTY_KEY = `${DUE_DATE_KEY}:dirty`;
@@ -338,14 +313,21 @@ export default function PregnancyPage() {
 
       <BirthTransition />
       <Link className="stage-feature-link" href="/me-bau/tuan-nay" prefetch={false}><span><small>Tự đổi theo ngày dự sinh</small><strong>Tuần này của Mẹ và Bé</strong></span><span aria-hidden="true">›</span></Link>
-      <Link className="stage-feature-link" href="/me-bau/ho-so" prefetch={false}><span><small>Dùng chung cho lịch và hồ sơ khám</small><strong>Hồ sơ thai kỳ</strong></span><span aria-hidden="true">›</span></Link>
       <Link className="stage-feature-link" href="/chuan-bi-sinh" prefetch={false}><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></Link>
 
-      <nav className="pregnancy-jump" aria-label="Đi nhanh trong trang Mẹ bầu">
-        <a href="#viec-hom-nay">Hôm nay</a>
-        <a href="#suc-khoe">Sức khỏe</a>
-        <Link href="/me-bau/ho-so" prefetch={false}>Hồ sơ</Link>
-        <a href="#cam-nang">Cẩm nang</a>
+      <nav className="pregnancy-tool-menu" aria-label="Công cụ hằng ngày">
+        <Link id="suc-khoe" href="/me-bau/suc-khoe">
+          <span><strong>Ghi sức khỏe</strong><small>Cân nặng, huyết áp, ngủ và cảm nhận</small></span><b>Mở</b>
+        </Link>
+        <Link id="bua-an" href="/me-bau/bua-an">
+          <span><strong>Ghi bữa ăn</strong><small>Chụp món, sửa nhận diện rồi lưu</small></span><b>Mở</b>
+        </Link>
+        <Link id="suc-khoe-iphone" href="/me-bau/suc-khoe-iphone">
+          <span><strong>Sức khỏe từ iPhone</strong><small>Đồng bộ, thuốc và vi chất theo đơn</small></span><b>Mở</b>
+        </Link>
+        <Link id="ho-so-kham" href="/me-bau/ho-so">
+          <span><strong>Hồ sơ thai kỳ</strong><small>Lịch khám, kết quả và đơn thuốc</small></span><b>Mở</b>
+        </Link>
       </nav>
 
       <div className="pregnancy-reference-label pregnancy-private-tools">
@@ -353,12 +335,6 @@ export default function PregnancyPage() {
         <Link href="/me-bau/trieu-chung" prefetch={false}>Ghi triệu chứng</Link>
         <Link href="/me-bau/meo-dan-gian" prefetch={false}>Mẹo & dân gian</Link>
       </div>
-
-      <a className="iphone-health-entry" href="#suc-khoe-iphone">
-        <span className="iphone-health-entry-mark" aria-hidden="true"><Icon name="care" /></span>
-        <span><strong>Sức khỏe từ iPhone</strong><small>Xem, đồng bộ và kiểm tra dữ liệu Apple Health.</small></span>
-        <span aria-hidden="true">›</span>
-      </a>
 
       <aside className="pregnancy-urgent-shortcut" aria-labelledby="urgent-shortcut-title">
         <div>
@@ -482,19 +458,6 @@ export default function PregnancyPage() {
       </section>
 
       <PregnancySafetySearch />
-
-      <DeferredSection label="sức khỏe từ iPhone và vi chất" targetIds="suc-khoe-iphone vi-chat-thuoc" placeholderHeight={1400}>
-        <PregnancyCareTracker pregnancyWeek={week} />
-      </DeferredSection>
-      <DeferredSection label="nhật ký bữa ăn" targetIds="bua-an" placeholderHeight={1200}>
-        <MealPhotoTracker />
-      </DeferredSection>
-      <DeferredSection label="nhật ký sức khỏe" targetIds="suc-khoe" placeholderHeight={1200}>
-        <div id="suc-khoe"><PregnancyHealthTracker pregnancyWeek={week} /></div>
-      </DeferredSection>
-      <DeferredSection label="hồ sơ khám thai" targetIds="ho-so-kham" placeholderHeight={900}>
-        <PregnancyMedicalRecords />
-      </DeferredSection>
 
       <div className="pregnancy-reference-label"><span>Tham khảo khi cần</span></div>
 

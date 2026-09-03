@@ -25,8 +25,8 @@ export type FamilyTask = {
 export const LINK_DETAILS: Record<LinkTarget, { href: string; label: string }> = {
   none: { href: "", label: "" },
   pregnancy: { href: "/me-bau", label: "Mẹ bầu" },
-  meal: { href: "/me-bau#meal-photo-title", label: "Bữa ăn" },
-  health: { href: "/me-bau#health-title", label: "Sức khỏe" },
+  meal: { href: "/me-bau/bua-an", label: "Bữa ăn" },
+  health: { href: "/me-bau/suc-khoe", label: "Sức khỏe" },
   inventory: { href: "/do-dung", label: "Đồ dùng" },
   journal: { href: "/ghi-lai#viet-nhat-ky", label: "Nhật ký" },
   memory: { href: "/ky-niem", label: "Kỷ niệm" },

@@ -35,7 +35,7 @@ export default function SettingsPage() {
           <h2 id="settings-family-title">Thai kỳ và sức khỏe</h2>
         </div>
         <Link href="/me-bau#cai-dat-giai-doan">Mở cài đặt giai đoạn thai kỳ <Icon name="arrow" /></Link>
-        <Link href="/me-bau#suc-khoe">Mở theo dõi sức khỏe và mục tiêu bác sĩ <Icon name="arrow" /></Link>
+        <Link href="/me-bau/suc-khoe">Mở theo dõi sức khỏe và mục tiêu bác sĩ <Icon name="arrow" /></Link>
         <p>EmBe không tự đặt mục tiêu thuốc, vitamin hay tăng cân. Chỉ lưu số gia đình nhập theo hướng dẫn của bác sĩ.</p>
       </section>
     </main>

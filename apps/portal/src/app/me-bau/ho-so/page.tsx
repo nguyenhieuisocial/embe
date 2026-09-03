@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import AppHeader from "../../../components/app-header";
+import PregnancyMedicalRecords from "../../../components/pregnancy-medical-records";
 import PregnancyProfileEditor from "../../../components/pregnancy-profile-editor";
 
 export default function PregnancyProfilePage() {
@@ -14,6 +15,7 @@ export default function PregnancyProfilePage() {
         <p className="intro">Ngày dự sinh, điều cần lưu ý và người có thể gọi khi cần.</p>
       </header>
       <PregnancyProfileEditor />
+      <PregnancyMedicalRecords />
     </main>
   );
 }

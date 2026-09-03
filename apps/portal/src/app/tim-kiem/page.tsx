@@ -75,7 +75,7 @@ export default async function SearchPage({ searchParams }: {
         </section>
       ) : null}
 
-      {results.health.length ? <section className="family-search-section" aria-labelledby="search-health-title"><div className="section-head"><p className="panel-kicker">Trong hồ sơ Mẹ & Bé</p><h2 id="search-health-title">Khám, tiêm và cột mốc</h2></div><div className="family-search-journal">{results.health.map((item) => <a href={item.source === "pregnancy" ? "/me-bau#ho-so-kham" : item.source === "milestone" ? "/be/phat-trien" : "/be/ho-so"} key={`${item.source}-${item.id}`}><time dateTime={item.occurredAt}>{dateLabel(item.occurredAt)}</time><strong>{item.title}</strong><p>{[item.provider, item.notes].filter(Boolean).join(" · ")}</p></a>)}</div></section> : null}
+      {results.health.length ? <section className="family-search-section" aria-labelledby="search-health-title"><div className="section-head"><p className="panel-kicker">Trong hồ sơ Mẹ & Bé</p><h2 id="search-health-title">Khám, tiêm và cột mốc</h2></div><div className="family-search-journal">{results.health.map((item) => <Link href={item.source === "pregnancy" ? "/me-bau/ho-so#ho-so-kham" : item.source === "milestone" ? "/be/phat-trien" : "/be/ho-so"} key={`${item.source}-${item.id}`}><time dateTime={item.occurredAt}>{dateLabel(item.occurredAt)}</time><strong>{item.title}</strong><p>{[item.provider, item.notes].filter(Boolean).join(" · ")}</p></Link>)}</div></section> : null}
 
       {query && !total ? <div className="empty-state family-search-empty"><strong>Chưa thấy điều này</strong><p>Thử tên album, thành phố, một từ trong lời nhắn hoặc ngày theo dạng 23/12/2025.</p></div> : null}
     </main>
