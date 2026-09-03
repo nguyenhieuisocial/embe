@@ -103,6 +103,16 @@ describe("mobile family shell", () => {
     expect(ruleBody(css, ".safety-search-box input")).toMatch(/min-height:\s*44px/);
     expect(ruleBody(css, ".safety-search-box button")).toMatch(/height:\s*44px/);
     expect(ruleBody(css, ".safety-search-chips button")).toMatch(/min-width:\s*44px/);
+    expect(ruleBody(css, ".pregnancy-main > .section .today-priority-list > li > a")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".prenatal-guide-sources a")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".medical-boundary > a")).toMatch(/min-height:\s*44px/);
+    expect(css).toMatch(/\.movement-source a\s*\{[^}]*min-height:\s*44px/s);
+    expect(ruleBody(css, ".journal-view-switch button")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".journal-search input")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".journal-kind-filter button")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".assistant-composer textarea")).toMatch(/min-height:\s*44px/);
+    expect(ruleBody(css, ".passkey-device-list button")).toMatch(/min-width:\s*44px/);
+    expect(ruleBody(css, ".family-trash-summary")).toMatch(/min-height:\s*44px/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.family-calendar[^{]*\{[^}]*margin-inline:\s*calc\(-1 \* var\(--gutter\)\)/s);
   });
 
