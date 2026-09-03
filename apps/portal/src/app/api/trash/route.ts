@@ -3,7 +3,24 @@ import { isTaskId } from "../../../lib/family-task-contract";
 import { taskRpc } from "../../../lib/family-tasks-server";
 import { verifySessionCookie } from "../../../lib/portal-auth";
 
-type TrashItem = { kind: "task" | "medical"; id: string; title: string; detail: string; deletedAt: string };
+type TrashKind = "task" | "medical" | "meal" | "expense";
+type TrashItem = { kind: TrashKind; id: string; title: string; detail: string; deletedAt: string };
+
+const UUID_KINDS = new Set<TrashKind>(["medical", "meal", "expense"]);
+const RESTORE_RPC: Record<TrashKind, string> = {
+  task: "embe_restore_family_task",
+  medical: "embe_restore_pregnancy_medical_record_with_task",
+  meal: "embe_restore_meal_analysis",
+  expense: "embe_restore_family_expense"
+};
+
+function isTrashKind(value: unknown): value is TrashKind {
+  return value === "task" || value === "medical" || value === "meal" || value === "expense";
+}
+
+function validTrashId(kind: TrashKind, id: unknown): id is string {
+  return typeof id === "string" && (UUID_KINDS.has(kind) ? isUuidV4(id) : isTaskId(id));
+}
 
 function cookieValue(header: string | null): string | undefined {
   return header?.split(";").map((part) => part.trim().split("="))
@@ -18,8 +35,7 @@ function authorized(request: Request): boolean {
 function normalizeItem(value: unknown): TrashItem | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
-  if ((row.kind !== "task" && row.kind !== "medical") || typeof row.id !== "string"
-      || (row.kind === "task" ? !isTaskId(row.id) : !isUuidV4(row.id))
+  if (!isTrashKind(row.kind) || !validTrashId(row.kind, row.id)
       || typeof row.title !== "string" || row.title.length < 1 || row.title.length > 120
       || typeof row.detail !== "string" || row.detail.length > 120
       || typeof row.deleted_at !== "string" || Number.isNaN(Date.parse(row.deleted_at))) return null;
@@ -51,13 +67,11 @@ export async function POST(request: Request): Promise<Response> {
   if (authorization) return privateReply({ error: authorization === 401 ? "unauthorized" : "forbidden" }, authorization);
   const value = await boundedBody(request);
   if (!value) return privateReply({ error: "invalid_request" }, 400);
-  if (Object.keys(value).length !== 2 || typeof value.id !== "string"
-      || (value.kind !== "task" && value.kind !== "medical")
-      || (value.kind === "task" ? !isTaskId(value.id) : !isUuidV4(value.id))) {
+  if (Object.keys(value).length !== 2 || !isTrashKind(value.kind) || !validTrashId(value.kind, value.id)) {
     return privateReply({ error: "invalid_request" }, 400);
   }
   try {
-    await taskRpc(value.kind === "task" ? "embe_restore_family_task" : "embe_restore_pregnancy_medical_record_with_task", { p_id: value.id });
+    await taskRpc(RESTORE_RPC[value.kind], { p_id: value.id });
     return privateReply({ ok: true }, 200);
   } catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
 }

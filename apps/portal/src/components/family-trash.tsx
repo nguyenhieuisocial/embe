@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 
-type TrashItem = { kind: "task" | "medical"; id: string; title: string; detail: string; deletedAt: string };
+type TrashItem = { kind: "task" | "medical" | "meal" | "expense"; id: string; title: string; detail: string; deletedAt: string };
+
+const kindLabel: Record<TrashItem["kind"], string> = {
+  task: "Việc gia đình",
+  medical: "Hồ sơ thai kỳ",
+  meal: "Bữa ăn",
+  expense: "Khoản chi"
+};
 
 export default function FamilyTrash() {
   const [items, setItems] = useState<TrashItem[]>([]);
@@ -42,9 +49,9 @@ export default function FamilyTrash() {
       <h2 id="family-trash-title">Thùng rác</h2>
     </div>
     {loading ? <p className="state-note">Đang mở…</p> : null}
-    {!loading && items.length === 0 ? <p className="family-trash-empty">Chưa có việc hoặc hồ sơ thai kỳ nào bị xóa.</p> : null}
+    {!loading && items.length === 0 ? <p className="family-trash-empty">Chưa có dữ liệu nào bị xóa.</p> : null}
     {items.length ? <ul className="family-trash-list">{items.map((item) => <li key={`${item.kind}-${item.id}`}>
-      <span><strong>{item.title}</strong><small>{item.kind === "medical" ? "Hồ sơ thai kỳ" : "Việc gia đình"} · {item.detail}</small></span>
+      <span><strong>{item.title}</strong><small>{kindLabel[item.kind]} · {item.detail}</small></span>
       <button className="trash-restore" type="button" disabled={Boolean(workingId)} onClick={() => void restore(item)} aria-label={`Khôi phục ${item.title}`}>
         {workingId === item.id ? "Đang lấy…" : "Khôi phục"}
       </button>

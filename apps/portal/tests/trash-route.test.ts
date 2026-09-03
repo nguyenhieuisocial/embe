@@ -35,6 +35,8 @@ describe("private family trash endpoint", () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify([
       { kind: "task", id: "12", title: "Mua vitamin", detail: "Mẹ Ngân", deleted_at: "2026-09-02T10:00:00Z" },
       { kind: "medical", id: "11111111-1111-4111-8111-111111111111", title: "Khám thai", detail: "Bệnh viện", deleted_at: "2026-09-02T09:00:00Z" },
+      { kind: "meal", id: "22222222-2222-4222-8222-222222222222", title: "Bữa trưa", detail: "Cơm và cá", deleted_at: "2026-09-02T08:00:00Z" },
+      { kind: "expense", id: "33333333-3333-4333-8333-333333333333", title: "Vitamin", detail: "Thuốc · 320.000 ₫", deleted_at: "2026-09-02T07:00:00Z" },
       { kind: "unknown", id: "x", title: "ignore", detail: "", deleted_at: "bad" }
     ]), { status: 200 }));
 
@@ -42,7 +44,9 @@ describe("private family trash endpoint", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ items: [
       { kind: "task", id: "12", title: "Mua vitamin", detail: "Mẹ Ngân", deletedAt: "2026-09-02T10:00:00Z" },
-      { kind: "medical", id: "11111111-1111-4111-8111-111111111111", title: "Khám thai", detail: "Bệnh viện", deletedAt: "2026-09-02T09:00:00Z" }
+      { kind: "medical", id: "11111111-1111-4111-8111-111111111111", title: "Khám thai", detail: "Bệnh viện", deletedAt: "2026-09-02T09:00:00Z" },
+      { kind: "meal", id: "22222222-2222-4222-8222-222222222222", title: "Bữa trưa", detail: "Cơm và cá", deletedAt: "2026-09-02T08:00:00Z" },
+      { kind: "expense", id: "33333333-3333-4333-8333-333333333333", title: "Vitamin", detail: "Thuốc · 320.000 ₫", deletedAt: "2026-09-02T07:00:00Z" }
     ] });
   });
 
@@ -63,6 +67,20 @@ describe("private family trash endpoint", () => {
     expect(response.status).toBe(200);
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("embe_restore_pregnancy_medical_record_with_task"),
+      expect.objectContaining({ body: JSON.stringify({ p_id: id }) })
+    );
+  });
+
+  it.each([
+    ["meal", "embe_restore_meal_analysis"],
+    ["expense", "embe_restore_family_expense"]
+  ])("restores a %s through its private RPC", async (kind, rpc) => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const id = "22222222-2222-4222-8222-222222222222";
+    const response = await POST(request("POST", { kind, id }));
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining(rpc),
       expect.objectContaining({ body: JSON.stringify({ p_id: id }) })
     );
   });
