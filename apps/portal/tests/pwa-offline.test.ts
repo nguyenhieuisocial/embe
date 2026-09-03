@@ -35,6 +35,7 @@ describe("privacy-safe PWA runtime", () => {
     expect(source).toContain("event.waitUntil(");
     expect(source).toContain('pathname.startsWith("/api/notifications/")');
     expect(source).toContain("ACTIVITY_DEDUP_MS");
+    expect(source).toContain('response.headers.get("x-embe-activity-ready") === "1"');
   });
 
   it("keeps the device identity when iOS suspends and restarts the service worker", () => {

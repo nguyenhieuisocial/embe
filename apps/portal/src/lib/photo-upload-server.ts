@@ -31,10 +31,10 @@ export function authorizeMutation(request: Request): 401 | 403 | null {
   return null;
 }
 
-export function privateReply(body: Record<string, unknown>, status: number): Response {
+export function privateReply(body: Record<string, unknown>, status: number, headers: HeadersInit = {}): Response {
   return Response.json(body, {
     status,
-    headers: { "cache-control": "private, no-store" }
+    headers: { "cache-control": "private, no-store", ...Object.fromEntries(new Headers(headers)) }
   });
 }
 

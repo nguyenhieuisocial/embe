@@ -64,8 +64,15 @@ export async function POST(request: Request): Promise<Response> {
       });
       const result = data as Record<string, unknown> | null;
       if (error || !result || !isUuidV4(result.id)) throw new Error("meal note unavailable");
+      const checklistCompletion = typeof result.checklist_task_id === "string"
+        && typeof result.checklist_day === "string"
+        ? { taskId: result.checklist_task_id, day: result.checklist_day }
+        : null;
       revalidateFamilyViews();
-      return privateReply({ entryId: result.id, status: "analyzing" }, 201);
+      return privateReply({
+        entryId: result.id, status: "analyzing",
+        ...(checklistCompletion ? { checklistCompletion } : {})
+      }, 201, { "x-embe-activity-ready": "1" });
     }
     const { data, error } = await store.rpc("embe_create_meal_analysis", {
       p_idempotency_key: input.idempotencyKey, p_author_role: input.authorRole,
@@ -76,8 +83,9 @@ export async function POST(request: Request): Promise<Response> {
     if (error || !result || !isUuidV4(result.id) || typeof result.storage_path !== "string") throw new Error("queue unavailable");
     const signed = await store.storage.from(MEAL_BUCKET).createSignedUploadUrl(result.storage_path, { upsert: false });
     if (signed.error || !signed.data?.signedUrl) throw new Error("signing unavailable");
-    revalidateFamilyViews();
-    return privateReply({ entryId: result.id, uploadUrl: signed.data.signedUrl }, 201);
+    return privateReply({ entryId: result.id, uploadUrl: signed.data.signedUrl }, 201, {
+      "x-embe-activity-ready": "0"
+    });
   } catch {
     return privateReply({ error: "temporarily_unavailable" }, 503);
   }

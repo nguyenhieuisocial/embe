@@ -94,6 +94,7 @@ self.addEventListener("fetch", (event) => {
     const responsePromise = fetch(request);
     event.respondWith(responsePromise);
     event.waitUntil(responsePromise.then((response) => response.ok
+      && (url.pathname !== "/api/meals" || response.headers.get("x-embe-activity-ready") === "1")
       ? reportFamilyActivity(url.pathname, kind)
       : undefined).catch(() => undefined));
     return;

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { prepareMealPhoto, uploadMealPhoto } from "../src/lib/meal-photo-client";
+import { createMealNote, prepareMealPhoto, uploadMealPhoto } from "../src/lib/meal-photo-client";
 
 describe("meal photo upload reliability", () => {
   afterEach(() => {
@@ -21,6 +21,25 @@ describe("meal photo upload reliability", () => {
 
     await expect(pending).resolves.toBeUndefined();
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("updates the linked daily action as soon as a text meal is recorded", async () => {
+    const detail = { taskId: "lunch", day: "2026-09-03" };
+    const linked = vi.fn();
+    window.addEventListener("embe:daily-action-completed", linked);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      entryId: "11111111-1111-4111-8111-111111111111",
+      checklistCompletion: detail
+    }), {
+      status: 201,
+      headers: { "content-type": "application/json" }
+    })));
+
+    await createMealNote({ authorRole: "mother", mealType: "lunch", note: "Cơm cá" });
+
+    expect(linked).toHaveBeenCalledTimes(1);
+    expect(linked.mock.calls[0]?.[0]).toMatchObject({ detail });
+    window.removeEventListener("embe:daily-action-completed", linked);
   });
 
   it("shrinks an iPhone photo enough for faster local vision without changing its aspect ratio", async () => {

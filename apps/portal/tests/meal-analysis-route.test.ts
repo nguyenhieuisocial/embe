@@ -61,7 +61,9 @@ describe("private review-first meal analysis API", () => {
     }));
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ entryId, uploadUrl: expect.stringContaining("token=short") });
+    expect(response.headers.get("x-embe-activity-ready")).toBe("0");
     expect(createSignedUploadUrl).toHaveBeenCalledWith(storagePath, { upsert: false });
+    expect(revalidateFamilyViews).not.toHaveBeenCalled();
 
     const invalid = await createMeal(request("https://embe.hieu.asia/api/meals", {
       authorRole: "mother", byteSize: 13_000_000, eatenAt: "bad", filename: "meal.svg",
@@ -71,14 +73,19 @@ describe("private review-first meal analysis API", () => {
   });
 
   it("queues a written meal note for recognition without requiring a photo", async () => {
-    rpc.mockResolvedValueOnce({ data: { id: entryId, status: "uploaded" }, error: null });
+    rpc.mockResolvedValueOnce({ data: {
+      id: entryId, status: "uploaded", checklist_task_id: "lunch", checklist_day: "2026-09-01"
+    }, error: null });
     const response = await createMeal(request("https://embe.hieu.asia/api/meals", {
       authorRole: "mother", eatenAt: "2026-09-01T05:00:00Z", idempotencyKey: entryId,
       mealType: "lunch", note: "Một bát phở bò, ăn hết khoảng hai phần ba"
     }));
 
     expect(response.status).toBe(201);
-    expect(await response.json()).toEqual({ entryId, status: "analyzing" });
+    expect(await response.json()).toEqual({
+      entryId, status: "analyzing", checklistCompletion: { taskId: "lunch", day: "2026-09-01" }
+    });
+    expect(response.headers.get("x-embe-activity-ready")).toBe("1");
     expect(rpc).toHaveBeenCalledWith("embe_create_meal_note", expect.objectContaining({
       p_note: "Một bát phở bò, ăn hết khoảng hai phần ba"
     }));
@@ -97,10 +104,16 @@ describe("private review-first meal analysis API", () => {
   it("verifies stored bytes before queueing local image analysis", async () => {
     rpc.mockResolvedValueOnce({ data: { id: entryId, storage_path: storagePath, byte_size: 1000, mime_type: "image/jpeg" }, error: null });
     info.mockResolvedValueOnce({ data: { size: 1000, contentType: "image/jpeg" }, error: null });
-    rpc.mockResolvedValueOnce({ data: { status: "accepted" }, error: null });
+    rpc.mockResolvedValueOnce({ data: {
+      status: "accepted", checklist_task_id: "lunch", checklist_day: "2026-09-01"
+    }, error: null });
     const response = await completeMeal(request(`https://embe.hieu.asia/api/meals/${entryId}/complete`, {}), { params: Promise.resolve({ id: entryId }) });
     expect(response.status).toBe(202);
-    expect(await response.json()).toEqual({ status: "analyzing" });
+    expect(await response.json()).toEqual({
+      status: "analyzing", checklistCompletion: { taskId: "lunch", day: "2026-09-01" }
+    });
+    expect(response.headers.get("x-embe-activity-ready")).toBe("1");
+    expect(revalidateFamilyViews).toHaveBeenCalledOnce();
   });
 
   it("returns a review draft, then stores only a user-confirmed bounded result", async () => {

@@ -1,4 +1,5 @@
 import type { MealAnalysis } from "./meal-analysis-contract";
+import { announceLinkedDailyAction } from "./linked-daily-actions";
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -56,8 +57,9 @@ export async function createMealNote(input: {
     })
   });
   if (!created.ok) throw new Error("note_failed");
-  const value = await created.json() as { entryId?: string };
+  const value = await created.json() as { entryId?: string; checklistCompletion?: unknown };
   if (!value.entryId) throw new Error("note_failed");
+  announceLinkedDailyAction(value.checklistCompletion);
   return value.entryId;
 }
 
@@ -84,6 +86,8 @@ export async function createMealDraft(input: {
     method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: "{}"
   });
   if (!completed.ok) throw new Error("complete_failed");
+  const completion = await completed.json() as { checklistCompletion?: unknown };
+  announceLinkedDailyAction(completion.checklistCompletion);
   return session.entryId;
 }
 
