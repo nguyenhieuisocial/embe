@@ -141,6 +141,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
+  const [careFeedback, setCareFeedback] = useState("");
   const [showPlan, setShowPlan] = useState(false);
   const [planTimesPerDay, setPlanTimesPerDay] = useState(1);
   const [planSource, setPlanSource] = useState<CareSource>("clinician_plan");
@@ -224,8 +225,9 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     await refreshIphoneHealth(days);
   }
 
-  async function mutate(body: Record<string, unknown>) {
-    if (!day) return;
+  async function mutate(body: Record<string, unknown>, successMessage = "Đã lưu thay đổi."): Promise<boolean> {
+    if (!day) return false;
+    setCareFeedback("");
     setStatus("saving");
     try {
       const response = await fetch("/api/pregnancy/care", {
@@ -243,7 +245,13 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
         iphone_health_history: nextSnapshot.iphone_health_history ?? current.iphone_health_history
       }));
       setStatus("idle");
-    } catch { setStatus("error"); }
+      setCareFeedback(successMessage);
+      return true;
+    } catch {
+      setStatus("error");
+      setCareFeedback("Chưa lưu được. Thông tin vẫn được giữ để Mẹ thử lại.");
+      return false;
+    }
   }
 
   async function addPlan(event: FormEvent<HTMLFormElement>) {
@@ -257,12 +265,13 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     const reminderTimes = Array.from({ length: planTimesPerDay }, (_, index) =>
       String(data.get(`reminderTime${index + 1}`) ?? "")
     ).sort();
-    await mutate({ action: "plan", plan: {
+    const saved = await mutate({ action: "plan", plan: {
       id: null, category: data.get("category"), careSource: planSource, name: data.get("name"),
       doseDisplay: data.get("doseDisplay"), timesPerDay: planTimesPerDay, reminderTimes,
       instructions: data.get("instructions") ?? "", nutrientAmounts,
       confirmedByClinician: data.get("confirmedByClinician") === "on", active: true
-    } });
+    } }, "Đã thêm vào lịch dùng hằng ngày.");
+    if (!saved) return;
     form.reset();
     setPlanTimesPerDay(1);
     setPlanSource("clinician_plan");
@@ -277,7 +286,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     const data = new FormData(event.currentTarget);
     const doseStatus = data.get("doseStatus");
     await mutate({ action: "intake", planId, slot, status: doseStatus,
-      reason: doseStatus === "taken" ? "" : data.get("reason") ?? "" });
+      reason: doseStatus === "taken" ? "" : data.get("reason") ?? "" }, "Đã cập nhật lần dùng này.");
   }
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
@@ -478,80 +487,38 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     </section>
 
     <section className="care-tracker" id="vi-chat-thuoc" aria-labelledby="care-tracker-title">
-      <div className="section-heading-row">
+      <header className="care-tracker-heading">
         <div>
-          <p className="panel-kicker">Tách rõ nguồn · theo dõi đúng lịch</p>
-          <h2 id="care-tracker-title">Thuốc, vi chất &amp; dinh dưỡng</h2>
+          <span className="care-heading-mark" aria-hidden="true">✦</span>
+          <div><h2 id="care-tracker-title">Thuốc &amp; vi chất</h2><p>Theo đúng đơn, nhãn và giờ Mẹ đang dùng</p></div>
         </div>
-        <p>Đơn của bác sĩ và món tự mua được lưu riêng. EmBe chỉ ghi lại điều Mẹ nhập, không tự kê thuốc hay kết luận thiếu chất.</p>
-      </div>
+        <small>Không tự kê thuốc</small>
+      </header>
 
       <div className="care-today-grid">
         <article className="adherence-card">
           <div className="adherence-ring" style={{ "--progress": `${adherence * 3.6}deg` } as React.CSSProperties}>
             <strong>{doseCount ? `${adherence}%` : "—"}</strong><span>đã dùng</span>
           </div>
-          <div><h3>Hôm nay</h3><p>{doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : "Chưa có lịch dùng đang theo dõi"}</p></div>
-        </article>
-        <article className="energy-card">
-          <span>Ước lượng từ bữa đã ghi</span>
-          <strong>{calories ? `${calories} kcal` : "Chưa đủ dữ liệu"}</strong>
-          <p>{energyTarget ? `Mốc cá nhân tham khảo khoảng ${energyTarget} kcal/ngày.` : "Thêm hồ sơ cơ bản để có mốc năng lượng cá nhân."}</p>
+          <div><small>Hôm nay</small><h3>{doseCount ? `${Math.max(0, doseCount - takenCount - skippedCount)} lần còn lại` : "Chưa có lịch dùng"}</h3>
+            <p>{doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : "Thêm đúng thuốc Mẹ đang dùng để bắt đầu."}</p></div>
         </article>
       </div>
 
-      {timingConflicts.length ? <aside className="supplement-timing-alert">
-        <strong>Giờ sắt và canxi đang trùng nhau</strong>
-        <p>{[...new Set(timingConflicts.map((item) => item.time))].join(", ")}. WHO khuyên dùng hai loại ở thời điểm khác nhau trong ngày. Hãy chỉnh theo đúng lời dặn của bác sĩ hoặc dược sĩ.</p>
-        <a href="https://www.who.int/news-room/fact-sheets/detail/anaemia" target="_blank" rel="noreferrer">Nguồn WHO ↗</a>
-      </aside> : null}
+      <div className="care-primary-actions">
+        <button className="care-add-button is-primary" type="button" onClick={() => setShowPlan((value) => !value)}>
+          {showPlan ? "Đóng" : "+ Thêm thuốc hoặc vi chất"}
+        </button>
+        <Link className="care-prescription-link" href="/me-bau/ho-so?quick=prescription#ho-so-kham">Chụp đơn thuốc</Link>
+      </div>
 
-      {activePlans.length ? <div className="dose-list">
-        {activePlans.map((plan) => <article key={plan.id}>
-          <div className="dose-copy">
-            <span>{plan.category === "medicine" ? "Thuốc" : "Vi chất"}{plan.entry_source === "self_purchased" ? " · tự mua, không có đơn" : " · theo đơn / bác sĩ dặn"}{plan.confirmed_by_clinician ? " · đã xác nhận" : ""}</span>
-            <strong>{plan.name}</strong><small>{plan.dose_display}{plan.instructions ? ` · ${plan.instructions}` : ""}</small>
-            <button className="care-add-button" type="button" disabled={status === "saving"} onClick={() => void mutate({ action: "planState", planId: plan.id, active: false })}>Tạm dừng {plan.name}</button>
-          </div>
-          {plan.confirmed_by_clinician || plan.entry_source === "self_purchased" ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
-            {Array.from({ length: plan.times_per_day }, (_, index) => index + 1).map((slot) => {
-              const dose = (plan.dose_states ?? []).find((item) => item.slot === slot);
-              const reminderTime = plan.reminder_times?.[slot - 1]?.slice(0, 5);
-              return <form className="care-plan-form" key={`${slot}-${dose?.status ?? "pending"}-${dose?.recorded_at ?? ""}`} onSubmit={(event) => void saveDose(event, plan.id, slot)}>
-                <strong>Lần {slot}{reminderTime ? ` · ${reminderTime}` : ""}</strong>
-                <label>Trạng thái<span className="sr-only"> {plan.name} lần {slot}</span><select name="doseStatus" required defaultValue={dose?.status ?? ""} aria-label={`Trạng thái ${plan.name} lần ${slot}`}>
-                  <option value="">Chọn</option><option value="taken">Đã uống</option><option value="skipped">Bỏ qua</option><option value="deferred">Hoãn</option>
-                </select></label>
-                <label>Lý do ngắn (nếu bỏ qua/hoãn)<input name="reason" maxLength={120} defaultValue={dose?.reason ?? ""} /></label>
-                <button className="health-save" type="submit" disabled={status === "saving"}>Lưu lần {slot}</button>
-              </form>;
-            })}
-          </div> : <p className="formula-note">Xác nhận kế hoạch với bác sĩ/dược sĩ trước khi ghi tuân thủ.</p>}
-        </article>)}
-      </div> : <div className="care-empty"><strong>Chưa có kế hoạch dùng hằng ngày</strong><p>Chỉ thêm đúng tên và liều đang dùng hoặc đã được bác sĩ dặn.</p></div>}
-
-      {pausedPlans.length ? <details className="energy-profile">
-        <summary><span><strong>Kế hoạch đang tạm dừng</strong><small>{pausedPlans.length} kế hoạch</small></span><i>⌄</i></summary>
-        <div className="dose-list">{pausedPlans.map((plan) => <article key={plan.id}><div className="dose-copy"><strong>{plan.name}</strong><small>{plan.dose_display}</small></div>
-          <button className="care-add-button" type="button" disabled={status === "saving"} onClick={() => void mutate({ action: "planState", planId: plan.id, active: true })}>Kích hoạt {plan.name}</button>
-        </article>)}</div>
-      </details> : null}
-
-      {(snapshot.adherence_history ?? []).length ? <section className="dose-list" aria-labelledby="adherence-history-title">
-        <h3 id="adherence-history-title">Lịch sử tuân thủ</h3>
-        {(snapshot.adherence_history ?? []).map((item) => <article key={`${item.plan_id}-${item.day}-${item.slot}`}>
-          <div className="dose-copy"><span>{new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN")} · Lần {item.slot}</span><strong>{item.plan_name}</strong>
-            <small>{item.status === "taken" ? "Đã uống" : item.status === "skipped" ? "Bỏ qua" : "Hoãn"}{item.reason ? ` · ${item.reason}` : ""}</small></div>
-        </article>)}
-      </section> : null}
-
-      <button className="care-add-button" type="button" onClick={() => setShowPlan((value) => !value)}>
-        {showPlan ? "Đóng" : "+ Thêm thuốc hoặc vi chất"}
-      </button>
       {showPlan && <form className="care-plan-form" onSubmit={(event) => void addPlan(event)}>
-        <h3>Thêm thuốc hoặc vi chất</h3>
+        <header className="care-plan-form-heading">
+          <div><h3>Thêm thuốc hoặc vi chất</h3><p>Chép đúng thông tin trên đơn hoặc vỏ hộp.</p></div>
+          <button type="button" aria-label="Đóng form thêm thuốc" onClick={() => setShowPlan(false)}>×</button>
+        </header>
         <fieldset className="care-source-picker">
-          <legend>Nguồn</legend>
+          <legend>Thuốc này từ đâu?</legend>
           <label><input type="radio" name="careSource" value="clinician_plan" checked={planSource === "clinician_plan"} onChange={() => setPlanSource("clinician_plan")} /> Theo đơn / bác sĩ dặn</label>
           <label><input type="radio" name="careSource" value="self_purchased" checked={planSource === "self_purchased"} onChange={() => setPlanSource("self_purchased")} /> Tự mua / không có đơn</label>
         </fieldset>
@@ -562,7 +529,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
             setPlanCategory(item.category);
             setSelectedMedication(null);
           }}>{item.name}</button>)}</div>
-          <small>Chỉ điền tên, không tự đặt liều. Mẹ chép đúng nhãn và hỏi bác sĩ/dược sĩ về độ phù hợp.</small>
+          <small>Chỉ điền tên. Liều dùng phải chép từ nhãn hoặc lời dặn chuyên môn.</small>
         </div> : null}
         <div className="care-form-grid">
           <label>Loại<select name="category" value={planCategory} onChange={(event) => {
@@ -573,7 +540,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
             <label>Tên<input name="name" required maxLength={80} value={planName} onChange={(event) => {
               setPlanName(event.target.value);
               setSelectedMedication(null);
-            }} placeholder="Gõ tên trên vỏ hộp hoặc đơn" autoComplete="off" spellCheck={false}
+            }} placeholder="Tên trên vỏ hộp hoặc đơn" autoComplete="off" spellCheck={false}
               role="combobox" aria-autocomplete="list" aria-expanded={medicationSuggestions.length > 0}
               aria-controls={medicationSuggestions.length ? "medication-suggestions" : undefined} /></label>
             {medicationSuggestions.length ? <ul id="medication-suggestions" className="medication-suggestions" role="listbox" aria-label="Tên thuốc và vi chất phù hợp">
@@ -586,7 +553,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
             {selectedMedication ? <small className="medication-selection">Đã chọn đúng nhóm {selectedMedication.category === "medicine" ? "Thuốc" : "Vitamin / khoáng chất"}</small>
               : planName.trim().length >= 2 ? <small className="medication-custom-name">Không thấy đúng tên? Mẹ vẫn có thể giữ nguyên tên trên nhãn.</small> : null}
           </div>
-          <label>Liều ghi trên nhãn/đơn<input name="doseDisplay" required maxLength={80} placeholder="Ví dụ: 1 viên sau ăn" /></label>
+          <label className="care-wide">Liều ghi trên nhãn/đơn<input name="doseDisplay" required maxLength={80} placeholder="Ví dụ: 1 viên sau ăn" /></label>
           <label>Số lần mỗi ngày<select name="timesPerDay" value={planTimesPerDay}
             onChange={(event) => setPlanTimesPerDay(Number(event.target.value))}>
             {[1, 2, 3, 4, 5, 6].map((value) => <option key={value}>{value}</option>)}</select></label>
@@ -594,46 +561,116 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
             Giờ nhắc lần {index + 1}<input name={`reminderTime${index + 1}`} type="time" required
               defaultValue={index === 0 ? "08:00" : ""} />
           </label>)}
-          <label className="care-wide">Ghi chú<input name="instructions" maxLength={240} placeholder="Giờ dùng, dùng cùng thức ăn…" /></label>
+          <label className="care-wide">Ghi chú <small>không bắt buộc</small><input name="instructions" maxLength={240} placeholder="Ví dụ: dùng sau ăn" /></label>
         </div>
-        <label className="clinician-check"><input name="confirmedByClinician" type="checkbox" /> Đã hỏi bác sĩ/dược sĩ về sản phẩm và cách dùng này</label>
+        <label className="clinician-check"><input name="confirmedByClinician" type="checkbox" /> <span>Đã hỏi bác sĩ/dược sĩ về sản phẩm và cách dùng này</span></label>
         <details className="nutrient-entry">
-          <summary>Nhập lượng vi chất trên nhãn (không bắt buộc) <span>⌄</span></summary>
+          <summary>Lượng vi chất trên nhãn <small>không bắt buộc</small><span>⌄</span></summary>
           <p>Lượng cho mỗi lần dùng. Chép đúng đơn vị; EmBe sẽ cộng với bữa ăn đã xác nhận.</p>
           <div>{PREGNANCY_NUTRIENTS.map((item) => <label key={item.key}>{item.label}<span>{item.unit}</span><input name={item.key} type="number" min="0" max="100000" step="0.1" inputMode="decimal" /></label>)}</div>
         </details>
-        <button className="health-save" type="submit">Lưu kế hoạch</button>
+        <button className="health-save care-plan-save" type="submit" disabled={status === "saving"}>{status === "saving" ? "Đang lưu…" : "Lưu kế hoạch"}</button>
       </form>}
 
-      <div className="nutrient-heading"><div><p className="panel-kicker">Thức ăn đã xác nhận + liều đã đánh dấu</p><h3>Mức tham khảo hằng ngày</h3></div><span>NIH · thai kỳ 19–50 tuổi</span></div>
-      <div className="nutrient-list">
-        {PREGNANCY_NUTRIENTS.map((item) => {
-          const value = nutrientTotals[item.key] ?? 0;
-          const percent = Math.min(100, Math.round(value * 100 / item.target));
-          return <details key={item.key} className="nutrient-row">
-            <summary><span><strong>{item.label}</strong><small>{value ? `${Number(value.toFixed(1))} / ${item.target} ${item.unit}` : `Mốc ${item.target} ${item.unit}`}</small></span><i>{value ? `${percent}%` : "chưa ghi"}</i></summary>
-            <div className="nutrient-progress"><span style={{ width: `${percent}%` }} /></div>
-            <p>Nguồn thực phẩm: {item.foodExamples}. {item.upper ? `Mức tối đa tham khảo: ${item.upper} ${item.unit}. ` : ""}{item.upperNote ?? ""}</p>
-          </details>;
-        })}
-      </div>
+      {timingConflicts.length ? <aside className="supplement-timing-alert">
+        <strong>Giờ sắt và canxi đang trùng nhau</strong>
+        <p>{[...new Set(timingConflicts.map((item) => item.time))].join(", ")}. WHO khuyên dùng hai loại ở thời điểm khác nhau trong ngày. Hãy chỉnh theo đúng lời dặn của bác sĩ hoặc dược sĩ.</p>
+        <a href="https://www.who.int/news-room/fact-sheets/detail/anaemia" target="_blank" rel="noreferrer">Nguồn WHO ↗</a>
+      </aside> : null}
 
-      <details className="energy-profile">
-        <summary><span><strong>Tính mốc năng lượng cá nhân</strong><small>Dựa trên tuổi, chiều cao, cân nặng trước thai kỳ và mức vận động</small></span><i>⌄</i></summary>
-        <form onSubmit={(event) => void saveProfile(event)}>
-          <label>Ngày sinh<input name="birthDate" type="date" defaultValue={profile.birthDate ?? ""} /></label>
-          <label>Chiều cao (cm)<input name="heightCm" type="number" min="120" max="220" step="0.1" defaultValue={profile.heightCm ?? ""} /></label>
-          <label>Cân nặng trước thai kỳ (kg)<input name="prePregnancyWeightKg" type="number" min="25" max="300" step="0.1" defaultValue={profile.prePregnancyWeightKg ?? ""} /></label>
-          <label>Mức vận động<select name="activityLevel" defaultValue={profile.activityLevel ?? ""}><option value="">Chọn mức gần nhất</option><option value="sedentary">Ít vận động</option><option value="low_active">Vận động nhẹ</option><option value="active">Khá năng động</option><option value="very_active">Rất năng động</option></select></label>
-          <label className="care-wide">Mốc kcal bác sĩ/dinh dưỡng viên dặn (nếu có)<input name="clinicianEnergyTargetKcal" type="number" min="1000" max="5000" defaultValue={profile.clinicianEnergyTargetKcal ?? ""} /></label>
-          <label>Mức tăng cân tối thiểu bác sĩ dặn (kg)<input name="clinicianWeightGainMinKg" type="number" min="0" max="50" step="0.1" defaultValue={snapshot.profile?.clinician_weight_gain_min_kg ?? ""} /></label>
-          <label>Mức tăng cân tối đa bác sĩ dặn (kg)<input name="clinicianWeightGainMaxKg" type="number" min="0" max="50" step="0.1" defaultValue={snapshot.profile?.clinician_weight_gain_max_kg ?? ""} /></label>
-          <button className="health-save" type="submit">Lưu &amp; tính lại</button>
-        </form>
-        <p className="formula-note">Mốc tự tính dùng phương trình DRI 2023 theo hồ sơ và cộng khoảng 340 kcal ở ba tháng giữa, 450 kcal ở ba tháng cuối. Đây là điểm bắt đầu để theo dõi, không phải chỉ định giảm/tăng cân; mốc chuyên môn đã nhập luôn được ưu tiên.</p>
+      {status === "loading" ? <div className="care-loading" role="status"><span /><span /><span /></div>
+        : activePlans.length ? <div className="dose-list">
+        <div className="dose-list-heading"><h3>Lịch dùng hôm nay</h3><small>{activePlans.length} mục đang theo dõi</small></div>
+        {activePlans.map((plan) => <article key={plan.id}>
+          <div className="dose-copy">
+            <span className="dose-source">{plan.category === "medicine" ? "Thuốc" : "Vi chất"} · {plan.entry_source === "self_purchased" ? "tự mua" : "bác sĩ dặn"}{plan.confirmed_by_clinician ? " · đã hỏi chuyên môn" : ""}</span>
+            <strong>{plan.name}</strong><small>{plan.dose_display}{plan.instructions ? ` · ${plan.instructions}` : ""}</small>
+          </div>
+          {plan.confirmed_by_clinician || plan.entry_source === "self_purchased" ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
+            {Array.from({ length: plan.times_per_day }, (_, index) => index + 1).map((slot) => {
+              const dose = (plan.dose_states ?? []).find((item) => item.slot === slot);
+              const reminderTime = plan.reminder_times?.[slot - 1]?.slice(0, 5);
+              const doseLabel = dose?.status === "taken" ? "Đã uống" : dose?.status === "skipped" ? "Đã bỏ qua" : dose?.status === "deferred" ? "Đang hoãn" : "Chưa ghi";
+              return <div className={`dose-slot-row is-${dose?.status ?? "pending"}`} key={`${slot}-${dose?.status ?? "pending"}-${dose?.recorded_at ?? ""}`}>
+                <div><time>{reminderTime ?? `Lần ${slot}`}</time><small>{reminderTime ? `Lần ${slot} · ${doseLabel}` : doseLabel}</small></div>
+                {dose?.status === "taken" ? <span className="dose-done">✓ Đã uống</span>
+                  : <button className="dose-taken-button" type="button" disabled={status === "saving"}
+                    aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`}
+                    onClick={() => void mutate({ action: "intake", planId: plan.id, slot, status: "taken", reason: "" }, "Đã đánh dấu đã uống.")}>Đã uống</button>}
+                <details className="dose-adjust">
+                  <summary>{dose ? "Sửa trạng thái" : "Bỏ qua hoặc hoãn"}<span>⌄</span></summary>
+                  <form onSubmit={(event) => void saveDose(event, plan.id, slot)}>
+                    <label>Trạng thái<span className="sr-only"> {plan.name} lần {slot}</span><select name="doseStatus" required defaultValue={dose?.status ?? ""} aria-label={`Trạng thái ${plan.name} lần ${slot}`}>
+                      <option value="">Chọn</option><option value="taken">Đã uống</option><option value="skipped">Bỏ qua</option><option value="deferred">Hoãn</option>
+                    </select></label>
+                    <label>Lý do ngắn (nếu bỏ qua/hoãn)<input name="reason" maxLength={120} defaultValue={dose?.reason ?? ""} /></label>
+                    <button className="health-save" type="submit" disabled={status === "saving"}>Lưu lần {slot}</button>
+                  </form>
+                </details>
+              </div>;
+            })}
+          </div> : <p className="formula-note">Xác nhận kế hoạch với bác sĩ/dược sĩ trước khi ghi tuân thủ.</p>}
+          <button className="dose-pause-button" type="button" disabled={status === "saving"}
+            onClick={() => void mutate({ action: "planState", planId: plan.id, active: false }, `Đã tạm dừng ${plan.name}.`)}>Tạm dừng {plan.name}</button>
+        </article>)}
+      </div> : <div className="care-empty"><span aria-hidden="true">♡</span><strong>Chưa có lịch dùng hằng ngày</strong><p>Thêm đúng tên và liều Mẹ đang dùng. EmBe sẽ xếp giờ gọn ở đây.</p></div>}
+
+      {pausedPlans.length ? <details className="energy-profile">
+        <summary><span><strong>Kế hoạch đang tạm dừng</strong><small>{pausedPlans.length} kế hoạch</small></span><i>⌄</i></summary>
+        <div className="dose-list">{pausedPlans.map((plan) => <article key={plan.id}><div className="dose-copy"><strong>{plan.name}</strong><small>{plan.dose_display}</small></div>
+          <button className="care-add-button" type="button" disabled={status === "saving"} onClick={() => void mutate({ action: "planState", planId: plan.id, active: true })}>Kích hoạt {plan.name}</button>
+        </article>)}</div>
+      </details> : null}
+
+      {(snapshot.adherence_history ?? []).length ? <details className="care-secondary-section">
+        <summary><span><h3 id="adherence-history-title">Lịch sử đã ghi</h3><small>{snapshot.adherence_history?.length} lần gần đây</small></span><i>⌄</i></summary>
+        <section className="dose-list care-history-list" aria-labelledby="adherence-history-title">
+          {(snapshot.adherence_history ?? []).map((item) => <article key={`${item.plan_id}-${item.day}-${item.slot}`}>
+            <div className="dose-copy"><span>{new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN")} · Lần {item.slot}</span><strong>{item.plan_name}</strong>
+              <small>{item.status === "taken" ? "Đã uống" : item.status === "skipped" ? "Bỏ qua" : "Hoãn"}{item.reason ? ` · ${item.reason}` : ""}</small></div>
+          </article>)}
+        </section>
+      </details> : null}
+
+      <details className="care-secondary-section care-nutrition-section">
+        <summary><span><h3>Dinh dưỡng tham khảo</h3><small>{calories ? `${calories} kcal từ bữa đã ghi` : "Mở khi cần xem vi chất và năng lượng"}</small></span><i>⌄</i></summary>
+        <div className="care-nutrition-body">
+          <article className="energy-card">
+            <span>Ước lượng từ bữa đã ghi</span>
+            <strong>{calories ? `${calories} kcal` : "Chưa đủ dữ liệu"}</strong>
+            <p>{energyTarget ? `Mốc cá nhân tham khảo khoảng ${energyTarget} kcal/ngày.` : "Thêm hồ sơ cơ bản để có mốc năng lượng cá nhân."}</p>
+          </article>
+          <div className="nutrient-heading"><div><h3>Mức tham khảo hằng ngày</h3><p>Thức ăn đã xác nhận + liều đã đánh dấu</p></div><span>NIH · thai kỳ 19–50 tuổi</span></div>
+          <div className="nutrient-list">
+            {PREGNANCY_NUTRIENTS.map((item) => {
+              const value = nutrientTotals[item.key] ?? 0;
+              const percent = Math.min(100, Math.round(value * 100 / item.target));
+              return <details key={item.key} className="nutrient-row">
+                <summary><span><strong>{item.label}</strong><small>{value ? `${Number(value.toFixed(1))} / ${item.target} ${item.unit}` : `Mốc ${item.target} ${item.unit}`}</small></span><i>{value ? `${percent}%` : "chưa ghi"}</i></summary>
+                <div className="nutrient-progress"><span style={{ width: `${percent}%` }} /></div>
+                <p>Nguồn thực phẩm: {item.foodExamples}. {item.upper ? `Mức tối đa tham khảo: ${item.upper} ${item.unit}. ` : ""}{item.upperNote ?? ""}</p>
+              </details>;
+            })}
+          </div>
+
+          <details className="energy-profile">
+            <summary><span><strong>Tính mốc năng lượng cá nhân</strong><small>Dựa trên tuổi, chiều cao, cân nặng trước thai kỳ và mức vận động</small></span><i>⌄</i></summary>
+            <form onSubmit={(event) => void saveProfile(event)}>
+              <label>Ngày sinh<input name="birthDate" type="date" defaultValue={profile.birthDate ?? ""} /></label>
+              <label>Chiều cao (cm)<input name="heightCm" type="number" min="120" max="220" step="0.1" defaultValue={profile.heightCm ?? ""} /></label>
+              <label>Cân nặng trước thai kỳ (kg)<input name="prePregnancyWeightKg" type="number" min="25" max="300" step="0.1" defaultValue={profile.prePregnancyWeightKg ?? ""} /></label>
+              <label>Mức vận động<select name="activityLevel" defaultValue={profile.activityLevel ?? ""}><option value="">Chọn mức gần nhất</option><option value="sedentary">Ít vận động</option><option value="low_active">Vận động nhẹ</option><option value="active">Khá năng động</option><option value="very_active">Rất năng động</option></select></label>
+              <label className="care-wide">Mốc kcal bác sĩ/dinh dưỡng viên dặn (nếu có)<input name="clinicianEnergyTargetKcal" type="number" min="1000" max="5000" defaultValue={profile.clinicianEnergyTargetKcal ?? ""} /></label>
+              <label>Mức tăng cân tối thiểu bác sĩ dặn (kg)<input name="clinicianWeightGainMinKg" type="number" min="0" max="50" step="0.1" defaultValue={snapshot.profile?.clinician_weight_gain_min_kg ?? ""} /></label>
+              <label>Mức tăng cân tối đa bác sĩ dặn (kg)<input name="clinicianWeightGainMaxKg" type="number" min="0" max="50" step="0.1" defaultValue={snapshot.profile?.clinician_weight_gain_max_kg ?? ""} /></label>
+              <button className="health-save" type="submit">Lưu &amp; tính lại</button>
+            </form>
+            <p className="formula-note">Mốc tự tính dùng phương trình DRI 2023 theo hồ sơ và cộng khoảng 340 kcal ở ba tháng giữa, 450 kcal ở ba tháng cuối. Đây là điểm bắt đầu để theo dõi, không phải chỉ định giảm/tăng cân; mốc chuyên môn đã nhập luôn được ưu tiên.</p>
+          </details>
+        </div>
       </details>
 
-      <p className={`care-status is-${status}`} aria-live="polite">{status === "saving" ? "Đang lưu riêng tư…" : status === "error" ? "Chưa đồng bộ được; hãy thử lại khi có mạng." : "Dữ liệu sức khỏe được giữ riêng cho gia đình."}</p>
+      <p className={`care-status is-${status}`} aria-live="polite">{status === "saving" ? "Đang lưu…" : careFeedback || (status === "error" ? "Chưa kết nối được. Thông tin chưa lưu vẫn được giữ." : "Chỉ Hiếu và Ngân xem được dữ liệu này.")}</p>
     </section>
   </>);
 }

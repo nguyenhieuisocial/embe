@@ -218,7 +218,12 @@ describe("iPhone health connection state", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<PregnancyCareTracker pregnancyWeek={8} />);
     await waitFor(() => expect(screen.getByText(/0\/1 đã uống · 0 bỏ qua · 1 hoãn/i)).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: "Lịch sử tuân thủ" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Chụp đơn thuốc" })).toHaveAttribute("href", "/me-bau/ho-so?quick=prescription#ho-so-kham");
+    fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã uống Prenatal theo đơn lần 1" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
+      method: "PATCH", body: expect.stringContaining('"status":"taken"')
+    })));
+    expect(screen.getByRole("heading", { name: "Lịch sử đã ghi" })).toBeInTheDocument();
     expect(screen.getByText(/Bỏ qua · Buồn nôn/i)).toBeInTheDocument();
     expect(screen.queryByText(/liều khuyến nghị|nên uống/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Trạng thái Prenatal theo đơn lần 1"), { target: { value: "taken" } });
@@ -238,5 +243,27 @@ describe("iPhone health connection state", () => {
       body: expect.stringContaining('"active":true')
     })));
     window.removeEventListener("embe:daily-action-completed", linked);
+  });
+
+  it("keeps the entered plan open when saving fails", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).startsWith("/api/pregnancy/care") && init?.method === "PATCH") {
+        return new Response(JSON.stringify({ error: "unavailable" }), { status: 503 });
+      }
+      if (String(input).startsWith("/api/pregnancy/care")) return Response.json({
+        snapshot: { profile: null, plans: [], iphone_health: null, iphone_health_history: [], iphone_devices: [] }
+      });
+      return Response.json({ history: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "+ Thêm thuốc hoặc vi chất" }));
+    fireEvent.change(screen.getByLabelText("Tên"), { target: { value: "Viên sắt theo đơn" } });
+    fireEvent.change(screen.getByLabelText("Liều ghi trên nhãn/đơn"), { target: { value: "1 viên sau ăn" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu kế hoạch" }));
+
+    expect(await screen.findByDisplayValue("Viên sắt theo đơn")).toBeInTheDocument();
+    expect(screen.getByText("Chưa lưu được. Thông tin vẫn được giữ để Mẹ thử lại.")).toBeInTheDocument();
   });
 });

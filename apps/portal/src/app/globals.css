@@ -64,6 +64,121 @@
   --shadow-lift: 0 -12px 40px -12px rgba(51, 39, 43, .28);
 }
 
+/* Medication care: quiet, compact and one-hand first. */
+.care-tracker.care-tracker {
+  scroll-margin-top: calc(4.5rem + env(safe-area-inset-top));
+  padding: 14px;
+  border-color: color-mix(in srgb, var(--rose) 13%, var(--line));
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--rose-soft) 28%, var(--surface));
+  box-shadow: none;
+}
+.care-tracker-heading { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
+.care-tracker-heading > div { align-items: center; display: flex; gap: 9px; min-width: 0; }
+.care-heading-mark { display: grid; flex: 0 0 36px; height: 36px; place-items: center; border-radius: 12px; background: #f8e5ed; color: #a94769; font-size: 1rem; }
+.care-tracker-heading h2 { margin: 0; color: #523740; font-size: 1.05rem; letter-spacing: -.015em; }
+.care-tracker-heading p { margin: 2px 0 0; color: #806b73; font-size: .68rem; line-height: 1.35; }
+.care-tracker-heading > small { flex: 0 0 auto; padding: 5px 8px; border-radius: 999px; background: #fff; color: #8d6f7a; font-size: .6rem; }
+.care-tracker .care-today-grid { margin: 11px 0 8px; }
+.care-tracker .adherence-card { min-height: 82px; padding: 10px; border: 0; border-radius: 16px; background: #fff; }
+.care-tracker .adherence-ring { flex-basis: 58px; width: 58px; background: radial-gradient(circle at center, #fff 56%, transparent 58%), conic-gradient(#bd587a var(--progress), #f4e7eb 0); }
+.care-tracker .adherence-ring strong { font-size: .86rem; }
+.care-tracker .adherence-ring span { font-size: .56rem; }
+.care-tracker .adherence-card > div:last-child { min-width: 0; }
+.care-tracker .adherence-card small { color: #987b86; font-size: .62rem; }
+.care-tracker .adherence-card h3 { margin: 1px 0 0; color: #563842; font-size: .94rem; }
+.care-tracker .adherence-card p { margin-top: 2px; font-size: .7rem; line-height: 1.4; }
+.care-primary-actions { display: grid; gap: 7px; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); margin-bottom: 9px; }
+.care-primary-actions .care-add-button, .care-prescription-link { align-items: center; display: flex; justify-content: center; min-height: 46px; padding: 7px 10px; border-radius: 14px; font-size: .74rem; text-align: center; text-decoration: none; }
+.care-primary-actions .care-add-button.is-primary { border-color: #a94769; background: #a94769; color: #fff; }
+.care-prescription-link { border: 1px solid #e5ccd5; background: #fff; color: #8e3f5c; font-weight: 700; }
+.care-tracker .care-plan-form { gap: 11px; margin: 9px 0 12px; padding: 12px; border: 1px solid #ead8de; border-radius: 17px; background: #fff; box-shadow: 0 10px 25px rgb(100 53 70 / 6%); }
+.care-plan-form-heading { align-items: start; display: flex; gap: 10px; justify-content: space-between; }
+.care-plan-form-heading h3 { margin: 0; color: #523740; font-size: .96rem; }
+.care-plan-form-heading p { margin: 2px 0 0; color: #816d74; font-size: .67rem; }
+.care-plan-form-heading > button { display: grid; flex: 0 0 44px; height: 44px; place-items: center; margin: -8px -7px 0 0; border: 0; border-radius: 50%; background: transparent; color: #9a6f7e; font: inherit; font-size: 1.25rem; }
+.care-tracker .care-source-picker { gap: 6px; }
+.care-tracker .care-source-picker legend, .care-tracker .care-quick-suggestions > span { color: #755f67; font-size: .68rem; }
+.care-tracker .care-source-picker label { min-height: 48px; padding: 7px 8px; border-radius: 12px; font-size: .7rem; line-height: 1.25; }
+.care-tracker .care-source-picker label:has(input:checked) { border-color: #c36785; background: #fff3f7; color: #7f3551; }
+.care-tracker .care-quick-suggestions { gap: 5px; }
+.care-tracker .care-quick-suggestions > div { margin-inline: -12px; padding: 0 12px 2px; scroll-padding-inline: 12px; }
+.care-tracker .care-quick-suggestions button { min-height: 42px; padding: 7px 10px; font-size: .7rem; }
+.care-tracker .care-quick-suggestions small { font-size: .64rem; }
+.care-tracker .care-form-grid { gap: 9px; }
+.care-tracker .care-plan-form label { color: #68555d; font-size: .7rem; }
+.care-tracker .care-plan-form label > small { display: inline; color: #9a858d; font-size: .6rem; font-weight: 500; }
+.care-tracker .care-plan-form input, .care-tracker .care-plan-form select { min-height: 46px; padding: 9px 11px; border-color: #e5d6db; border-radius: 11px; background: #fffcfd; font-size: .82rem; }
+.care-tracker .medication-suggestions { max-height: min(245px, 35dvh); overflow-y: auto; box-shadow: 0 12px 28px rgb(94 58 70 / 12%); }
+.care-tracker .clinician-check { min-height: 48px; padding: 8px; border-radius: 12px; background: #fff6f9; color: #604f55; }
+.care-tracker .nutrient-entry { border-top: 1px solid #f0e5e8; }
+.care-tracker .nutrient-entry summary { gap: 5px; justify-content: start; color: #66535a; font-size: .72rem; }
+.care-tracker .nutrient-entry summary small { color: #9a858d; font-size: .61rem; }
+.care-tracker .nutrient-entry summary span { margin-left: auto; }
+.care-tracker .care-plan-save { position: sticky; bottom: calc(66px + env(safe-area-inset-bottom)); z-index: 2; min-height: 48px; box-shadow: 0 8px 20px rgb(133 51 82 / 16%); }
+.care-tracker .dose-list { gap: 8px; margin: 10px 0; }
+.dose-list-heading { align-items: end; display: flex; justify-content: space-between; padding: 2px 2px 0; }
+.dose-list-heading h3 { margin: 0; color: #5a4049; font-size: .86rem; }
+.dose-list-heading small { color: #907b83; font-size: .62rem; }
+.care-tracker .dose-list > article { gap: 9px; padding: 11px; border-color: #ecdee3; border-radius: 16px; box-shadow: none; }
+.care-tracker .dose-copy { gap: 2px; }
+.care-tracker .dose-source { color: #9b5570; font-size: .62rem; }
+.care-tracker .dose-copy strong { color: #50373f; font-size: .9rem; }
+.care-tracker .dose-copy small { font-size: .69rem; }
+.dose-slots { gap: 7px; }
+.dose-slot-row { align-items: center; display: grid; gap: 7px; grid-template-columns: minmax(0, 1fr) auto; padding: 7px 8px; border-radius: 13px; background: #fcf7f9; }
+.dose-slot-row > div { display: grid; gap: 1px; }
+.dose-slot-row time { color: #613d4b; font-size: .82rem; font-weight: 750; }
+.dose-slot-row > div small { color: #89757d; font-size: .61rem; }
+.dose-taken-button, .dose-done { align-items: center; display: inline-flex; justify-content: center; min-height: 44px; padding: 7px 11px; border-radius: 999px; font-size: .7rem; font-weight: 750; white-space: nowrap; }
+.dose-taken-button { border: 0; background: #a94769; color: #fff; font: inherit; }
+.dose-done { background: #e8f5ef; color: #35765f; }
+.dose-adjust { grid-column: 1 / -1; border-top: 1px solid #eee2e6; }
+.dose-adjust summary { align-items: center; display: flex; justify-content: space-between; min-height: 44px; color: #806c74; cursor: pointer; font-size: .66rem; list-style: none; }
+.dose-adjust summary::-webkit-details-marker { display: none; }
+.dose-adjust summary span { transition: transform 160ms ease-out; }
+.dose-adjust[open] summary span { transform: rotate(180deg); }
+.dose-adjust form { display: grid; gap: 8px; padding-bottom: 4px; }
+.dose-adjust form label { display: grid; gap: 3px; color: #6b5960; font-size: .68rem; }
+.dose-adjust form input, .dose-adjust form select { min-height: 44px; padding: 8px 10px; border: 1px solid #e4d5da; border-radius: 10px; background: #fff; color: var(--ink); font: inherit; }
+.dose-adjust form .health-save { min-height: 44px; }
+.dose-pause-button { justify-self: end; min-height: 44px; padding: 7px 6px; border: 0; background: transparent; color: #917983; font: inherit; font-size: .65rem; text-decoration: underline; text-underline-offset: 3px; }
+.care-tracker .care-empty { display: grid; justify-items: center; gap: 3px; padding: 16px 12px; border-radius: 16px; }
+.care-empty > span { color: #be7590; font-size: 1.25rem; }
+.care-empty strong { color: #5b414a; font-size: .82rem; }
+.care-empty p { max-width: 28rem; font-size: .7rem; line-height: 1.4; }
+.care-loading { display: grid; gap: 7px; margin: 10px 0; }
+.care-loading span { height: 48px; border-radius: 13px; background: linear-gradient(90deg, #f8edf1 25%, #fff 50%, #f8edf1 75%); background-size: 200% 100%; animation: care-shimmer 1.2s ease-in-out infinite; }
+@keyframes care-shimmer { to { background-position-x: -200%; } }
+.care-secondary-section { margin-top: 8px; padding: 0 11px; border: 1px solid #eadde1; border-radius: 15px; background: #fff; }
+.care-secondary-section > summary { align-items: center; display: flex; justify-content: space-between; min-height: 52px; cursor: pointer; list-style: none; }
+.care-secondary-section > summary::-webkit-details-marker { display: none; }
+.care-secondary-section > summary > span { display: grid; gap: 1px; }
+.care-secondary-section > summary h3 { margin: 0; color: #5b424b; font-size: .8rem; }
+.care-secondary-section > summary small { color: #907b83; font-size: .62rem; }
+.care-secondary-section > summary i { color: #a65370; font-style: normal; transition: transform 160ms ease-out; }
+.care-secondary-section[open] > summary i { transform: rotate(180deg); }
+.care-history-list { margin-top: 0; padding-bottom: 8px; }
+.care-history-list > article { background: #fdf8fa; }
+.care-nutrition-body { padding: 0 0 10px; }
+.care-nutrition-body .energy-card { min-height: 76px; padding: 10px; border-radius: 13px; background: #fdf8fa; }
+.care-nutrition-body .nutrient-heading { margin-top: 12px; }
+.care-nutrition-body .nutrient-heading p { margin: 2px 0 0; color: #89747c; font-size: .62rem; }
+.care-tracker .care-status { min-height: 20px; margin-top: 8px; font-size: .65rem; }
+.care-tracker .care-status.is-idle:not(:empty) { color: #5d806f; }
+
+@media (prefers-reduced-motion: reduce) {
+  .care-loading span { animation: none; }
+  .dose-adjust summary span, .care-secondary-section > summary i { transition: none; }
+}
+
+@media (min-width: 720px) {
+  .care-primary-actions { max-width: 520px; }
+  .care-tracker .care-form-grid { grid-template-columns: 1fr 1fr; }
+  .care-tracker .care-name-picker, .care-tracker .care-wide { grid-column: 1 / -1; }
+  .care-tracker .care-plan-save { position: static; }
+}
+
 /* Focused pregnancy tools: one task per screen on iPhone. */
 .pregnancy-tool-menu {
   display: grid;
