@@ -89,6 +89,7 @@
   {"name":"Canh cua rau đay","query":"crab cooked moist heat","aliases":["canh cua rau day","canh cua"]},
   {"name":"Rau muống xào tỏi","query":"water spinach cooked","aliases":["rau muong xao toi","rau muống xào"]},
   {"name":"Rau luộc","query":"vegetables mixed cooked boiled","aliases":["rau luoc"]},
+  {"name":"Rau xà lách","query":"lettuce green leaf raw","aliases":["rau xa lach","xà lách","xa lach","salad leaves","lettuce"]},
   {"name":"Cải thìa xào","query":"pak choi cooked boiled","aliases":["cai thia xao","cải chíp xào"]},
   {"name":"Bông cải xào","query":"broccoli cooked","aliases":["bong cai xao","súp lơ xào"]},
   {"name":"Giá xào","query":"mung beans mature seeds sprouted cooked","aliases":["gia xao"]},

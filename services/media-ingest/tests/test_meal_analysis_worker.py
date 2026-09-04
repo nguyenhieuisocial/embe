@@ -507,12 +507,12 @@ def test_food_safety_terms_match_words_not_substrings():
     assert parsed["foods"][0]["safety_flags"] == []
 
 
-def test_a_quick_food_photo_returns_only_the_primary_visible_dish():
+def test_a_food_photo_keeps_multiple_clearly_separated_visible_components():
     class TooManyDishesTransport:
         def __call__(self, method, url, headers, body=None):
             if url.endswith("/api/chat"):
                 request = json.loads(body)
-                assert request["format"]["properties"]["foods"]["maxItems"] == 1
+                assert request["format"]["properties"]["foods"]["maxItems"] == 8
                 return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
                     "foods": [
                         {"name_vi": "Phở bò", "search_name_en": "beef pho", "estimated_grams": 420,
@@ -526,7 +526,7 @@ def test_a_quick_food_photo_returns_only_the_primary_visible_dish():
 
     result = MealAnalysisWorker(config(), TooManyDishesTransport())._analyze(JPEG, "")
 
-    assert [food["name_vi"] for food in result["foods"]] == ["Phở bò"]
+    assert [food["name_vi"] for food in result["foods"]] == ["Phở bò", "Cá hồi áp chảo"]
 
 
 def test_food_vision_prompt_constrains_the_model_to_the_local_vietnamese_catalog():
@@ -553,6 +553,10 @@ def test_food_vision_prompt_constrains_the_model_to_the_local_vietnamese_catalog
     assert "Bún riêu cua" in transport.content
     assert "mỗi tô, bát, đĩa hoặc hộp là một món hoàn chỉnh" in transport.content
     assert "nước dùng đỏ cam" in transport.content
+    assert "thành phần tách biệt, nhìn thấy rõ" in transport.content
+    assert "Không chỉ trả món nổi bật nhất" in transport.content
+    assert "dùng tên nguyên liệu đơn giản" in transport.content
+    assert "không đổi thành một món chế biến khác" in transport.content
 
 
 def test_user_corrected_vietnamese_food_uses_a_safe_usda_query_instead_of_the_old_dish():
@@ -626,6 +630,7 @@ def test_nutrition_aliases_only_match_a_complete_food_name():
 @pytest.mark.parametrize(("name_vi", "expected"), [
     ("Dưa hấu", "watermelon raw"),
     ("Trái cây kiwi vàng", "kiwifruit raw"),
+    ("Rau xà lách", "lettuce green leaf raw"),
 ])
-def test_nutrition_maps_confirmed_fruit_names_from_production(name_vi, expected):
+def test_nutrition_maps_confirmed_food_names_from_production(name_vi, expected):
     assert nutrition_search_query(name_vi) == expected

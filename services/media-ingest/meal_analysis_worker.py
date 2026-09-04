@@ -427,8 +427,12 @@ Phân biệt món nước bằng dấu hiệu nhìn thấy: Bún riêu cua thư�
 và sợi bún tròn; phở có bánh phở bản dẹt cùng nước dùng trong hoặc nâu; bún bò Huế thường đỏ, sợi tròn to,
 có sả và thịt bò/giò; mì Quảng ít nước, sợi vàng; bánh canh có sợi ngắn và dày.
 Ưu tiên chọn đúng tên trong DANH MỤC MÓN VIỆT bên dưới. Nếu cùng món có biến thể nhỏ thì dùng tên gần nhất trong danh mục.
-Nhìn toàn bộ khay trước: mỗi tô, bát, đĩa hoặc hộp là một món hoàn chỉnh; không tách nguyên liệu, rau thơm,
-chanh, nước chấm hoặc đồ trang trí thành món riêng. Không thêm món chỉ vì nó thường ăn kèm.
+Nhìn toàn bộ khay trước. Với món nước, món trộn hoặc món đã nấu chung, mỗi tô, bát, đĩa hoặc hộp là một món hoàn chỉnh;
+không tách nguyên liệu ẩn, rau thơm, chanh, nước chấm hoặc đồ trang trí thành món riêng. Với suất ăn, salad hoặc tô hạt
+có các thành phần tách biệt, nhìn thấy rõ, hãy liệt kê từng thành phần có ý nghĩa dinh dưỡng. Không chỉ trả món nổi bật nhất
+và không thêm món chỉ vì nó thường ăn kèm. Trong trường hợp này, dùng tên nguyên liệu đơn giản cùng cách chế biến nhìn thấy
+được, ví dụ "Tôm luộc", "Trứng luộc", "Bắp", "Rau xà lách", "Bông cải xanh", "Bơ", "Cà chua";
+không đổi thành một món chế biến khác như gỏi cuốn, canh chua hoặc rau xào nếu ảnh không thể hiện món đó.
 Ghi chú của người dùng là gợi ý để phân biệt món; không dùng ghi chú để bịa món trái với ảnh.
 Ước lượng gram phần ăn được, không tính đĩa/tô/ly; nếu không đủ căn cứ thì dùng null. Mỗi món chỉ xuất hiện
 một lần, không lặp và không điền thêm cho đủ số lượng. safety_flags luôn để [] vì máy chủ sẽ kiểm tra riêng.
@@ -484,13 +488,12 @@ class MealAnalysisWorker:
         return response.body
 
     def _analyze(self, body: bytes | None, note: str) -> dict[str, Any]:
-        quick_photo = body is not None and not note.strip()
         schema = {
             "type": "object", "required": ["foods", "needs_user_confirmation"],
             "additionalProperties": False,
             "properties": {
                 "foods": {
-                    "type": "array", "minItems": 0 if body is None else 1, "maxItems": 1 if quick_photo else 8,
+                    "type": "array", "minItems": 0 if body is None else 1, "maxItems": 8,
                     "items": {
                         "type": "object", "additionalProperties": False,
                         "required": ["name_vi", "search_name_en", "estimated_grams", "confidence", "food_groups", "safety_flags"],
@@ -511,7 +514,7 @@ class MealAnalysisWorker:
         }
         message: dict[str, Any] = {
             "role": "user",
-            "content": f"{PROMPT}\n{'Chỉ trích xuất món được viết rõ trong ghi chú.' if body is None else 'Chỉ trả món chính nổi bật nhất trong ảnh.' if quick_photo else 'Đối chiếu cả ảnh và ghi chú.'}\nGhi chú của người dùng: {note[:300] or '(không có)'}",
+            "content": f"{PROMPT}\n{'Chỉ trích xuất món được viết rõ trong ghi chú.' if body is None else 'Phân tích toàn bộ ảnh và đối chiếu ghi chú nếu có.'}\nGhi chú của người dùng: {note[:300] or '(không có)'}",
         }
         if body is not None:
             message["images"] = [base64.b64encode(body).decode()]
@@ -545,8 +548,6 @@ class MealAnalysisWorker:
                         "estimate_notice": "Không thấy món cụ thể nên EmBe không tự đoán. Mẹ có thể thêm món hoặc chỉ lưu ghi chú.",
                     }
                 result = parse_vision_result(raw_result)
-                if quick_photo:
-                    result["foods"] = result["foods"][:1]
                 if body is None:
                     result["estimate_notice"] = "Ước lượng từ ghi chú; cần xác nhận món và khẩu phần trước khi lưu."
                 return result
