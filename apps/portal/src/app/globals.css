@@ -4075,6 +4075,7 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .medication-scan-review > header > span { background: var(--coral-soft); border-radius: 999px; color: var(--coral); font-size: .6875rem; font-weight: 700; padding: 6px 9px; white-space: nowrap; }
 .medication-scan-review > img { background: var(--surface); border-radius: var(--radius-sm); display: block; max-height: min(52dvh, 520px); object-fit: contain; width: 100%; }
 .medication-scan-editor, .medication-scan-message { display: grid; gap: 10px; }
+.medication-scan-editor textarea { background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); font: inherit; min-height: 76px; padding: 10px 12px; resize: vertical; width: 100%; }
 .medication-scan-editor > p, .medication-scan-message p { color: var(--ink-soft); font-size: .75rem; margin: 0; }
 .medication-scan-editor > ul { display: grid; gap: 4px; margin: 0; padding-left: 18px; }
 .medication-scan-editor > ul li { color: var(--ink-soft); font-size: .8125rem; }

@@ -1,42 +1,4 @@
--- Preserve visible medication ingredients/strengths and allow a failed image scan to be retried.
-
-CREATE OR REPLACE FUNCTION public.embe_queue_medication_scan(p_document_id uuid)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = ''
-AS $function$
-DECLARE
-  scan_row portal_read_model.medication_scan%ROWTYPE;
-BEGIN
-  IF p_document_id IS NULL OR NOT EXISTS (
-    SELECT 1
-    FROM portal_read_model.pregnancy_medical_document AS document
-    JOIN portal_read_model.pregnancy_medical_record AS medical_record
-      ON medical_record.id = document.record_id
-    WHERE document.id = p_document_id
-      AND document.status = 'ready'
-      AND document.mime_type IN ('image/jpeg', 'image/png', 'image/webp')
-      AND medical_record.kind = 'prescription'
-      AND medical_record.deleted_at IS NULL
-  ) THEN
-    RAISE EXCEPTION 'document is not a ready prescription image';
-  END IF;
-
-  INSERT INTO portal_read_model.medication_scan (document_id)
-  VALUES (p_document_id)
-  ON CONFLICT (document_id) DO UPDATE
-  SET status = 'queued', attempts = 0, next_attempt_at = timezone('utc', now()),
-      claimed_at = NULL, last_error_code = NULL
-  WHERE medication_scan.status IN ('failed', 'rejected');
-
-  SELECT * INTO scan_row
-  FROM portal_read_model.medication_scan
-  WHERE document_id = p_document_id;
-
-  RETURN jsonb_build_object('document_id', scan_row.document_id, 'status', scan_row.status);
-END;
-$function$;
+-- Keep complete ingredient lists for multi-vitamin and mineral labels.
 
 CREATE OR REPLACE FUNCTION public.embe_confirm_medication_scan(
   p_document_id uuid,
@@ -119,13 +81,5 @@ BEGIN
 END;
 $function$;
 
-UPDATE portal_read_model.medication_scan
-SET status = 'queued', attempts = 0, next_attempt_at = timezone('utc', now()),
-    claimed_at = NULL, last_error_code = NULL
-WHERE status IN ('failed', 'rejected')
-  AND last_error_code = 'invalid_medication_vision_output';
-
-REVOKE ALL ON FUNCTION public.embe_queue_medication_scan(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.embe_confirm_medication_scan(uuid,jsonb) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.embe_queue_medication_scan(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.embe_confirm_medication_scan(uuid,jsonb) TO service_role;

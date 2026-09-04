@@ -123,7 +123,10 @@ describe("private pregnancy medical records", () => {
           name: "Sắt", ingredients: "Sắt nguyên tố 27 mg", dose: "1 viên",
           frequency: "mỗi ngày", instructions: "Sau ăn", confidence: 0.83
         }],
-        questions: ["Kiểm tra lại hàm lượng trên nhãn."]
+        questions: [
+          "Kiểm tra lại hàm lượng trên nhãn.",
+          "Chỉ chép nội dung thật sự đọc được và không suy luận."
+        ]
       }
     }, error: null });
     const viewed = await getMedicationScan(
@@ -134,6 +137,7 @@ describe("private pregnancy medical records", () => {
     expect(viewed.status).toBe(200);
     expect(payload.analysis.medicines[0].name).toBe("Sắt");
     expect(payload.analysis.medicines[0].ingredients).toBe("Sắt nguyên tố 27 mg");
+    expect(payload.analysis.questions).toEqual(["Kiểm tra lại hàm lượng trên nhãn."]);
     expect(JSON.stringify(payload)).not.toContain("storage_path");
   });
 

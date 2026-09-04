@@ -70,7 +70,7 @@ export function normalizeMedicalRecord(value: unknown): MedicalRecord | null {
   const medicines = Array.isArray(row.medicines) ? row.medicines.flatMap((item) => {
     if (!item || typeof item !== "object") return [];
     const medicine = item as Record<string, unknown>;
-    const name = boundedText(medicine.name, 100); const ingredients = boundedText(medicine.ingredients ?? "", 300);
+    const name = boundedText(medicine.name, 100); const ingredients = boundedText(medicine.ingredients ?? "", 1200);
     const dose = boundedText(medicine.dose, 80);
     const frequency = boundedText(medicine.frequency, 80); const instructions = boundedText(medicine.instructions, 200);
     return name && ingredients !== null && dose !== null && frequency !== null && instructions !== null

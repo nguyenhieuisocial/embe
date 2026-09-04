@@ -359,7 +359,7 @@ export default function PregnancyMedicalRecords() {
           <small>Có thể nhập ngay hoặc để trống rồi chụp ảnh đơn thuốc bên dưới.</small>
           {medicines.map((medicine, index) => <div className="medical-medicine-row" key={index}>
             <label>Tên thuốc<input value={medicine.name} maxLength={100} onChange={(event) => updateMedicine(index, "name", event.target.value)} /></label>
-            <label className="medical-ingredients">Thành phần / hàm lượng<input value={medicine.ingredients ?? ""} maxLength={300} placeholder="Ví dụ: Sắt 27 mg; DHA 200 mg" onChange={(event) => updateMedicine(index, "ingredients", event.target.value)} /></label>
+            <label className="medical-ingredients">Thành phần / hàm lượng<textarea rows={3} value={medicine.ingredients ?? ""} maxLength={1200} placeholder="Ví dụ: Sắt 27 mg; DHA 200 mg" onChange={(event) => updateMedicine(index, "ingredients", event.target.value)} /></label>
             <label>Liều<input value={medicine.dose} maxLength={80} placeholder="1 viên" onChange={(event) => updateMedicine(index, "dose", event.target.value)} /></label>
             <label>Số lần<input value={medicine.frequency} maxLength={80} placeholder="Sau ăn sáng" onChange={(event) => updateMedicine(index, "frequency", event.target.value)} /></label>
             <label>Cách dùng<input value={medicine.instructions} maxLength={200} onChange={(event) => updateMedicine(index, "instructions", event.target.value)} /></label>
@@ -382,7 +382,7 @@ export default function PregnancyMedicalRecords() {
         {scan.status === "review" || scan.status === "saving" ? <div className="medication-scan-editor">
           {scan.medicines.map((medicine, index) => <div className="medical-medicine-row" key={index}>
             <label>Tên thuốc<input value={medicine.name} maxLength={100} onChange={(event) => updateScannedMedicine(scan.documentId, index, "name", event.target.value)} /></label>
-            <label className="medical-ingredients">Thành phần / hàm lượng<input value={medicine.ingredients ?? ""} maxLength={300} onChange={(event) => updateScannedMedicine(scan.documentId, index, "ingredients", event.target.value)} /></label>
+            <label className="medical-ingredients">Thành phần / hàm lượng<textarea rows={3} value={medicine.ingredients ?? ""} maxLength={1200} onChange={(event) => updateScannedMedicine(scan.documentId, index, "ingredients", event.target.value)} /></label>
             <label>Liều<input value={medicine.dose} maxLength={80} onChange={(event) => updateScannedMedicine(scan.documentId, index, "dose", event.target.value)} /></label>
             <label>Số lần<input value={medicine.frequency} maxLength={80} onChange={(event) => updateScannedMedicine(scan.documentId, index, "frequency", event.target.value)} /></label>
             <label>Cách dùng<input value={medicine.instructions} maxLength={200} onChange={(event) => updateScannedMedicine(scan.documentId, index, "instructions", event.target.value)} /></label>

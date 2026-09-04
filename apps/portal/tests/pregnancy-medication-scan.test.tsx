@@ -70,7 +70,7 @@ describe("prescription image review", () => {
       "src", `/api/pregnancy/documents/${documentId}`
     );
     expect(within(review).getByDisplayValue("Sắt cũ")).toBeInTheDocument();
-    expect(within(review).getByDisplayValue("Sắt nguyên tố 27 mg; axit folic 600 mcg")).toBeInTheDocument();
+    expect(within(review).getByDisplayValue("Sắt nguyên tố 27 mg; axit folic 600 mcg").tagName).toBe("TEXTAREA");
     expect(within(review).getByText("Độ chắc chắn 84%")).toBeInTheDocument();
     expect(within(review).getByText("Kiểm tra lại hàm lượng trên vỏ hộp.")).toBeInTheDocument();
 

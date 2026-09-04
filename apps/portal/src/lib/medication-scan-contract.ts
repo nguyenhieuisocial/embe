@@ -16,6 +16,11 @@ export type MedicationScanAnalysis = {
   questions: string[];
 };
 
+const QUESTION_PROMPT_ECHOES = [
+  "chỉ chép", "ingredients", "medicine", "ngăn cách", "không tách", "không kê",
+  "trả đúng json", "tối đa 12", "bắt buộc để", "không suy luận"
+];
+
 function text(value: unknown, maximum: number, required = false): string | null {
   if (typeof value !== "string" || value.length > maximum) return null;
   const normalized = value.trim();
@@ -33,7 +38,7 @@ export function normalizeMedicationScanAnalysis(value: unknown): MedicationScanA
     const medicine = item as Record<string, unknown>;
     if (Object.keys(medicine).some((key) => !["name", "ingredients", "dose", "frequency", "instructions", "confidence"].includes(key))) return [];
     const name = text(medicine.name, 100, true);
-    const ingredients = text(medicine.ingredients ?? "", 300);
+    const ingredients = text(medicine.ingredients ?? "", 1200);
     const dose = text(medicine.dose, 80);
     const frequency = text(medicine.frequency, 80);
     const instructions = text(medicine.instructions, 200);
@@ -44,10 +49,11 @@ export function normalizeMedicationScanAnalysis(value: unknown): MedicationScanA
   });
   const questions = input.questions.flatMap((item) => {
     const question = text(item, 160, true);
-    return question ? [question] : [];
+    return question && !QUESTION_PROMPT_ECHOES.some((marker) => question.toLocaleLowerCase("vi").includes(marker))
+      ? [question] : [];
   });
-  if (medicines.length !== input.medicines.length || questions.length !== input.questions.length) return null;
-  return { medicines, questions };
+  if (medicines.length !== input.medicines.length) return null;
+  return { medicines, questions: questions.slice(0, 2) };
 }
 
 export function confirmedMedicationPayload(value: unknown): { medicines: MedicationScanMedicine[] } | null {

@@ -119,16 +119,34 @@ def test_preserves_blank_fields_instead_of_inferring_a_missing_dose():
 
 
 def test_keeps_visible_active_ingredients_and_strengths_from_the_label():
+    long_ingredients = "; ".join([f"Vitamin {index} 10 mg" for index in range(35)])
     result = parse_medication_scan_result({
         "medicines": [{
             "name": "Vitamin tổng hợp",
-            "ingredients": "Sắt 27 mg; axit folic 600 mcg; DHA 200 mg",
+            "ingredients": long_ingredients,
             "dose": "", "frequency": "", "instructions": "", "confidence": 0.88,
         }],
         "questions": [],
     })
 
-    assert result["medicines"][0]["ingredients"] == "Sắt 27 mg; axit folic 600 mcg; DHA 200 mg"
+    assert len(long_ingredients) > 300
+    assert result["medicines"][0]["ingredients"] == long_ingredients
+
+
+def test_drops_prompt_echoes_from_review_questions_without_losing_the_medicine():
+    result = parse_medication_scan_result({
+        "medicines": [{
+            "name": "Vitamin tổng hợp", "ingredients": "Sắt 27 mg", "dose": "",
+            "frequency": "", "instructions": "", "confidence": 0.88,
+        }],
+        "questions": [
+            "Kiểm tra lại tên sản phẩm trên nhãn.",
+            "Chỉ chép nội dung thật sự đọc được và không suy luận.",
+            "Trong ingredients, chép nguyên các hoạt chất nhìn thấy.",
+        ],
+    })
+
+    assert result["questions"] == ["Kiểm tra lại tên sản phẩm trên nhãn."]
 
 
 @pytest.mark.parametrize("extra_field", ["is_safe", "recommended_dose", "clinician_confirmed"])

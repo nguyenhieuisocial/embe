@@ -28,7 +28,12 @@ Chỉ chép nội dung thật sự đọc được. Giữ nguyên tên thương 
 Nếu ảnh là bảng thành phần của một sản phẩm, trả đúng một medicine và gộp các thành phần vào ingredients; không tách mỗi vitamin hoặc khoáng chất thành một thuốc riêng.
 Nếu không nhìn rõ liều, số lần hoặc cách dùng thì bắt buộc để trường tương ứng là chuỗi rỗng, không suy luận và không điền theo kiến thức có sẵn.
 Không đánh giá thuốc có an toàn cho thai kỳ hay không, không kê đơn, không đề xuất liều, không xác nhận bác sĩ và không đưa lời khuyên điều trị.
-Câu hỏi chỉ dùng để nhờ người dùng kiểm tra lại chữ không rõ trên ảnh. Trả về đúng JSON theo schema, tối đa 12 thuốc."""
+Câu hỏi chỉ dùng để nhờ người dùng kiểm tra lại chữ không rõ trên ảnh, tối đa 2 câu ngắn; nếu không cần thì trả mảng rỗng. Không lặp lại chỉ dẫn này. Trả về đúng JSON theo schema, tối đa 12 thuốc."""
+
+QUESTION_PROMPT_ECHOES = (
+    "chỉ chép", "ingredients", "medicine", "ngăn cách", "không tách", "không kê",
+    "trả đúng json", "tối đa 12", "bắt buộc để", "không suy luận",
+)
 
 
 def _validate_image(body: bytes, mime_type: str) -> None:
@@ -68,7 +73,7 @@ def parse_medication_scan_result(value: Any) -> dict[str, Any]:
         instructions = medicine["instructions"]
         confidence = medicine["confidence"]
         if (not isinstance(name, str) or not 1 <= len(name.strip()) <= 100
-                or not isinstance(ingredients, str) or len(ingredients.strip()) > 300
+                or not isinstance(ingredients, str) or len(ingredients.strip()) > 1200
                 or not isinstance(dose, str) or len(dose.strip()) > 80
                 or not isinstance(frequency, str) or len(frequency.strip()) > 80
                 or not isinstance(instructions, str) or len(instructions.strip()) > 200
@@ -83,9 +88,11 @@ def parse_medication_scan_result(value: Any) -> dict[str, Any]:
             "instructions": instructions.strip(),
             "confidence": round(float(confidence), 2),
         })
+    safe_questions = [question.strip() for question in questions
+                      if not any(marker in question.casefold() for marker in QUESTION_PROMPT_ECHOES)]
     return {
         "medicines": normalized,
-        "questions": [question.strip() for question in questions],
+        "questions": safe_questions[:2],
     }
 
 
@@ -143,7 +150,7 @@ class MedicationScanWorker:
                         "additionalProperties": False,
                         "properties": {
                             "name": {"type": "string", "minLength": 1, "maxLength": 100},
-                            "ingredients": {"type": "string", "maxLength": 300},
+                            "ingredients": {"type": "string", "maxLength": 1200},
                             "dose": {"type": "string", "maxLength": 80},
                             "frequency": {"type": "string", "maxLength": 80},
                             "instructions": {"type": "string", "maxLength": 200},
@@ -152,7 +159,7 @@ class MedicationScanWorker:
                     },
                 },
                 "questions": {
-                    "type": "array", "maxItems": 6,
+                    "type": "array", "maxItems": 2,
                     "items": {"type": "string", "minLength": 1, "maxLength": 120},
                 },
             },
