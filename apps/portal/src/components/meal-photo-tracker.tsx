@@ -167,6 +167,7 @@ export default function MealPhotoTracker() {
   const medicationRouteOpen = medicationLike && confirmedMedicationText !== note.trim();
   const medicationDestination = medicationCareDestination(note);
   const popularSuggestions = useMemo(() => suggestPopularFoods(note), [note]);
+  const mealNowLabel = mealType === "snack" ? "bữa phụ" : `bữa ${(labels[mealType] ?? "ăn").toLocaleLowerCase("vi")}`;
   const currentMenus = useMemo(() => suggestCurrentMealMenus(mealType, completedHistory.map((entry) => ({
     mealType: entry.mealType, note: entry.note,
     foods: entry.analysis.foods.map((food) => ({ nameVi: food.nameVi, foodGroups: food.foodGroups }))
@@ -378,8 +379,8 @@ export default function MealPhotoTracker() {
             <button key={value} type="button" aria-pressed={mealType === value} onClick={() => setMealType(value as MealType)}>{label}</button>
           ))}
         </div>
-        <section className="meal-now-menu" aria-label={`Gợi ý bữa ${(labels[mealType] ?? "ăn").toLocaleLowerCase("vi")} bây giờ`}>
-          <div><strong>Gợi ý bữa {(labels[mealType] ?? "ăn").toLocaleLowerCase("vi")} bây giờ</strong><small>Tự đổi theo giờ và những bữa đã ghi</small></div>
+        <section className="meal-now-menu" aria-label={`Gợi ý ${mealNowLabel} bây giờ`}>
+          <div><strong>Gợi ý {mealNowLabel} bây giờ</strong><small>Tự đổi theo giờ và những bữa đã ghi</small></div>
           <div>{currentMenus.map((menu) => <button key={menu} type="button" onClick={() => { setNote(menu); setConfirmedMedicationText(""); }}>{menu}</button>)}</div>
           <small>Tham khảo; điều chỉnh theo dị ứng và hướng dẫn riêng của bác sĩ.</small>
         </section>

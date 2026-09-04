@@ -173,6 +173,7 @@ describe("mobile meal journal", () => {
     render(<MealPhotoTracker />);
 
     const menu = await screen.findByLabelText(/Gợi ý bữa .* bây giờ/i);
+    expect(menu).not.toHaveAccessibleName(/bữa bữa/i);
     const choice = within(menu).getAllByRole("button")[0];
     expect(choice).toBeEnabled();
     fireEvent.click(choice);
