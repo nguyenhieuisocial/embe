@@ -3,7 +3,7 @@ export const MEDICAL_BUCKET = "embe-medical-records";
 export const MEDICAL_MAX_BYTES = 15_000_000;
 export const MEDICAL_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
-export type MedicalMedicine = { name: string; dose: string; frequency: string; instructions: string };
+export type MedicalMedicine = { name: string; ingredients?: string; dose: string; frequency: string; instructions: string };
 export type MedicalDocument = { id: string; originalFilename: string; mimeType: string; byteSize: number; createdAt: string };
 export type MedicalRecord = {
   id: string; kind: string; status: "planned" | "completed"; occurredAt: string; title: string;
@@ -70,9 +70,11 @@ export function normalizeMedicalRecord(value: unknown): MedicalRecord | null {
   const medicines = Array.isArray(row.medicines) ? row.medicines.flatMap((item) => {
     if (!item || typeof item !== "object") return [];
     const medicine = item as Record<string, unknown>;
-    const name = boundedText(medicine.name, 100); const dose = boundedText(medicine.dose, 80);
+    const name = boundedText(medicine.name, 100); const ingredients = boundedText(medicine.ingredients ?? "", 300);
+    const dose = boundedText(medicine.dose, 80);
     const frequency = boundedText(medicine.frequency, 80); const instructions = boundedText(medicine.instructions, 200);
-    return name && dose !== null && frequency !== null && instructions !== null ? [{ name, dose, frequency, instructions }] : [];
+    return name && ingredients !== null && dose !== null && frequency !== null && instructions !== null
+      ? [{ name, ingredients, dose, frequency, instructions }] : [];
   }) : [];
   const documents = Array.isArray(row.documents) ? row.documents.flatMap((item) => {
     if (!item || typeof item !== "object") return [];

@@ -23,8 +23,9 @@ class WorkerFailure(RuntimeError):
         self.code = code
 
 
-MEDICATION_PROMPT = """Bạn đang chép lại thông tin nhìn thấy trực tiếp trên ảnh đơn thuốc, nhãn hoặc vỏ hộp.
-Chỉ chép nội dung thật sự đọc được. Giữ nguyên tên thương hiệu và hàm lượng in trên ảnh; viết phần diễn giải bằng tiếng Việt tự nhiên.
+MEDICATION_PROMPT = """Bạn đang chép lại thông tin nhìn thấy trực tiếp trên ảnh đơn thuốc, nhãn, bảng thành phần hoặc vỏ hộp.
+Chỉ chép nội dung thật sự đọc được. Giữ nguyên tên thương hiệu. Trong ingredients, chép nguyên các hoạt chất, vitamin, khoáng chất và hàm lượng nhìn thấy; ngăn cách từng thành phần bằng dấu chấm phẩy. Viết phần diễn giải bằng tiếng Việt tự nhiên.
+Nếu ảnh là bảng thành phần của một sản phẩm, trả đúng một medicine và gộp các thành phần vào ingredients; không tách mỗi vitamin hoặc khoáng chất thành một thuốc riêng.
 Nếu không nhìn rõ liều, số lần hoặc cách dùng thì bắt buộc để trường tương ứng là chuỗi rỗng, không suy luận và không điền theo kiến thức có sẵn.
 Không đánh giá thuốc có an toàn cho thai kỳ hay không, không kê đơn, không đề xuất liều, không xác nhận bác sĩ và không đưa lời khuyên điều trị.
 Câu hỏi chỉ dùng để nhờ người dùng kiểm tra lại chữ không rõ trên ảnh. Trả về đúng JSON theo schema, tối đa 12 thuốc."""
@@ -56,16 +57,18 @@ def parse_medication_scan_result(value: Any) -> dict[str, Any]:
 
     normalized: list[dict[str, Any]] = []
     for medicine in medicines:
-        if not isinstance(medicine, dict) or set(medicine) != {
-            "name", "dose", "frequency", "instructions", "confidence"
-        }:
+        if (not isinstance(medicine, dict)
+                or not {"name", "dose", "frequency", "instructions", "confidence"}.issubset(medicine)
+                or not set(medicine).issubset({"name", "ingredients", "dose", "frequency", "instructions", "confidence"})):
             raise ValueError("invalid_medication_scan_result")
         name = medicine["name"]
+        ingredients = medicine.get("ingredients", "")
         dose = medicine["dose"]
         frequency = medicine["frequency"]
         instructions = medicine["instructions"]
         confidence = medicine["confidence"]
         if (not isinstance(name, str) or not 1 <= len(name.strip()) <= 100
+                or not isinstance(ingredients, str) or len(ingredients.strip()) > 300
                 or not isinstance(dose, str) or len(dose.strip()) > 80
                 or not isinstance(frequency, str) or len(frequency.strip()) > 80
                 or not isinstance(instructions, str) or len(instructions.strip()) > 200
@@ -74,6 +77,7 @@ def parse_medication_scan_result(value: Any) -> dict[str, Any]:
             raise ValueError("invalid_medication_scan_result")
         normalized.append({
             "name": name.strip(),
+            **({"ingredients": ingredients.strip()} if "ingredients" in medicine else {}),
             "dose": dose.strip(),
             "frequency": frequency.strip(),
             "instructions": instructions.strip(),
@@ -135,10 +139,11 @@ class MedicationScanWorker:
                     "type": "array", "maxItems": 12,
                     "items": {
                         "type": "object",
-                        "required": ["name", "dose", "frequency", "instructions", "confidence"],
+                        "required": ["name", "ingredients", "dose", "frequency", "instructions", "confidence"],
                         "additionalProperties": False,
                         "properties": {
                             "name": {"type": "string", "minLength": 1, "maxLength": 100},
+                            "ingredients": {"type": "string", "maxLength": 300},
                             "dose": {"type": "string", "maxLength": 80},
                             "frequency": {"type": "string", "maxLength": 80},
                             "instructions": {"type": "string", "maxLength": 200},
@@ -158,7 +163,7 @@ class MedicationScanWorker:
             "think": False,
             "format": schema,
             "keep_alive": "24h",
-            "options": {"temperature": 0, "num_predict": 1024},
+            "options": {"temperature": 0, "num_ctx": 8192, "num_predict": 1024},
             "messages": [{
                 "role": "user",
                 "content": MEDICATION_PROMPT,

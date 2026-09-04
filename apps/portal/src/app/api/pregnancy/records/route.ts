@@ -32,6 +32,7 @@ function validPayload(value: unknown): value is Record<string, unknown> {
       if (!item || typeof item !== "object") return false;
       const medicine = item as Record<string, unknown>;
       return typeof medicine.name === "string" && medicine.name.trim().length >= 1 && medicine.name.length <= 100
+        && (medicine.ingredients === undefined || typeof medicine.ingredients === "string" && medicine.ingredients.length <= 300)
         && typeof medicine.dose === "string" && medicine.dose.length <= 80
         && typeof medicine.frequency === "string" && medicine.frequency.length <= 80
         && typeof medicine.instructions === "string" && medicine.instructions.length <= 200;

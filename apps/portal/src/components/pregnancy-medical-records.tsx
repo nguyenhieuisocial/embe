@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import {
   APPOINTMENT_CHECKLIST,
@@ -44,7 +44,7 @@ type MedicationScan = {
   status: "queued" | "processing" | "review" | "saving" | "confirmed" | "failed";
 };
 
-const emptyMedicine = (): MedicalMedicine => ({ name: "", dose: "", frequency: "", instructions: "" });
+const emptyMedicine = (): MedicalMedicine => ({ name: "", ingredients: "", dose: "", frequency: "", instructions: "" });
 
 async function uploadDocument(recordId: string, file: File): Promise<{ documentId: string; mimeType: string }> {
   const prepared = file.type === "application/pdf" ? file : await prepareImageForUpload(file, {
@@ -78,13 +78,16 @@ export default function PregnancyMedicalRecords() {
   const [formMode, setFormMode] = useState<"new" | "prepare" | "outcome">("new");
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
+  const pollingScans = useRef(new Set<string>());
 
   async function load() {
     try {
       const response = await cachedPrivateGet("/api/pregnancy/records");
       if (!response.ok) throw new Error("records unavailable");
       const payload = await response.json() as { records?: MedicalRecord[] };
-      setRecords(payload.records ?? []); setStatus("idle");
+      const nextRecords = payload.records ?? [];
+      setRecords(nextRecords); setStatus("idle");
+      void restoreMedicationScans(nextRecords);
     } catch { setStatus("error"); }
   }
 
@@ -115,37 +118,86 @@ export default function PregnancyMedicalRecords() {
     setMedicationScans((current) => current.map((scan) => scan.documentId === documentId ? update(scan) : scan));
   }
 
+  function upsertMedicationScan(next: MedicationScan) {
+    setMedicationScans((current) => current.some((scan) => scan.documentId === next.documentId)
+      ? current.map((scan) => scan.documentId === next.documentId ? next : scan)
+      : [next, ...current]);
+  }
+
+  function scanFromPayload(documentId: string, payload: {
+    status?: string; analysis?: { medicines?: MedicationScanMedicine[]; questions?: string[] };
+  }): MedicationScan | null {
+    if (payload.status === "confirmed") return null;
+    if (payload.status === "failed" || payload.status === "rejected") {
+      return { documentId, medicines: [], questions: [], status: "failed" };
+    }
+    if (payload.status === "queued" || payload.status === "processing") {
+      return { documentId, medicines: [], questions: [], status: payload.status };
+    }
+    if (payload.status !== "review" || !payload.analysis) return null;
+    const extracted = Array.isArray(payload.analysis.medicines)
+      ? payload.analysis.medicines.filter((medicine) => typeof medicine?.name === "string") : [];
+    return {
+      documentId, medicines: extracted.length ? extracted : [emptyMedicine()],
+      questions: Array.isArray(payload.analysis.questions) ? payload.analysis.questions : [], status: "review"
+    };
+  }
+
+  async function restoreMedicationScans(nextRecords: MedicalRecord[]) {
+    const documentIds = nextRecords
+      .filter((record) => record.kind === "prescription")
+      .flatMap((record) => record.documents)
+      .filter((document) => document.mimeType.startsWith("image/"))
+      .map((document) => document.id);
+    await Promise.all(documentIds.map(async (documentId) => {
+      try {
+        const response = await fetch(`/api/pregnancy/documents/${documentId}/medication-scan`, { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json() as {
+          status?: string; analysis?: { medicines?: MedicationScanMedicine[]; questions?: string[] };
+        };
+        const restored = scanFromPayload(documentId, payload);
+        if (!restored) return;
+        upsertMedicationScan(restored);
+        if (restored.status === "queued" || restored.status === "processing") void pollMedicationScan(documentId);
+      } catch { /* The saved document remains available even if recognition is offline. */ }
+    }));
+  }
+
+  async function pollMedicationScan(documentId: string) {
+    if (pollingScans.current.has(documentId)) return;
+    pollingScans.current.add(documentId);
+    try {
+      for (let attempt = 0; attempt < 80; attempt += 1) {
+        const response = await fetch(`/api/pregnancy/documents/${documentId}/medication-scan`, { cache: "no-store" });
+        if (!response.ok) throw new Error("scan_status_failed");
+        const payload = await response.json() as {
+          status?: string; analysis?: { medicines?: MedicationScanMedicine[]; questions?: string[] };
+        };
+        const next = scanFromPayload(documentId, payload);
+        if (!next) return;
+        upsertMedicationScan(next);
+        if (next.status === "review" || next.status === "failed") return;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      throw new Error("scan_timeout");
+    } catch {
+      upsertMedicationScan({ documentId, medicines: [], questions: [], status: "failed" });
+    } finally {
+      pollingScans.current.delete(documentId);
+    }
+  }
+
   async function queueMedicationScan(documentId: string) {
-    setMedicationScans((current) => current.some((scan) => scan.documentId === documentId)
-      ? current : [...current, { documentId, medicines: [], questions: [], status: "queued" }]);
+    upsertMedicationScan({ documentId, medicines: [], questions: [], status: "queued" });
     try {
       const queued = await fetch(`/api/pregnancy/documents/${documentId}/medication-scan`, {
         method: "POST", headers: { "content-type": "application/json" }, body: "{}"
       });
       if (!queued.ok) throw new Error("scan_queue_failed");
-      for (let attempt = 0; attempt < 80; attempt += 1) {
-        const response = await fetch(`/api/pregnancy/documents/${documentId}/medication-scan`, { cache: "no-store" });
-        if (!response.ok) throw new Error("scan_status_failed");
-        const payload = await response.json() as {
-          status?: string;
-          analysis?: { medicines?: MedicationScanMedicine[]; questions?: string[] };
-        };
-        if (payload.status === "review" && payload.analysis) {
-          const extracted = Array.isArray(payload.analysis.medicines)
-            ? payload.analysis.medicines.filter((medicine) => typeof medicine?.name === "string") : [];
-          updateMedicationScan(documentId, (scan) => ({
-            ...scan, medicines: extracted.length ? extracted : [emptyMedicine()],
-            questions: Array.isArray(payload.analysis?.questions) ? payload.analysis.questions : [], status: "review"
-          }));
-          return;
-        }
-        if (payload.status === "failed") throw new Error("scan_failed");
-        updateMedicationScan(documentId, (scan) => ({ ...scan, status: "processing" }));
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-      throw new Error("scan_timeout");
+      await pollMedicationScan(documentId);
     } catch {
-      updateMedicationScan(documentId, (scan) => ({ ...scan, status: "failed" }));
+      upsertMedicationScan({ documentId, medicines: [], questions: [], status: "failed" });
     }
   }
 
@@ -159,7 +211,9 @@ export default function PregnancyMedicalRecords() {
   async function confirmMedicationScan(scan: MedicationScan) {
     const confirmed = scan.medicines
       .filter((medicine) => medicine.name.trim())
-      .map(({ name, dose, frequency, instructions }) => ({ name, dose, frequency, instructions }));
+      .map(({ name, ingredients, dose, frequency, instructions }) => ({
+        name, ingredients: ingredients ?? "", dose, frequency, instructions
+      }));
     if (!confirmed.length) return;
     updateMedicationScan(scan.documentId, (current) => ({ ...current, status: "saving" }));
     try {
@@ -305,6 +359,7 @@ export default function PregnancyMedicalRecords() {
           <small>Có thể nhập ngay hoặc để trống rồi chụp ảnh đơn thuốc bên dưới.</small>
           {medicines.map((medicine, index) => <div className="medical-medicine-row" key={index}>
             <label>Tên thuốc<input value={medicine.name} maxLength={100} onChange={(event) => updateMedicine(index, "name", event.target.value)} /></label>
+            <label className="medical-ingredients">Thành phần / hàm lượng<input value={medicine.ingredients ?? ""} maxLength={300} placeholder="Ví dụ: Sắt 27 mg; DHA 200 mg" onChange={(event) => updateMedicine(index, "ingredients", event.target.value)} /></label>
             <label>Liều<input value={medicine.dose} maxLength={80} placeholder="1 viên" onChange={(event) => updateMedicine(index, "dose", event.target.value)} /></label>
             <label>Số lần<input value={medicine.frequency} maxLength={80} placeholder="Sau ăn sáng" onChange={(event) => updateMedicine(index, "frequency", event.target.value)} /></label>
             <label>Cách dùng<input value={medicine.instructions} maxLength={200} onChange={(event) => updateMedicine(index, "instructions", event.target.value)} /></label>
@@ -327,6 +382,7 @@ export default function PregnancyMedicalRecords() {
         {scan.status === "review" || scan.status === "saving" ? <div className="medication-scan-editor">
           {scan.medicines.map((medicine, index) => <div className="medical-medicine-row" key={index}>
             <label>Tên thuốc<input value={medicine.name} maxLength={100} onChange={(event) => updateScannedMedicine(scan.documentId, index, "name", event.target.value)} /></label>
+            <label className="medical-ingredients">Thành phần / hàm lượng<input value={medicine.ingredients ?? ""} maxLength={300} onChange={(event) => updateScannedMedicine(scan.documentId, index, "ingredients", event.target.value)} /></label>
             <label>Liều<input value={medicine.dose} maxLength={80} onChange={(event) => updateScannedMedicine(scan.documentId, index, "dose", event.target.value)} /></label>
             <label>Số lần<input value={medicine.frequency} maxLength={80} onChange={(event) => updateScannedMedicine(scan.documentId, index, "frequency", event.target.value)} /></label>
             <label>Cách dùng<input value={medicine.instructions} maxLength={200} onChange={(event) => updateScannedMedicine(scan.documentId, index, "instructions", event.target.value)} /></label>
@@ -363,7 +419,7 @@ export default function PregnancyMedicalRecords() {
             <strong>{record.title}</strong><time>{displayDate(record.occurredAt)}</time>
             {(record.provider || record.clinician) ? <p>{[record.provider, record.clinician].filter(Boolean).join(" · ")}</p> : null}
             {record.gestationalWeek ? <small>Tuần thai {record.gestationalWeek}</small> : null}
-            {record.medicines.length ? <ul className="medical-record-medicines">{record.medicines.map((medicine, index) => <li key={`${medicine.name}-${index}`}><b>{medicine.name}</b>{[medicine.dose, medicine.frequency, medicine.instructions].filter(Boolean).join(" · ")}</li>)}</ul> : null}
+            {record.medicines.length ? <ul className="medical-record-medicines">{record.medicines.map((medicine, index) => <li key={`${medicine.name}-${index}`}><b>{medicine.name}</b>{medicine.ingredients ? <span>Thành phần: {medicine.ingredients}</span> : null}<span>{[medicine.dose, medicine.frequency, medicine.instructions].filter(Boolean).join(" · ")}</span></li>)}</ul> : null}
             {Object.keys(record.measurements).length ? <div className="medical-record-metrics">
               {record.measurements.weightKg ? <span><b>{record.measurements.weightKg} kg</b>Cân nặng</span> : null}
               {record.measurements.systolic && record.measurements.diastolic ? <span><b>{record.measurements.systolic}/{record.measurements.diastolic}</b>Huyết áp đã ghi</span> : null}

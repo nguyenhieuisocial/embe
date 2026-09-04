@@ -42,7 +42,10 @@ describe("prescription image review", () => {
       }
       if (url.endsWith(`/pregnancy/documents/${documentId}/medication-scan`) && (!init?.method || init.method === "GET")) {
         return new Response(JSON.stringify({ documentId, status: "review", analysis: {
-          medicines: [{ name: "Sắt cũ", dose: "1 viên", frequency: "mỗi sáng", instructions: "Sau ăn", confidence: 0.84 }],
+          medicines: [{
+            name: "Sắt cũ", ingredients: "Sắt nguyên tố 27 mg; axit folic 600 mcg",
+            dose: "1 viên", frequency: "mỗi sáng", instructions: "Sau ăn", confidence: 0.84
+          }],
           questions: ["Kiểm tra lại hàm lượng trên vỏ hộp."]
         } }), { status: 200 });
       }
@@ -67,15 +70,46 @@ describe("prescription image review", () => {
       "src", `/api/pregnancy/documents/${documentId}`
     );
     expect(within(review).getByDisplayValue("Sắt cũ")).toBeInTheDocument();
+    expect(within(review).getByDisplayValue("Sắt nguyên tố 27 mg; axit folic 600 mcg")).toBeInTheDocument();
     expect(within(review).getByText("Độ chắc chắn 84%")).toBeInTheDocument();
     expect(within(review).getByText("Kiểm tra lại hàm lượng trên vỏ hộp.")).toBeInTheDocument();
 
     fireEvent.change(within(review).getByLabelText("Tên thuốc"), { target: { value: "Sắt đã đối chiếu" } });
     fireEvent.click(within(review).getByRole("button", { name: "Xác nhận đúng theo đơn" }));
     await waitFor(() => expect(confirmation).toEqual({ medicines: [{
-      name: "Sắt đã đối chiếu", dose: "1 viên", frequency: "mỗi sáng", instructions: "Sau ăn"
+      name: "Sắt đã đối chiếu", ingredients: "Sắt nguyên tố 27 mg; axit folic 600 mcg",
+      dose: "1 viên", frequency: "mỗi sáng", instructions: "Sau ăn"
     }] }));
     expect(within(review).getByText("Đã xác nhận")).toBeInTheDocument();
+  });
+
+  it("restores an unfinished scan from a saved prescription instead of showing only its image", async () => {
+    const documentId = "22222222-2222-4222-8222-222222222222";
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/pregnancy/records") return new Response(JSON.stringify({ records: [{
+        id: "11111111-1111-4111-8111-111111111111", kind: "prescription", status: "completed",
+        occurredAt: "2026-09-04T01:00:00.000Z", title: "Vitamin thai kỳ", provider: "", clinician: "",
+        notes: "", gestationalWeek: 10, nextAppointmentAt: null, measurements: {}, medicines: [],
+        documents: [{ id: documentId, originalFilename: "thanh-phan.jpg", mimeType: "image/jpeg", byteSize: 2048, createdAt: "2026-09-04T01:00:00.000Z" }]
+      }] }), { status: 200 });
+      if (url.endsWith(`/pregnancy/documents/${documentId}/medication-scan`)) {
+        return new Response(JSON.stringify({ documentId, status: "review", analysis: {
+          medicines: [{
+            name: "Elevit", ingredients: "Sắt 60 mg; axit folic 800 mcg",
+            dose: "", frequency: "", instructions: "", confidence: 0.93
+          }], questions: []
+        } }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ error: "not_found" }), { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetch);
+
+    render(<PregnancyMedicalRecords />);
+
+    const review = await screen.findByRole("article", { name: "Kiểm tra đơn thuốc từ ảnh" });
+    expect(within(review).getByDisplayValue("Elevit")).toBeInTheDocument();
+    expect(within(review).getByDisplayValue("Sắt 60 mg; axit folic 800 mcg")).toBeInTheDocument();
   });
 
   it("stores a PDF prescription without sending it to image recognition", async () => {

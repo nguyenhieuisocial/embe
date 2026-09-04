@@ -4,6 +4,7 @@ export const MEDICATION_SCAN_STATUSES = new Set([
 
 export type MedicationScanMedicine = {
   name: string;
+  ingredients?: string;
   dose: string;
   frequency: string;
   instructions: string;
@@ -30,15 +31,16 @@ export function normalizeMedicationScanAnalysis(value: unknown): MedicationScanA
   const medicines = input.medicines.flatMap((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     const medicine = item as Record<string, unknown>;
-    if (Object.keys(medicine).some((key) => !["name", "dose", "frequency", "instructions", "confidence"].includes(key))) return [];
+    if (Object.keys(medicine).some((key) => !["name", "ingredients", "dose", "frequency", "instructions", "confidence"].includes(key))) return [];
     const name = text(medicine.name, 100, true);
+    const ingredients = text(medicine.ingredients ?? "", 300);
     const dose = text(medicine.dose, 80);
     const frequency = text(medicine.frequency, 80);
     const instructions = text(medicine.instructions, 200);
     const confidence = medicine.confidence;
-    if (!name || dose === null || frequency === null || instructions === null
+    if (!name || ingredients === null || dose === null || frequency === null || instructions === null
         || (confidence !== undefined && (typeof confidence !== "number" || confidence < 0 || confidence > 1))) return [];
-    return [{ name, dose, frequency, instructions, ...(typeof confidence === "number" ? { confidence } : {}) }];
+    return [{ name, ingredients, dose, frequency, instructions, ...(typeof confidence === "number" ? { confidence } : {}) }];
   });
   const questions = input.questions.flatMap((item) => {
     const question = text(item, 160, true);
@@ -54,7 +56,7 @@ export function confirmedMedicationPayload(value: unknown): { medicines: Medicat
   if (Object.keys(input).some((key) => key !== "medicines")) return null;
   const analysis = normalizeMedicationScanAnalysis({ medicines: input.medicines, questions: [] });
   if (!analysis || !analysis.medicines.length) return null;
-  return { medicines: analysis.medicines.map(({ name, dose, frequency, instructions }) => ({
-    name, dose, frequency, instructions
+  return { medicines: analysis.medicines.map(({ name, ingredients, dose, frequency, instructions }) => ({
+    name, ingredients: ingredients ?? "", dose, frequency, instructions
   })) };
 }

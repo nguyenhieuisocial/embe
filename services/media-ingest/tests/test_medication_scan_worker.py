@@ -63,6 +63,8 @@ class ValidTransport:
         if url.endswith("/api/chat"):
             request = json.loads(body)
             assert request["messages"][0]["images"] == [base64.b64encode(JPEG).decode()]
+            assert request["options"]["num_ctx"] >= 8192
+            assert "đúng một medicine" in request["messages"][0]["content"]
             return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
                 "medicines": [{
                     "name": "Elevit", "dose": "1 viên", "frequency": "Mỗi ngày một lần",
@@ -77,6 +79,7 @@ def test_accepts_visible_vietnamese_medication_text():
     result = parse_medication_scan_result({
         "medicines": [{
             "name": "Elevit",
+            "ingredients": "Sắt 60 mg; axit folic 800 mcg",
             "dose": "1 viên",
             "frequency": "Mỗi ngày một lần",
             "instructions": "Uống sau bữa sáng",
@@ -88,6 +91,7 @@ def test_accepts_visible_vietnamese_medication_text():
     assert result == {
         "medicines": [{
             "name": "Elevit",
+            "ingredients": "Sắt 60 mg; axit folic 800 mcg",
             "dose": "1 viên",
             "frequency": "Mỗi ngày một lần",
             "instructions": "Uống sau bữa sáng",
@@ -112,6 +116,19 @@ def test_preserves_blank_fields_instead_of_inferring_a_missing_dose():
     assert result["medicines"][0]["dose"] == ""
     assert result["medicines"][0]["frequency"] == ""
     assert result["medicines"][0]["instructions"] == ""
+
+
+def test_keeps_visible_active_ingredients_and_strengths_from_the_label():
+    result = parse_medication_scan_result({
+        "medicines": [{
+            "name": "Vitamin tổng hợp",
+            "ingredients": "Sắt 27 mg; axit folic 600 mcg; DHA 200 mg",
+            "dose": "", "frequency": "", "instructions": "", "confidence": 0.88,
+        }],
+        "questions": [],
+    })
+
+    assert result["medicines"][0]["ingredients"] == "Sắt 27 mg; axit folic 600 mcg; DHA 200 mg"
 
 
 @pytest.mark.parametrize("extra_field", ["is_safe", "recommended_dose", "clinician_confirmed"])

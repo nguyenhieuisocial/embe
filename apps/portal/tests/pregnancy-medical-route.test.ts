@@ -119,7 +119,10 @@ describe("private pregnancy medical records", () => {
 
     rpc.mockResolvedValueOnce({ data: {
       document_id: documentId, status: "review", analysis: {
-        medicines: [{ name: "Sắt", dose: "1 viên", frequency: "mỗi ngày", instructions: "Sau ăn", confidence: 0.83 }],
+        medicines: [{
+          name: "Sắt", ingredients: "Sắt nguyên tố 27 mg", dose: "1 viên",
+          frequency: "mỗi ngày", instructions: "Sau ăn", confidence: 0.83
+        }],
         questions: ["Kiểm tra lại hàm lượng trên nhãn."]
       }
     }, error: null });
@@ -130,6 +133,7 @@ describe("private pregnancy medical records", () => {
     const payload = await viewed.json();
     expect(viewed.status).toBe(200);
     expect(payload.analysis.medicines[0].name).toBe("Sắt");
+    expect(payload.analysis.medicines[0].ingredients).toBe("Sắt nguyên tố 27 mg");
     expect(JSON.stringify(payload)).not.toContain("storage_path");
   });
 
@@ -145,12 +149,18 @@ describe("private pregnancy medical records", () => {
     rpc.mockResolvedValueOnce({ data: null, error: null });
     const confirmed = await confirmMedicationScan(
       request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}/medication-scan`, "PATCH", {
-        medicines: [{ name: "Thuốc A", dose: "1 viên", frequency: "mỗi ngày", instructions: "Sau ăn" }]
+        medicines: [{
+          name: "Thuốc A", ingredients: "Sắt 27 mg", dose: "1 viên",
+          frequency: "mỗi ngày", instructions: "Sau ăn"
+        }]
       }), { params: Promise.resolve({ id: documentId }) }
     );
     expect(confirmed.status).toBe(200);
     expect(rpc).toHaveBeenLastCalledWith("embe_confirm_medication_scan", {
-      p_confirmed_analysis: { medicines: [{ name: "Thuốc A", dose: "1 viên", frequency: "mỗi ngày", instructions: "Sau ăn" }] },
+      p_confirmed_analysis: { medicines: [{
+        name: "Thuốc A", ingredients: "Sắt 27 mg", dose: "1 viên",
+        frequency: "mỗi ngày", instructions: "Sau ăn"
+      }] },
       p_document_id: documentId
     });
   });
