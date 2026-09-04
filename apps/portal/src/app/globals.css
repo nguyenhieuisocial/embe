@@ -4136,6 +4136,16 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
 .meal-camera > span { color: var(--coral); font-size: 2.25rem; line-height: 1; }
 .meal-camera small, .meal-state, .meal-review small, .meal-dashboard small { color: var(--ink-soft); }
 .meal-photo-preview { aspect-ratio: 4 / 3; border-radius: var(--radius-md); display: block; max-height: 280px; object-fit: cover; width: 100%; }
+.meal-photo-additions { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); display: grid; gap: 7px; padding: 10px; }
+.meal-photo-additions > label { font-size: .8125rem; font-weight: 700; }
+.meal-photo-additions > small { color: var(--ink-soft); font-size: .6875rem; line-height: 1.4; }
+.meal-photo-add-row { display: grid; gap: 6px; grid-template-columns: minmax(0, 1fr) auto; }
+.meal-photo-add-row input, .meal-photo-add-row button { min-height: 44px; }
+.meal-photo-add-row button { background: var(--coral-soft); border: 0; border-radius: 999px; color: var(--coral); font: inherit; font-size: .75rem; font-weight: 700; padding: 7px 12px; }
+.meal-photo-add-row button:disabled { opacity: .45; }
+.meal-added-foods { display: flex; flex-wrap: wrap; gap: 6px; }
+.meal-added-foods button { align-items: center; background: var(--coral-soft); border: 0; border-radius: 999px; color: var(--ink); display: inline-flex; font: inherit; font-size: .75rem; gap: 6px; min-height: 44px; padding: 7px 11px; }
+.meal-added-foods button span { color: var(--coral); font-size: 1rem; line-height: 1; }
 .meal-note { display: grid; font-size: .875rem; font-weight: 600; gap: 6px; }
 .meal-note textarea { min-height: 72px; resize: vertical; }
 .meal-food-suggestions { display: flex; gap: 6px; margin-top: -2px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }

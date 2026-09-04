@@ -255,6 +255,34 @@ describe("mobile meal journal", () => {
     window.removeEventListener("embe:daily-action-completed", linked);
   });
 
+  it("keeps foods added by the mother alongside a meal photo", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ history: [], suggestions: [], worker: { status: "online" } })));
+    mealClient.createMealDraft.mockResolvedValue("11111111-1111-4111-8111-111111111111");
+    mealClient.waitForMealDraft.mockResolvedValue({ note: "", analysis: {
+      foods: [
+        { nameVi: "Cơm", searchNameEn: "rice", estimatedGrams: 180,
+          confidence: 0.88, foodGroups: ["starch"], safetyFlags: [] },
+        { nameVi: "Canh bi do", searchNameEn: "pumpkin soup", estimatedGrams: 150,
+          confidence: 0.64, foodGroups: ["vegetables"], safetyFlags: [] }
+      ],
+      needsUserConfirmation: [], estimateNotice: "Ước lượng"
+    } });
+
+    render(<MealPhotoTracker />);
+    fireEvent.change(screen.getByLabelText(/Chụp bữa ăn/), {
+      target: { files: [new File(["photo"], "meal.jpg", { type: "image/jpeg" })] }
+    });
+    fireEvent.change(screen.getByLabelText("Món thêm cùng ảnh"), { target: { value: "Canh bí đỏ" } });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm món cùng ảnh" }));
+    fireEvent.click(screen.getByRole("button", { name: "Nhận diện bữa ăn" }));
+
+    await waitFor(() => expect(mealClient.createMealDraft).toHaveBeenCalledWith(expect.objectContaining({
+      note: expect.stringContaining("Canh bí đỏ")
+    })));
+    expect(await screen.findByDisplayValue("Cơm")).toBeInTheDocument();
+    expect(screen.getAllByDisplayValue("Canh bí đỏ")).toHaveLength(1);
+  });
+
   it("lets the mother correct a saved meal without reusing the stale nutrition query", async () => {
     const savedHistory = [{ ...history[0], status: "ready" as const }];
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

@@ -19,6 +19,48 @@ const nutrientLabels = [
   ["calcium_mg", "Canxi", "mg"], ["iron_mg", "Sắt", "mg"], ["folate_ug", "Folate", "µg"]
 ] as const;
 const UNCONFIRMED_FOOD_NAME = "món cần mẹ xác nhận";
+const MANUAL_FOOD_PREFIX = "Món thêm ngoài ảnh: ";
+
+function foodKey(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/gi, "d").toLocaleLowerCase("vi").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function uniqueFoodNames(values: string[]): string[] {
+  const seen = new Set<string>();
+  return values.map((value) => value.trim()).filter((value) => {
+    const key = foodKey(value);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 8);
+}
+
+function mealNoteWithManualFoods(note: string, foods: string[]): string {
+  const parts = [note.trim()];
+  if (foods.length) parts.push(`${MANUAL_FOOD_PREFIX}${foods.join(", ")}`);
+  return parts.filter(Boolean).join(". ");
+}
+
+function mergeManualFoods(analysis: MealAnalysis, names: string[]): MealAnalysis {
+  const manualNames = uniqueFoodNames(names);
+  if (!manualNames.length) return analysis;
+  const manualKeys = new Set(manualNames.map(foodKey));
+  const detected = analysis.foods.filter((food) => !manualKeys.has(foodKey(food.nameVi)))
+    .slice(0, Math.max(0, 8 - manualNames.length));
+  const manual = manualNames.map((nameVi) => ({
+    nameVi, searchNameEn: nameVi, estimatedGrams: null, confidence: 1,
+    foodGroups: ["other"], safetyFlags: []
+  }));
+  const portionPrompt = "Thêm khẩu phần cho món Mẹ vừa nhập nếu muốn ước lượng dinh dưỡng sát hơn.";
+  return {
+    ...analysis,
+    entryMode: undefined,
+    nutrition: undefined,
+    foods: [...detected, ...manual],
+    needsUserConfirmation: [...analysis.needsUserConfirmation.filter((item) => item !== portionPrompt), portionPrompt].slice(0, 6)
+  };
+}
 
 export function looksLikeMedication(value: string): boolean {
   const text = value.trim().toLocaleLowerCase("vi");
@@ -111,6 +153,8 @@ export default function MealPhotoTracker() {
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [manualFoodInput, setManualFoodInput] = useState("");
+  const [manualFoods, setManualFoods] = useState<string[]>([]);
   const [previewUrl, setPreviewUrl] = useState("");
   const [analysis, setAnalysis] = useState<MealAnalysis | null>(null);
   const [entryId, setEntryId] = useState("");
@@ -173,11 +217,41 @@ export default function MealPhotoTracker() {
     foods: entry.analysis.foods.map((food) => ({ nameVi: food.nameVi, foodGroups: food.foodGroups }))
   }))), [completedHistory, mealType]);
 
+  function addManualFood() {
+    const next = uniqueFoodNames([...manualFoods, manualFoodInput]);
+    if (next.length === manualFoods.length) {
+      if (manualFoodInput.trim()) setStatusMessage("Món này đã có trong danh sách.");
+      return;
+    }
+    if (mealNoteWithManualFoods(note, next).length > 300) {
+      setStatusMessage("Ghi chú và danh sách món đang quá dài. Hãy rút gọn một chút.");
+      return;
+    }
+    setManualFoods(next);
+    setManualFoodInput("");
+    setStatusMessage("");
+  }
+
+  function removeManualFood(index: number) {
+    setManualFoods((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setStatusMessage("");
+  }
+
   async function analyze() {
     if ((!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving") return;
     if (medicationRouteOpen) {
       setStatusMessage("Nội dung này giống thuốc hoặc vitamin. Chọn nơi lưu phù hợp trước khi tiếp tục.");
       return;
+    }
+    const additions = uniqueFoodNames([...manualFoods, manualFoodInput]);
+    const submissionNote = mealNoteWithManualFoods(note, additions);
+    if (submissionNote.length > 300) {
+      setStatusMessage("Ghi chú và danh sách món đang quá dài. Hãy rút gọn một chút.");
+      return;
+    }
+    if (additions.length !== manualFoods.length || manualFoodInput.trim()) {
+      setManualFoods(additions);
+      setManualFoodInput("");
     }
     setAnalysis(null); setStatusMessage("");
     if (!file) {
@@ -199,10 +273,10 @@ export default function MealPhotoTracker() {
     }
     setStatus("sending");
     try {
-      const id = await createMealDraft({ authorRole: "mother", file, mealType, note });
+      const id = await createMealDraft({ authorRole: "mother", file, mealType, note: submissionNote });
       setEntryId(id); setStatus("analyzing");
       const draft = await waitForMealDraft(id);
-      setAnalysis(draft.analysis); setStatus("review");
+      setAnalysis(mergeManualFoods(draft.analysis, additions)); setStatus("review");
     } catch (error) {
       const code = error instanceof Error ? error.message : "unknown";
       if (code === "analysis_timeout") {
@@ -265,6 +339,7 @@ export default function MealPhotoTracker() {
         ? "Đã lưu bữa ăn · việc hôm nay đã tự tích."
         : "Đã lưu bữa ăn.");
       setFile(null); setAnalysis(null); setEntryId(""); setNote("");
+      setManualFoods([]); setManualFoodInput("");
       if (inputRef.current) inputRef.current.value = "";
       await loadHistory(range, true);
       void waitForMealNutrition(savedId).then(() => loadHistory(range, true));
@@ -390,6 +465,20 @@ export default function MealPhotoTracker() {
           <small>Ảnh được thu nhỏ và bỏ vị trí trước khi gửi.</small>
         </label>
         {previewUrl ? <img className="meal-photo-preview" src={previewUrl} alt="Ảnh bữa ăn vừa chọn" /> : null}
+        {file ? <div className="meal-photo-additions">
+          <label htmlFor="meal-manual-food">Món thêm cùng ảnh</label>
+          <div className="meal-photo-add-row">
+            <input id="meal-manual-food" list="vietnamese-popular-foods" maxLength={80} value={manualFoodInput}
+              onChange={(event) => setManualFoodInput(event.target.value)}
+              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addManualFood(); } }}
+              placeholder="Ví dụ: canh bí đỏ" />
+            <button type="button" onClick={addManualFood} disabled={!manualFoodInput.trim()}>Thêm món cùng ảnh</button>
+          </div>
+          {manualFoods.length ? <div className="meal-added-foods" aria-label="Các món thêm cùng ảnh">
+            {manualFoods.map((food, index) => <button key={`${food}-${index}`} type="button"
+              aria-label={`Bỏ món thêm ${food}`} onClick={() => removeManualFood(index)}>{food}<span aria-hidden="true">×</span></button>)}
+          </div> : <small>Thêm món bị khuất, đồ uống hoặc món ăn kèm trước khi nhận diện.</small>}
+        </div> : null}
         <label className="meal-note">Ghi chú món ăn · có thể lưu không cần ảnh
           <textarea maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: nửa bát cơm, cá hồi, không có nước chấm" />
         </label>
