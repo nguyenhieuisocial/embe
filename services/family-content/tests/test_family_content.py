@@ -11,6 +11,7 @@ from grocy_seed import apply_master_data, load_master_data, main as grocy_main
 
 ROOT = Path(__file__).resolve().parents[1]
 PORTAL_CONTENT = ROOT.parents[1] / "apps" / "portal" / "src" / "lib" / "pregnancy-content.ts"
+PORTAL_MENU = ROOT.parents[1] / "apps" / "portal" / "src" / "lib" / "pregnancy-menu.ts"
 
 
 class FakeGrocy:
@@ -55,13 +56,14 @@ class FamilyContentTests(unittest.TestCase):
     def test_reviewed_content_stays_aligned_with_the_mobile_portal(self):
         content = load_content(ROOT / "content" / "pregnancy-care.vi.json")
         portal = PORTAL_CONTENT.read_text(encoding="utf-8")
+        portal_menu = PORTAL_MENU.read_text(encoding="utf-8")
         for item in content["checklist"]:
             self.assertIn(f'id: "{item["id"]}"', portal)
             self.assertIn(item["title"], portal)
         for day in content["weekly_menu"]:
-            self.assertIn(day["breakfast"], portal)
-            self.assertIn(day["lunch"], portal)
-            self.assertIn(day["dinner"], portal)
+            self.assertIn(day["breakfast"], portal_menu)
+            self.assertIn(day["lunch"], portal_menu)
+            self.assertIn(day["dinner"], portal_menu)
         for item in content["guidance"]:
             self.assertIn(f'id: "{item["id"]}"', portal)
             self.assertIn(item["title"], portal)
