@@ -79,51 +79,6 @@ export const dailyChecklist = [
   }
 ] as const;
 
-export const weeklyMenu = [
-  {
-    day: "Ngày 1",
-    breakfast: "Yến mạch, sữa tiệt trùng, chuối",
-    lunch: "Cơm gạo lứt, cá hồi chín, cải xanh",
-    dinner: "Canh gà nấm, đậu phụ, cam"
-  },
-  {
-    day: "Ngày 2",
-    breakfast: "Bánh mì nguyên cám, trứng chín, bơ",
-    lunch: "Cơm, bò xào rau củ chín kỹ, thanh long",
-    dinner: "Bún tôm chín, rau luộc, sữa chua tiệt trùng"
-  },
-  {
-    day: "Ngày 3",
-    breakfast: "Phở gà chín kỹ, rau đã rửa sạch",
-    lunch: "Cơm, đậu phụ sốt cà, canh bí đỏ",
-    dinner: "Cá basa kho chín, rau dền, lê"
-  },
-  {
-    day: "Ngày 4",
-    breakfast: "Khoai lang, trứng chín, sữa đậu nành tiệt trùng",
-    lunch: "Cơm, thịt nạc chín kỹ, bông cải",
-    dinner: "Miến gà, nấm chín, đu đủ"
-  },
-  {
-    day: "Ngày 5",
-    breakfast: "Cháo yến mạch thịt bằm chín, táo",
-    lunch: "Cơm, tôm hấp chín, canh rau mồng tơi",
-    dinner: "Đậu lăng hầm rau củ, bánh mì nguyên cám"
-  },
-  {
-    day: "Ngày 6",
-    breakfast: "Bún bò chín kỹ, giá được nấu chín",
-    lunch: "Cơm, gà áp chảo chín, salad rau đã rửa kỹ",
-    dinner: "Cháo cá hồi chín, bí xanh, quýt"
-  },
-  {
-    day: "Ngày 7",
-    breakfast: "Sữa chua tiệt trùng, yến mạch, xoài",
-    lunch: "Cơm, cá mòi chín, rau củ hấp",
-    dinner: "Mì trứng chín với đậu phụ và rau cải"
-  }
-] as const;
-
 export const pregnancyGuidance = [
   {
     id: "varied-foods",

@@ -165,6 +165,20 @@ describe("mobile meal journal", () => {
     expect(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh")).toHaveValue("Bún riêu cua");
   });
 
+  it("offers a current meal menu immediately and fills the note with one tap", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      history: [], suggestions: [], worker: { status: "online" }
+    }), { status: 200 })));
+
+    render(<MealPhotoTracker />);
+
+    const menu = await screen.findByLabelText(/Gợi ý bữa .* bây giờ/i);
+    const choice = within(menu).getAllByRole("button")[0];
+    expect(choice).toBeEnabled();
+    fireEvent.click(choice);
+    expect(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh")).toHaveValue(choice.textContent);
+  });
+
   it("lets the mother save or add a missing food when a written note is ambiguous", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
       history: [], suggestions: [], worker: { status: "online" }

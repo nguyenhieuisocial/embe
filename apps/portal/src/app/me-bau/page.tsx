@@ -14,9 +14,9 @@ import {
   pregnancyGuidanceLevels,
   pregnancySources,
   trimesterGuides,
-  urgentCareReminders,
-  weeklyMenu
+  urgentCareReminders
 } from "../../lib/pregnancy-content";
+import { weeklyMenu } from "../../lib/pregnancy-menu";
 import { calculatePregnancyWeek, estimateDueDateFromLmp, localDateKey } from "../../lib/pregnancy";
 
 const DUE_DATE_KEY = "embe:pregnancy:due-date";

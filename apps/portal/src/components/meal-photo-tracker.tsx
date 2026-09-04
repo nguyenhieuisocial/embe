@@ -9,6 +9,7 @@ import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition
 import { deriveMealSafetyFlags, hasMealSafetyConcern } from "../lib/meal-safety";
 import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { currentMealType, suggestCurrentMealMenus, type MealType } from "../lib/pregnancy-menu";
 import { suggestPopularFoods, VIETNAMESE_POPULAR_FOODS } from "../lib/vietnamese-food-catalog";
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
@@ -41,11 +42,6 @@ function hasInvalidFood(analysis: MealAnalysis): boolean {
     const name = food.nameVi.trim().toLocaleLowerCase("vi");
     return !name || name === UNCONFIRMED_FOOD_NAME;
   });
-}
-
-function defaultMealType(): string {
-  const hour = new Date().getHours();
-  return hour < 10 ? "breakfast" : hour < 15 ? "lunch" : hour < 21 ? "dinner" : "snack";
 }
 
 function mealDate(value: string): string {
@@ -112,7 +108,7 @@ function MealHistoryPhoto({ entryId, label }: { entryId: string; label: string }
 }
 
 export default function MealPhotoTracker() {
-  const [mealType, setMealType] = useState("lunch");
+  const [mealType, setMealType] = useState<MealType>("lunch");
   const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -134,7 +130,7 @@ export default function MealPhotoTracker() {
   const [confirmedMedicationText, setConfirmedMedicationText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setMealType(defaultMealType()); }, []);
+  useEffect(() => { setMealType(currentMealType()); }, []);
   useEffect(() => { void loadHistory(range); }, [range]);
   useEffect(() => {
     if (!file || typeof URL.createObjectURL !== "function") { setPreviewUrl(""); return; }
@@ -171,6 +167,10 @@ export default function MealPhotoTracker() {
   const medicationRouteOpen = medicationLike && confirmedMedicationText !== note.trim();
   const medicationDestination = medicationCareDestination(note);
   const popularSuggestions = useMemo(() => suggestPopularFoods(note), [note]);
+  const currentMenus = useMemo(() => suggestCurrentMealMenus(mealType, completedHistory.map((entry) => ({
+    mealType: entry.mealType, note: entry.note,
+    foods: entry.analysis.foods.map((food) => ({ nameVi: food.nameVi, foodGroups: food.foodGroups }))
+  }))), [completedHistory, mealType]);
 
   async function analyze() {
     if ((!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving") return;
@@ -375,9 +375,14 @@ export default function MealPhotoTracker() {
       <div className="meal-capture-card">
         <div className="meal-type-picker" role="group" aria-label="Chọn bữa ăn">
           {Object.entries(labels).map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={mealType === value} onClick={() => setMealType(value)}>{label}</button>
+            <button key={value} type="button" aria-pressed={mealType === value} onClick={() => setMealType(value as MealType)}>{label}</button>
           ))}
         </div>
+        <section className="meal-now-menu" aria-label={`Gợi ý bữa ${(labels[mealType] ?? "ăn").toLocaleLowerCase("vi")} bây giờ`}>
+          <div><strong>Gợi ý bữa {(labels[mealType] ?? "ăn").toLocaleLowerCase("vi")} bây giờ</strong><small>Tự đổi theo giờ và những bữa đã ghi</small></div>
+          <div>{currentMenus.map((menu) => <button key={menu} type="button" onClick={() => { setNote(menu); setConfirmedMedicationText(""); }}>{menu}</button>)}</div>
+          <small>Tham khảo; điều chỉnh theo dị ứng và hướng dẫn riêng của bác sĩ.</small>
+        </section>
         <label className="meal-camera">
           <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
           <span aria-hidden="true">◎</span><strong>{file ? "Đã chọn ảnh — chạm để đổi" : "Chụp bữa ăn"}</strong>
