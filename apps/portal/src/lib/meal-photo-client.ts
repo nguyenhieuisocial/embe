@@ -7,7 +7,7 @@ const UPLOAD_TIMEOUT_MS = 30_000;
 
 export async function prepareMealPhoto(file: File): Promise<File> {
   return prepareImageForUpload(file, {
-    filename: "bua-an.jpg", maxBytes: 12_000_000, maxDimension: 960, quality: 0.76
+    filename: "bua-an.jpg", maxBytes: 4_000_000, maxDimension: 720, quality: 0.68
   });
 }
 
@@ -89,7 +89,8 @@ export async function waitForMealDraft(entryId: string, attempts = 150): Promise
     const value = await response.json() as { status?: string; analysis?: MealAnalysis; note?: string };
     if (value.status === "review" && value.analysis) return { analysis: value.analysis, note: value.note ?? "" };
     if (value.status === "rejected") throw new Error("analysis_failed");
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const delay = attempt < 6 ? 700 : attempt < 20 ? 1200 : 2000;
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
   throw new Error("analysis_timeout");
 }

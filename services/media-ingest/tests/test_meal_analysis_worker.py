@@ -15,6 +15,7 @@ from meal_analysis_worker import (  # noqa: E402
     HttpResponse,
     MealAnalysisWorker,
     popular_food_suggestions,
+    quick_written_meal_analysis,
     nutrition_search_query,
     parse_vision_result,
     run_worker_loop,
@@ -49,7 +50,7 @@ class FakeTransport:
             assert request["model"] == "qwen3-vl:4b-instruct"
             assert request["messages"][0]["images"] == [base64.b64encode(JPEG).decode()]
             assert request["keep_alive"] == "24h"
-            assert request["options"]["num_predict"] == 1024
+            assert request["options"]["num_predict"] == 640
             return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
                 "foods": [
                     {"name_vi": "Cơm trắng", "search_name_en": "white rice cooked", "estimated_grams": 120,
@@ -187,6 +188,43 @@ def test_analyzes_a_written_meal_without_downloading_or_deleting_an_image():
     assert not any("/storage/v1/object/" in call[1] for call in transport.calls)
 
 
+def test_recognizes_clear_vietnamese_written_food_without_calling_the_model():
+    result = quick_written_meal_analysis("Bún riêu cua, nước lọc")
+
+    assert result is not None
+    assert [food["name_vi"] for food in result["foods"]] == ["Bún riêu cua", "Nước lọc"]
+    assert result["foods"][0]["confidence"] == 0.96
+    assert result["estimate_notice"].startswith("Nhận diện nhanh")
+
+
+def test_worker_uses_fast_written_food_path_before_ollama():
+    class FastTextTransport:
+        def __init__(self):
+            self.calls = []
+
+        def __call__(self, method, url, headers, body=None):
+            self.calls.append((method, url, headers, body))
+            if url.endswith("/rest/v1/rpc/embe_claim_meal_analysis"):
+                return HttpResponse(200, {}, json.dumps({
+                    "id": ENTRY_ID, "storage_path": None, "mime_type": None, "byte_size": None,
+                    "note": "Bún riêu cua", "meal_type": "lunch",
+                    "eaten_at": "2026-09-02T06:00:00+00:00", "attempts": 1,
+                }).encode())
+            if url.endswith("/rest/v1/rpc/embe_finish_meal_analysis"):
+                return HttpResponse(204, {}, b"")
+            if url.endswith("/api/chat"):
+                raise AssertionError("clear Vietnamese food should not call Ollama")
+            raise AssertionError((method, url))
+
+    transport = FastTextTransport()
+    result = MealAnalysisWorker(config(), transport).run_once()
+
+    assert result == {"status": "review", "entry_id": ENTRY_ID, "food_count": 1}
+    finish = next(call for call in transport.calls if call[1].endswith("embe_finish_meal_analysis"))
+    payload = json.loads(finish[3])
+    assert payload["p_analysis"]["foods"][0]["name_vi"] == "Bún riêu cua"
+
+
 def test_retries_once_when_the_vision_model_returns_truncated_json():
     valid = {
         "foods": [{
@@ -213,7 +251,7 @@ def test_retries_once_when_the_vision_model_returns_truncated_json():
 
     assert result["foods"][0]["name_vi"] == "Phở bò"
     assert len(transport.requests) == 2
-    assert transport.requests[0]["options"]["num_predict"] >= 1024
+    assert transport.requests[0]["options"]["num_predict"] >= 640
     assert "JSON trước bị cắt" in transport.requests[1]["messages"][0]["content"]
 
 

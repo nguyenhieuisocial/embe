@@ -64,6 +64,7 @@ def _load_food_catalog() -> tuple[dict[str, Any], ...]:
 
 VIETNAMESE_POPULAR_DISHES = _load_food_catalog()
 POPULAR_DISH_PROMPT = ", ".join(item["name"] for item in VIETNAMESE_POPULAR_DISHES)
+MANUAL_FOOD_PREFIX = "Món thêm ngoài ảnh:"
 
 
 def _catalog_food(value: str, *, allow_variant: bool = True) -> dict[str, Any] | None:
@@ -99,6 +100,53 @@ def popular_food_suggestions(value: str, limit: int = 5) -> list[str]:
         if score < 3:
             ranked.append((score, item["name"]))
     return [name for _, name in sorted(ranked, key=lambda value: (value[0], value[1]))[:limit]]
+
+
+def _note_food_candidates(note: str) -> list[str]:
+    normalized = " ".join(note.split())
+    manual_part = normalized.split(MANUAL_FOOD_PREFIX, 1)[1] if MANUAL_FOOD_PREFIX in normalized else normalized
+    candidates = re.split(r"[,;+/]|(?:\s+và\s+)|(?:\s+voi\s+)|(?:\s+kèm\s+)|(?:\s+kem\s+)", manual_part, flags=re.IGNORECASE)
+    return [candidate.strip(" .:-") for candidate in candidates if candidate.strip(" .:-")]
+
+
+def quick_written_meal_analysis(note: str) -> dict[str, Any] | None:
+    matches: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for candidate in [note, *_note_food_candidates(note)]:
+        catalog_match = _catalog_food(candidate, allow_variant=False) or _catalog_food(candidate)
+        if catalog_match:
+            name_vi = catalog_match["name"]
+            query = catalog_match["query"]
+        else:
+            folded_candidate = _fold_food_name(candidate)
+            nutrition_match = next((
+                (name, query) for name, query in VIETNAMESE_NUTRITION_QUERIES
+                if _fold_food_name(name) == folded_candidate
+            ), None)
+            if not nutrition_match:
+                continue
+            name_vi, query = nutrition_match
+            name_vi = name_vi[:1].upper() + name_vi[1:]
+        if name_vi.casefold() in seen:
+            continue
+        seen.add(name_vi.casefold())
+        matches.append({
+            "name_vi": name_vi,
+            "search_name_en": query,
+            "estimated_grams": None,
+            "confidence": 0.96,
+            "food_groups": _trusted_food_groups(name_vi, ["other"]),
+            "safety_flags": _trusted_safety_flags(name_vi, [], 0.96),
+        })
+        if len(matches) >= 8:
+            break
+    if not matches:
+        return None
+    return {
+        "foods": matches,
+        "needs_user_confirmation": ["Thêm khẩu phần nếu muốn ước lượng dinh dưỡng sát hơn."],
+        "estimate_notice": "Nhận diện nhanh từ món Mẹ đã nhập; cần xác nhận khẩu phần trước khi lưu.",
+    }
 
 
 def _trusted_safety_flags(name: str, model_flags: list[str], confidence: float) -> list[str]:
@@ -488,6 +536,10 @@ class MealAnalysisWorker:
         return response.body
 
     def _analyze(self, body: bytes | None, note: str) -> dict[str, Any]:
+        if body is None:
+            quick = quick_written_meal_analysis(note)
+            if quick:
+                return quick
         schema = {
             "type": "object", "required": ["foods", "needs_user_confirmation"],
             "additionalProperties": False,
@@ -520,7 +572,7 @@ class MealAnalysisWorker:
             message["images"] = [base64.b64encode(body).decode()]
         payload = {
             "model": self.config.ollama_model, "stream": False, "think": False, "format": schema,
-            "keep_alive": "24h", "options": {"temperature": 0, "num_predict": 1024},
+            "keep_alive": "24h", "options": {"temperature": 0, "num_predict": 640},
             "messages": [message],
         }
         last_error: Exception | None = None
