@@ -176,6 +176,23 @@ describe("iPhone health connection state", () => {
     window.history.pushState({}, "", "/");
   });
 
+  it("suggests the exact medicine name and applies its category after selection", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => String(input).startsWith("/api/pregnancy/care")
+      ? Response.json({ snapshot: { profile: null, plans: [], iphone_health: null, iphone_health_history: [], iphone_devices: [] } })
+      : Response.json({ history: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PregnancyCareTracker pregnancyWeek={8} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "+ Thêm thuốc hoặc vi chất" }));
+    fireEvent.change(screen.getByLabelText("Tên"), { target: { value: "acetamin" } });
+    fireEvent.click(screen.getByRole("option", { name: /Paracetamol.*acetaminophen/i }));
+
+    expect(screen.getByLabelText("Tên")).toHaveValue("Paracetamol");
+    expect(screen.getByLabelText("Loại")).toHaveValue("medicine");
+    expect(screen.getByText("Đã chọn đúng nhóm Thuốc")).toBeInTheDocument();
+    expect(screen.getByLabelText("Liều ghi trên nhãn/đơn")).toHaveValue("");
+  });
+
   it("shows daily progress and saved adherence history without suggesting a dose", async () => {
     const linked = vi.fn();
     window.addEventListener("embe:daily-action-completed", linked);

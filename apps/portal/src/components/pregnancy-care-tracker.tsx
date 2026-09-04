@@ -12,6 +12,9 @@ import {
   type EnergyProfile, type NutrientKey
 } from "../lib/pregnancy-nutrition";
 import { supplementTimingConflicts } from "../lib/supplement-spacing";
+import {
+  searchMedicationCatalog, type MedicationCatalogItem
+} from "../lib/medication-catalog";
 
 type CarePlan = {
   id: string;
@@ -143,6 +146,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [planSource, setPlanSource] = useState<CareSource>("clinician_plan");
   const [planCategory, setPlanCategory] = useState<CareCategory>("supplement");
   const [planName, setPlanName] = useState("");
+  const [selectedMedication, setSelectedMedication] = useState<MedicationCatalogItem | null>(null);
   const [syncSecret, setSyncSecret] = useState<{ token: string; ingestUrl: string } | null>(null);
   const [copied, setCopied] = useState<"token" | "url" | null>(null);
   const [iphoneHistoryDays, setIphoneHistoryDays] = useState<IphoneHealthHistoryDays>(7);
@@ -264,6 +268,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
     setPlanSource("clinician_plan");
     setPlanCategory("supplement");
     setPlanName("");
+    setSelectedMedication(null);
     setShowPlan(false);
   }
 
@@ -328,6 +333,8 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   }
 
   const activePlans = snapshot.plans.filter((plan) => plan.active);
+  const medicationSuggestions = useMemo(() => planName.trim().length >= 2 && !selectedMedication
+    ? searchMedicationCatalog(planName) : [], [planName, selectedMedication]);
   const timingConflicts = supplementTimingConflicts(activePlans);
   const pausedPlans = snapshot.plans.filter((plan) => !plan.active);
   const trackablePlans = activePlans.filter((plan) => plan.confirmed_by_clinician || plan.entry_source === "self_purchased");
@@ -553,12 +560,32 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
           <div>{SELF_PURCHASED_SUGGESTIONS.map((item) => <button key={item.name} type="button" onClick={() => {
             setPlanName(item.name);
             setPlanCategory(item.category);
+            setSelectedMedication(null);
           }}>{item.name}</button>)}</div>
           <small>Chỉ điền tên, không tự đặt liều. Mẹ chép đúng nhãn và hỏi bác sĩ/dược sĩ về độ phù hợp.</small>
         </div> : null}
         <div className="care-form-grid">
-          <label>Loại<select name="category" value={planCategory} onChange={(event) => setPlanCategory(event.target.value as CareCategory)}><option value="supplement">Vitamin / khoáng chất</option><option value="medicine">Thuốc</option></select></label>
-          <label>Tên<input name="name" required maxLength={80} value={planName} onChange={(event) => setPlanName(event.target.value)} placeholder="Ví dụ: viên bổ sung đang dùng" /></label>
+          <label>Loại<select name="category" value={planCategory} onChange={(event) => {
+            setPlanCategory(event.target.value as CareCategory);
+            setSelectedMedication(null);
+          }}><option value="supplement">Vitamin / khoáng chất</option><option value="medicine">Thuốc</option></select></label>
+          <div className="care-name-picker">
+            <label>Tên<input name="name" required maxLength={80} value={planName} onChange={(event) => {
+              setPlanName(event.target.value);
+              setSelectedMedication(null);
+            }} placeholder="Gõ tên trên vỏ hộp hoặc đơn" autoComplete="off" spellCheck={false}
+              role="combobox" aria-autocomplete="list" aria-expanded={medicationSuggestions.length > 0}
+              aria-controls={medicationSuggestions.length ? "medication-suggestions" : undefined} /></label>
+            {medicationSuggestions.length ? <ul id="medication-suggestions" className="medication-suggestions" role="listbox" aria-label="Tên thuốc và vi chất phù hợp">
+              {medicationSuggestions.map((item) => <li key={item.name}><button type="button" role="option" aria-selected="false" onClick={() => {
+                setPlanName(item.name);
+                setPlanCategory(item.category);
+                setSelectedMedication(item);
+              }}><span><strong>{item.name}</strong><small>{item.detail}</small></span><i>{item.category === "medicine" ? "Thuốc" : "Vi chất"}</i></button></li>)}
+            </ul> : null}
+            {selectedMedication ? <small className="medication-selection">Đã chọn đúng nhóm {selectedMedication.category === "medicine" ? "Thuốc" : "Vitamin / khoáng chất"}</small>
+              : planName.trim().length >= 2 ? <small className="medication-custom-name">Không thấy đúng tên? Mẹ vẫn có thể giữ nguyên tên trên nhãn.</small> : null}
+          </div>
           <label>Liều ghi trên nhãn/đơn<input name="doseDisplay" required maxLength={80} placeholder="Ví dụ: 1 viên sau ăn" /></label>
           <label>Số lần mỗi ngày<select name="timesPerDay" value={planTimesPerDay}
             onChange={(event) => setPlanTimesPerDay(Number(event.target.value))}>
