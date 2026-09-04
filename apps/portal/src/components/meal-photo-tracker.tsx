@@ -213,8 +213,9 @@ export default function MealPhotoTracker() {
   const popularSuggestions = useMemo(() => suggestPopularFoods(note), [note]);
   const mealNowLabel = mealType === "snack" ? "bữa phụ" : `bữa ${(labels[mealType] ?? "ăn").toLocaleLowerCase("vi")}`;
   const currentMenus = useMemo(() => suggestCurrentMealMenus(mealType, completedHistory.map((entry) => ({
-    mealType: entry.mealType, note: entry.note,
-    foods: entry.analysis.foods.map((food) => ({ nameVi: food.nameVi, foodGroups: food.foodGroups }))
+    mealType: entry.mealType, eatenAt: entry.eatenAt, note: entry.note,
+    foods: entry.analysis.foods.map((food) => ({ nameVi: food.nameVi, foodGroups: food.foodGroups })),
+    nutritionTotals: entry.analysis.nutrition?.totals
   }))), [completedHistory, mealType]);
 
   function addManualFood() {

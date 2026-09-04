@@ -22,4 +22,22 @@ describe("current meal menu", () => {
     expect(menus).not.toContain(recentMenu);
     expect(menus.some((menu) => /sữa|trái cây/i.test(menu))).toBe(true);
   });
+
+  it("uses today's nutrition before suggesting the next current meal", () => {
+    const menus = suggestCurrentMealMenus("dinner", [{
+      mealType: "breakfast",
+      eatenAt: "2026-09-04T01:00:00Z",
+      note: "Cơm trắng",
+      foods: [{ nameVi: "Cơm trắng", foodGroups: ["starch"] }],
+      nutritionTotals: { protein_g: 8, fiber_g: 1, calcium_mg: 20 }
+    }, {
+      mealType: "lunch",
+      eatenAt: "2026-09-03T05:00:00Z",
+      note: "Sữa chua",
+      foods: [{ nameVi: "Sữa chua", foodGroups: ["dairy"] }],
+      nutritionTotals: { calcium_mg: 350 }
+    }], new Date("2026-09-04T11:30:00Z"));
+
+    expect(menus[0]).toMatch(/thêm đạm chín kỹ/i);
+  });
 });
