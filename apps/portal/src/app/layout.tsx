@@ -9,7 +9,7 @@ import "./globals.css";
 
 const body = Be_Vietnam_Pro({
   subsets: ["vietnamese"],
-  weight: ["400", "600"],
+  weight: ["400", "500", "600", "700"],
   preload: false,
   variable: "--font-body"
 });

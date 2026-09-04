@@ -5,20 +5,22 @@
   color-scheme: light;
 
   /* Nền và bề mặt */
-  --paper: #FFF7FA;
-  --surface: #FFFEFE;
-  --surface-soft: #FFF0F5;
-  --line: #EBD9E0;
-  --line-strong: #D6B8C4;
+  --paper: #FFF8FB;
+  --surface: #FFFEFD;
+  --surface-soft: #FFF1F6;
+  --surface-warm: #FFF9F1;
+  --line: #F0DEE5;
+  --line-strong: #DDC1CD;
 
   /* Chữ */
-  --ink: #34272C;
-  --ink-soft: #705E65;
+  --ink: #35282E;
+  --ink-soft: #746269;
 
   /* Màu dẫn */
-  --rose: #96405F;
-  --rose-press: #743047;
-  --rose-soft: #F8E8EE;
+  --rose: #A54A6A;
+  --rose-press: #843551;
+  --rose-soft: #FBE6EF;
+  --rose-mist: #E8B7C8;
   --jade: var(--rose);
   --jade-press: var(--rose-press);
   --jade-soft: var(--rose-soft);
@@ -35,6 +37,7 @@
   --butter-soft: #FAF1D9;
 
   /* Màu trạng thái — dùng đúng chỗ, không trang trí */
+  --gold: #B5811A;
   --sun: #B5811A;
   --sun-ink: #7A5510;
   --sun-soft: #F7EFDE;
@@ -59,9 +62,10 @@
   --content: 640px;
   --measure: 560px;
 
-  --shadow-card: 0 8px 24px -22px rgba(86, 49, 63, .34);
-  --shadow-action: 0 10px 24px -18px rgba(116, 48, 71, .62);
-  --shadow-lift: 0 -12px 40px -12px rgba(51, 39, 43, .28);
+  --shadow-card: 0 10px 30px -24px rgba(96, 48, 66, .38);
+  --shadow-action: 0 12px 28px -18px rgba(150, 64, 95, .5);
+  --shadow-lift: 0 -18px 46px -18px rgba(72, 42, 54, .26);
+  --shadow-soft: 0 8px 24px -18px rgba(118, 68, 86, .22);
 }
 
 /* Medication care: quiet, compact and one-hand first. */
@@ -5121,4 +5125,203 @@ input:disabled, select:disabled, textarea:disabled { opacity: .6; }
   .family-nav a[aria-current="page"] .nav-icon { margin-top: -2px; padding: 3px 10px; }
   .nav-icon { height: 21px; width: 21px; }
   .quick-trigger { border-radius: 18px 18px 15px 15px; min-height: 54px; width: 58px; }
+}
+
+/* ── Mẹ Bầu polish: mềm hơn, gọn hơn, ưu tiên iPhone ─────────── */
+body {
+  background:
+    linear-gradient(180deg, #fff9fc 0%, #fff7fa 42%, #fffaf5 100%);
+}
+
+:where(.page, .pregnancy-main, .journal-main, .memories-main, .calendar-main, .planner-main, .inventory-main, .assistant-main, .guide-main) {
+  scroll-padding-bottom: calc(128px + env(safe-area-inset-bottom));
+}
+
+:where(.card, .section, .pregnancy-chapter, .week-card, .health-entry-card, .meal-capture-card, .meal-review, .meal-dashboard, .medical-form, .medical-insights, .care-tracker, .inventory-card, .planner-card, .assistant-answer, .memory-card, .menu-day, .baby-medical-panel, .baby-growth-card) {
+  border-color: color-mix(in srgb, var(--rose) 13%, var(--line));
+  box-shadow: var(--shadow-soft);
+}
+
+:where(.card, .pregnancy-chapter, .week-card, .health-entry-card, .meal-capture-card, .meal-review, .meal-dashboard, .medical-form, .medical-insights, .inventory-card, .planner-card, .assistant-answer, .memory-card, .menu-day) {
+  background: color-mix(in srgb, var(--surface) 88%, var(--rose-soft));
+}
+
+:where(.today-hero, .pregnancy-hero, .journal-shell, .memory-hero, .inventory-hero, .assistant-hero) {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--surface) 78%, var(--rose-soft)), color-mix(in srgb, var(--surface-warm) 82%, #fff));
+  border-color: color-mix(in srgb, var(--rose) 16%, var(--line));
+  box-shadow: var(--shadow-soft);
+}
+
+:where(.btn-primary, .action-primary, .health-save, .inventory-add, .planner-add, .journal-form > button[type="submit"], .meal-capture-card > .health-save, .care-primary-actions .care-add-button.is-primary, .dose-taken-button, .movement-start, .movement-tap, .labor-card > button) {
+  background: linear-gradient(135deg, #b95778, var(--rose));
+  border-color: transparent;
+  box-shadow: var(--shadow-action);
+  color: #fff;
+  font-weight: 700;
+}
+
+:where(.btn-primary, .action-primary, .health-save, .inventory-add, .planner-add, .journal-form > button[type="submit"], .meal-capture-card > .health-save, .care-primary-actions .care-add-button.is-primary, .dose-taken-button, .movement-start, .movement-tap, .labor-card > button):not(:disabled):active {
+  background: var(--rose-press);
+}
+
+:where(.btn-quiet, .care-prescription-link, .memory-more, .planner-task-body a, .birth-contact-actions a, .birth-prep-links a, .mental-relax-link, .access-guide-item button, .access-guide-item a, .notification-setup button, .app-refresh-control button) {
+  border-color: color-mix(in srgb, var(--rose) 17%, var(--line));
+  background: color-mix(in srgb, var(--surface) 76%, var(--rose-soft));
+  color: var(--rose);
+}
+
+:where(input[type="date"], input[type="month"], input[type="number"], input[type="password"], input[type="text"], input[type="time"], select, textarea) {
+  background: #fffdfd;
+  border-color: color-mix(in srgb, var(--rose) 18%, var(--line));
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+}
+
+:where(input, select, textarea):focus-visible,
+:where(.btn, .action-primary, .quick-trigger, .health-save, .family-nav a, .memory-view-switcher a, .memory-view-switcher button, .journal-view-switch button):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--rose-soft) 76%, white);
+  outline-offset: 2px;
+}
+
+.family-nav {
+  background: color-mix(in srgb, #fffafc 88%, transparent);
+  border-top-color: color-mix(in srgb, var(--rose) 14%, var(--line));
+  box-shadow: 0 -14px 34px -28px rgba(93, 50, 66, .42);
+}
+
+.family-nav a {
+  color: color-mix(in srgb, var(--ink-soft) 92%, var(--rose));
+  font-weight: 600;
+}
+
+.family-nav a[aria-current="page"] {
+  color: var(--rose);
+}
+
+.family-nav a[aria-current="page"] .nav-icon {
+  background: linear-gradient(135deg, #ffe9f1, #fff5dc);
+  box-shadow: 0 4px 14px -10px rgba(165, 74, 106, .55);
+}
+
+.quick-trigger {
+  background: linear-gradient(145deg, #c7688a, var(--rose));
+  border-color: rgba(255, 253, 253, .95);
+  box-shadow: 0 10px 26px -12px rgba(165, 74, 106, .72);
+}
+
+.sheet-backdrop {
+  background: rgba(71, 43, 54, .30);
+}
+
+.sheet {
+  background: linear-gradient(180deg, #fffdfd 0%, #fff7fa 100%);
+  border: 1px solid color-mix(in srgb, var(--rose) 12%, var(--line));
+}
+
+.sheet-grip {
+  background: color-mix(in srgb, var(--rose) 20%, var(--line));
+}
+
+.shortcut,
+.quick-action {
+  border-radius: 18px;
+}
+
+.shortcut:active,
+.quick-action:active {
+  background: color-mix(in srgb, var(--rose-soft) 38%, transparent);
+}
+
+.shortcut-mark,
+.quick-action-mark,
+.empty-mark {
+  border-radius: 18px 18px 18px 8px;
+}
+
+.state-note,
+.connection-banner,
+.app-update-banner {
+  border-color: color-mix(in srgb, currentColor 18%, var(--line));
+  box-shadow: var(--shadow-soft);
+}
+
+.app-update-banner button,
+.app-update-banner a {
+  background: var(--rose);
+}
+
+.eyebrow,
+.panel-kicker,
+.thread-when {
+  letter-spacing: .01em;
+}
+
+.intro,
+.section-head p:last-child,
+.thread-body p,
+.quick-action small,
+.shortcut-text small {
+  color: color-mix(in srgb, var(--ink-soft) 92%, var(--rose));
+}
+
+@media (max-width: 480px) {
+  :root {
+    --gutter: 14px;
+    --radius: 17px;
+    --radius-lg: 22px;
+    --control: 46px;
+  }
+
+  h1 { font-size: clamp(1.34rem, 7.1vw, 1.72rem); }
+  h2 { font-size: clamp(1.04rem, 5.1vw, 1.24rem); }
+  h3 { font-size: .96rem; }
+
+  .intro,
+  .section-head p:last-child {
+    font-size: .86rem;
+    line-height: 1.48;
+  }
+
+  .card,
+  :where(.health-entry-card, .meal-capture-card, .meal-review, .meal-dashboard, .medical-form, .medical-insights, .care-tracker, .inventory-card, .planner-card, .assistant-answer, .memory-card, .menu-day) {
+    padding: 12px;
+  }
+
+  .app-header,
+  .masthead {
+    min-height: calc(54px + env(safe-area-inset-top));
+  }
+
+  .wordmark {
+    font-size: 1.06rem;
+  }
+
+  .wordmark-mark {
+    height: 26px;
+    width: 26px;
+  }
+
+  .privacy-note {
+    font-size: .68rem;
+  }
+
+  .family-nav a {
+    font-size: .64rem;
+    min-height: 52px;
+  }
+
+  .quick-trigger {
+    min-height: 52px;
+    width: 56px;
+  }
+
+  .shortcut {
+    min-height: 50px;
+  }
+
+  .shortcut-text strong,
+  .quick-action strong {
+    font-size: .88rem;
+  }
 }
