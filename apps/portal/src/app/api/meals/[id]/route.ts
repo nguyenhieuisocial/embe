@@ -1,5 +1,5 @@
 import { databaseMealAnalysis, normalizeMealAnalysis, type MealAnalysis } from "../../../../lib/meal-analysis-contract";
-import { deriveMealSafetyFlags } from "../../../../lib/meal-safety";
+import { deriveMealSafetyFlags, inferMealFoodGroups } from "../../../../lib/meal-safety";
 import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
 import { verifySessionCookie } from "../../../../lib/portal-auth";
 import { revalidateFamilyViews } from "../../../../lib/family-view-revalidation";
@@ -71,12 +71,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
           && candidate.nameVi === food.nameVi);
         if (unchanged) return { ...unchanged, estimatedGrams: food.estimatedGrams };
         const derivedSafetyFlags = deriveMealSafetyFlags(food.nameVi);
+        const foodGroups = inferMealFoodGroups(food.nameVi);
         return {
           ...food,
           searchNameEn: food.nameVi,
           confidence: 0,
-          foodGroups: ["other"],
-          safetyFlags: [...new Set([...derivedSafetyFlags, "unknown"])]
+          foodGroups,
+          safetyFlags: [...new Set([
+            ...derivedSafetyFlags,
+            ...(foodGroups.length === 1 && foodGroups[0] === "other" && !derivedSafetyFlags.length ? ["unknown"] : [])
+          ])]
         };
       })
     };

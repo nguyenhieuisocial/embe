@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { normalizeMealAnalysis } from "../src/lib/meal-analysis-contract";
+import { inferMealFoodGroups } from "../src/lib/meal-safety";
 
 describe("meal analysis contract", () => {
   it("keeps a recognized food when the model cannot estimate its portion", () => {
@@ -25,5 +26,11 @@ describe("meal analysis contract", () => {
       }],
       needs_user_confirmation: [], estimate_notice: "Ước lượng"
     })).toBeNull();
+  });
+
+  it("infers useful food groups for Vietnamese meals added by hand", () => {
+    expect(inferMealFoodGroups("Cơm gạo lứt với cá hồi và rau cải")).toEqual(["starch", "protein", "vegetables"]);
+    expect(inferMealFoodGroups("Sữa chua và chuối")).toEqual(["fruit", "dairy"]);
+    expect(inferMealFoodGroups("Trứng lòng đào")).toEqual(["protein"]);
   });
 });

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MealAnalysis } from "../lib/meal-analysis-contract";
 import { buildMealDashboard, FOOD_GROUP_LABELS, type MealHistoryEntry } from "../lib/meal-dashboard";
 import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition } from "../lib/meal-photo-client";
-import { deriveMealSafetyFlags, hasMealSafetyConcern } from "../lib/meal-safety";
+import { deriveMealSafetyFlags, hasMealSafetyConcern, inferMealFoodGroups } from "../lib/meal-safety";
 import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 import { currentMealType, suggestCurrentMealMenus, type MealType } from "../lib/pregnancy-menu";
@@ -50,7 +50,7 @@ function mergeManualFoods(analysis: MealAnalysis, names: string[]): MealAnalysis
     .slice(0, Math.max(0, 8 - manualNames.length));
   const manual = manualNames.map((nameVi) => ({
     nameVi, searchNameEn: nameVi, estimatedGrams: null, confidence: 1,
-    foodGroups: ["other"], safetyFlags: []
+    foodGroups: inferMealFoodGroups(nameVi), safetyFlags: deriveMealSafetyFlags(nameVi)
   }));
   const portionPrompt = "Thêm khẩu phần cho món Mẹ vừa nhập nếu muốn ước lượng dinh dưỡng sát hơn.";
   return {
@@ -301,7 +301,8 @@ export default function MealPhotoTracker() {
       ...current, foods: current.foods.map((food, itemIndex) => itemIndex === index
         ? field === "estimatedGrams"
           ? { ...food, estimatedGrams: value ? Number(value) : null }
-          : { ...food, nameVi: value, searchNameEn: value }
+          : { ...food, nameVi: value, searchNameEn: value,
+              foodGroups: inferMealFoodGroups(value), safetyFlags: deriveMealSafetyFlags(value) }
         : food)
     } : current);
   }
@@ -388,7 +389,8 @@ export default function MealPhotoTracker() {
         foods: current.analysis.foods.map((food, itemIndex) => itemIndex === index
           ? field === "estimatedGrams"
             ? { ...food, estimatedGrams: value ? Number(value) : null }
-            : { ...food, nameVi: value, searchNameEn: value }
+            : { ...food, nameVi: value, searchNameEn: value,
+                foodGroups: inferMealFoodGroups(value), safetyFlags: deriveMealSafetyFlags(value) }
           : food)
       }
     } : current);

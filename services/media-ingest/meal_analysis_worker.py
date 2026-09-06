@@ -168,7 +168,10 @@ def _trusted_safety_flags(name: str, model_flags: list[str], confidence: float) 
 def _trusted_food_groups(name: str, model_groups: list[str]) -> list[str]:
     folded = _fold_food_name(name)
     words = set(folded.split())
-    present = lambda term: term in folded if " " in term else term in words
+    def present(term: str) -> bool:
+        if term == "chao":
+            return folded == "chao" or folded.startswith("chao ")
+        return term in folded if " " in term else term in words
     rules = (
         ("starch", ("pho", "bun", "mi", "mien", "banh", "com", "chao", "xoi", "nui", "khoai", "bap")),
         ("protein", ("bo", "ga", "thit", "ca", "tom", "muc", "cua", "trung", "dau hu", "ngheu", "oc", "suon", "cha", "nem")),

@@ -197,6 +197,16 @@ def test_recognizes_clear_vietnamese_written_food_without_calling_the_model():
     assert result["estimate_notice"].startswith("Nhận diện nhanh")
 
 
+def test_recognizes_common_pregnancy_meals_from_the_shared_catalog():
+    result = quick_written_meal_analysis("Cơm gạo lứt, cá hồi áp chảo, canh bí đỏ")
+
+    assert result is not None
+    assert [food["name_vi"] for food in result["foods"]] == ["Cơm gạo lứt", "Cá hồi áp chảo", "Canh bí đỏ"]
+    assert result["foods"][0]["food_groups"] == ["starch"]
+    assert result["foods"][1]["food_groups"] == ["protein"]
+    assert result["foods"][2]["food_groups"] == ["vegetables"]
+
+
 def test_worker_uses_fast_written_food_path_before_ollama():
     class FastTextTransport:
         def __init__(self):
@@ -603,6 +613,8 @@ def test_user_corrected_vietnamese_food_uses_a_safe_usda_query_instead_of_the_ol
     assert nutrition_search_query("Ớt chuông") == "peppers sweet raw"
     assert nutrition_search_query("Dưa leo") == "cucumber raw"
     assert nutrition_search_query("Bún riêu cua") == "soup beef noodle prepared with equal volume water"
+    assert nutrition_search_query("Canh bí đỏ") == "pumpkin cooked boiled drained"
+    assert nutrition_search_query("Cá hồi áp chảo") == "salmon fish cooked dry heat"
 
 
 def test_common_vietnamese_dishes_and_unaccented_names_use_safe_queries():

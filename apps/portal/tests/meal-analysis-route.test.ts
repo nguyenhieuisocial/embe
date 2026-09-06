@@ -222,7 +222,7 @@ describe("private review-first meal analysis API", () => {
       p_confirmed_analysis: { foods: Array<Record<string, unknown>> }
     };
     expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
-      name_vi: "Cơm trắng", confidence: 0, safety_flags: ["unknown"]
+      name_vi: "Cơm trắng", confidence: 0, food_groups: ["starch"], safety_flags: []
     }));
   });
 
@@ -271,7 +271,7 @@ describe("private review-first meal analysis API", () => {
       expect.objectContaining({ name_vi: "Rau cải luộc" })
     ]));
     expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
-      confidence: 0, food_groups: ["other"], safety_flags: ["unknown"]
+      confidence: 0, food_groups: ["starch"], safety_flags: []
     }));
   });
 
@@ -316,7 +316,7 @@ describe("private review-first meal analysis API", () => {
     }, "PATCH"), { params: Promise.resolve({ id: entryId }) });
     confirmation = rpc.mock.calls.at(-1)?.[1] as { p_confirmed_analysis: { foods: Array<Record<string, unknown>> } };
     expect(confirmation.p_confirmed_analysis.foods[0]).toEqual(expect.objectContaining({
-      confidence: 0, safety_flags: expect.arrayContaining(["raw_or_undercooked", "unknown"])
+      confidence: 0, food_groups: ["protein"], safety_flags: ["raw_or_undercooked"]
     }));
   });
 

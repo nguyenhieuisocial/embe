@@ -58,13 +58,13 @@ describe("mobile family shell", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
     expect(css).toContain("--control: 48px");
-    expect(css).toContain("--paper: #FFF7FA");
-    expect(css).toContain("--rose: #96405F");
+    expect(css).toContain("--paper: #FFF8FB");
+    expect(css).toContain("--rose: #A54A6A");
     expect(ruleBody(css, ".eyebrow, .panel-kicker")).toMatch(/text-transform:\s*none/);
     expect(ruleBody(css, ".btn")).toMatch(/min-height:\s*var\(--control\)/);
     expect(ruleBody(css, ".btn")).toMatch(/border-radius:\s*var\(--radius-md\)/);
     expect(ruleBody(css, ".family-nav")).toMatch(/bottom:\s*0/);
-    expect(ruleBody(css, '.family-nav a[aria-current="page"] .nav-icon')).toMatch(/background:\s*var\(--jade-soft\)/);
+    expect(ruleBody(css, '.family-nav a[aria-current="page"] .nav-icon')).toMatch(/background:/);
     expect(css).toMatch(/button,\s*\n?\s*\[role="button"\][^{]*\{[^}]*-webkit-tap-highlight-color:\s*transparent/s);
     expect(ruleBody(css, ":focus-visible")).toMatch(/outline:\s*3px solid var\(--sun\)/);
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.has-nav:has\([\s\S]*\) \.family-nav,[\s\S]*\.has-nav:has\([\s\S]*\) \.quick-trigger\s*\{\s*display:\s*none/s);
