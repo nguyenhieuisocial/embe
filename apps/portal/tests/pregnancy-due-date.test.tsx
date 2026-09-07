@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import PregnancyChapter from "../src/components/pregnancy-chapter";
 import QuickActions from "../src/components/quick-actions";
@@ -8,7 +8,11 @@ describe("canonical pregnancy due date", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
+    // Pin the fixture before week 28; wall-clock drift otherwise changes the stage action.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-07T10:00:00+07:00"));
   });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
   it("uses the server profile on a new phone and keeps it as offline fallback", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
