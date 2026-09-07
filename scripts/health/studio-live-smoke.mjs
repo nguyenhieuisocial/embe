@@ -61,9 +61,9 @@ try {
   const trend1 = await context.request.get(`${origin}/api/studio/discovery`);
   const feed1 = await trend1.json(); const feed2 = await (await context.request.get(`${origin}/api/studio/discovery`)).json();
   if (feed1.status !== 'ready' || !feed1.xml.includes('<rss') || feed1.checkedAt !== feed2.checkedAt || trend1.headers()['cache-control'] !== 'private, no-store') throw new Error('discovery_feed_cache');
-  await page.getByLabel('Từ khóa', { exact: true }).selectOption('zh');
+  await page.getByRole('combobox', { name: /^Từ khóa/ }).selectOption('zh');
   if (!(await page.getByRole('link', { name: 'Rednote', exact: true }).getAttribute('href')).includes('%E5')) throw new Error('discovery_multilingual_query');
-  await page.getByLabel('Từ khóa', { exact: true }).selectOption('vi');
+  await page.getByRole('combobox', { name: /^Từ khóa/ }).selectOption('vi');
   for (const [width, height] of sizes) await checkSize(width, height, 'discovery');
   await page.getByText('Những mẫu Rednote đã xem', { exact: true }).click();
   await page.getByRole('button', { name: 'Lưu mẫu này', exact: true }).first().click();
@@ -190,6 +190,7 @@ try {
   }
   result.status = 'failed';
   result.error = error instanceof Error && /^[a-zA-Z0-9_-]+$/.test(error.message) ? error.message : 'verification_failed';
+  result.failurePoint = error instanceof Error ? error.stack?.match(/studio-live-smoke\.mjs:(\d+):\d+/)?.[1] ?? null : null;
   process.exitCode = 1;
 } finally {
   if (loggedIn) {

@@ -30,3 +30,10 @@ Tái dùng hệ hiện tại: paper #FFF8FB, surface #FFFEFD, rose #A54A6A, ink 
 ## Điều kiện mở rộng
 
 Collector riêng từng nền tảng chỉ thêm sau khi xác minh route truy cập hợp lệ, license, tính ổn định và khả năng giảm tải; giữ nguồn/timestamp/null metrics, dedup ID. 401/403/CAPTCHA/429 => tạm dừng và xử lý theo điều khoản, không rotation để né. Nếu cần đồng bộ hai máy, tạo kho riêng có migration/ACL; không nhét nghiên cứu social vào hồ sơ sức khỏe. Bật lịch theo dõi là quyết định riêng, không ngầm tạo automation.
+
+## Bằng chứng kiểm tra
+
+- App commit `2950fd678f824bd2ced3a0a4a9013d218a06ca7b` đã live, CI `34126878774` cả bốn jobs đạt (bao gồm full portal test/typecheck/build).
+- 61 targeted tests đạt: discovery contracts/API/UI, research, Studio shell, mobile shell. Có denial trước fetch, URL allowlist, missing/negative/future/reset metrics, malformed/oversize/XML entities, 429/network, storage failure và no-overwrite.
+- Live smoke đạt Google feed ready và hai lần API dùng cùng checkedAt (cache); anonymous denied; save/edit/reload/delete/undo/export/import bằng storage của browser kiểm tra, không ghi dữ liệu family thật. 12 phép đo riêng cho discovery/editor ở 375/393/430/412/768/1280px, không overflow hoặc touch target <44px. Toàn bộ Studio smoke 31 viewport entries, 11 media vẫn decode/range/checksum đạt.
+- Cent Browser isolated headless, không phải iPhone thật hoặc Safari/WebKit. Screenshot có thể giữ skip-link đang focus do trình kiểm tra bàn phím. Không tuyên bố đã kiểm thử thiết bị iOS thật, collector social, background monitoring hoặc đồng bộ cloud.
