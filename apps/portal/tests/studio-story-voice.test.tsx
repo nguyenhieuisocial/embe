@@ -7,8 +7,8 @@ const media=vi.hoisted(()=>({serve:vi.fn(async()=>new Response('sample'))}));
 vi.mock('../src/lib/family-members-server',()=>({memberAuthorization:async()=>auth.denied?new Response('',{status:401}):null}));
 vi.mock('../src/lib/studio-media-server',()=>({serveStudioAsset:media.serve}));
 import {GET} from '../src/app/api/studio/voice-preview/route';
-beforeEach(()=>{auth.denied=false;media.serve.mockClear();});
-afterEach(()=>cleanup());
+beforeEach(()=>{auth.denied=false;media.serve.mockClear();vi.spyOn(HTMLMediaElement.prototype,'pause').mockImplementation(()=>{});vi.spyOn(HTMLMediaElement.prototype,'load').mockImplementation(()=>{});});
+afterEach(()=>{cleanup();vi.restoreAllMocks();});
 it('persists both new voices and preserves the old explicit voice and speed',()=>{
   for(const id of ['thuc-doan-south-v1','my-duyen-south-v1','ai-han-south','piper'])for(const speed of [.95,1,1.05])
     expect(studioDocument({...templateDocument(),voice:{id,speed}}).voice).toEqual({id,speed});
@@ -28,7 +28,7 @@ it('switching voices stops/unmounts the old audio and does not autoplay the new 
   fireEvent.click(screen.getByRole('button',{name:'Nghe mẫu Thục Đoan'}));
   const old=document.querySelector('audio');expect(old?.getAttribute('src')).toContain('thuc-doan-south-v1');
   fireEvent.change(screen.getByLabelText('Giọng nghe thử'),{target:{value:'my-duyen-south-v1'}});
-  expect(old?.isConnected).toBe(false);expect(document.querySelector('audio')).toBeNull();
+  expect(old?.isConnected).toBe(false);expect(old?.pause).toHaveBeenCalled();expect(old?.getAttribute('src')).toBeNull();expect(document.querySelector('audio')).toBeNull();
   fireEvent.click(screen.getByRole('button',{name:'Nghe mẫu Mỹ Duyên'}));
   const next=document.querySelector('audio');expect(next?.getAttribute('src')).toContain('my-duyen-south-v1');expect(next?.getAttribute('preload')).toBe('none');expect(next?.autoplay).toBe(false);
 });

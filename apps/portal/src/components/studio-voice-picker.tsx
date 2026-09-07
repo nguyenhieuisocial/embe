@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { StudioVoice } from '../lib/studio-project';
 
 type SampleVoice = Exclude<StudioVoice['id'],'piper'>;
@@ -7,6 +7,10 @@ const names:Record<SampleVoice,string> = {'thuc-doan-south-v1':'Thục Đoan','m
 function SamplePlayer({voice,speed}:{voice:SampleVoice;speed:StudioVoice['speed']}) {
   const [open,setOpen]=useState(false),[failed,setFailed]=useState(false);
   const audio=useRef<HTMLAudioElement>(null);
+  useEffect(()=>{
+    const current=audio.current;
+    return ()=>{if(current){current.pause();current.removeAttribute('src');current.load();}};
+  },[open]);
   return <div className="studio-voice-sample">
     {!open ? <button type="button" className="discovery-button" onClick={()=>setOpen(true)}>Nghe mẫu {names[voice]}</button> : <>
       <audio ref={audio} controls preload="none" aria-label={`Nghe giọng nữ miền Nam ${names[voice]}`}
