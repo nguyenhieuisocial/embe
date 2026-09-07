@@ -62,6 +62,7 @@ try {
   await page.getByRole('button', { name: 'Xác nhận & thêm vào hồ sơ', exact: true }).waitFor({ timeout: 15000 });
   if (await page.getByLabel('Ngày khám / ngày trên giấy').inputValue() !== '2026-09-07') throw new Error('date_not_extracted');
   if (await page.getByLabel('Cơ sở khám', { exact: true }).inputValue() !== 'BV Mẫu EmBe') throw new Error('provider_not_extracted');
+  if (kind === 'ultrasound' && await page.getByLabel('Tuần thai ghi trên giấy').inputValue() !== '12') throw new Error('gestational_week_missing');
   if (await page.getByLabel('Liên kết lần khám').inputValue() !== linked) throw new Error('visit_not_matched');
   result.autoMatch = true;
   await page.getByText('Kiểm tra ngày, cơ sở và lần khám', { exact: true }).click();
@@ -104,7 +105,7 @@ try {
   const loaded = await (await context.request.get(`${origin}/api/pregnancy/records`)).json();
   const stored = loaded.records.find(r => r.id === recordId);
   if (!stored || stored.documentIntake || stored.linkedRecordId !== linked || stored.provider !== 'BV Mẫu EmBe'
-    || kind === 'ultrasound' && (stored.measurements.crlMm !== 45.6 || stored.measurements.ntMm !== 1.2 || stored.measurements.fetalHeartRate !== 160)
+    || kind === 'ultrasound' && (stored.gestationalWeek !== 12 || stored.measurements.crlMm !== 45.6 || stored.measurements.ntMm !== 1.2 || stored.measurements.fetalHeartRate !== 160)
     || kind === 'prescription' && (stored.medicines.length !== 1 || stored.medicines[0].dose !== '1 viên' || !['uống', '5 ngày', '10 viên'].every(text => stored.medicines[0].instructions.includes(text)))) throw new Error('structured_import_incomplete');
   result.structuredMeasurements = stored.measurements;
   const after = await (await context.request.get(`${origin}/api/pregnancy/documents/${documentId}/scan`)).json();

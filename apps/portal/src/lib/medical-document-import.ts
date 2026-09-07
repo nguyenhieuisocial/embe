@@ -42,8 +42,11 @@ export function medicalDay(at: string): string {
 export function proposeDocumentImport(analysis: DocumentAnalysis, records: MedicalRecord[], recordId: string) {
   const fields = analysis.pages.flatMap(page => page.fields);
   const warnings: string[] = [];
-  function one(labels: string[], max: number): string {
-    const values = [...new Set(fields.filter(row => labels.map(fold).includes(labelKey(row.label))).map(row => row.value.trim()).filter(Boolean))];
+  function one(labels: string[], max: number, numericUnit = false): string {
+    const values = [...new Set(fields.filter(row => labels.map(fold).includes(labelKey(row.label))).map(row => {
+      const value = row.value.trim();
+      return numericUnit && /^\d{1,2}$/.test(value) && row.unit.trim() ? `${value} ${row.unit.trim()}` : value;
+    }).filter(Boolean))];
     if (values.length > 1) { warnings.push(`Nhiều giá trị cho ${labels[0]}; cần chọn lại.`); return ''; }
     if ((values[0]?.length ?? 0) > max) { warnings.push(`${labels[0]} quá dài; giữ nguyên trong bản đọc.`); return ''; }
     return values[0] ?? '';
@@ -59,7 +62,7 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   const patientFields = fields.filter(row => ['ho ten', 'ho va ten', 'ten benh nhan', 'ho ten benh nhan', 'ho ten nguoi benh', 'ho va ten nguoi benh', 'nguoi benh', 'benh nhan', 'patient name'].includes(labelKey(row.label)));
   // Ignore case/spacing differences across pages, not spelling/diacritic differences.
   const patients = [...new Map(patientFields.map(row => [row.value.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(), row.value.trim()] as const).filter(([key]) => key)).values()];
-  const weekText = one(['Tuổi thai', 'Tuần thai', 'Gestational age'], 80);
+  const weekText = one(['Tuổi thai', 'Tuần thai', 'Gestational age'], 80, true);
   const week = /^(\d{1,2})\s*(?:tuần|weeks?|w)(?:\s*\d\s*(?:ngày|days?|d))?$/i.exec(weekText);
   const gestationalWeek = week && Number(week[1]) >= 1 && Number(week[1]) <= 42 ? Number(week[1]) : null;
   const measurements: Record<string, number> = {};

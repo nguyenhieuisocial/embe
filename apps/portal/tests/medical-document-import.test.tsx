@@ -21,6 +21,12 @@ import { POST } from '../src/app/api/pregnancy/documents/[id]/import/route';
 afterEach(() => { mock.denied = false; mock.calls.mockReset(); mock.upload.mockReset(); vi.unstubAllGlobals(); });
 
 describe('safe medical import proposal', () => {
+  it('retains gestational weeks when OCR separates the printed number and unit', () => {
+    expect(proposeDocumentImport(sheet([field('Tuổi thai', '12', 'tuần')]), [], id).details.gestationalWeek).toBe(12);
+    expect(proposeDocumentImport(sheet([field('Tuổi thai', '12 tuần 3 ngày', 'tuần')]), [], id).details.gestationalWeek).toBe(12);
+    expect(proposeDocumentImport(sheet([field('Tuổi thai', '12')]), [], id).details.gestationalWeek).toBeNull();
+    expect(proposeDocumentImport(sheet([field('Tuổi thai', '12', 'ngày')]), [], id).details.gestationalWeek).toBeNull();
+  });
   it('reads Vietnamese administrative data and proposes one exact date/provider link', () => {
     const p = proposeDocumentImport(analysis, [record], id);
     expect(p.details).toMatchObject({ occurredOn: '2026-09-07', provider: 'BV Mẫu', linkedRecordId: linked, measurements: { crlMm: 45.6 } });
