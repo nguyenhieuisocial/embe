@@ -20,10 +20,9 @@ describe("prescription image review", () => {
     vi.clearAllMocks();
   });
 
-  it("uploads an image, shows the original beside editable medicines, then confirms", async () => {
+  it("uploads a prescription image into the dedicated document reader instead of the food worker", async () => {
     window.history.replaceState({}, "", "/me-bau/ho-so?quick=prescription#ho-so-kham");
     let documentId = "";
-    let confirmation: Record<string, unknown> | null = null;
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === "/api/pregnancy/records" && init?.method === "POST") {
@@ -37,7 +36,7 @@ describe("prescription image review", () => {
       if (url.endsWith(`/pregnancy/documents/${documentId}`) && init?.method === "POST") {
         return new Response(JSON.stringify({ status: "ready" }), { status: 202 });
       }
-      if (url.endsWith(`/pregnancy/documents/${documentId}/medication-scan`) && init?.method === "POST") {
+      if (url.endsWith(`/pregnancy/documents/${documentId}/scan`) && init?.method === "POST") {
         return new Response(JSON.stringify({ status: "queued" }), { status: 202 });
       }
       if (url.endsWith(`/pregnancy/documents/${documentId}/medication-scan`) && (!init?.method || init.method === "GET")) {
@@ -50,7 +49,6 @@ describe("prescription image review", () => {
         } }), { status: 200 });
       }
       if (url.endsWith(`/pregnancy/documents/${documentId}/medication-scan`) && init?.method === "PATCH") {
-        confirmation = JSON.parse(String(init.body)) as Record<string, unknown>;
         return new Response(JSON.stringify({ status: "confirmed" }), { status: 200 });
       }
       return recordsResponse();
@@ -65,22 +63,9 @@ describe("prescription image review", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Lưu hồ sơ" }));
 
-    const review = await screen.findByRole("article", { name: "Kiểm tra đơn thuốc từ ảnh" });
-    expect(within(review).getByRole("img", { name: "Ảnh đơn thuốc gốc" })).toHaveAttribute(
-      "src", `/api/pregnancy/documents/${documentId}`
-    );
-    expect(within(review).getByDisplayValue("Sắt cũ")).toBeInTheDocument();
-    expect(within(review).getByDisplayValue("Sắt nguyên tố 27 mg; axit folic 600 mcg").tagName).toBe("TEXTAREA");
-    expect(within(review).getByText("Độ chắc chắn 84%")).toBeInTheDocument();
-    expect(within(review).getByText("Kiểm tra lại hàm lượng trên vỏ hộp.")).toBeInTheDocument();
-
-    fireEvent.change(within(review).getByLabelText("Tên thuốc"), { target: { value: "Sắt đã đối chiếu" } });
-    fireEvent.click(within(review).getByRole("button", { name: "Xác nhận đúng theo đơn" }));
-    await waitFor(() => expect(confirmation).toEqual({ medicines: [{
-      name: "Sắt đã đối chiếu", ingredients: "Sắt nguyên tố 27 mg; axit folic 600 mcg",
-      dose: "1 viên", frequency: "mỗi sáng", instructions: "Sau ăn"
-    }] }));
-    expect(within(review).getByText("Đã xác nhận")).toBeInTheDocument();
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(`/api/pregnancy/documents/${documentId}/scan`, expect.objectContaining({ method: 'POST' })));
+    expect(fetch.mock.calls.some(([url]) => String(url).endsWith('/medication-scan'))).toBe(false);
+    expect(prepareImageForUpload).toHaveBeenCalled();
   });
 
   it("restores an unfinished scan from a saved prescription instead of showing only its image", async () => {

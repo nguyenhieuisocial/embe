@@ -11,7 +11,8 @@ import {
   type MedicalMedicine,
   type MedicalRecord
 } from "../lib/pregnancy-medical";
-import { prepareImageForUpload } from "../lib/image-preparation-client";
+import { uploadDocument } from "../lib/medical-upload-client";
+import MedicalDocumentIntake from './medical-document-intake';
 import type { MedicationScanMedicine } from "../lib/medication-scan-contract";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 import { MEDICAL_MEASUREMENTS, medicalMeasurementSeries } from "../lib/medical-measurements";
@@ -56,31 +57,8 @@ function MeasurementHistory({ records }: { records: MedicalRecord[] }) {
   return <details className="medical-measurements"><summary>Diễn biến chỉ số đã lưu</summary>
     <label>Chỉ số<select value={metric.key} onChange={e => setKey(e.target.value)}>{available.map(item => <option key={item.key} value={item.key}>{item.label} ({item.unit})</option>)}</select></label>
     <p>Chỉ so sánh cùng chỉ số và đơn vị. Khác thời điểm / phương pháp có thể khác kết quả; EmBe không tự đánh giá bình thường hay bất thường.</p>
-    <ol>{series.map(point => <li key={point.id}><strong>{point.value} {metric.unit}</strong> · {displayDate(point.at)}{point.week ? ` · tuần ${point.week}` : ""}{point.provider ? ` · ${point.provider}` : ""}</li>)}</ol>
+    <ol>{series.map(point => <li key={point.id}><strong>{point.value} {metric.unit}</strong> · {point.dateOnly ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'long' }).format(new Date(point.at)) : displayDate(point.at)}{point.week ? ` · tuần ${point.week}` : ""}{point.provider ? ` · ${point.provider}` : ""}</li>)}</ol>
   </details>;
-}
-
-async function uploadDocument(recordId: string, file: File, documentId: string): Promise<{ documentId: string; mimeType: string }> {
-  const prepared = file.type === "application/pdf" ? file : await prepareImageForUpload(file, {
-    filename: file.name.replace(/\.[^.]+$/, '') + '.jpg', maxBytes: 15_000_000, maxDimension: 3200, quality: 0.94, preserveOriginal: true
-  });
-  const created = await fetch(`/api/pregnancy/records/${recordId}/documents`, {
-    method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ documentId, filename: prepared.name || "tai-lieu", mimeType: prepared.type, byteSize: prepared.size })
-  });
-  if (!created.ok) throw new Error("create_document_failed");
-  const session = await created.json() as { uploadUrl?: string };
-  if (!session.uploadUrl) throw new Error("create_document_failed");
-  const form = new FormData(); form.append("cacheControl", "0"); form.append("", prepared);
-  const uploaded = await fetch(session.uploadUrl, { method: "PUT", headers: { "x-upsert": "false" }, body: form });
-  // Retrying an already uploaded object may return a conflict. The completion
-  // endpoint verifies the private object's size/type before accepting it.
-  if (!uploaded.ok && uploaded.status !== 409 && uploaded.status !== 400) throw new Error("upload_failed");
-  const completed = await fetch(`/api/pregnancy/documents/${documentId}`, {
-    method: "POST", headers: { "content-type": "application/json" }, body: "{}"
-  });
-  if (!completed.ok) throw new Error("complete_failed");
-  return { documentId, mimeType: prepared.type };
 }
 
 export default function PregnancyMedicalRecords() {
@@ -171,7 +149,7 @@ export default function PregnancyMedicalRecords() {
     const documentIds = nextRecords
       .filter((record) => record.kind === "prescription")
       .flatMap((record) => record.documents)
-      .filter((document) => document.mimeType.startsWith("image/"))
+      .filter((document) => document.mimeType.startsWith("image/") && !document.imported && (!document.scanStatus || document.scanStatus === 'idle'))
       .map((document) => document.id);
     await Promise.all(documentIds.map(async (documentId) => {
       try {
@@ -299,14 +277,8 @@ export default function PregnancyMedicalRecords() {
         attempt.result ??= await uploadDocument(result.id, file, attempt.id);
         uploaded.push(attempt.result);
       }
-      if (kind === "prescription") {
-        for (const document of uploaded.filter((item) => item.mimeType.startsWith("image/"))) {
-          void queueMedicationScan(document.documentId);
-        }
-      }
-      // The generalized reader is separate from the existing medicine-confirmation flow.
-      // Keep that established flow for image prescriptions; PDFs and other records use page OCR.
-      for (const document of uploaded.filter(item => kind !== 'prescription' || item.mimeType === 'application/pdf')) {
+      // All new documents, including prescription photos, use the dedicated document worker.
+      for (const document of uploaded) {
         try {
           const queued = await fetch(`/api/pregnancy/documents/${document.documentId}/scan`, {
             method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
@@ -345,7 +317,7 @@ export default function PregnancyMedicalRecords() {
           else openForm("new");
         }}>{showForm ? "Đóng" : "+ Thêm hồ sơ"}</button>
       </div>
-
+      <MedicalDocumentIntake onSaved={() => void load()} />
       <div className="medical-subsection-title"><h3>Lịch khám tiếp theo</h3></div>
       {insights.upcoming ? <article className="next-appointment">
         <span aria-hidden="true">○</span><div className="appointment-workspace">
@@ -467,11 +439,13 @@ export default function PregnancyMedicalRecords() {
           {Object.entries(kinds).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}
         </div>
         <div className="medical-timeline">
-          {visibleRecords.map((record) => <article key={record.id}>
+          {visibleRecords.map((record) => <article key={record.id} id={`record-${record.id}`}>
             <i aria-hidden="true" />
-            <div className="medical-record-head"><span>{kinds[record.kind] ?? "Hồ sơ"} · {record.status === "planned" ? "sắp tới" : "đã xong"}</span>
+            <div className="medical-record-head"><span>{kinds[record.kind] ?? "Hồ sơ"} · {record.documentIntake ? 'chờ xác nhận bản đọc' : record.status === "planned" ? "sắp tới" : "đã lưu"}</span>
               <div><button type="button" onClick={() => openForm("new", record)}>Sửa</button><button type="button" onClick={() => void remove(record.id)}>Xóa</button></div></div>
-            <strong>{record.title}</strong><time>{displayDate(record.occurredAt)}</time>
+            <strong>{record.title}</strong><time>{record.documentIntake ? 'Tải lên · ' : ''}{record.documentDateOnly ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'long' }).format(new Date(record.occurredAt)) : displayDate(record.occurredAt)}</time>
+            {record.linkedRecordId && records.some(r => r.id === record.linkedRecordId) ? <p><a href={`#record-${record.linkedRecordId}`} onClick={() => setFilter('all')}>Cùng lần khám · {records.find(r => r.id === record.linkedRecordId)?.title}</a></p> : null}
+            {records.some(r => r.linkedRecordId === record.id) ? <p>{records.filter(r => r.linkedRecordId === record.id).map(r => <a key={r.id} href={`#record-${r.id}`} onClick={() => setFilter('all')}>{r.title} · </a>)}</p> : null}
             {(record.provider || record.clinician) ? <p>{[record.provider, record.clinician].filter(Boolean).join(" · ")}</p> : null}
             {record.gestationalWeek ? <small>Tuần thai {record.gestationalWeek}</small> : null}
             {record.medicines.length ? <ul className="medical-record-medicines">{record.medicines.map((medicine, index) => <li key={`${medicine.name}-${index}`}><b>{medicine.name}</b>{medicine.ingredients ? <span>Thành phần: {medicine.ingredients}</span> : null}<span>{[medicine.dose, medicine.frequency, medicine.instructions].filter(Boolean).join(" · ")}</span></li>)}</ul> : null}
@@ -489,7 +463,7 @@ export default function PregnancyMedicalRecords() {
             })() : record.notes ? <p className="medical-record-note">{record.notes}</p> : null}
             {record.documents.length ? <div className="medical-documents">{record.documents.map((document) => <div key={document.id}>
               <a href={`/api/pregnancy/documents/${document.id}`} target="_blank" rel="noreferrer">{document.mimeType === "application/pdf" ? "PDF" : "Ảnh"} · {document.originalFilename}</a>
-              <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>Đọc & đối chiếu</Link>
+              <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>{document.imported ? 'Đã thêm vào hồ sơ · xem bản đọc' : document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? 'Đã đọc · xác nhận vào hồ sơ' : document.scanStatus === 'queued' || document.scanStatus === 'processing' ? 'Đang đọc · xem tiến độ' : 'Đọc & đối chiếu'}</Link>
             </div>)}</div> : null}
           </article>)}
         </div>

@@ -54,7 +54,7 @@ try {
   if (!uploaded.ok) throw new Error(`upload_${uploaded.status}`);
   if ((await jsonRequest(`/api/pregnancy/documents/${documentId}`, 'POST', {})).status() !== 202) throw new Error('upload_complete');
   await page.goto(`${origin}/me-bau/ho-so/tai-lieu/${documentId}`, { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'Đọc tài liệu', exact: true }).click();
+  // Upload completion now queues every document atomically; no second tap required.
   const endpoint = `/api/pregnancy/documents/${documentId}/scan`;
   const started = Date.now();
   let scan;

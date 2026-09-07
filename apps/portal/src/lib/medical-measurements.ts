@@ -38,5 +38,5 @@ export function medicalMeasurementSeries(records: MedicalRecord[], key: string) 
   if (!MEDICAL_MEASUREMENTS.some(metric => metric.key === key)) return [];
   return records.filter(record => record.status === "completed" && Number.isFinite(Date.parse(record.occurredAt)) && Number.isFinite(record.measurements[key]))
     .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
-    .map(record => ({ id: record.id, at: record.occurredAt, value: record.measurements[key], provider: record.provider, week: record.gestationalWeek }));
+    .map(record => ({ id: record.id, at: record.occurredAt, value: record.measurements[key], provider: record.provider, week: record.gestationalWeek, dateOnly: Boolean(record.documentDateOnly) }));
 }

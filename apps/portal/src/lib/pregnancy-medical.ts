@@ -4,12 +4,13 @@ export const MEDICAL_MAX_BYTES = 15_000_000;
 export const MEDICAL_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
 export type MedicalMedicine = { name: string; ingredients?: string; dose: string; frequency: string; instructions: string };
-export type MedicalDocument = { id: string; originalFilename: string; mimeType: string; byteSize: number; createdAt: string };
+export type MedicalDocument = { id: string; originalFilename: string; mimeType: string; byteSize: number; createdAt: string; scanStatus?: string; imported?: boolean };
 export type MedicalRecord = {
   id: string; kind: string; status: "planned" | "completed"; occurredAt: string; title: string;
   provider: string; clinician: string; notes: string; gestationalWeek: number | null;
   nextAppointmentAt: string | null; measurements: Record<string, number>; medicines: MedicalMedicine[];
   documents: MedicalDocument[];
+  documentIntake?: boolean; documentDateOnly?: boolean; linkedRecordId?: string | null;
 };
 
 export type MedicalUpcoming = MedicalRecord & { followUpFromCompleted: boolean };
@@ -82,8 +83,10 @@ export function normalizeMedicalRecord(value: unknown): MedicalRecord | null {
     const documentId = boundedText(document.id, 36); const filename = boundedText(document.original_filename ?? document.originalFilename, 180);
     const mimeType = boundedText(document.mime_type ?? document.mimeType, 40);
     const createdAt = boundedText(document.created_at ?? document.createdAt, 40);
-    return documentId && filename && mimeType && createdAt && typeof document.byte_size === "number"
-      ? [{ id: documentId, originalFilename: filename, mimeType, byteSize: document.byte_size, createdAt }] : [];
+    const byteSize = document.byte_size ?? document.byteSize;
+    return documentId && filename && mimeType && createdAt && typeof byteSize === "number"
+      ? [{ id: documentId, originalFilename: filename, mimeType, byteSize, createdAt,
+        scanStatus: String(document.scan_status ?? document.scanStatus ?? 'idle'), imported: document.imported === true }] : [];
   }) : [];
   const measurements = row.measurements && typeof row.measurements === "object"
     ? Object.fromEntries(Object.entries(row.measurements as Record<string, unknown>)
@@ -92,11 +95,15 @@ export function normalizeMedicalRecord(value: unknown): MedicalRecord | null {
     id, kind: String(row.kind), status: row.status as MedicalRecord["status"], occurredAt, title, provider, clinician, notes,
     gestationalWeek: typeof (row.gestational_week ?? row.gestationalWeek) === "number" ? Number(row.gestational_week ?? row.gestationalWeek) : null,
     nextAppointmentAt: typeof (row.next_appointment_at ?? row.nextAppointmentAt) === "string" ? String(row.next_appointment_at ?? row.nextAppointmentAt) : null,
-    measurements, medicines, documents
+    measurements, medicines, documents,
+    documentIntake: row.document_intake === true || row.documentIntake === true,
+    documentDateOnly: row.document_date_only === true || row.documentDateOnly === true,
+    linkedRecordId: typeof (row.linked_record_id ?? row.linkedRecordId) === 'string' ? String(row.linked_record_id ?? row.linkedRecordId) : null
   };
 }
 
 export function medicalInsights(records: MedicalRecord[], now = new Date()) {
+  records = records.filter(record => !record.documentIntake);
   const upcoming = [
     ...records
       .filter((record) => record.status === "planned" && new Date(record.occurredAt) >= now)

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import MedicalDocumentImport from './medical-document-import';
 import { DOCUMENT_TYPES, SCAN_ERROR_TEXT, documentAnalysisText, validDocumentAnalysis, withPrintedUnit,
   type DocumentAnalysis, type DocumentPage, type DocumentScan, type ExtractedField, type ExtractedMedicine, type ExtractedCharge } from '../lib/medical-document-scan';
 
@@ -113,7 +114,7 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
     finally { lock.current = false; setBusy(false); }
   }
   async function save() {
-    if (!confirmed || !draft || !scan || lock.current) return;
+    if (!confirmed || !draft || !scan || lock.current || busy) return;
     if (!validDocumentAnalysis(draft)) { setError('Bản nhập quá dài hoặc có trường không hợp lệ. Rút gọn nội dung rồi lưu lại.'); return; }
     lock.current = true; setBusy(true); setError('');
     try {
@@ -159,6 +160,8 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
       }}>Nạp bản đã lưu mới nhất</button> : null}
     </div> : null}
     {draft ? <form onSubmit={event => { event.preventDefault(); void save(); }}>
+      {scan ? <MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}
+        onImported={async () => { await load(); setMessage('Đã lưu bản đọc và thêm dữ liệu đã xác nhận vào hồ sơ.'); }} /> : null}
       <p className="document-notice">Đối chiếu họ tên, ngày khám, đơn vị và liều với bản gốc. Đây là bản chép, không phải chẩn đoán hay đơn thuốc mới.</p>
       <div className="document-review-tools">
         <p>{draft.pages.reduce((count, page) => count + pageRows(page).length, 0)} mục · {draft.pages.reduce((count, page) => count + pageRows(page).filter(row => row.unclear).length, 0)} cần kiểm tra lại</p>
@@ -203,7 +206,7 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
         <label className="document-check"><input type="checkbox" checked={confirmed} disabled={busy} onChange={e => setConfirmed(e.target.checked)} />Tôi đã đối chiếu các trang với bản gốc</label>
         <button type="submit" disabled={!confirmed || busy || conflict}>{busy ? 'Đang lưu…' : 'Lưu bản đối chiếu'}</button>
         <button type="button" disabled={busy} onClick={() => void copy()}>Chép nội dung</button>
-        <p>Chỉ lưu vào tài liệu này. Không tự đổi hồ sơ sức khỏe, liều thuốc, lịch hẹn hoặc tạo chi phí.</p>
+        <p>Nút này chỉ lưu bản đọc. Dùng “Xác nhận & thêm vào hồ sơ” phía trên để đưa dữ liệu đã đối chiếu vào hồ sơ khám.</p>
       </div>
     </form> : null}
     {message ? <p role="status" className="document-message">{message}</p> : null}

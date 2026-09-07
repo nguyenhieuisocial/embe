@@ -10,12 +10,11 @@ export default function PregnancyProfilePage() {
       <AppHeader note="Hồ sơ riêng của Mẹ Ngân" />
       <header className="pregnancy-profile-intro">
         <Link href="/me-bau">← Mẹ bầu</Link>
-        <p className="eyebrow">Một nơi để dùng chung</p>
         <h1>Hồ sơ thai kỳ</h1>
-        <p className="intro">Ngày dự sinh, điều cần lưu ý và người có thể gọi khi cần.</p>
+        <p className="intro">Chụp giấy tờ, xem kết quả và chuẩn bị lần khám tiếp theo.</p>
       </header>
-      <PregnancyProfileEditor />
       <PregnancyMedicalRecords />
+      <details className="pregnancy-profile-settings"><summary>Thông tin thai kỳ & người liên hệ</summary><PregnancyProfileEditor /></details>
     </main>
   );
 }
