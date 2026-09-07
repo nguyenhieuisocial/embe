@@ -11,3 +11,10 @@ def test_document_limits_and_no_arbitrary_source_ingestion():
 
 def test_redirects_are_never_followed():
     assert NoRedirect().redirect_request(None,None,302,'',{},'https://evil.test') is None
+
+def test_pinned_voice_and_speed_only_backward_compatible():
+    assert 'voice' not in validate_document(document())
+    for speed in (.95,1,1.05):
+        assert validate_document({**document(),'voice':{'id':'ai-han-south','speed':speed}})['voice']['speed']==speed
+    for v in [None,{}, {'id':'remote-url','speed':1}, {'id':'ai-han-south','speed':True}, {'id':'piper','speed':0}, {'id':'piper','speed':1,'path':'C:/Anh'}]:
+        with pytest.raises(ValueError,match='invalid_project'):validate_document({**document(),'voice':v})

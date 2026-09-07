@@ -1,0 +1,8 @@
+# Install into the isolated studio-voice venv only.
+# pip install --no-deps vieneu==3.6.4
+# pip install -r services/studio/requirements-southern-voice.txt
+# Nano imports only this CPU subset, not the SDK's Gradio/Torch UI extras.
+sea-g2p==0.9.1
+soundfile==0.14.0
+soxr==1.1.0
+huggingface-hub==1.30.0

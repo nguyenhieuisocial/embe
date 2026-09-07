@@ -104,6 +104,19 @@ Xem [nguồn gốc minh họa](assets/PROVENANCE.md) và [catalog có nguồn t�
 
 ## Dựng bảng kiến thức có giọng đọc
 
+### Giọng nữ miền Nam và hàng chờ duyệt trên web (07/09/2026)
+
+- `/studio/soan`: Ái Hân (nữ miền Nam), tốc độ 0,95 / 1 / 1,05; mẫu nghe chỉ tải khi người dùng mở và nhấn phát. Bản nháp cũ giữ Piper; đổi giọng tạo phiên bản mới, không sửa video cũ.
+- `/studio/duyet-dang`: lưu yêu cầu theo đúng kịch bản + video, nguồn, nơi đăng dự kiến, góp ý, rút/đưa lại vào hàng chờ, xuất hồ sơ dạng TXT. Sửa hoặc xóa dự án khiến yêu cầu trước đó có nhãn bản cũ.
+- **Đây là hàng chờ nội bộ, không phải đã gửi bác sĩ hoặc đã thẩm định y khoa.** Tài khoản gia đình dùng chung không chứng minh danh tính/chuyên môn của người duyệt. Không có action approve/publish/schedule. Năm nền tảng chưa có kết nối API, chưa tự đăng. Việc trao quyền cho một người duyệt và kết nối tài khoản đích là điều kiện còn thiếu, không thể thay bằng AI hoặc cookie trình duyệt.
+- Tách quyền schema `embe_studio`; endpoint yêu cầu phiên đang hoạt động và same-origin khi ghi. Request gắn revision/render; lịch sử append-only, tối đa 100 yêu cầu và 100 sự kiện/yêu cầu. Không đọc hồ sơ gia đình.
+
+Voice runtime: `vieneu==3.6.4` cài `--no-deps`, sau đó `requirements-southern-voice.txt` bên trong `.venv-studio-voice` đã có `requirements-voice.txt`. Không cài Torch/Gradio hay tạo thêm Docker. Chạy `python -m embe_studio.southern_voice` một lần để tải 6 artifact Nano (~282 MB), revision cố định và SHA-256 trong module. Runtime chỉ đọc model local và preset đúng checksum; dùng CPU 2 luồng, không gọi TTS bên ngoài, không sao chép giọng cá nhân.
+
+[VieNeu v3 Nano](https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Nano) và preset Ái Hân được phát hành Apache 2.0, có xác nhận quyền preset trong model card; KHÔNG dùng bộ preset VieNeu cũ có hạn chế phi thương mại. Nano còn thử nghiệm, cần nghe lại phát âm; không tuyên bố đã đạt chất lượng giọng thu chuyên nghiệp. Bản MP4 giữ nhãn giọng AI và attribution trong kịch bản tải về. Mẫu riêng không chứa thông tin sức khỏe.
+
+Kiểm tra: `apps/portal/tests/studio-review.test.tsx`, `services/studio/tests/test_web_worker.py`, và verifier live hữu hạn `scripts/health/studio-review-live.mjs`. Không có bài mạng xã hội nào được đăng trong kiểm tra. Kiểm tra trình duyệt iPhone-sized không thay kiểm tra iPhone/Safari thật.
+
 Môi trường `.venv-studio-voice` riêng, cài `requirements-voice.txt` và `pip install -e services/studio`. Không thay môi trường nhận diện y tế/thức ăn. Model tải từ revision cố định `1162a9173d0ce503555aed757976b7a9912eae4c` tại [Piper voices](https://huggingface.co/rhasspy/piper-voices/tree/1162a9173d0ce503555aed757976b7a9912eae4c/vi/vi_VN/vais1000/medium), đặt `.onnx` và `.onnx.json` vào `data/studio-voice/models`. Compiler kiểm tra SHA-256 cả hai, không tự tải model khác.
 
 ```powershell

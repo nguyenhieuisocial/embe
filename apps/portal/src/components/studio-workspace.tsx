@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { documentScript, readyToRender, renderErrors, renderLabels, studioDocument, templateDocument, type StudioDocument, type StudioProject, type StudioRender } from '../lib/studio-project';
 import type { StudioTopic } from '../lib/studio-types';
 import StudioFileShare from './studio-file-share';
+import StudioVoicePicker from './studio-voice-picker';
 
 async function api(query='',body?:unknown) {
   const response=await fetch(`/api/studio/workspace${query}`,{method:body?'POST':'GET',cache:'no-store',signal:AbortSignal.timeout(18000),...(body?{headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{})});
@@ -22,6 +23,7 @@ export default function StudioWorkspace({templates}:{templates:StudioTopic[]}) {
     <div className="studio-action-grid"><Link href="/studio/soan">Viết nội dung mới</Link><Link href="/studio/kham-pha">Tìm ý tưởng</Link></div>
     <p className="discovery-help">Bản nháp lưu riêng trên EmBe, dùng chung giữa các điện thoại đã đăng nhập. Không lấy nhật ký hay hồ sơ sức khỏe.</p>
     <p className="discovery-help">{workerText(seen)}</p>
+    <Link className="studio-back" href="/studio/duyet-dang">Mở hàng chờ duyệt & trạng thái đăng →</Link>
     <details className="studio-disclosure"><summary>Bắt đầu từ kịch bản có sẵn</summary><ul className="studio-ideas">{templates.map(t=><li key={t.slug}><Link className="studio-back" href={`/studio/soan?mau=${t.slug}`}>{t.title}</Link></li>)}</ul></details>
     <div className="discovery-platforms"><button aria-pressed={!trash} onClick={()=>setTrash(false)}>Đang làm ({projects.filter(p=>!p.deleted).length})</button><button aria-pressed={trash} onClick={()=>setTrash(true)}>Đã xóa ({projects.filter(p=>p.deleted).length})</button><button onClick={()=>void refresh()}>Cập nhật danh sách</button></div>
     <p role="status" className="discovery-status">{message}</p>
@@ -76,6 +78,7 @@ export function StudioEditor({projectId,template,ideaId}:{projectId?:string;temp
     <fieldset className="studio-fields" disabled={busy}>
     <label className="studio-search">Tên nội dung<input value={doc.title} maxLength={120} onChange={e=>edit({...doc,title:e.target.value})}/></label>
     <label className="studio-search">Dành cho giai đoạn<input value={doc.stage} maxLength={80} placeholder="Mới mang thai, sau sinh…" onChange={e=>edit({...doc,stage:e.target.value})}/></label>
+    <StudioVoicePicker value={doc.voice} onChange={voice=>edit({...doc,voice})}/>
     <p className="discovery-help">Video dọc có giọng Việt và phụ đề trên hình. Tối đa 6 cảnh / 90 giây. Chỉ nhập nội dung bạn có quyền sử dụng, không đưa hồ sơ riêng vào đây.</p>
     <ol className="studio-edit-scenes">{doc.scenes.map((scene,index)=><li key={index}>
       <div className="studio-scene-heading"><h2>Cảnh {index+1}</h2><div className="discovery-platforms"><button disabled={index===0} aria-label={`Đưa cảnh ${index+1} lên`} onClick={()=>{const scenes=[...doc.scenes];[scenes[index-1],scenes[index]]=[scenes[index],scenes[index-1]];edit({...doc,scenes});}}>↑</button><button disabled={index===doc.scenes.length-1} aria-label={`Đưa cảnh ${index+1} xuống`} onClick={()=>{const scenes=[...doc.scenes];[scenes[index+1],scenes[index]]=[scenes[index],scenes[index+1]];edit({...doc,scenes});}}>↓</button><button disabled={doc.scenes.length===1} onClick={()=>edit({...doc,scenes:doc.scenes.filter((_,i)=>i!==index)})}>Bỏ cảnh {index+1}</button></div></div>
@@ -95,6 +98,7 @@ export function StudioEditor({projectId,template,ideaId}:{projectId?:string;temp
     <p role="status" className="discovery-status">{message}</p>
     {saved&&<section className="studio-render-panel" aria-label="Dựng video">
       <h2>Dựng & chia sẻ</h2><p className="discovery-help">{workerText(seen)}</p>
+      <Link className="studio-back" href={`/studio/duyet-dang?du-an=${id}`}>Chuẩn bị duyệt chuyên môn & đăng →</Link>
       {dirty?<p>Lưu thay đổi trước khi dựng để video khớp đúng kịch bản.</p>:<label className="studio-review-check"><input type="checkbox" checked={ack} onChange={e=>setAck(e.target.checked)}/>Tôi đã đọc bản nháp và nguồn. Video vẫn cần được rà soát chuyên môn trước khi đăng.</label>}
       <div className="discovery-platforms"><button disabled={busy||dirty||!ack||!readyToRender(doc)||!!active||latest?.status==='completed'} onClick={()=>void action('render')}>{latest?.status==='failed'?'Thử dựng lại':'Dựng video có giọng Việt'}</button>{active&&<button disabled={busy} onClick={()=>void action('cancel')}>Hủy yêu cầu</button>}<button onClick={()=>void refreshStatus()}>Cập nhật tiến độ</button></div>
       {!readyToRender(doc)&&<p className="discovery-help">Cần điền đủ từng cảnh và thêm nguồn trong “Caption & nguồn đối chiếu”.</p>}

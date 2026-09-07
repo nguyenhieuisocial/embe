@@ -9,7 +9,7 @@ vi.mock('../src/components/device-access-prompt', () => ({ default: () => <div r
 import AppShell from '../src/components/app-shell';
 
 describe('Studio stays separate from personal health permissions', () => {
-  it.each(['/studio', '/studio/ca-phe-tra-sua', '/studio/nghien-cuu', '/studio/kham-pha'])('does not block %s with unrelated device setup', path => {
+  it.each(['/studio', '/studio/ca-phe-tra-sua', '/studio/nghien-cuu', '/studio/kham-pha', '/studio/duyet-dang', '/studio/soan'])('does not block %s with unrelated device setup', path => {
     navigation.pathname = path;
     render(<AppShell><h1>Studio</h1></AppShell>);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

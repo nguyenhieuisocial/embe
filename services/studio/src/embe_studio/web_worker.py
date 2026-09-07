@@ -27,8 +27,12 @@ class ClaimLost(Exception):
     pass
 
 def validate_document(value):
-    if not isinstance(value, dict) or set(value) != {'title','stage','caption','scenes','sources'}:
+    if not isinstance(value, dict) or set(value) - {'voice'} != {'title','stage','caption','scenes','sources'}:
         raise ValueError('invalid_project')
+    if 'voice' in value:
+        v=value['voice']
+        if not isinstance(v,dict) or set(v)!={'id','speed'} or v['id'] not in {'ai-han-south','piper'} or type(v['speed']) not in (int,float) or v['speed'] not in (.95,1,1.05):
+            raise ValueError('invalid_project')
     def text(v, n, required=False):
         if not isinstance(v,str) or len(v)>n or (required and not v.strip()):
             raise ValueError('invalid_project')
@@ -58,22 +62,32 @@ def render_document(document, directory: Path, progress):
     from .narrated import MODEL_SHA256,CONFIG_SHA256,RATE,VOICE_CREDIT,checksum,text_block,render_video,frame_image
     from .render import font_at
     doc=validate_document(document)
-    model=ROOT/'data/studio-voice/models/vi_VN-vais1000-medium.onnx'
-    config=Path(str(model)+'.json')
-    if checksum(model)!=MODEL_SHA256 or checksum(config)!=CONFIG_SHA256:raise ValueError('worker_unavailable')
-    opts=ort.SessionOptions();opts.intra_op_num_threads=2;opts.inter_op_num_threads=1
-    voice=PiperVoice(session=ort.InferenceSession(str(model),sess_options=opts,providers=['CPUExecutionProvider']),config=PiperConfig.from_dict(json.loads(config.read_text(encoding='utf-8'))))
+    chosen=doc.get('voice',{'id':'piper','speed':1})
+    southern=chosen['id']=='ai-han-south'
+    if southern:
+        from .southern_voice import SouthernVoice,CREDIT
+        voice=SouthernVoice();credit=CREDIT
+    else:
+        model=ROOT/'data/studio-voice/models/vi_VN-vais1000-medium.onnx'
+        config=Path(str(model)+'.json')
+        if checksum(model)!=MODEL_SHA256 or checksum(config)!=CONFIG_SHA256:raise ValueError('worker_unavailable')
+        opts=ort.SessionOptions();opts.intra_op_num_threads=2;opts.inter_op_num_threads=1
+        voice=PiperVoice(session=ort.InferenceSession(str(model),sess_options=opts,providers=['CPUExecutionProvider']),config=PiperConfig.from_dict(json.loads(config.read_text(encoding='utf-8'))))
+        credit=VOICE_CREDIT
     visuals=[];sounds=[];durations=[];beats=[];elapsed=0
     try:
         for i,scene in enumerate(doc['scenes']):
             progress(5+int(i/len(doc['scenes'])*35))
-            sound_io=io.BytesIO()
-            with wave.open(sound_io,'wb') as wav:voice.synthesize_wav(scene['text'],wav,syn_config=SynthesisConfig(length_scale=1.03,volume=.85))
-            sound_io.seek(0)
-            with wave.open(sound_io,'rb') as wav:
-                if wav.getframerate()!=RATE or wav.getnchannels()!=1 or wav.getsampwidth()!=2:raise ValueError('worker_unavailable')
-                if not RATE<=wav.getnframes()<=25*RATE:raise ValueError('voice_too_long')
-                pcm=np.frombuffer(wav.readframes(wav.getnframes()),dtype='<i2').astype(np.float32)/32768
+            if southern:
+                pcm=voice.speak(scene['text'],chosen['speed'])
+            else:
+                sound_io=io.BytesIO()
+                with wave.open(sound_io,'wb') as wav:voice.synthesize_wav(scene['text'],wav,syn_config=SynthesisConfig(length_scale=1.03/chosen['speed'],volume=.85))
+                sound_io.seek(0)
+                with wave.open(sound_io,'rb') as wav:
+                    if wav.getframerate()!=RATE or wav.getnchannels()!=1 or wav.getsampwidth()!=2:raise ValueError('worker_unavailable')
+                    pcm=np.frombuffer(wav.readframes(wav.getnframes()),dtype='<i2').astype(np.float32)/32768
+            if not RATE<=len(pcm)<=25*RATE:raise ValueError('voice_too_long')
             if np.max(np.abs(pcm))<.01:raise ValueError('worker_unavailable')
             duration=math.ceil(len(pcm)/RATE+.45)
             if elapsed+duration>90:raise ValueError('voice_too_long')
@@ -104,9 +118,10 @@ def render_document(document, directory: Path, progress):
             beats.append({'heading':scene['heading'],'text':scene['text'],'start':elapsed,'end':elapsed+duration});elapsed+=duration
         progress(45)
         result=render_video(directory/'video.mp4',visuals,durations,np.concatenate(sounds),on_progress=progress)
-        return {'duration':elapsed,'beats':beats,'voiceCredit':VOICE_CREDIT,'verification':result}
+        return {'duration':elapsed,'beats':beats,'voiceCredit':credit,'verification':result}
     finally:
         for background,photo in visuals:background.close();photo.close()
+        if southern:voice.close()
 
 class WebWorker:
     def __init__(self, env: Path):
