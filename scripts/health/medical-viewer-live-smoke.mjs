@@ -8,7 +8,7 @@ const { chromium } = require('C:/Users/Admin/.cache/codex-runtimes/codex-primary
 const origin = 'https://embe.hieu.asia';
 const expected = process.env.EMBE_VERIFY_VERSION; const password = process.env.EMBE_VERIFY_PASSWORD;
 if (!expected || !password) throw new Error('missing_verification_config');
-const health = await (await fetch(`${origin}/api/health`)).json();
+const health = await (await fetch(`${origin}/api/health?verify=${encodeURIComponent(expected)}`, { cache: 'no-store' })).json();
 if (health.version !== expected) { console.log(JSON.stringify({ pending: true, version: health.version })); process.exit(2); }
 const output = resolve('data/medical-recognition-verification'); await mkdir(output, { recursive: true });
 const recordId = randomUUID(); const imageId = randomUUID(); const pdfId = randomUUID();
@@ -17,7 +17,15 @@ const browser = await chromium.launch({ headless: true, executablePath: 'C:/User
 const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true, acceptDownloads: true });
 await context.addInitScript(() => localStorage.setItem('embe:access-guide-dismissed-at', String(Date.now())));
 const page = await context.newPage();
-const csp = []; page.on('console', message => { if (message.text().includes('Content Security Policy')) csp.push(message.text().slice(0, 300)); });
+const csp = []; let unrelatedAnalyticsCspBlocks = 0;
+page.on('console', message => {
+  const text = message.text();
+  if (!text.includes('Content Security Policy')) return;
+  // Existing analytics destination is intentionally not allowlisted; it is not a failed image/PDF load.
+  // Do not relax production CSP to make a viewer check green.
+  if (text.startsWith("Refused to connect to 'https://www.google.com/g/collect?")) { unrelatedAnalyticsCspBlocks++; return; }
+  csp.push(text.slice(0, 300));
+});
 let loggedIn = false; let created = false;
 const request = (path, method, data) => context.request.fetch(`${origin}${path}`, { method, headers: { origin, 'content-type': 'application/json' }, data });
 async function upload(id, filename, mimeType, bytes) {
@@ -110,7 +118,8 @@ try {
   await page.goBack(); await closed();
   if (await page.getByLabel('Tiêu đề', { exact: true }).inputValue() !== 'Unsaved synthetic draft') throw new Error('lost_unsaved_draft');
   result.unsavedReviewPreservedWithSyntheticScan = true;
-  if (csp.length) throw new Error('viewer_csp_violation'); result.noCspViolations = true;
+  result.unrelatedAnalyticsCspBlocks = unrelatedAnalyticsCspBlocks;
+  if (csp.length) throw new Error('viewer_csp_violation'); result.noViewerCspViolations = true;
   result.status = 'passed';
 } catch (error) {
   result.status = 'failed'; result.error = String(error.message).split('\n')[0]; process.exitCode = 1;
