@@ -21,8 +21,10 @@ try{
   const forbidden=await context.request.post(`${origin}/api/studio/workspace`,{headers:{origin:'https://example.invalid'},data:{action:'save',id:projectId,revision:0,payload:{}}});if(forbidden.status()!==403)throw new Error('csrf_not_denied');
   await page.goto(`${origin}/studio/soan?du-an=${projectId}`,{waitUntil:'domcontentloaded'});await page.getByLabel('Tên nội dung',{exact:true}).waitFor();
   const before=await(await context.request.get(`${origin}/api/studio/workspace?project=${projectId}`)).json();
+  // Allow rerunning the verifier without a no-op save or overwriting other projects.
+  const sceneHeading=before.project.payload.scenes[0].heading==='Một bữa nhỏ, mẹ dễ chịu hơn'?'Một bữa nhỏ, mẹ thấy dễ chịu hơn':'Một bữa nhỏ, mẹ dễ chịu hơn';
   await page.getByLabel('Tên nội dung',{exact:true}).fill('Bữa nhỏ khi nghén — cùng EmBe');
-  await page.getByLabel('Tiêu đề cảnh 1',{exact:true}).fill('Một bữa nhỏ, mẹ dễ chịu hơn');
+  await page.getByLabel('Tiêu đề cảnh 1',{exact:true}).fill(sceneHeading);
   await page.getByRole('button',{name:'Lưu bản nháp',exact:true}).click();await page.getByText('Đã lưu trên EmBe. Điện thoại khác có thể mở bản này.').waitFor();
   const updated=await(await context.request.get(`${origin}/api/studio/workspace?project=${projectId}`)).json();if(updated.project.revision<=before.project.revision)throw new Error('save_revision_missing');result.savedRevision=updated.project.revision;
   second=await browser.newContext({storageState:await context.storageState(),viewport:{width:375,height:667},isMobile:true,hasTouch:true});const other=await second.newPage();await other.goto(`${origin}/studio/soan?du-an=${projectId}`,{waitUntil:'domcontentloaded'});await other.getByLabel('Tên nội dung',{exact:true}).waitFor();if(await other.getByLabel('Tên nội dung',{exact:true}).inputValue()!=='Bữa nhỏ khi nghén — cùng EmBe')throw new Error('second_context_stale');result.crossContextRead=true;
@@ -35,7 +37,7 @@ try{
   const range=await context.request.get(media,{headers:{range:'bytes=0-1'}});if(range.status()!==206||(await range.body()).length!==2)throw new Error('range_failed');
   const video=page.locator('.studio-render-result video').first();await video.evaluate(async el=>{await el.play();});await page.waitForFunction(()=>document.querySelector('.studio-render-result video')?.currentTime>0.2);await video.evaluate(el=>el.pause());result.render.played=true;
   const subtitles=await context.request.get(`${origin}/api/studio/renders/${job.id}/subtitles`);if(!(await subtitles.text()).startsWith('WEBVTT'))throw new Error('subtitles_missing');
-  const script=await context.request.get(`${origin}/api/studio/renders/${job.id}/script`);if(!(await script.text()).includes('Một bữa nhỏ, mẹ dễ chịu hơn'))throw new Error('script_revision_wrong');
+  const script=await context.request.get(`${origin}/api/studio/renders/${job.id}/script`);if(!(await script.text()).includes(sceneHeading))throw new Error('script_revision_wrong');
   for(const [width,height] of [[375,667],[393,852],[430,932],[412,915],[768,1024],[1280,900]]){
     await page.setViewportSize({width,height});const layout=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>window.innerWidth+1,small:[...document.querySelectorAll('.studio-main button,.studio-main a,.studio-main input,.studio-main select,.studio-main summary')].filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden').filter(el=>{const b=el.getBoundingClientRect();return b.height<43.5||b.width<43.5;}).map(el=>el.textContent?.trim().slice(0,45))}));result.viewports.push({width,height,...layout});if(layout.overflow||layout.small.length)throw new Error('mobile_layout_failed');}
   await page.setViewportSize({width:393,height:852});await page.screenshot({path:resolve(output,'editor-iphone.png'),fullPage:true});
