@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { validDocumentAnalysis, documentAnalysisText, type DocumentAnalysis } from '../src/lib/medical-document-scan';
+import { validDocumentAnalysis, documentAnalysisText, editableDocumentAnalysis, type DocumentAnalysis } from '../src/lib/medical-document-scan';
 import MedicalDocumentReview from '../src/components/medical-document-review';
 
 const mock = vi.hoisted(() => ({ denied: false, calls: vi.fn() }));
@@ -17,6 +17,16 @@ const record = { documentId: id, recordId: id, filename: 'mau.pdf', mimeType: 'a
 afterEach(() => { mock.denied = false; mock.calls.mockReset(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('document recognition contract', () => {
+  it('accepts bounded original PDF text without expanding editable analysis', () => {
+    const a = structuredClone(analysis);
+    a.pages[0].pdfText = 'Nội dung chưa phân loại\n' + 'ữ'.repeat(47000);
+    expect(validDocumentAnalysis(a)).toBe(true);
+    expect(editableDocumentAnalysis(a)).toEqual(analysis);
+    expect(a.pages[0].pdfText).toContain('Nội dung chưa phân loại');
+    expect(documentAnalysisText(a)).toContain('Lớp chữ từ PDF — có thể sai');
+    a.pages[0].pdfText = 'x'.repeat(48001); expect(validDocumentAnalysis(a)).toBe(false);
+    a.pages[0].pdfText = 'x\u0001y'; expect(validDocumentAnalysis(a)).toBe(false);
+  });
   it('accepts paired PDF source cells without weakening old scan validation', () => {
     const a = structuredClone(analysis);
     a.pages[0].fields[0].pdfValue = 'Sản';
@@ -79,6 +89,23 @@ describe('document recognition contract', () => {
 });
 
 describe('document review UX', () => {
+  it('shows read-only PDF text safely but never resubmits it as editable data', async () => {
+    const a = structuredClone(analysis);
+    a.pages[0].pdfText = 'Dòng chưa phân loại\n<script>sourceNotCode()</script>';
+    const fetcher = vi.fn(async (_url: unknown, options?: RequestInit) => Response.json(options?.method === 'PATCH'
+      ? { ...record, status: 'confirmed', revision: 4, analysis: a } : { ...record, analysis: a }));
+    vi.stubGlobal('fetch', fetcher);
+    render(<MedicalDocumentReview documentId={id} />);
+    fireEvent.click(await screen.findByText('Chữ từ PDF · trang 1'));
+    expect(screen.getByLabelText('Lớp chữ PDF trang 1')).toHaveTextContent('<script>sourceNotCode()</script>');
+    expect(screen.getByLabelText('Lớp chữ PDF trang 1').querySelector('script')).toBeNull();
+    fireEvent.click(screen.getByLabelText('Tôi đã đối chiếu các trang với bản gốc'));
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu bản đối chiếu' }));
+    await screen.findByText('Đã lưu bản đối chiếu vào tài liệu này.');
+    const sent = JSON.parse(String(fetcher.mock.calls.find(call => call[1]?.method === 'PATCH')?.[1]?.body));
+    expect(sent.analysis.pages[0]).not.toHaveProperty('pdfText');
+    expect(screen.getByLabelText('Lớp chữ PDF trang 1')).toHaveTextContent('Dòng chưa phân loại');
+  });
   it('lets older prescription scans add missing structured details and persist them', async () => {
     const a = structuredClone(analysis);
     a.pages[0].medicines = [{ name: 'THUỐC MẪU', ingredients: '', dose: '', frequency: '', instructions: '', evidence: 'Chữ gốc', unclear: true }];

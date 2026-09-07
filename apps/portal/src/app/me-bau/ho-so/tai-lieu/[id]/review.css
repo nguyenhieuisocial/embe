@@ -48,6 +48,12 @@
 .document-save button[type=submit], .document-start button { background: var(--rose); color: white; border-color: var(--rose); }
 .document-save p { font-size: .76rem; color: var(--ink-soft); margin: 0; }
 .document-warnings { font-size: .8rem; padding-left: 20px; }
+.document-source-text { margin: 12px 0; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; min-width: 0; }
+.document-source-text summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: .85rem; }
+.document-source-text summary::before { content: '+'; margin-right: 8px; }
+.document-source-text[open] summary::before { content: '−'; }
+.document-source-text p { font-size: .78rem; color: var(--ink-soft); }
+.document-source-text pre { max-height: 45dvh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: .85rem; line-height: 1.6; user-select: text; }
 .document-message { color: var(--rose-press); }
 .document-review :is(a, button, input, textarea, select, summary):focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
 .document-image-scroll:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }

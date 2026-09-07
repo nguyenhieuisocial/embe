@@ -69,6 +69,14 @@ try {
   await page.getByText('Kiểm tra ngày, cơ sở và lần khám', { exact: true }).click();
   await page.getByLabel('Tên hồ sơ', { exact: true }).fill('EMBE SYNTHETIC IMPORTED SCAN');
   if (format === 'pdf') {
+    const pdfText = scan.analysis.pages[0].pdfText;
+    if (typeof pdfText !== 'string' || !pdfText.includes('NGƯỜI MẪU') || !pdfText.includes('KHÔNG PHẢI HỒ SƠ THẬT')) throw new Error('pdf_full_layer_missing');
+    await page.getByText('Chữ từ PDF · trang 1', { exact: true }).focus();
+    await page.keyboard.press('Enter');
+    const sourceText = page.getByLabel('Lớp chữ PDF trang 1', { exact: true });
+    if (!(await sourceText.textContent()).includes('KHÔNG PHẢI HỒ SƠ THẬT')) throw new Error('pdf_full_layer_not_visible');
+    await sourceText.focus(); await page.keyboard.press('ArrowDown');
+    result.pdfTextKeyboardAccessible = true;
     const source = scan.analysis.pages[0].fields.find(row => row.label === 'Bệnh viện');
     if (source?.pdfValue !== 'BV Mẫu EmBe' || source.pdfEvidence !== 'Bệnh viện: BV Mẫu EmBe') throw new Error('native_pdf_text_missing');
     const row = page.locator('.document-row').filter({ has: page.locator('summary strong', { hasText: /^Bệnh viện$/ }) });
@@ -92,7 +100,7 @@ try {
   for (const width of [375, 393, 430, 412, 768, 1280]) {
     await page.setViewportSize({ width, height: 852 });
     const metrics = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth + 1,
-      badTargets: [...document.querySelectorAll('.document-review button,.document-review input:not([type=checkbox]),.document-review select')]
+      badTargets: [...document.querySelectorAll('.document-review button,.document-review input:not([type=checkbox]),.document-review select,.document-review summary')]
         .filter(el => el.getBoundingClientRect().width && el.getBoundingClientRect().height < 43).length }));
     result.widths.push({ width, ...metrics }); if (metrics.overflow || metrics.badTargets) throw new Error(`mobile_layout_${width}`);
   }
@@ -112,6 +120,13 @@ try {
   const after = await (await context.request.get(`${origin}/api/pregnancy/documents/${documentId}/scan`)).json();
   if (after.status !== 'confirmed') throw new Error('transcription_not_confirmed');
   if (format === 'pdf' && after.analysis.pages[0].fields.find(row => row.label === 'Bệnh viện')?.pdfValue !== 'BV Mẫu EmBe') throw new Error('pdf_source_not_persisted');
+  if (format === 'pdf') {
+    if (after.analysis.pages[0].pdfText !== scan.analysis.pages[0].pdfText) throw new Error('pdf_text_not_preserved_after_import');
+    const forged = structuredClone(after.analysis); forged.pages[0].pdfText = 'FORGED SYNTHETIC SOURCE';
+    const response = await json(`/api/pregnancy/documents/${documentId}/scan`, 'PATCH', { revision: after.revision, analysis: forged, confirmed: true });
+    if (response.status() !== 200 || (await response.json()).analysis.pages[0].pdfText !== scan.analysis.pages[0].pdfText) throw new Error('pdf_text_source_not_immutable');
+    result.pdfTextImmutableAndPersisted = true;
+  }
   const original = await context.request.get(`${origin}/api/pregnancy/documents/${documentId}`);
   if (!(await original.body()).equals(await readFile(file))) throw new Error('original_changed'); result.originalUnchanged = true;
   await page.reload({ waitUntil: 'domcontentloaded' });

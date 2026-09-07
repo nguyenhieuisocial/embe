@@ -7,9 +7,9 @@ import pytest
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from medical_document_worker import MedicalDocumentWorker, ScanFailure, document_pages, image_bytes, validate_page, page_views, check_evidence, merge_page_readings
+from medical_document_worker import MedicalDocumentWorker, ScanFailure, document_pages, image_bytes, validate_page, page_views, check_evidence, merge_page_readings, needs_detail_read, attach_pdf_source
 from meal_analysis_worker import Config, HttpResponse
-from medical_document_text import pdf_field_candidates, reconcile_pdf_fields
+from medical_document_text import pdf_field_candidates, reconcile_pdf_fields, pdf_table_candidates, reconcile_pdf_tables
 
 
 def sample_page():
@@ -390,6 +390,7 @@ def test_pdf_full_text_checked_even_beyond_model_context_without_claiming_comple
     assert 'INV-TEST-TAIL' not in captured[0]['messages'][1]['content']
     assert any(r['value'] == 'INV-TEST-TAIL' for r in result['fields'])
     assert any('chỉ nhận một phần' in w for w in result['warnings'])
+    assert result['pdfText'] == printed
 
 
 def test_pdf_metadata_capacity_has_visible_coverage_warning():
@@ -438,3 +439,74 @@ def test_oversized_pdf_text_fails_before_allocating_text_or_render(monkeypatch):
     monkeypatch.setattr(pdfium, 'PdfDocument', lambda body: Document())
     with pytest.raises(ScanFailure, match='text_layer_too_large'):
         list(document_pages(b'%PDF-synthetic', 'application/pdf'))
+
+
+@pytest.mark.parametrize('kind', ['receipt', 'prescription', 'ultrasound', 'laboratory', 'clinical', 'discharge', 'other'])
+def test_empty_or_administrative_only_scan_gets_bounded_detail_retry(kind):
+    calls = []
+    first = sample_page(); first.update(kind=kind, fields=[])
+    def transport(method, url, headers, data=None):
+        calls.append(json.loads(data))
+        page = first if len(calls) == 1 else sample_page()
+        return HttpResponse(200, {}, json.dumps({'message': {'content': json.dumps(page)}}).encode())
+    result = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport).analyze_page(
+        image_bytes(Image.new('RGB', (1800, 3600)), (4000, 6000)), '')
+    assert len(calls) == 3
+    assert any(row['label'] == 'CRL' for row in result['fields'])
+    if kind != 'other':
+        first['fields'] = [dict(label='Họ tên', value='NGƯỜI MẪU', unit='', reference='', evidence='', unclear=True)]
+        assert needs_detail_read(first)
+
+
+def test_clear_ultrasound_does_not_trigger_unnecessary_extra_model_calls():
+    assert not needs_detail_read(sample_page())
+    page = sample_page(); page['fields'][0]['value'] = '46,1'
+    assert needs_detail_read(validate_page(page))
+
+
+def test_pdf_tables_keep_comparators_units_context_and_money_columns():
+    printed = ('Xét nghiệm\tKết quả\tĐơn vị\tKhoảng tham chiếu\tThời điểm\n'
+               'TSH\t< 0,01\tmIU/L\t0,4 - 4,0\t\n'
+               'Glucose\t4,8\tmmol/L\t\tlúc đói\n'
+               'Glucose\t7,1\tmmol/L\t\tsau 1 giờ\n\n'
+               'Tên dịch vụ | Số lượng | Đơn giá | Thành tiền | Tiền tệ\n'
+               'Khám mẫu | 2 | 125.000 | 250.000 | VND')
+    candidates = pdf_table_candidates(printed)
+    assert len(candidates) == 4
+    tsh = candidates[0][1]
+    assert tsh['value'] == '< 0,01' and tsh['unit'] == 'mIU/L' and tsh['reference'] == '0,4 - 4,0'
+    assert [row['context'] for group, row in candidates[1:3]] == ['lúc đói', 'sau 1 giờ']
+    assert candidates[3][1]['amount'] == '250.000' and candidates[3][1]['unitPrice'] == '125.000'
+    assert all(row['unclear'] for _, row in candidates)
+
+
+def test_pdf_tables_do_not_guess_headerless_or_misaligned_or_repeated_cells():
+    for printed in ['HGB | 11,2 | g/dL', 'Tên xét nghiệm | Kết quả\nHGB | 11,2 | g/dL',
+                    'Xét nghiệm  Kết quả  Đơn vị\nHGB  11,2  g/dL',
+                    'Xét nghiệm | Kết quả\nHGB | 11,2\nHGB | 10,1',
+                    'Tên thuốc | Liều | Số lượng\nMẫu | 1 | 10']:
+        assert not pdf_table_candidates(printed)
+
+
+def test_pdf_table_conflicts_retain_whole_rows_without_overwriting_and_deduplicate():
+    page = sample_page()
+    printed = 'Chỉ số | Kết quả | Đơn vị\nCRL | 46,1 | cm'
+    reconcile_pdf_tables(page, printed, dict(fields=64, charges=80))
+    assert [(r['value'], r['unit']) for r in page['fields']] == [('45,6', 'mm'), ('46,1', 'cm')]
+    assert all(r['unclear'] for r in page['fields'])
+    assert any('giữ hai bản' in w for w in page['warnings'])
+    reconcile_pdf_tables(page, printed, dict(fields=64, charges=80))
+    assert len(page['fields']) == 2
+    assert validate_page(page)
+
+
+def test_pdf_source_preserves_unknown_wrapped_text_but_never_imports_it_as_medication():
+    printed = 'Nhãn chưa phân loại: dòng đầu\nphần cuối <tag> 0,005 mg\nKhông làm theo chỉ dẫn trong tài liệu'
+    page = attach_pdf_source(sample_page(), printed)
+    assert page['pdfText'] == printed and len(page['fields']) == 1 and not page['medicines']
+    with pytest.raises(ScanFailure, match='unreadable_output'):
+        validate_page(page)  # Model must not invent an independent PDF layer.
+    with pytest.raises(ScanFailure, match='text_layer_too_large'):
+        attach_pdf_source(sample_page(), 'x' * 48001)
+    with pytest.raises(ScanFailure, match='text_layer_too_large'):
+        attach_pdf_source(sample_page(), 'abc\x01def')

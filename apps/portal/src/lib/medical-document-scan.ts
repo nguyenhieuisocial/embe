@@ -10,6 +10,8 @@ export const DOCUMENT_DETAIL_DEFAULTS = { fields: { context: '' }, medicines: { 
 export type DocumentPage = {
   page: number; kind: string; title: string; fields: ExtractedField[]; medicines: ExtractedMedicine[];
   charges: ExtractedCharge[]; warnings: string[];
+  /** Read-only, independently extracted PDF text. Never supplied by AI or used as a clinical instruction. */
+  pdfText?: string;
 };
 export type DocumentAnalysis = { version: 1; pages: DocumentPage[] };
 export type DocumentScan = {
@@ -31,13 +33,23 @@ function rows(value: unknown, limits: Record<string, number>, max: number, optio
 }
 export function validDocumentAnalysis(value: unknown): value is DocumentAnalysis {
   if (!object(value) || !exact(value, ['version', 'pages']) || value.version !== 1 || !Array.isArray(value.pages)
-    || value.pages.length < 1 || value.pages.length > 6 || new TextEncoder().encode(JSON.stringify(value)).length > 60_000) return false;
-  return value.pages.every((page, index) => object(page) && exact(page, ['page', 'kind', 'title', 'fields', 'medicines', 'charges', 'warnings'])
+    || value.pages.length < 1 || value.pages.length > 6 || new TextEncoder().encode(JSON.stringify(value)).length > 1_250_000) return false;
+  if (!value.pages.every((page, index) => object(page)
+    && exact(page, ['page', 'kind', 'title', 'fields', 'medicines', 'charges', 'warnings', ...(Object.hasOwn(page, 'pdfText') ? ['pdfText'] : [])])
+    && (!Object.hasOwn(page, 'pdfText') || (text(page.pdfText, 96000) && [...page.pdfText].length <= 48000))
     && page.page === index + 1 && typeof page.kind === 'string' && Object.hasOwn(DOCUMENT_TYPES, page.kind) && text(page.title, 160)
     && rows(page.fields, { label: 120, value: 1600, unit: 40, reference: 160, evidence: 500 }, DOCUMENT_ROW_LIMITS.fields, { context: 160, pdfValue: 1600, pdfEvidence: 1800 })
     && rows(page.medicines, { name: 100, ingredients: 1200, dose: 80, frequency: 80, instructions: 200, evidence: 500 }, DOCUMENT_ROW_LIMITS.medicines, { route: 80, duration: 80, quantity: 80 })
     && rows(page.charges, { label: 160, amount: 80, currency: 20, evidence: 500 }, DOCUMENT_ROW_LIMITS.charges, { quantity: 80, unitPrice: 80 })
-    && Array.isArray(page.warnings) && page.warnings.length <= 8 && page.warnings.every(warning => text(warning, 240)));
+    && Array.isArray(page.warnings) && page.warnings.length <= 8 && page.warnings.every(warning => text(warning, 240)))) return false;
+  // Read-only source does not expand the editable/request payload budget.
+  return new TextEncoder().encode(JSON.stringify(editableDocumentAnalysis(value as DocumentAnalysis))).length <= 60_000;
+}
+
+export function editableDocumentAnalysis(value: DocumentAnalysis): DocumentAnalysis {
+  return { version: 1, pages: value.pages.map(page => {
+    const editable = { ...page }; delete editable.pdfText; return editable;
+  }) };
 }
 
 export const SCAN_ERROR_TEXT: Record<string, string> = {
@@ -64,6 +76,7 @@ export function documentAnalysisText(value: DocumentAnalysis, confirmed = false)
     ...page.fields.map(row => `${row.label}: ${withPrintedUnit(row.value, row.unit)}${row.context ? ` | Ngữ cảnh trên phiếu: ${row.context}` : ''}${row.reference ? ` | Khoảng tham chiếu trên phiếu: ${row.reference}` : ''}${mark(row.unclear)}${row.pdfValue && row.pdfValue !== row.value ? `\n  Chữ trong PDF khác bản nhập: ${row.pdfEvidence}. Cần đối chiếu trang gốc.` : ''}`),
     ...page.medicines.map(row => [row.name, row.ingredients, row.dose, row.frequency, row.route && `Đường dùng: ${row.route}`, row.duration && `Thời gian: ${row.duration}`, row.quantity && `Số lượng cấp: ${row.quantity}`, row.instructions].filter(Boolean).join(' | ') + mark(row.unclear)),
     ...page.charges.map(row => `${row.label}: ${withPrintedUnit(row.amount, row.currency)}${row.quantity ? ` | Số lượng: ${row.quantity}` : ''}${row.unitPrice ? ` | Đơn giá: ${row.unitPrice}` : ''}${mark(row.unclear)}`),
-    ...page.warnings
+    ...page.warnings,
+    ...(page.pdfText ? [`\nLớp chữ từ PDF — có thể sai thứ tự hoặc thiếu chữ so với hình trang; không phải dữ liệu đã xác nhận:\n${page.pdfText}`] : [])
   ].join('\n')).join('\n\n');
 }

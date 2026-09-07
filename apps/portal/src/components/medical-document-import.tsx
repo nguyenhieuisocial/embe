@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { DOCUMENT_TYPES, type DocumentAnalysis } from '../lib/medical-document-scan';
+import { DOCUMENT_TYPES, editableDocumentAnalysis, type DocumentAnalysis } from '../lib/medical-document-scan';
 import { proposeDocumentImport, validImportDetails, type DocumentImportContext, type DocumentImportDetails } from '../lib/medical-document-import';
 import { MEDICAL_MEASUREMENTS } from '../lib/medical-measurements';
 import { clearPrivateGetCache } from '../lib/private-get-cache';
@@ -39,7 +39,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
     setBusy(true); onBusy?.(true); setError('');
     try {
       const response = await fetch(`/api/pregnancy/documents/${documentId}/import`, { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ analysis, details, revision, recordUpdatedAt: context.recordUpdatedAt, confirmed: true, patientConfirmed: true }), signal: AbortSignal.timeout(20000) });
+        body: JSON.stringify({ analysis: editableDocumentAnalysis(analysis), details, revision, recordUpdatedAt: context.recordUpdatedAt, confirmed: true, patientConfirmed: true }), signal: AbortSignal.timeout(20000) });
       if (response.status === 409) { setConflict(true); throw new Error('Hồ sơ đã thay đổi, hoặc có số đo/thuốc khác với bản đã lưu. EmBe chưa ghi đè. Mở hồ sơ để đối chiếu rồi nạp lại trang.'); }
       if (!response.ok) throw new Error('Chưa thêm được vào hồ sơ. Bản đang sửa vẫn còn; có thể thử lại.');
       const saved = await response.json(); if (!saved.imported || saved.recordId !== recordId) throw new Error('Chưa xác minh được kết quả lưu.');

@@ -1,7 +1,7 @@
 """Conservative PDF text-layer anchors. Text is untrusted, not clinical truth.
 
-Only explicit, single-line labelled administrative/narrative cells are matched.
-Tables, wrapped paragraphs and ambiguous/multiple cells need visual review.
+Only explicit labelled cells and tables with unambiguous printed headers are matched.
+Wrapped paragraphs and ambiguous/multiple cells remain in the page text for review.
 No fuzzy names, accent correction, arithmetic or medication inference.
 """
 import re
@@ -88,4 +88,88 @@ def reconcile_pdf_fields(page: dict, printed: str, capacity: int) -> None:
         notices.append(f'Bổ sung {added} mục từ lớp chữ PDF mà AI chưa chép. Cần đối chiếu hình trang gốc trước khi dùng.')
     if different:
         notices.append(f'{different} mục khác giữa AI và chữ PDF. Đã giữ cả hai để chọn; chưa tự thay kết quả.')
+    page['warnings'] = list(dict.fromkeys([*notices, *page['warnings']]))[:8]
+
+
+# No whitespace-based column guessing: PDF reading order may mix adjacent cells.
+# Only a literal tab/pipe table with a recognized header and equal column counts
+# can supply independent cells. Unmatched text is still preserved as pdfText.
+TABLE_HEADERS = {
+    'stt': 'index', 'no.': 'index',
+    'tên xét nghiệm': 'label', 'xét nghiệm': 'label', 'chỉ số': 'label', 'test': 'label',
+    'tên dịch vụ': 'label', 'nội dung thu': 'label', 'dịch vụ': 'label',
+    'kết quả': 'value', 'result': 'value',
+    'đơn vị': 'unit', 'unit': 'unit',
+    'khoảng tham chiếu': 'reference', 'giá trị tham chiếu': 'reference',
+    'trị số tham chiếu': 'reference', 'reference': 'reference',
+    'thời điểm': 'context', 'mẫu': 'context',
+    'số lượng': 'quantity', 'sl': 'quantity', 'đơn giá': 'unitPrice',
+    'thành tiền': 'amount', 'tiền tệ': 'currency',
+}
+
+
+def pdf_table_candidates(printed: str) -> list[tuple[str, dict]]:
+    candidates = []
+    header = None
+    delimiter = None
+    for raw in unicodedata.normalize('NFC', printed).splitlines():
+        line = raw.strip(' \r\n')
+        separator = '\t' if '\t' in line else '|' if '|' in line else None
+        if not separator or len(line) > 500 or re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f\ufffd]', line):
+            header = None
+            continue
+        content = line[1:-1] if line.startswith('|') and line.endswith('|') else line
+        cells = [cell.strip() for cell in content.split(separator)]
+        keys = [TABLE_HEADERS.get(text_key(cell)) for cell in cells]
+        if (all(keys) and len(set(keys)) == len(keys) and 'label' in keys
+                and (('value' in keys) != ('amount' in keys))):
+            allowed = {'index', 'label', 'value', 'unit', 'reference', 'context'} if 'value' in keys else {'index', 'label', 'amount', 'currency', 'quantity', 'unitPrice'}
+            header = keys if set(keys) <= allowed else None
+            delimiter = separator
+            continue
+        if not header or separator != delimiter or len(cells) != len(header):
+            header = None
+            continue
+        data = dict(zip(header, cells))
+        if 'index' in data and not re.fullmatch(r'\d{1,3}', data.pop('index')):
+            header = None
+            continue
+        if not data['label'] or text_key(data['label']) in TABLE_HEADERS:
+            continue
+        group = 'fields' if 'value' in data else 'charges'
+        limits = ({'label': 120, 'value': 1600, 'unit': 40, 'reference': 160, 'context': 160}
+                  if group == 'fields' else {'label': 160, 'amount': 80, 'currency': 20, 'quantity': 80, 'unitPrice': 80})
+        if not data.get('value' if group == 'fields' else 'amount') or any(len(v) > limits[k] for k, v in data.items()):
+            continue
+        row = {key: data.get(key, '') for key in limits}
+        row.update(evidence=line, unclear=True)
+        if group == 'fields':
+            row.update(pdfValue=row['value'], pdfEvidence=line)
+        candidates.append((group, row))
+    # Repeated labels without a distinguishing printed context are ambiguous.
+    identities = [(group, text_key(row['label']), text_key(row.get('context', ''))) for group, row in candidates]
+    return [entry for index, entry in enumerate(candidates) if identities.count(identities[index]) == 1]
+
+
+def reconcile_pdf_tables(page: dict, printed: str, limits: dict[str, int]) -> None:
+    added = conflicts = 0
+    for group, candidate in pdf_table_candidates(printed):
+        keys = ('value', 'unit', 'reference', 'context') if group == 'fields' else ('amount', 'currency', 'quantity', 'unitPrice')
+        matches = [row for row in page[group] if text_key(row['label']) == text_key(candidate['label'])
+                   and text_key(row.get('context', '')) == text_key(candidate.get('context', ''))]
+        if any(all(text_key(row.get(k, '')) == text_key(candidate.get(k, '')) for k in keys) for row in matches):
+            continue
+        if len(page[group]) >= limits[group]:
+            page['warnings'] = ['Bảng PDF còn dòng chưa đưa vào bản đọc; xem lớp chữ và trang gốc.', *page['warnings']][:8]
+            break
+        for row in matches:
+            row['unclear'] = True
+        conflicts += bool(matches)
+        page[group].append(candidate)
+        added += 1
+    notices = []
+    if added:
+        notices.append(f'Giữ thêm {added} dòng bảng từ chữ PDF; giữ nguyên dấu, đơn vị và các cột. Cần đối chiếu trang gốc.')
+    if conflicts:
+        notices.append(f'{conflicts} dòng bảng khác bản đọc AI: giữ hai bản, chưa tự chọn số liệu đúng.')
     page['warnings'] = list(dict.fromkeys([*notices, *page['warnings']]))[:8]

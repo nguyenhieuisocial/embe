@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import MedicalDocumentImport from './medical-document-import';
 import MedicalDocumentButton from './medical-document-viewer';
-import { DOCUMENT_TYPES, DOCUMENT_ROW_LIMITS, DOCUMENT_DETAIL_DEFAULTS, SCAN_ERROR_TEXT, documentAnalysisText, validDocumentAnalysis, withPrintedUnit,
+import { DOCUMENT_TYPES, DOCUMENT_ROW_LIMITS, DOCUMENT_DETAIL_DEFAULTS, SCAN_ERROR_TEXT, documentAnalysisText, editableDocumentAnalysis, validDocumentAnalysis, withPrintedUnit,
   type DocumentAnalysis, type DocumentPage, type DocumentScan, type ExtractedField, type ExtractedMedicine, type ExtractedCharge } from '../lib/medical-document-scan';
 
 const FIELD_LABELS: Record<string, string> = { label: 'Tên mục / chỉ số', value: 'Nội dung / kết quả', unit: 'Đơn vị trên phiếu', reference: 'Khoảng tham chiếu trên phiếu',
@@ -119,7 +119,7 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
     lock.current = true; setBusy(true); setError('');
     try {
       const response = await fetch(endpoint, { method: 'PATCH', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ revision: scan.revision, analysis: draft, confirmed: true }) });
+        body: JSON.stringify({ revision: scan.revision, analysis: editableDocumentAnalysis(draft), confirmed: true }) });
       if (response.status === 409) { setConflict(true); throw new Error('Tài liệu đã được cập nhật trên thiết bị khác. Bản đang sửa vẫn còn ở đây; xem bản mới trước khi lưu.'); }
       if (!response.ok) throw new Error('Chưa lưu được. Nội dung đang sửa vẫn còn; hãy thử lại khi có mạng.');
       const saved: DocumentScan = await response.json();
@@ -177,6 +177,11 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
         <label>Loại giấy tờ<select value={page.kind} onChange={e => changePage(pageIndex, p => ({ ...p, kind: e.target.value }))}>
           {Object.entries(DOCUMENT_TYPES).map(([kind, name]) => <option key={kind} value={kind}>{name}</option>)}</select></label>
         <label>Tiêu đề<input value={page.title} maxLength={160} onChange={e => changePage(pageIndex, p => ({ ...p, title: e.target.value }))} /></label>
+        {page.pdfText ? <details className="document-source-text">
+          <summary>Chữ từ PDF · trang {page.page}</summary>
+          <p>Giữ cả phần chưa phân loại. Lớp chữ có thể sai thứ tự hoặc thiếu so với hình gốc; không tự dùng làm chỉ số hay liều thuốc.</p>
+          <pre tabIndex={0} aria-label={`Lớp chữ PDF trang ${page.page}`}>{page.pdfText}</pre>
+        </details> : null}
         {page.warnings.length ? <ul className="document-warnings">{page.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul> : null}
         {onlyUnclear && !pageRows(page).some(row => row.unclear) ? <p className="document-filter-empty" role="status">Trang này không có mục đang đánh dấu cần kiểm tra. Vẫn nên đối chiếu với bản gốc.</p> : null}
         {(Object.keys(GROUPS) as Group[]).map(group => <section key={group} className="document-group" aria-label={GROUPS[group]}>
