@@ -62,6 +62,11 @@ try {
   await trigger.scrollIntoViewIfNeeded(); const y = await page.evaluate(() => scrollY); const url = page.url();
   await trigger.click(); const image = await loadedImage();
   if (page.url() !== url || context.pages().length !== 1) throw new Error('left_app_or_new_tab');
+  await image.dblclick();
+  if (!(await image.getAttribute('style')).includes('scale(2)')) throw new Error('captured_double_tap_failed');
+  await image.dblclick();
+  if (!(await image.getAttribute('style')).includes('scale(1)')) throw new Error('double_tap_reset_failed');
+  result.doubleTap = true;
   await dialog.getByRole('button', { name: 'Phóng to ảnh' }).click();
   if (!(await image.getAttribute('style')).includes('scale(1.5)')) throw new Error('zoom_failed');
   await dialog.getByRole('button', { name: 'Xoay ảnh' }).click();

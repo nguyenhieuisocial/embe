@@ -44,6 +44,10 @@ describe('private medical original viewer', () => {
     expect(screen.getByRole('button', { name: 'Quay lại hồ sơ' })).toHaveFocus();
     expect(document.body.style.position).toBe('fixed');
     expect(fetch).toHaveBeenCalledWith(`/api/pregnancy/documents/${image.id}`, expect.objectContaining({ credentials: 'same-origin', cache: 'no-store' }));
+    // Pointer capture can retarget the double-tap to the stage rather than the image.
+    fireEvent.doubleClick(screen.getByRole('region', { name: 'Ảnh, phóng to và kéo để xem' }));
+    expect(screen.getByRole('img')).toHaveStyle({ transform: 'translate3d(0px, 0px, 0) scale(2)' });
+    fireEvent.doubleClick(screen.getByRole('region', { name: 'Ảnh, phóng to và kéo để xem' }));
     fireEvent.click(screen.getByRole('button', { name: 'Phóng to ảnh' }));
     expect(screen.getByRole('img')).toHaveStyle({ transform: 'translate3d(0px, 0px, 0) scale(1.5)' });
     fireEvent.click(screen.getByRole('button', { name: 'Xoay ảnh' }));

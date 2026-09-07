@@ -90,12 +90,12 @@ export default function PhotoViewerImage({ src, title, width = 1200, height = 90
     viewer?.addEventListener('keydown', keyboard); return () => viewer?.removeEventListener('keydown', keyboard);
   });
   return <div ref={stageRef} className={`photo-viewer-stage${zoom > 1 ? ' is-zoomed' : ''}`} tabIndex={0} role="region" aria-label="Ảnh, phóng to và kéo để xem"
-    onPointerCancel={onPointerUp} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+    onPointerCancel={onPointerUp} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
+    onDoubleClick={event => { if (!(event.target as Element).closest('button')) { if (zoom > 1) resetZoom(); else applyZoom(2); } }}>
     {/* Source is supplied by the owner: album endpoint or an authenticated medical blob; never a public optimizer. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img alt={title} draggable={false} height={height} width={width} src={src} onError={onError}
       onLoad={event => setNatural({ width: event.currentTarget.naturalWidth || width, height: event.currentTarget.naturalHeight || height })}
-      onDoubleClick={() => zoom > 1 ? resetZoom() : applyZoom(2)}
       style={{ ...(fit > 0 ? { width: natural.width * fit, height: natural.height * fit } : {}), transform: `translate3d(${offset.x}px, ${offset.y}px, 0)${rotation ? ` rotate(${rotation}deg)` : ''} scale(${zoom})` }} />
     {showNavigation && total > 1 && zoom === 1 ? <>
       <button aria-label="Ảnh trước" className="photo-viewer-prev" onClick={() => onMove?.(-1)} type="button">‹</button>
