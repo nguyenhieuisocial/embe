@@ -65,7 +65,7 @@ try {
   if(result.previewSpeed!==speed)throw new Error('preview_speed');
   await page.locator('summary').filter({hasText:'Chỉnh phát âm'}).first().click();
   const speechText='Chào bạn, mình là giọng đọc của Em Bé.\n\nMỗi ngày một điều nhỏ, cùng mẹ chăm sóc bản thân thật nhẹ nhàng.';
-  await page.getByLabel('Lời đọc riêng cảnh 1',{exact:true}).fill(speechText);
+  await page.getByRole('textbox',{name:'Lời đọc riêng cảnh 1',exact:true}).fill(speechText);
   await page.getByRole('button',{name:'Lưu bản nháp',exact:true}).click();
   await page.getByText('Đã lưu trên EmBe. Điện thoại khác có thể mở bản này.').waitFor();
   project=(await read(`/api/studio/workspace?project=${id}`)).project;
@@ -98,7 +98,7 @@ try {
   if(!script.ok()||!(await script.text()).includes('Lời đọc riêng: '+speechText))throw new Error('script_missing_pronunciation');
   await page.reload({waitUntil:'domcontentloaded'});await page.getByLabel('Chọn giọng').waitFor();
   await page.locator('summary').filter({hasText:'Chỉnh phát âm'}).first().click();
-  if(await page.getByLabel('Lời đọc riêng cảnh 1',{exact:true}).inputValue()!==speechText)throw new Error('pronunciation_not_saved');
+  if(await page.getByRole('textbox',{name:'Lời đọc riêng cảnh 1',exact:true}).inputValue()!==speechText)throw new Error('pronunciation_not_saved');
   if(await page.getByLabel('Tốc độ đọc').inputValue()!==String(speed))throw new Error('reload_voice');
   result.status='passed';
 }catch(e){result.status='failed';result.error=/^[a-zA-Z0-9_]+$/.test(e.message)?e.message:'verification_failed';result.line=e.stack?.match(/studio-quality-v2-live\.mjs:(\d+)/)?.[1];await page.screenshot({path:resolve(dir,'failure.png'),fullPage:true}).catch(()=>{});process.exitCode=1;}
