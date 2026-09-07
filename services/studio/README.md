@@ -1,5 +1,9 @@
 # EmBe Mẹ Bầu — xưởng nội dung kiến thức
 
+## Tự tạo video theo ngày (08/09/2026)
+
+Trang `/studio` theo dõi lịch 1 video/ngày lúc 08:00 giờ Việt Nam, với nút tạm dừng/tiếp tục. Máy dựng đang cài tự chọn trong 7 kịch bản có nguồn, tạo project và dựng bằng giọng miền Nam; không cần mở trình duyệt. Không dựng dồn ngày bị lỡ hoặc lặp lại slug. Hết thư viện, nguồn quá hạn, dựng lỗi hoặc đầy kho thì dừng tạo thêm. Chưa phải tự nghiên cứu chủ đề mới, tự duyệt chuyên môn hoặc tự đăng mạng xã hội. Không dùng dữ liệu gia đình. Chi tiết tại `docs/design/studio-workspace.md`.
+
 ## Bàn làm việc trên web (07/09/2026)
 
 ### Nhịp đọc và phát âm v2 (08/09/2026)

@@ -94,3 +94,7 @@
 .studio-channel-list { list-style:none; padding:0; }
 .studio-channel-list li { display:flex; justify-content:space-between; gap:8px; padding:12px 0; border-bottom:1px solid var(--line); font-size:.82rem; }
 .studio-channel-list small { color:var(--ink-soft); }
+.studio-automation { min-width:0; margin:12px 0 20px; }
+.studio-auto-latest { border-top:1px solid var(--line); padding-top:8px; }
+.studio-auto-latest .studio-back { overflow-wrap:anywhere; font-weight:600; }
+.studio-automation .studio-ideas small { display:block; color:var(--ink-soft); font-size:.75rem; }

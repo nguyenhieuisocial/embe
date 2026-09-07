@@ -1,5 +1,15 @@
 # Studio: bàn làm việc chạy trên web
 
+## Tự tạo theo lịch (08/09/2026)
+
+`/studio` có tiến độ tự động và nút tạm dừng/tiếp tục. RPC `embe_studio_autoplan()` được gọi từ entry point máy dựng đã chạy sẵn, không thêm process, không cần người dùng mở web. Sau khi bật: tạo một bản đầu tiên, sau đó tối đa một bản mỗi ngày lúc 08:00 Asia/Ho_Chi_Minh. Khi máy mất kết nối nhiều ngày, không dựng dồn.
+
+Nguồn là 7 kịch bản gốc hữu hạn trong catalog, không phải tự nghiên cứu vô hạn. Bỏ bài vận động có ghi chú nguồn cần review lại. Nội dung, cảnh, nguồn và ngày đối chiếu giữ nguyên; không cắt cảnh cảnh báo. Mỗi slug chỉ dùng một lần; quá hạn nguồn, hết chủ đề, render lỗi hoặc đầy kho thì dừng tạo mới. Hàng đợi dựng đã có tiếp tục xử lý. Tạm dừng chỉ ngừng tạo mới, không xóa/dừng video đang dựng.
+
+Schema private có `automation` và `automation_topic`, cùng advisory lock với workspace/queue, revision chống hai máy ghi đè. Không cấp quyền anon/authenticated; API kiểm tra phiên và same-origin. Không đọc bảng gia đình hoặc cookie mạng xã hội. Các kiểm chứng SQL là transaction rollback, không để lại fixture.
+
+**Chưa hoàn tất xuất bản/đăng tự động:** chưa có social publisher, OAuth tài khoản đích hoặc xác nhận chuyên môn. API và UI ghi rõ `not_connected`, không ghi render completed thành published. Không tự phê duyệt nội dung y tế, không đưa video lên feed công khai. Máy nhà cần đang hoạt động để tạo video; nội dung đã dựng được lưu trên cloud riêng của EmBe.
+
 ## Phạm vi
 
 `/studio/ban-lam-viec` và `/studio/soan`: tạo kịch bản, lấy mẫu từ 11 video, sửa/thêm/bỏ/đổi thứ tự cảnh, lưu lên EmBe, tạo bản riêng, phục hồi bản xóa, yêu cầu dựng MP4 dọc có giọng Việt. Sổ `/studio/kham-pha` chuyển sang cloud với revision check; sổ cũ trong localStorage chỉ nhập khi bấm, không bị xóa. Link từ ý tưởng mở ô soạn, không tự biến nội dung tham khảo thành kiến thức đã kiểm chứng.
