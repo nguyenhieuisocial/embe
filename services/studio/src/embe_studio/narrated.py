@@ -105,13 +105,16 @@ def frame_image(background, photo, local_frame: int, scene_frames: int, overall:
     return image
 
 
-def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndarray, on_progress=None, *, audio_rate=RATE, audio_bitrate=48000) -> dict:
+def render_video(path: Path, visuals: list, seconds: list[float], samples: np.ndarray, on_progress=None, *, audio_rate=RATE, audio_bitrate=48000) -> dict:
     if audio_rate not in (RATE, 48000) or audio_bitrate not in (48000, 128000):
         raise ValueError('invalid_audio_format')
-    if len(samples) != sum(seconds)*audio_rate:
+    scene_frames = [round(duration * FPS) for duration in seconds]
+    if any(n <= 0 or abs(duration * FPS - n) > .00001 for n, duration in zip(scene_frames, seconds)):
+        raise ValueError('invalid_scene_timing')
+    total_frames = sum(scene_frames)
+    if len(samples) != round(total_frames * audio_rate / FPS):
         raise ValueError('audio_timeline_mismatch')
     started = time.monotonic()
-    total_frames = sum(seconds) * FPS
     frame_count, audio_cursor = 0, 0
     with av.open(str(path), "w", format="mp4", options={"movflags": "+faststart"}) as container:
         video = container.add_stream("libx264", rate=FPS)
@@ -122,13 +125,13 @@ def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndar
         audio = container.add_stream("aac", rate=audio_rate)
         audio.layout = "mono"
         audio.bit_rate = audio_bitrate
-        for (background, photo), duration in zip(visuals, seconds, strict=True):
-            for index in range(duration * FPS):
+        for (background, photo), duration_frames in zip(visuals, scene_frames, strict=True):
+            for index in range(duration_frames):
                 if on_progress and frame_count % (FPS * 10) == 0:
                     on_progress(45 + int(frame_count / total_frames * 45))
                 if frame_count % FPS == 0 and (time.monotonic() - started > 480 or (path.exists() and path.stat().st_size > MAX_BYTES)):
                     raise RuntimeError("render_budget_exceeded")
-                image = frame_image(background, photo, index, duration * FPS, (frame_count + 1) / total_frames)
+                image = frame_image(background, photo, index, duration_frames, (frame_count + 1) / total_frames)
                 frame = av.VideoFrame.from_image(image)
                 frame.pts, frame.time_base = frame_count, Fraction(1, FPS)
                 for packet in video.encode(frame):
@@ -202,10 +205,13 @@ def build(catalog_path: Path, model: Path, root: Path, artwork: Path, story_voic
                 pcm = np.frombuffer(sound.readframes(sound.getnframes()), dtype="<i2").astype(np.float32) / 32768
             if len(pcm) < rate or len(pcm) > rate * 25 or np.max(np.abs(pcm)) < .01:
                 raise ValueError("empty_or_unbounded_narration")
-            duration = math.ceil(len(pcm) / rate + .45)
-            # Small breath at each scene boundary; no narration cut off by scene timing.
-            padded = np.zeros(duration * rate, dtype=np.float32)
-            padded[round(rate * .15):round(rate * .15) + len(pcm)] = pcm
+            if story_voice_id and story_voice_id.endswith('-v2'):
+                from .voice_timing import paced_scene
+                padded, duration = paced_scene(pcm, rate)
+            else:
+                duration = math.ceil(len(pcm) / rate + .45)
+                padded = np.zeros(duration * rate, dtype=np.float32)
+                padded[round(rate * .15):round(rate * .15) + len(pcm)] = pcm
             sounds.append(padded)
             durations.append(duration)
             background, photo = layers(beat, item, index, len(item["beats"]), illustration)
@@ -239,6 +245,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--artwork", type=Path, required=True)
-    parser.add_argument("--voice", choices=['thuc-doan-south-v1','my-duyen-south-v1'])
+    from .story_voice import VOICES
+    parser.add_argument("--voice", choices=list(VOICES))
     args = parser.parse_args()
     build(args.catalog, args.model, args.output, args.artwork, args.voice)

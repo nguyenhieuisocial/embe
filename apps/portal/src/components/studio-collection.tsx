@@ -30,7 +30,7 @@ export default function StudioCollection({ topics, ideas }: { topics: StudioSumm
       {filtered.map(topic => <li key={topic.slug}><Link className="studio-topic" href={`/studio/${topic.slug}`}>
         {/* Same-origin, authenticated derivative; never expose a storage locator. */}
         <img src={`/api/studio/${topic.slug}/poster`} alt="" width={60} height={88} loading="lazy" decoding="async" />
-        <span className="studio-topic-copy"><small>{topic.pillar}</small><strong>{topic.title}</strong><small>{topic.duration} giây · {topic.audio ? 'Có giọng đọc AI' : 'Chưa có giọng đọc'}</small></span>
+        <span className="studio-topic-copy"><small>{topic.pillar}</small><strong>{topic.title}</strong><small>{Math.round(topic.duration)} giây · {topic.audio ? 'Có giọng đọc AI' : 'Chưa có giọng đọc'}</small></span>
         <span className="studio-chevron" aria-hidden="true">›</span>
       </Link></li>)}
     </ul> : <ul className="studio-ideas">{selectedIdeas.map(idea => <li key={idea}>{idea}</li>)}</ul>}

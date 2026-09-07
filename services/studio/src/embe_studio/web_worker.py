@@ -15,6 +15,7 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request, build_opener, HTTPRedirectHandler
 import wave
+from .story_voice import VOICES
 
 ROOT = Path(__file__).resolve().parents[4]
 MAX_BYTES = 4_000_000
@@ -31,7 +32,7 @@ def validate_document(value):
         raise ValueError('invalid_project')
     if 'voice' in value:
         v=value['voice']
-        if not isinstance(v,dict) or set(v)!={'id','speed'} or v['id'] not in {'ai-han-south','piper','thuc-doan-south-v1','my-duyen-south-v1'} or type(v['speed']) not in (int,float) or v['speed'] not in (.95,1,1.05):
+        if not isinstance(v,dict) or set(v)!={'id','speed'} or v['id'] not in {*VOICES,'ai-han-south','piper'} or type(v['speed']) not in (int,float) or v['speed'] not in (.95,1,1.05):
             raise ValueError('invalid_project')
     def text(v, n, required=False):
         if not isinstance(v,str) or len(v)>n or (required and not v.strip()):
@@ -42,7 +43,10 @@ def validate_document(value):
     for s in value['scenes']:
         if not isinstance(s,dict): raise ValueError('invalid_project')
         text(s.get('heading'),80,True);text(s.get('text'),180,True)
+        if 'speechText' in s: text(s['speechText'],240,True)
     if sum(len(s['text']) for s in value['scenes'])>900:
+        raise ValueError('invalid_project')
+    if sum(len(s.get('speechText',s['text'])) for s in value['scenes'])>1100:
         raise ValueError('invalid_project')
     if not isinstance(value['sources'],list) or not 1<=len(value['sources'])<=6:
         raise ValueError('invalid_project')
@@ -64,7 +68,8 @@ def render_document(document, directory: Path, progress):
     doc=validate_document(document)
     chosen=doc.get('voice',{'id':'piper','speed':1})
     southern=chosen['id']=='ai-han-south'
-    story=chosen['id'] in {'thuc-doan-south-v1','my-duyen-south-v1'}
+    story=chosen['id'] in VOICES
+    improved=chosen['id'].endswith('-v2')
     rate=48000 if story else RATE
     if story:
         from .story_voice import StoryVoice
@@ -84,19 +89,23 @@ def render_document(document, directory: Path, progress):
         for i,scene in enumerate(doc['scenes']):
             progress(5+int(i/len(doc['scenes'])*35))
             if southern or story:
-                pcm=voice.speak(scene['text'],chosen['speed'])
+                pcm=voice.speak(scene.get('speechText',scene['text']),chosen['speed'])
             else:
                 sound_io=io.BytesIO()
-                with wave.open(sound_io,'wb') as wav:voice.synthesize_wav(scene['text'],wav,syn_config=SynthesisConfig(length_scale=1.03/chosen['speed'],volume=.85))
+                with wave.open(sound_io,'wb') as wav:voice.synthesize_wav(scene.get('speechText',scene['text']),wav,syn_config=SynthesisConfig(length_scale=1.03/chosen['speed'],volume=.85))
                 sound_io.seek(0)
                 with wave.open(sound_io,'rb') as wav:
                     if wav.getframerate()!=RATE or wav.getnchannels()!=1 or wav.getsampwidth()!=2:raise ValueError('worker_unavailable')
                     pcm=np.frombuffer(wav.readframes(wav.getnframes()),dtype='<i2').astype(np.float32)/32768
             if not rate<=len(pcm)<=25*rate:raise ValueError('voice_too_long')
             if np.max(np.abs(pcm))<.01:raise ValueError('worker_unavailable')
-            duration=math.ceil(len(pcm)/rate+.45)
+            if improved:
+                from .voice_timing import paced_scene
+                padded,duration=paced_scene(pcm,rate)
+            else:
+                duration=math.ceil(len(pcm)/rate+.45)
+                padded=np.zeros(duration*rate,dtype=np.float32);start=round(rate*.15);padded[start:start+len(pcm)]=pcm
             if elapsed+duration>90:raise ValueError('voice_too_long')
-            padded=np.zeros(duration*rate,dtype=np.float32);start=round(rate*.15);padded[start:start+len(pcm)]=pcm
             sounds.append(padded);durations.append(duration)
             background=Image.new('RGB',(720,1280),(255,248,246));draw=ImageDraw.Draw(background)
             draw.rounded_rectangle((48,65,300,115),radius=25,fill=(249,224,231))

@@ -26,7 +26,9 @@ CODEC_FILES = {
     'moss_audio_tokenizer_decode_full.onnx': '0fbbafe3fd4afa2a019af5c5ced204af6e2d1db044fa40f021525d2aee95b4ac',
     'moss_audio_tokenizer_decode_shared.data': 'e69d52e0f4e84ca27850557ee54face46632d3a5a16c89bd246c7c408466dcad',
 }
-VOICES = {'thuc-doan-south-v1': 'Thục Đoan', 'my-duyen-south-v1': 'Mỹ Duyên'}
+VOICES = {'thuc-doan-south-v1': 'Thục Đoan', 'my-duyen-south-v1': 'Mỹ Duyên',
+          'thuc-doan-south-v2': 'Thục Đoan', 'my-duyen-south-v2': 'Mỹ Duyên',
+          'kim-thanh-south-v2': 'Kim Thanh'}
 
 
 def provision():
@@ -48,7 +50,7 @@ def provision():
             print(json.dumps({'verified': name}), flush=True)
 
 
-def spoken_text(text: str) -> str:
+def spoken_text(text: str, *, improved=False) -> str:
     """Speech-only typography/brand cleanup; numbers and medical doses untouched.
 
     The upstream sea-g2p normalizer handles Vietnamese numbers and punctuation.
@@ -56,6 +58,14 @@ def spoken_text(text: str) -> str:
     """
     text = unicodedata.normalize('NFC', text)
     text = re.sub(r'\bEmBe\b', 'Em Bé', text)
+    if improved:
+        # Keep intentional paragraph pauses. Spell only unambiguous acronyms;
+        # do not infer a medicine name, dose, unit conversion or clinical meaning.
+        for token, pronunciation in {'DHA': 'đê hát a', 'NIPT': 'en ai pi ti',
+                                      'AI': 'ây ai', 'PDF': 'pi đi ép'}.items():
+            text = re.sub(r'\b'+token+r'\b', pronunciation, text)
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        return re.sub(r'\n{3,}', '\n\n', re.sub(r'[^\S\n]+', ' ', text)).strip()
     return re.sub(r'\s+', ' ', text).strip()
 
 
@@ -135,19 +145,20 @@ class StoryVoice:
 
         self.engine = LocalTurbo()
         self.name = VOICES[voice_id]
+        self.improved = voice_id.endswith('-v2')
         self.credit = {
             'name': f'{self.name} · nữ miền Nam · VieNeu Turbo 48 kHz',
             'attribution': f'Giọng AI {self.name}, nữ miền Nam kể chuyện. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.',
             'url': 'https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Turbo',
             'license': 'https://www.apache.org/licenses/LICENSE-2.0',
             'modelRevision': REVISION, 'codecRevision': CODEC_REVISION,
-            'presetChecksum': PRESET_SHA, 'processingVersion': 1,
+            'presetChecksum': PRESET_SHA, 'processingVersion': 2 if self.improved else 1,
         }
 
     def speak(self, text, speed=1.0):
         if speed not in (.95, 1, 1.05): raise ValueError('invalid_voice_speed')
-        pcm = self.engine.infer(spoken_text(text), voice=self.name,
-            temperature=.8, max_chars=130, batch_size=1)
+        pcm = self.engine.infer(spoken_text(text, improved=self.improved), voice=self.name,
+            temperature=.8, max_chars=256 if self.improved else 130, batch_size=1)
         return finish_audio(pcm, self.sample_rate, speed)
 
     def close(self):

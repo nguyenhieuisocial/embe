@@ -13,13 +13,13 @@ export default async function StudioDetail({ params }: { params: Promise<{ slug:
     <AppHeader note="EmBe Mẹ Bầu" />
     <StudioNav />
     <Link href="/studio" className="studio-back">‹ Tất cả chủ đề</Link>
-    <header className="studio-heading"><p>{topic.pillar}</p><h1>{topic.title}</h1><p>{topic.stage} · {topic.duration} giây</p></header>
+    <header className="studio-heading"><p>{topic.pillar}</p><h1>{topic.title}</h1><p>{topic.stage} · {Math.round(topic.duration)} giây</p></header>
     <aside className="studio-notice"><strong>Bản nháp, chưa duyệt chuyên môn</strong><p>Thông tin tham khảo, không thay tư vấn y tế cá nhân.</p></aside>
     <StudioPlayer slug={slug} title={topic.title} audio={topic.audio} />
     <Link className="studio-back" href={`/studio/soan?mau=${slug}`}>Sửa kịch bản & dựng bản riêng</Link>
     <StudioActions slug={slug} script={studioScript(topic)} caption={`${topic.caption}\n${topic.hashtags.map(tag => `#${tag}`).join(' ')}`} />
     <section className="studio-script" aria-labelledby="script-heading"><h2 id="script-heading">Kịch bản từng cảnh</h2>
-      <ol>{topic.beats.map(beat => <li key={beat.start}><span className="studio-time">{beat.start}–{beat.end}s</span><div><h3>{beat.heading}</h3><p>{beat.text}</p></div></li>)}</ol>
+      <ol>{topic.beats.map(beat => <li key={beat.start}><span className="studio-time">{beat.start.toFixed(1)}–{beat.end.toFixed(1)}s</span><div><h3>{beat.heading}</h3><p>{beat.text}</p></div></li>)}</ol>
     </section>
     <details className="studio-disclosure"><summary>Mở đầu khác & caption</summary><h3>Cách mở đầu khác</h3><p>{topic.hookB}</p><h3>Caption</h3><p>{topic.caption}</p><p>{topic.hashtags.map(tag => `#${tag}`).join(' ')}</p></details>
     <details className="studio-disclosure"><summary>Nguồn đối chiếu ({topic.sources.length})</summary>

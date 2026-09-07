@@ -18,51 +18,51 @@
         "AnUongThaiKy",
         "BauAnGi"
       ],
-      "duration": 35,
+      "duration": 39.833333333333336,
       "beats": [
         {
           "heading": "Ăn ngon, nhớ an toàn",
           "text": "Một bữa ăn an toàn không bắt đầu từ danh sách kiêng dài. Cùng nhớ ba điều dễ kiểm tra nhé.",
           "start": 0,
-          "end": 7
+          "end": 7.166666666666667
         },
         {
           "heading": "Nấu chín kỹ",
           "text": "Thịt, trứng và hải sản cần được nấu chín kỹ. Tránh món sống hoặc chưa chín khi mang thai.",
-          "start": 7,
-          "end": 13
+          "start": 7.166666666666667,
+          "end": 14.166666666666668
         },
         {
           "heading": "Rửa rau quả",
           "text": "Rửa kỹ rau và trái cây trước khi ăn. Với sữa, xem nhãn và chọn loại đã thanh trùng hoặc tiệt trùng.",
-          "start": 13,
-          "end": 20
+          "start": 14.166666666666668,
+          "end": 22.458333333333336
         },
         {
           "heading": "Giữ lạnh đúng cách",
           "text": "Đồ ăn cần giữ lạnh phải được bảo quản đúng và dùng trước hạn. Đừng chỉ nhìn hoặc ngửi để đoán an toàn.",
-          "start": 20,
-          "end": 27
+          "start": 22.458333333333336,
+          "end": 30.583333333333336
         },
         {
           "heading": "Theo nhu cầu của mẹ",
           "text": "Nếu có dị ứng hay chế độ ăn bác sĩ đã dặn, ưu tiên hướng dẫn riêng. Hình minh họa không phải khẩu phần được kê cho bạn.",
-          "start": 27,
-          "end": 35
+          "start": 30.583333333333336,
+          "end": 39.833333333333336
         }
       ],
       "audio": true,
       "checkedAt": "2026-09-07",
       "reviewDue": "2026-10-07",
       "voiceCredit": {
-        "name": "Thục Đoan · nữ miền Nam · VieNeu Turbo 48 kHz",
-        "attribution": "Giọng AI Thục Đoan, nữ miền Nam kể chuyện. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.",
+        "name": "Kim Thanh · nữ miền Nam · VieNeu Turbo 48 kHz",
+        "attribution": "Giọng AI Kim Thanh, nữ miền Nam kể chuyện. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.",
         "url": "https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Turbo",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "modelRevision": "8b7e9cffb4b41918cb638b9f62f0a751184d14a6",
         "codecRevision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
         "presetChecksum": "0e3119d663c50e04855ebbe23b558e31759d3f9cd45c66abbaebfc79dad8984a",
-        "processingVersion": 1
+        "processingVersion": 2
       },
       "sources": [
         {
@@ -75,10 +75,10 @@
       ],
       "assets": {
         "video": {
-          "path": "editorial/a0ef84134ade2b5c0ee36d89b5867405bb59b002fa17164acab69bdbeb3b7052.mp4",
+          "path": "editorial/2da6af687aaa3a9f694a36c69dbe06594eb721cf92ad71846437a1c81d710c35.mp4",
           "mime": "video/mp4",
-          "size": 735058,
-          "checksum": "a0ef84134ade2b5c0ee36d89b5867405bb59b002fa17164acab69bdbeb3b7052"
+          "size": 872316,
+          "checksum": "2da6af687aaa3a9f694a36c69dbe06594eb721cf92ad71846437a1c81d710c35"
         },
         "poster": {
           "path": "editorial/cd38a667f33556eedbcd77b5c557f75402529d12efb8842019d985d91a134000.png",
@@ -100,51 +100,51 @@
         "BuaNho",
         "BaDongHanh"
       ],
-      "duration": 36,
+      "duration": 40.666666666666664,
       "beats": [
         {
           "heading": "Một chút cũng được",
           "text": "Đang nghén mà thấy một bữa lớn quá khó ăn? Có thể thử ăn ít một và chia thành nhiều bữa nhỏ.",
           "start": 0,
-          "end": 6
+          "end": 7
         },
         {
           "heading": "Món đơn giản",
           "text": "Bánh mì, cơm hay bánh quy nhạt có thể dễ chịu hơn. Chọn món bạn dung nạp được, tránh mùi làm bạn buồn nôn.",
-          "start": 6,
-          "end": 13
+          "start": 7,
+          "end": 15.791666666666666
         },
         {
           "heading": "Nước, từng ngụm nhỏ",
           "text": "Nhấp nước ít một, thường xuyên. Người đồng hành có thể giúp chuẩn bị bữa nhỏ và để nước gần mẹ.",
-          "start": 13,
-          "end": 20
+          "start": 15.791666666666666,
+          "end": 23.125
         },
         {
           "heading": "Đừng cố chịu",
           "text": "Nôn nhiều, không giữ được nước, tiểu ít hoặc chóng mặt: liên hệ cơ sở y tế. Đừng chờ xem hết mẹo trên mạng.",
-          "start": 20,
-          "end": 28
+          "start": 23.125,
+          "end": 31.5
         },
         {
           "heading": "Không có mẹo cho tất cả",
           "text": "Mỗi người có thể hợp cách khác nhau. Nếu vẫn khó chịu, hỏi người chăm sóc thai kỳ; đừng tự dùng thuốc chống nôn.",
-          "start": 28,
-          "end": 36
+          "start": 31.5,
+          "end": 40.666666666666664
         }
       ],
       "audio": true,
       "checkedAt": "2026-09-07",
       "reviewDue": "2026-10-07",
       "voiceCredit": {
-        "name": "Thục Đoan · nữ miền Nam · VieNeu Turbo 48 kHz",
-        "attribution": "Giọng AI Thục Đoan, nữ miền Nam kể chuyện. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.",
+        "name": "Kim Thanh · nữ miền Nam · VieNeu Turbo 48 kHz",
+        "attribution": "Giọng AI Kim Thanh, nữ miền Nam kể chuyện. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.",
         "url": "https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Turbo",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "modelRevision": "8b7e9cffb4b41918cb638b9f62f0a751184d14a6",
         "codecRevision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
         "presetChecksum": "0e3119d663c50e04855ebbe23b558e31759d3f9cd45c66abbaebfc79dad8984a",
-        "processingVersion": 1
+        "processingVersion": 2
       },
       "sources": [
         {
@@ -157,10 +157,10 @@
       ],
       "assets": {
         "video": {
-          "path": "editorial/96277d06f96747b45d8ff56d1cbdb1454140bb638de2442fd1925d2667db7aea.mp4",
+          "path": "editorial/8d9c895995b5092b7b24d0866af21c5e588fb254dc23eb67cbb228ad2a0de080.mp4",
           "mime": "video/mp4",
-          "size": 742899,
-          "checksum": "96277d06f96747b45d8ff56d1cbdb1454140bb638de2442fd1925d2667db7aea"
+          "size": 897788,
+          "checksum": "8d9c895995b5092b7b24d0866af21c5e588fb254dc23eb67cbb228ad2a0de080"
         },
         "poster": {
           "path": "editorial/1b27d99af316f7349302bde0d9ef5000bcd36dcd84b0706e6e8131885ff9fc1c.png",
@@ -182,51 +182,51 @@
         "ViChatThaiKy",
         "HieuDungDeYenTam"
       ],
-      "duration": 40,
+      "duration": 46,
       "beats": [
         {
           "heading": "Không phải lịch uống",
           "text": "Bảng mỗi tháng một loại vitamin trông rất dễ nhớ. Nhưng không nên dùng nó để tự bắt đầu hay dừng vi chất.",
           "start": 0,
-          "end": 7
+          "end": 7.958333333333333
         },
         {
           "heading": "Trao đổi từ sớm",
           "text": "Axit folic cần được chú ý từ khi chuẩn bị mang thai và giai đoạn đầu. Thực phẩm không luôn thay được phần bổ sung cần thiết.",
-          "start": 7,
-          "end": 15
+          "start": 7.958333333333333,
+          "end": 17.458333333333332
         },
         {
           "heading": "Đọc đúng nhãn",
           "text": "Kiểm tra thành phần và hàm lượng trên sản phẩm. Tránh tự bổ sung dầu gan cá hoặc vitamin A dạng retinol khi mang thai.",
-          "start": 15,
-          "end": 24
+          "start": 17.458333333333332,
+          "end": 27.5
         },
         {
           "heading": "Mang danh sách đi khám",
           "text": "Ghi lại mọi thuốc và vi chất đang dùng, kể cả loại tự mua. Nhờ bác sĩ hoặc dược sĩ đối chiếu trước khi thêm sản phẩm.",
-          "start": 24,
-          "end": 32
+          "start": 27.5,
+          "end": 37.083333333333336
         },
         {
           "heading": "Liều theo hướng dẫn riêng",
           "text": "Nhu cầu có thể khác nhau theo sức khỏe và kết quả khám. Video này không kê liều, không thay đổi chỉ định bạn đang có.",
-          "start": 32,
-          "end": 40
+          "start": 37.083333333333336,
+          "end": 46
         }
       ],
       "audio": true,
       "checkedAt": "2026-09-07",
       "reviewDue": "2026-10-07",
       "voiceCredit": {
-        "name": "Thục Đoan · nữ miền Nam · VieNeu Turbo 48 kHz",
-        "attribution": "Giọng AI Thục Đoan, nữ miền Nam kể chuyện. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.",
+        "name": "Kim Thanh · nữ miền Nam · VieNeu Turbo 48 kHz",
+        "attribution": "Giọng AI Kim Thanh, nữ miền Nam kể chuyện. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.",
         "url": "https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Turbo",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "modelRevision": "8b7e9cffb4b41918cb638b9f62f0a751184d14a6",
         "codecRevision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
         "presetChecksum": "0e3119d663c50e04855ebbe23b558e31759d3f9cd45c66abbaebfc79dad8984a",
-        "processingVersion": 1
+        "processingVersion": 2
       },
       "sources": [
         {
@@ -239,10 +239,10 @@
       ],
       "assets": {
         "video": {
-          "path": "editorial/c7c62b37ffbb12523fa26275d885dd7719fc4855213fa4d2fed18a90737ef10a.mp4",
+          "path": "editorial/97ed500b04e88a4eb919e5f218c1ffaaf0a7fc7b61d2e86abaf0de205cde93f8.mp4",
           "mime": "video/mp4",
-          "size": 834903,
-          "checksum": "c7c62b37ffbb12523fa26275d885dd7719fc4855213fa4d2fed18a90737ef10a"
+          "size": 1033556,
+          "checksum": "97ed500b04e88a4eb919e5f218c1ffaaf0a7fc7b61d2e86abaf0de205cde93f8"
         },
         "poster": {
           "path": "editorial/cc539bf365a8ca77493fb0c0bff6659ca40291ad0269abd1ad5195c00fe11d9d.png",

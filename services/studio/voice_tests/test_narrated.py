@@ -12,6 +12,15 @@ from embe_studio.narrated import FPS, RATE, SIZE, frame_image, layers, render_vi
 
 
 class NarratedRenderTests(unittest.TestCase):
+    def test_subsecond_scene_boundaries_remain_frame_and_sample_aligned(self):
+        with tempfile.TemporaryDirectory(prefix='embe-voice-timing-') as temp:
+            with Image.new('RGB',SIZE,'white') as bg, Image.new('RGB',(80,60),'pink') as photo:
+                durations=[31/24,19/24]
+                pcm=np.zeros(50*2000,dtype=np.float32)
+                result=render_video(Path(temp)/'timing.mp4',[(bg,photo),(bg,photo)],durations,pcm,audio_rate=48000,audio_bitrate=128000)
+                self.assertEqual(result['frames'],50)
+                self.assertAlmostEqual(result['duration_seconds'],50/24)
+
     def test_hifi_mux_preserves_48khz_and_rejects_misaligned_audio(self):
         with tempfile.TemporaryDirectory(prefix="embe-hifi-check-") as temp:
             path=Path(temp)/'hifi.mp4'

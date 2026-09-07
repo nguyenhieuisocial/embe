@@ -67,7 +67,8 @@ async function main() {
     const topic = catalog.items.find(item => item.slug === rendered.slug);
     if (!topic || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(topic.slug) || rendered.status !== 'completed') throw new Error('invalid_topic');
     const project = JSON.parse(await sourceFile(resolve(campaign, `${topic.slug}.${narrated ? 'timeline' : 'project'}.json`)));
-    if (!Array.isArray(project.scenes) || project.scenes.some(scene => !Number.isInteger(scene.seconds) || scene.seconds < 2 || scene.seconds > 26)) throw new Error('invalid_timeline');
+    const frameTiming = narrated && project.voiceCredit?.processingVersion === 2;
+    if (!Array.isArray(project.scenes) || project.scenes.some(scene => !Number.isFinite(scene.seconds) || scene.seconds < 2 || scene.seconds > 26 || (frameTiming ? Math.abs(scene.seconds*24-Math.round(scene.seconds*24)) > .00001 : !Number.isInteger(scene.seconds)))) throw new Error('invalid_timeline');
     if (narrated && (project.format !== report.format || rendered.audio !== true || project.audio !== true || rendered.result.audio_codec !== 'aac')) throw new Error('narration_not_verified');
     const credit=project.voiceCredit;
     const piper=credit?.url?.startsWith('https://huggingface.co/rhasspy/piper-voices/')&&credit.license==='https://creativecommons.org/licenses/by/4.0/';

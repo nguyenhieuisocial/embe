@@ -14,7 +14,7 @@ beforeEach(()=>{auth.denied=false;vi.stubEnv('SUPABASE_URL','https://example.sup
 afterEach(()=>{vi.restoreAllMocks();vi.unstubAllEnvs();});
 describe('Voice selection',()=>{
   it('defaults only new scripts to Southern voice and rejects paths or uncontrolled speed',()=>{
-    expect(templateDocument().voice?.id).toBe('thuc-doan-south-v1');const old=sample();delete old.voice;expect(studioDocument(old).voice).toBeUndefined();
+    expect(templateDocument().voice?.id).toBe('thuc-doan-south-v2');const old=sample();delete old.voice;expect(studioDocument(old).voice).toBeUndefined();
     for(const voice of [{id:'url',speed:1},{id:'piper',speed:true},{id:'ai-han-south',speed:'1'},{id:'ai-han-south',speed:1,path:'file://x'}])expect(()=>studioDocument({...sample(),voice})).toThrow();
   });
   it('does not auto-play or fetch a preview until explicitly opened',()=>{const changed=vi.fn();render(<StudioVoicePicker value={{id:'ai-han-south',speed:1}} onChange={changed}/>);expect(document.querySelector('audio')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Nghe mẫu Ái Hân'}));expect(document.querySelector('audio')).toHaveAttribute('preload','none');expect(document.querySelector('audio')).not.toHaveAttribute('autoplay');fireEvent.change(screen.getByLabelText('Tốc độ đọc'),{target:{value:'0.95'}});expect(changed).toHaveBeenCalledWith({id:'ai-han-south',speed:.95});});

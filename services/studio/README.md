@@ -2,6 +2,16 @@
 
 ## Bàn làm việc trên web (07/09/2026)
 
+### Nhịp đọc và phát âm v2 (08/09/2026)
+
+- Bản mới mặc định Thục Đoan v2; thêm Mỹ Duyên v2 và Kim Thanh (preset nữ miền Nam Apache 2.0 cùng model đã pin). Giữ nguyên lựa chọn v1 và file video trước đây, không âm thầm gắn nhãn lại lịch sử.
+- Dùng ngữ cảnh câu tối đa 256 ký tự thay 130, giữ xuống dòng để SDK ngắt đoạn, đọc riêng DHA/NIPT/AI/PDF. Không tự đổi số, đơn vị hoặc liều thuốc. Đây vẫn là VieNeu Turbo fp32 đã có, **không phải model mới hoặc bằng chứng chất lượng tương đương người thu**.
+- v2 bỏ padding làm tròn từng giây: chỉ rút phần im lặng ngoài câu dưới -54 dBFS, giữ biên âm mềm, căn cảnh theo frame 24 fps; không cắt khoảng nghỉ trong câu, không đổi cao độ. Mux AAC 48 kHz/128 kbps và phụ đề hỗ trợ mốc mili giây.
+- Mỗi cảnh có “Chỉnh phát âm”: `speechText` tối đa 240 ký tự, tổng lời thực đọc ≤1.100. Chỉ ảnh hưởng lời đọc, chữ video/phụ đề không đổi. Bản xuất và màn hình duyệt hiển thị cả hai để đối chiếu; bỏ trống trở lại lời mặc định. Không chấp nhận SSML, URL hay audio reference làm lệnh.
+- Mẫu tự viết đã dựng bằng `compare_story_voices.py --quality-v2 --upload`, socket bị chặn trong inference, upload kho private xác minh SHA-256. Không đọc dữ liệu gia đình, không đăng mạng xã hội. Mẫu cũ để so sánh; xác nhận decode/nhịp không thay đánh giá nghe bởi con người.
+- Ba video bảng kiến thức trong thư viện cũng đã dựng lại bằng Kim Thanh v2 (`data/studio-voice/quality-v2-boards`), giữ nguyên toàn bộ lời, nguồn và nhãn chưa duyệt. Kho cũ không bị xóa; chỉ metadata bản hiện hành đổi sang file mới.
+- Thử nguồn Edge-TTS 7.2.8 ngày 08/09 nhận `NoAudioReceived`; **không đưa provider lỗi vào production**, không tự fallback giọng khác, không mở tài khoản TTS trả phí. Thư viện thử chỉ nằm trong môi trường Studio cô lập, không là dependency runtime.
+
 Mở `/studio/ban-lam-viec`: tạo/sửa/lưu kịch bản trên EmBe, dựng MP4 có giọng Việt ngay từ web, xem/tải/chia sẻ file. `/studio/kham-pha` lưu sổ chung trên cloud, có nhập sổ cũ từ thiết bị. Nút sửa bản riêng ở từng video giữ nguyên bản gốc. Xem [kiến trúc, giới hạn và vận hành hiện hành](../../docs/design/studio-workspace.md).
 
 Máy dựng Windows chạy pythonw trong môi trường giọng đã có, poll 30 giây; máy nhà cần đang bật và đăng nhập Windows. Không dùng API local cũ để expose Internet. Các phần bên dưới mô tả pipeline hữu hạn ban đầu; giới hạn “chưa có nút sửa/dựng” đã được thay bằng bàn làm việc. Tự đăng mạng xã hội vẫn chưa có.
