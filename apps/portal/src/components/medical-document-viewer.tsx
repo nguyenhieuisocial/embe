@@ -7,11 +7,13 @@ import PhotoViewerImage from './photo-viewer-image';
 import { trapViewerFocus } from './viewer-focus';
 
 type DocumentFile = { id: string; originalFilename: string; mimeType: string };
+type FamilyScope = { memberId: string; recordId: string };
 const HISTORY_KEY = 'embeMedicalViewer';
 
 /** Keep originals private and inside EmBe, including when opened from an unsaved form. */
-export default function MedicalDocumentButton({ document: item, documents = [item], children, className = '', pageNumber = 1 }: {
+export default function MedicalDocumentButton({ document: item, documents = [item], children, className = '', pageNumber = 1, familyScope }: {
   document: DocumentFile; documents?: DocumentFile[]; children?: ReactNode; className?: string; pageNumber?: number;
+  familyScope?: FamilyScope;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -23,13 +25,14 @@ export default function MedicalDocumentButton({ document: item, documents = [ite
       window.history.pushState({ ...window.history.state, [HISTORY_KEY]: token }, '', window.location.href);
       setOpen(token);
     }}>{children ?? `${item.mimeType === 'application/pdf' ? 'PDF' : 'Ảnh'} · ${item.originalFilename}`}</button>
-    {open ? <MedicalDocumentViewer documents={documents.length ? documents : [item]} initialId={item.id} pageNumber={pageNumber}
+    {open ? <MedicalDocumentViewer documents={documents.length ? documents : [item]} initialId={item.id} pageNumber={pageNumber} familyScope={familyScope}
       token={open} onClose={() => { setOpen(null); trigger.current?.focus({ preventScroll: true }); }} /> : null}
   </>;
 }
 
-function MedicalDocumentViewer({ documents, initialId, pageNumber, token, onClose }: {
+function MedicalDocumentViewer({ documents, initialId, pageNumber, token, onClose, familyScope }: {
   documents: DocumentFile[]; initialId: string; pageNumber: number; token: string; onClose: () => void;
+  familyScope?: FamilyScope;
 }) {
   const [index, setIndex] = useState(Math.max(0, documents.findIndex(item => item.id === initialId)));
   const item = documents[index] ?? documents[0];
@@ -84,7 +87,8 @@ function MedicalDocumentViewer({ documents, initialId, pageNumber, token, onClos
     setLoaded(null); setError(''); setMessage(''); setCanShare(false);
     void (async () => {
       try {
-        const response = await fetch(`/api/pregnancy/documents/${item.id}`, { credentials: 'same-origin', cache: 'no-store', signal: controller.signal });
+        const url = familyScope ? `/api/family/members/${encodeURIComponent(familyScope.memberId)}/records/${encodeURIComponent(familyScope.recordId)}/documents/${encodeURIComponent(item.id)}` : `/api/pregnancy/documents/${item.id}`;
+        const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'Phiên đăng nhập đã hết. Quay lại hồ sơ để đăng nhập lại.'
           : response.status === 404 ? 'Tài liệu không còn trong hồ sơ. Bạn vẫn có thể quay lại.' : 'Chưa tải được tài liệu. Kiểm tra mạng rồi thử lại.');
         const blob = await response.blob();
@@ -102,7 +106,7 @@ function MedicalDocumentViewer({ documents, initialId, pageNumber, token, onClos
       } finally { window.clearTimeout(timeout); }
     })();
     return () => { disposed = true; controller.abort(); window.clearTimeout(timeout); if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [item.id, item.originalFilename, attempt]);
+  }, [item.id, item.originalFilename, attempt, familyScope?.memberId, familyScope?.recordId]);
 
   function download() {
     if (!current) return;

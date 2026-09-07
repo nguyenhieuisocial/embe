@@ -1,4 +1,4 @@
-import { UUID, validMemberRecord } from "../../../../../../lib/family-members";
+import { UUID, RECORD_KINDS, validMemberRecord } from "../../../../../../lib/family-members";
 import { memberAuthorization, memberBody, memberFailure, memberRpc } from "../../../../../../lib/family-members-server";
 import { privateReply } from "../../../../../../lib/photo-upload-server";
 import { getMediaMemories } from "../../../../../../lib/media";
@@ -12,7 +12,11 @@ export async function GET(request: Request, context: Context): Promise<Response>
   const offset = Number(offsetText);
   if (!UUID.test(id) || !/^\d+$/.test(offsetText) || offset > 1000000 || (query.has("deleted") && !["true", "false"].includes(query.get("deleted")!))) return memberFailure(400);
   if (query.has("collection") && query.get("collection") !== "pregnancy") return memberFailure(400);
-  const result = await memberRpc(query.get("collection") === "pregnancy" ? "embe_list_pregnancy_memories" : "embe_list_member_records", { p_member_id: id, p_offset: offset, p_deleted: query.get("deleted") === "true" });
+  const kind = query.get("kind") ?? ""; const search = (query.get("q") ?? "").trim();
+  if ((kind && !Object.hasOwn(RECORD_KINDS, kind)) || search.length > 160) return memberFailure(400);
+  const filtered = !query.has("collection") && !!(kind || search);
+  const result = await memberRpc(query.get("collection") === "pregnancy" ? "embe_list_pregnancy_memories" : filtered ? "embe_search_member_records" : "embe_list_member_records",
+    { p_member_id: id, p_offset: offset, p_deleted: query.get("deleted") === "true", ...(filtered ? { p_kind: kind, p_query: search } : {}) });
   if (result.status !== 200) return memberFailure(result.status);
   const records = (result.data as { records?: unknown })?.records;
   const latest = (result.data as { latest?: unknown })?.latest;

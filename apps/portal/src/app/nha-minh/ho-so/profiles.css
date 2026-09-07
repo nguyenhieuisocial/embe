@@ -40,3 +40,11 @@
 .member-latest dd { margin: 0; display: grid; gap: 4px; text-align: right; }
 .member-latest small { font-size: .75rem; color: var(--ink-soft); }
 @media (min-width: 430px) { .member-fields { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+.member-clinical-detail { display: grid; gap: 10px; margin: 8px 0; }
+.member-clinical-detail dt { color: var(--ink-soft); font-size: .85rem; }
+.member-clinical-detail dd { margin: 3px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.member-clinical-detail dd small { display: block; margin-top: 4px; }
+.member-documents { display: grid; gap: 8px; min-width: 0; }
+.member-document-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
+.member-document-row > span, .member-document-row > button { overflow-wrap: anywhere; min-width: 0; max-width: 100%; }
+.member-form .member-lab-row { border-top: 1px solid var(--line); padding: 8px 0; }

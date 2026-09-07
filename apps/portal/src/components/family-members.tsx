@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { dateKey } from "../lib/calendar";
+import { ClinicalRecordDetails, ClinicalRecordFields } from './family-clinical-record';
+import FamilyRecordDocuments from './family-record-documents';
 import { MEMBER_ROLES, PROFILE_GROUPS, PROFILE_HISTORY_FIELDS, FAMILY_METRICS, RECORD_KINDS, MEASUREMENT_CONTEXTS, memberAge, validFamilyMember,
   validMemberRecord, type FamilyMember, type MemberRecord, type RecordKind } from "../lib/family-members";
 
@@ -102,7 +104,7 @@ export default function FamilyMembers({ initialRole, initialTab = "profile" }: {
     {member ? <>
       <div className="member-tabs" role="group" aria-label="Nội dung hồ sơ">
         <button aria-pressed={tab === "profile"} onClick={() => setTab("profile")} disabled={recordEditing}>Thông tin</button>
-        <button aria-pressed={tab === "records"} onClick={() => setTab("records")} disabled={!member.revision}>Số đo & lịch sử</button>
+        <button aria-pressed={tab === "records"} onClick={() => setTab("records")} disabled={!member.revision}>Sức khỏe & bệnh án</button>
       </div>
       <div hidden={tab !== "profile"}>
         <form className="member-form" onSubmit={save}>
@@ -155,44 +157,56 @@ function MemberRecords({ member, onEditing }: { member: FamilyMember; onEditing:
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [draft, setDraft] = useState<MemberRecord | null>(null);
+  const [documentBusy, setDocumentBusy] = useState(false);
+  const [documentPanels, setDocumentPanels] = useState<string[]>([]);
+  const [savedRecord, setSavedRecord] = useState('');
+  const [filter, setFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
   const sequence = useRef(0);
   const editor = useRef<HTMLFormElement>(null);
   async function load(offset = 0) {
     const seq = ++sequence.current; setLoading(true); setError("");
     try {
-      const result = await request<{ records: MemberRecord[]; latest: MemberRecord[]; nextOffset: number | null }>(`/api/family/members/${member.id}/records?offset=${offset}&deleted=${deleted}`);
+      const result = await request<{ records: MemberRecord[]; latest: MemberRecord[]; nextOffset: number | null }>(`/api/family/members/${member.id}/records?offset=${offset}&deleted=${deleted}&kind=${encodeURIComponent(filter)}&q=${encodeURIComponent(query)}`);
       if (sequence.current !== seq) return;
       setRecords(old => offset ? [...old, ...result.records.filter(r => !old.some(o => o.id === r.id))] : result.records); setNextOffset(result.nextOffset);
       setLatest(result.latest);
     } catch (err) { if (sequence.current === seq) setError((err as Error).message); }
     finally { if (sequence.current === seq) setLoading(false); }
   }
-  useEffect(() => { void load(); return () => { sequence.current++; }; }, [member.id, deleted]);
-  function begin(record?: MemberRecord) {
+  useEffect(() => { void load(); return () => { sequence.current++; }; }, [member.id, deleted, filter, query]);
+  function begin(record?: MemberRecord, clinical = false) {
     setDraft(record ?? { id: crypto.randomUUID(), memberId: member.id, kind: "measurement", title: "Cân nặng", occurredAt: new Date().toISOString(),
       notes: "", source: "Nhập tay", nextDueDate: null, metric: "weight", value: null, secondaryValue: null, unit: "kg", revision: 0, deleted: false });
+    if (!record && clinical) setDraft({ id: crypto.randomUUID(), memberId: member.id, kind: 'visit', title: '', occurredAt: new Date().toISOString(),
+      notes: '', source: '', nextDueDate: null, metric: null, value: null, secondaryValue: null, unit: null, revision: 0, deleted: false });
     onEditing(true); setMessage("");
   }
   function change(patch: Partial<MemberRecord>) { setDraft(old => old ? { ...old, ...patch } : old); }
   function cancel() { setDraft(null); onEditing(false); setError(""); void load(); }
   async function save(record: MemberRecord, closeEditor = true) {
-    if (saving) return;
-    if (!validMemberRecord(record)) { setError("Kiểm tra thời điểm, số đo và đơn vị. Huyết áp cần đủ tâm thu và tâm trương."); return; }
+    if (saving || documentBusy) return;
+    if (!validMemberRecord(record)) { setError("Kiểm tra thời điểm, số đo, kết quả xét nghiệm và độ dài nội dung. Huyết áp cần đủ hai số; bản ghi dài nên tách thành từng lần khám."); return; }
     setSaving(true); setError("");
     try {
       const result = await request<{ record: MemberRecord }>(`/api/family/members/${member.id}/records`, record);
       if (!validMemberRecord(result.record)) throw new Error("Chưa xác nhận được bản lưu. Hãy thử lại.");
       if (closeEditor) { setDraft(null); onEditing(false); }
+      if (!record.deleted && closeEditor) { setSavedRecord(record.id); setDocumentPanels(old => [...new Set([...old, record.id])]); }
       setMessage(record.deleted ? "Đã chuyển vào mục Đã xóa; có thể khôi phục." : "Đã lưu vào lịch sử.");
       await load();
+      // Keep the just-saved older visit accessible even outside the first page/filter.
+      if (closeEditor && !record.deleted) setRecords(old => old.some(row => row.id === result.record.id) ? old : [result.record, ...old]);
     } catch (err) { setError((err as Error).message); }
     finally { setSaving(false); }
   }
   const metric = FAMILY_METRICS.find(m => m.key === draft?.metric);
   return <section className="member-records" aria-label={`Lịch sử của ${member.preferredName || member.fullName}`}>
-    <div className="member-actions"><button className="btn btn-primary" onClick={() => begin()} disabled={member.archived || saving || !!draft}>Ghi số đo / sự kiện</button>
-      <button className="btn btn-quiet" disabled={saving || !!draft} onClick={() => { setRecords([]); setDeleted(v => !v); }}>{deleted ? "Đang lưu" : "Đã xóa"}</button></div>
-    <p className="state-note">Mỗi lần đo được lưu riêng theo giờ, không ghi đè lần trước trong ngày. Không cần đo tất cả chỉ số; EmBe không tự kết luận bệnh.</p>
+    <div className="member-actions"><button className="btn btn-primary" onClick={() => begin(undefined, true)} disabled={member.archived || saving || documentBusy || !!draft}>Thêm bệnh án / lần khám</button>
+      <button className="btn btn-quiet" onClick={() => begin()} disabled={member.archived || saving || documentBusy || !!draft}>Ghi số đo / sự kiện</button>
+      <button className="btn btn-quiet" disabled={saving || documentBusy || !!draft} onClick={() => { setRecords([]); setDeleted(v => !v); }}>{deleted ? "Đang lưu" : "Đã xóa"}</button></div>
+    <p className="state-note">Hồ sơ sức khỏe của {member.preferredName || member.fullName}, gồm mọi chuyên khoa, không chỉ thai kỳ. Mỗi lần khám hoặc đo được lưu riêng theo giờ.</p>
     {latest.length ? <details className="member-group" open><summary>Số đo gần nhất</summary><dl className="member-latest">{latest.map(r => <div key={r.id}>
       <dt>{r.title}</dt><dd><strong>{r.value}{r.secondaryValue !== null ? ` / ${r.secondaryValue}` : ""} {r.unit}</strong><small>{displayTime(r.occurredAt)}{r.measurementContext && r.measurementContext !== "unspecified" ? ` · ${MEASUREMENT_CONTEXTS[r.measurementContext]}` : ""}</small></dd>
     </div>)}</dl></details> : null}
@@ -222,26 +236,39 @@ function MemberRecords({ member, onEditing }: { member: FamilyMember; onEditing:
         <label>Thời điểm ghi nhận<input type="datetime-local" required value={draft.occurredAt ? localTime(draft.occurredAt) : ""}
           onChange={e => change({ occurredAt: e.target.value ? new Date(e.target.value).toISOString() : "" })} /></label>
         <label>Nguồn / cơ sở khám<input maxLength={160} value={draft.source} onChange={e => change({ source: e.target.value })} /></label>
+        <ClinicalRecordFields record={draft} onChange={change} />
         <label>Chi tiết & bối cảnh<textarea rows={3} maxLength={2000} value={draft.notes} onChange={e => change({ notes: e.target.value })}
           placeholder="Ví dụ: đo trước / sau ăn, kết quả bác sĩ, phản ứng sau tiêm, hướng dẫn chăm sóc…" /></label>
         <label>Ngày cần theo dõi lại (nếu có)<input type="date" value={draft.nextDueDate ?? ""} onChange={e => change({ nextDueDate: e.target.value || null })} /></label>
-        <p className="state-note">Ngày theo dõi lại chỉ được lưu ở đây, chưa tự tạo lịch nhắc.</p>
+        <p className="state-note">Lưu bản ghi xong có thể chụp hoặc chọn giấy tờ. Ngày theo dõi lại chưa tự tạo lịch nhắc.</p>
       </fieldset>
       <div className="member-actions"><button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Đang lưu…" : "Lưu bản ghi"}</button>
         <button type="button" className="btn btn-quiet" disabled={saving} onClick={cancel}>Hủy thay đổi</button></div>
     </form> : null}
-    {loading ? <p role="status">Đang tải lịch sử…</p> : !records.length && !error ? <p className="state-note">{deleted ? "Không có bản ghi đã xóa." : "Chưa có bản ghi. Thêm số đo hoặc một mốc đáng nhớ."}</p> : null}
+    <form className="member-form" aria-label="Tìm bệnh án" onSubmit={e => { e.preventDefault(); setQuery(search.trim()); }}>
+      <fieldset disabled={saving || documentBusy || !!draft}><label>Tìm trong lịch sử<input type="search" maxLength={160} placeholder="Tên bệnh, cơ sở khám, bác sĩ…" value={search} onChange={e => setSearch(e.target.value)} /></label>
+        <div className="member-fields"><label>Lọc loại bản ghi<select value={filter} onChange={e => setFilter(e.target.value)}><option value="">Tất cả</option>{Object.entries(RECORD_KINDS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+        <button type="submit" className="btn btn-quiet">Tìm hồ sơ</button></div>
+        {filter || query ? <button type="button" className="btn btn-quiet" onClick={() => { setFilter(''); setQuery(''); setSearch(''); }}>Xóa bộ lọc</button> : null}
+      </fieldset>
+    </form>
+    {loading ? <p role="status">Đang tải lịch sử…</p> : !records.length && !error ? <p className="state-note">{filter || query ? "Không có hồ sơ khớp bộ lọc." : deleted ? "Không có bản ghi đã xóa." : "Chưa có bản ghi. Thêm lần khám, bệnh án hoặc số đo để bắt đầu."}</p> : null}
     <ol className="member-history">{records.map(record => <li key={record.id}>
       <div><strong>{record.title}</strong>{record.kind === "measurement" ? <p className="member-value">{record.value}{record.secondaryValue !== null ? ` / ${record.secondaryValue}` : ""} <small>{record.unit}</small></p> : null}
         <small>{displayTime(record.occurredAt)} · {RECORD_KINDS[record.kind]}{record.measurementContext && record.measurementContext !== "unspecified" ? ` · ${MEASUREMENT_CONTEXTS[record.measurementContext]}` : ""}</small></div>
       <details><summary>Chi tiết</summary><p>{record.notes || "Không có ghi chú thêm."}</p><p>Nguồn: {record.source || "Chưa ghi"}</p>
+        <ClinicalRecordDetails record={record} />
         {record.nextDueDate ? <p>Theo dõi lại: {record.nextDueDate.split("-").reverse().join("/")}</p> : null}
         <p>Cập nhật: {record.updatedAt ? displayTime(record.updatedAt) : "Chưa rõ"} · Bản {record.revision}</p>
       </details>
-      <div className="member-actions">{!record.deleted ? <button className="btn btn-quiet" disabled={saving || !!draft || member.archived} onClick={() => { begin(record); setTimeout(() => editor.current?.scrollIntoView({ block: "start" }), 0); }}>Sửa</button> : null}
-        <button className="btn btn-quiet" disabled={saving || !!draft || member.archived} onClick={() => void save({ ...record, deleted: !record.deleted }, false)}>{record.deleted ? "Khôi phục" : "Xóa"}</button></div>
+      {!record.deleted ? <details open={savedRecord === record.id ? true : undefined} onToggle={e => {
+        if (e.currentTarget.open) setDocumentPanels(old => old.includes(record.id) ? old : [...old, record.id]);
+      }}><summary>Ảnh / PDF đính kèm</summary>{documentPanels.includes(record.id) ? <FamilyRecordDocuments memberId={member.id} recordId={record.id}
+        readOnly={member.archived || saving || documentBusy || !!draft} onBusy={busy => { setDocumentBusy(busy); onEditing(busy || !!draft); }} /> : null}</details> : null}
+      <div className="member-actions">{!record.deleted ? <button className="btn btn-quiet" disabled={saving || documentBusy || !!draft || member.archived} onClick={() => { begin(record); setTimeout(() => editor.current?.scrollIntoView({ block: "start" }), 0); }}>Sửa</button> : null}
+        <button className="btn btn-quiet" disabled={saving || documentBusy || !!draft || member.archived} onClick={() => void save({ ...record, deleted: !record.deleted }, false)}>{record.deleted ? "Khôi phục" : "Xóa"}</button></div>
     </li>)}</ol>
-    {nextOffset !== null ? <button className="btn btn-quiet btn-block" disabled={loading || saving} onClick={() => void load(nextOffset)}>Xem thêm lịch sử</button> : null}
+    {nextOffset !== null ? <button className="btn btn-quiet btn-block" disabled={loading || saving || documentBusy} onClick={() => void load(nextOffset)}>Xem thêm lịch sử</button> : null}
   </section>;
 }
 
@@ -265,7 +292,7 @@ function MemberRevisions({ id }: { id: string }) {
         <p>{row.snapshot.fullName} · {row.snapshot.preferredName} · {row.snapshot.birthDate ?? "Chưa có ngày sinh"}</p>
         <dl>{PROFILE_HISTORY_FIELDS.filter(f => (row.snapshot as FamilyMember).details[f.key]).map(f => <div key={f.key}><dt>{f.label}</dt><dd>{(row.snapshot as FamilyMember).details[f.key]}</dd></div>)}</dl>
       </> : <><p>{row.snapshot.title}: {row.snapshot.value}{row.snapshot.secondaryValue !== null ? ` / ${row.snapshot.secondaryValue}` : ""} {row.snapshot.unit}</p>
-        <p>{displayTime(row.snapshot.occurredAt)} · {row.snapshot.source}{row.snapshot.measurementContext ? ` · ${MEASUREMENT_CONTEXTS[row.snapshot.measurementContext]}` : ""}</p><p>{row.snapshot.notes}</p><p>{row.snapshot.deleted ? "Đã xóa" : "Đang lưu"}</p></>}
+        <p>{displayTime(row.snapshot.occurredAt)} · {row.snapshot.source}{row.snapshot.measurementContext ? ` · ${MEASUREMENT_CONTEXTS[row.snapshot.measurementContext]}` : ""}</p><p>{row.snapshot.notes}</p><ClinicalRecordDetails record={row.snapshot} /><p>{row.snapshot.deleted ? "Đã xóa" : "Đang lưu"}</p></>}
     </details>)}
   </details>;
 }

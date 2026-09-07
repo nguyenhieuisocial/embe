@@ -101,6 +101,22 @@ export const RECORD_KINDS = {
   development: "Mốc phát triển", education: "Học tập", wellbeing: "Tinh thần", care: "Kế hoạch chăm sóc", other: "Ghi chú khác",
 } as const;
 export type RecordKind = keyof typeof RECORD_KINDS;
+export const CLINICAL_FIELDS = [
+  { key: "specialty", label: "Chuyên khoa", max: 120 },
+  { key: "clinician", label: "Bác sĩ / người phụ trách", max: 160 },
+  { key: "reference", label: "Mã hồ sơ / số phiếu", max: 120 },
+  { key: "reason", label: "Triệu chứng / lý do khám", max: 600 },
+  { key: "diagnosis", label: "Chẩn đoán được ghi trên hồ sơ", max: 800 },
+  { key: "results", label: "Kết luận xét nghiệm / chẩn đoán hình ảnh", max: 800 },
+  { key: "treatment", label: "Điều trị / thuốc và liều theo đơn", max: 800 },
+  { key: "instructions", label: "Lời dặn / kế hoạch theo dõi", max: 600 },
+] as const;
+export const HEALTH_STATUSES = { unspecified: "Chưa ghi", monitoring: "Đang theo dõi", treatment: "Đang điều trị", resolved: "Đã kết thúc / hồi phục" } as const;
+export const DOCUMENT_TYPES = { unspecified: "Chưa phân loại", medical_record: "Bệnh án / phiếu khám", prescription: "Đơn thuốc", lab: "Kết quả xét nghiệm", imaging: "Siêu âm / X-quang / CT / MRI", discharge: "Giấy ra viện", receipt: "Phiếu thu / hóa đơn", vaccination: "Phiếu tiêm chủng", other: "Giấy tờ khác" } as const;
+export type ClinicalDetails = Partial<Record<typeof CLINICAL_FIELDS[number]["key"], string>> & {
+  status?: keyof typeof HEALTH_STATUSES; documentType?: keyof typeof DOCUMENT_TYPES;
+};
+export type LabResult = { name: string; value: string; unit: string; referenceRange: string };
 export const MEASUREMENT_CONTEXTS = { unspecified: "Chưa ghi bối cảnh", fasting: "Lúc đói", before_meal: "Trước ăn",
   after_meal_1h: "Sau ăn 1 giờ", after_meal_2h: "Sau ăn 2 giờ", resting: "Khi nghỉ", after_activity: "Sau vận động", other: "Khác — ghi thêm bên dưới" } as const;
 export type FamilyMember = {
@@ -114,6 +130,8 @@ export type MemberRecord = {
   metric: string | null; value: number | null; secondaryValue: number | null; unit: string | null;
   measurementContext?: keyof typeof MEASUREMENT_CONTEXTS;
   pregnancyMemory?: { dueDate: string; week: number; mediaIds: string[] };
+  clinical?: ClinicalDetails;
+  labResults?: LabResult[];
   revision: number; deleted: boolean; updatedAt?: string;
 };
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -144,7 +162,21 @@ export function validFamilyMember(value: unknown): value is FamilyMember {
 }
 
 export function validMemberRecord(value: unknown): value is MemberRecord {
-  if (!object(value) || Object.keys(value).some(k => !["id","memberId","kind","title","occurredAt","notes","source","nextDueDate","metric","value","secondaryValue","unit","measurementContext","pregnancyMemory","revision","deleted","updatedAt"].includes(k))) return false;
+  if (!object(value) || Object.keys(value).some(k => !["id","memberId","kind","title","occurredAt","notes","source","nextDueDate","metric","value","secondaryValue","unit","measurementContext","pregnancyMemory","clinical","labResults","revision","deleted","updatedAt"].includes(k))) return false;
+  // Leave room for jsonb formatting within the database's 16 KiB record limit.
+  if (new TextEncoder().encode(JSON.stringify(value)).length > 15000) return false;
+  if (value.clinical !== undefined) {
+    if (!object(value.clinical) || !Object.entries(value.clinical).every(([key, entry]) => {
+      if (key === "status") return typeof entry === "string" && Object.hasOwn(HEALTH_STATUSES, entry);
+      if (key === "documentType") return typeof entry === "string" && Object.hasOwn(DOCUMENT_TYPES, entry);
+      const field = CLINICAL_FIELDS.find(f => f.key === key);
+      return !!field && text(entry, field.max);
+    })) return false;
+  }
+  if (value.labResults !== undefined && (!Array.isArray(value.labResults) || value.labResults.length > 12 || !value.labResults.every(row =>
+    object(row) && Object.keys(row).every(key => ["name", "value", "unit", "referenceRange"].includes(key))
+    && text(row.name, 120) && !!row.name.trim() && text(row.value, 120) && !!row.value.trim()
+    && text(row.unit, 40) && text(row.referenceRange, 120)))) return false;
   if (value.pregnancyMemory !== undefined) {
     const memory = value.pregnancyMemory;
     if (value.kind !== "development" || !object(memory) || Object.keys(memory).some(k => !["dueDate", "week", "mediaIds"].includes(k))

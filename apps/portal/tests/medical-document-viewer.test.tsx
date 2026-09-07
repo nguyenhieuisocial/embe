@@ -29,6 +29,13 @@ async function open() {
 }
 
 describe('private medical original viewer', () => {
+  it('uses the same viewer but a member-bound endpoint for general health documents', async () => {
+    render(<MedicalDocumentButton document={image} familyScope={{ memberId: pdf.id, recordId: image.id }} />);
+    await open();
+    expect(fetch).toHaveBeenCalledWith(`/api/family/members/${pdf.id}/records/${image.id}/documents/${image.id}`, expect.objectContaining({ cache: 'no-store' }));
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/api/pregnancy/'))).toBe(false);
+    expect(screen.getByRole('button', { name: 'Quay lại hồ sơ' })).toBeEnabled();
+  });
   it('opens inside the app, zooms/rotates, closes and restores the exact scroll and trigger focus', async () => {
     vi.spyOn(window, 'scrollY', 'get').mockReturnValue(812);
     const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});

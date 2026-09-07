@@ -35,7 +35,7 @@ export async function memberBody(request: Request, limit = 64 * 1024): Promise<u
   } finally { reader.releaseLock(); }
 }
 
-type RpcName = "embe_list_family_members" | "embe_save_family_member" | "embe_list_member_records" | "embe_save_member_record" | "embe_member_change_history" | "embe_list_pregnancy_memories";
+type RpcName = "embe_list_family_members" | "embe_save_family_member" | "embe_list_member_records" | "embe_save_member_record" | "embe_member_change_history" | "embe_list_pregnancy_memories" | "embe_family_health_documents" | "embe_search_member_records";
 export async function memberRpc(name: RpcName, body: Record<string, unknown> = {}): Promise<{ data: unknown; status: number }> {
   const base = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;

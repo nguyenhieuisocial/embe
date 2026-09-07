@@ -20,10 +20,10 @@ const familyTools: Array<{
     label: "Mở Studio EmBe Mẹ Bầu"
   },
   {
-    href: "/nha-minh/ho-so",
+    href: "/nha-minh/ho-so?tab=records",
     icon: "care",
-    title: "Hồ sơ từng người",
-    detail: "Ba, Mẹ, các con — thông tin và lịch sử sức khỏe.",
+    title: "Sức khỏe gia đình",
+    detail: "Bệnh án, xét nghiệm, đơn thuốc và số đo từng người.",
     label: "Mở hồ sơ từng người"
   },
   {
