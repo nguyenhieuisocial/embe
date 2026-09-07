@@ -52,6 +52,7 @@ __pycache__/
 *.egg-info/
 
 # Local tools
+.gitnexus/
 tools/bin/
 tools/downloads/
 tools/staging/

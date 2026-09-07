@@ -1,0 +1,8 @@
+{
+  "indexOnly": true,
+  "embeddings": false,
+  "defaultBranch": "main",
+  "name": "embe",
+  "workers": 2,
+  "maxFileSize": 512
+}
