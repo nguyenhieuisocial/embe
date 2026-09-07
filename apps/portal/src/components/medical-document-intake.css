@@ -1,4 +1,5 @@
 .medical-intake{background:#fff8fb;border:1px solid #ead9e1;border-radius:18px;padding:16px;margin:12px 0 22px;min-width:0;color:#35282e}
+.medical-intake{scroll-margin-top:calc(20px + env(safe-area-inset-top))}
 .medical-intake h3{font-size:17px;margin:0 0 5px}.medical-intake p{font-size:14px;line-height:1.55;margin:4px 0 12px}.medical-intake small{font-size:12px;line-height:1.5;color:#746269}
 .medical-intake-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.medical-intake button,.medical-intake a{min-height:44px;border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;border:1px solid #d9b9c6;background:#fffefd;color:#713950;text-decoration:none;touch-action:manipulation}
 .medical-intake-actions button:first-child{background:#a54a6a;color:white;border-color:#a54a6a}.medical-intake button:disabled{opacity:.6}.medical-intake button:focus-visible,.medical-intake a:focus-visible{outline:3px solid #a54a6a;outline-offset:3px}

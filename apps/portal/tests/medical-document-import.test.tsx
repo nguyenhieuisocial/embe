@@ -111,6 +111,8 @@ it('offers camera and multi-file upload without a manual record form, retrying w
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({ id })));
   mock.upload.mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce({ documentId: linked, mimeType: 'image/jpeg' });
   render(<MedicalDocumentIntake onSaved={() => {}} />);
+  expect(screen.getByRole('region', { name: 'Chụp và tải giấy tờ khám thai' })).toHaveAttribute('id', 'them-giay-to');
+  expect(screen.getByLabelText('Chọn giấy tờ khám')).toHaveAttribute('accept', 'image/*,application/pdf');
   expect(screen.getByLabelText('Chụp giấy tờ khám')).toHaveAttribute('capture', 'environment');
   const file = new File(['synthetic'], 'sample.jpg', { type: 'image/jpeg' });
   fireEvent.change(screen.getByLabelText('Chọn giấy tờ khám'), { target: { files: [file] } });

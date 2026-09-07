@@ -43,7 +43,7 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
     const batch: Entry[] = Array.from(files).map(file => ({ id: crypto.randomUUID(), documentId: crypto.randomUUID(), file, status: 'waiting' }));
     setEntries(current => [...current, ...batch]); void run(batch);
   }
-  return <section className="medical-intake" aria-label="Chụp và tải giấy tờ khám thai">
+  return <section className="medical-intake" id="them-giay-to" aria-label="Chụp và tải giấy tờ khám thai">
     <h3>Thêm giấy tờ khám</h3>
     <p>Tự đọc phiếu thu, đơn thuốc, siêu âm, xét nghiệm và bệnh án.</p>
     <div className="medical-intake-actions">

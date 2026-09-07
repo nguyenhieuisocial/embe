@@ -15,6 +15,11 @@ type QuickAction = {
   detail: string;
 };
 
+const documentAction: QuickAction = {
+  href: "/me-bau/ho-so#them-giay-to", icon: "album",
+  title: "Chụp hoặc chọn giấy tờ", detail: "Phiếu thu, đơn thuốc, siêu âm · ảnh/PDF"
+};
+
 function actionsForStage(dueDate: string): QuickAction[] {
   const week = calculatePregnancyWeek(dueDate);
   const stageAction: QuickAction = week === null
@@ -25,6 +30,7 @@ function actionsForStage(dueDate: string): QuickAction[] {
 
   return [
     stageAction,
+    documentAction,
     { href: "/me-bau/ho-so?quick=appointment#ho-so-kham", icon: "calendar", title: "Thêm lịch khám", detail: "Lưu ngày hẹn và hồ sơ đi cùng" },
     { href: "/me-bau/bua-an", icon: "meal", title: "Chụp bữa ăn", detail: "Mở camera và nhận diện món" },
     { href: "/ke-hoach?them=1#them-viec", icon: "check", title: "Thêm việc cần làm", detail: "Giao cho Mẹ Ngân, Ba Hiếu hoặc cả nhà" },
@@ -157,6 +163,7 @@ export default function QuickActions() {
                 { href: "/be?quick=sleep", icon: "sleep" as const, title: "Bắt đầu giấc ngủ", detail: "Theo dõi bằng bộ đếm giờ" },
                 { href: "/be?quick=temperature", icon: "room" as const, title: "Ghi nhiệt độ", detail: "Lưu số đo vừa kiểm tra" },
                 { href: "/me", icon: "care" as const, title: "Mẹ hồi phục hôm nay", detail: "Ghi thật nhanh các dấu hiệu cần theo dõi" },
+                documentAction,
                 { href: "/ky-niem#gui-anh", icon: "memory" as const, title: "Chụp một khoảnh khắc", detail: "Gửi vào album gia đình" }
               ] : actionsForStage(dueDate)).map((action) => (
                 <Link className="quick-action" href={action.href} prefetch={false} key={action.href} onClick={() => { restoreFocusRef.current = false; setOpen(false); }}>

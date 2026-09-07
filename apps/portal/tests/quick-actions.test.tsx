@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const route = vi.hoisted(() => ({ pathname: "/me-bau" }));
+const route = vi.hoisted(() => ({ pathname: "/me-bau", postpartum: false }));
 vi.mock("next/navigation", () => ({ usePathname: () => route.pathname }));
-vi.mock("../src/lib/use-family-stage", () => ({ useFamilyStage: () => ({ postpartum: false }) }));
+vi.mock("../src/lib/use-family-stage", () => ({ useFamilyStage: () => ({ postpartum: route.postpartum }) }));
 vi.mock("../src/lib/use-pregnancy-due-date", () => ({ usePregnancyDueDate: () => "" }));
 vi.mock("../src/components/device-access-prompt", () => ({ default: () => null }));
 
@@ -13,6 +13,7 @@ import AppShell from "../src/components/app-shell";
 afterEach(() => {
   document.body.style.overflow = "";
   route.pathname = "/me-bau";
+  route.postpartum = false;
 });
 
 describe("mobile quick actions", () => {
@@ -31,6 +32,18 @@ describe("mobile quick actions", () => {
     expect(screen.getByRole("link", { name: /Thêm việc cần làm/ })).toHaveAttribute("href", "/ke-hoach?them=1#them-viec");
     expect(screen.getByRole("link", { name: /Ghi một dòng/ })).toHaveAttribute("href", "/ghi-lai#viet-nhat-ky");
     expect(screen.getByRole("link", { name: /Chụp hoặc chọn ảnh/ })).toHaveAttribute("href", "/ky-niem#gui-anh");
+    expect(screen.getByRole("link", { name: /Chụp hoặc chọn giấy tờ/ })).toHaveAttribute("href", "/me-bau/ho-so#them-giay-to");
+  });
+
+  it("keeps the document shortcut after birth and releases the sheet when selected", () => {
+    route.postpartum = true;
+    render(<QuickActions />);
+    fireEvent.click(screen.getByRole("button", { name: "Mở thao tác nhanh" }));
+    const document = screen.getByRole("link", { name: /Chụp hoặc chọn giấy tờ/ });
+    expect(document).toHaveAttribute("href", "/me-bau/ho-so#them-giay-to");
+    fireEvent.click(document);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(globalThis.document.body.style.overflow).toBe("");
   });
 
   it("closes without navigating when Escape is pressed", () => {
