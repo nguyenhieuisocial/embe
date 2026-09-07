@@ -97,6 +97,7 @@ try {
   const script=await context.request.get(origin+`/api/studio/renders/${job.id}/script`);
   if(!script.ok()||!(await script.text()).includes('Lời đọc riêng: '+speechText))throw new Error('script_missing_pronunciation');
   await page.reload({waitUntil:'domcontentloaded'});await page.getByLabel('Chọn giọng').waitFor();
+  await page.locator('summary').filter({hasText:'Chỉnh phát âm'}).first().click();
   if(await page.getByLabel('Lời đọc riêng cảnh 1',{exact:true}).inputValue()!==speechText)throw new Error('pronunciation_not_saved');
   if(await page.getByLabel('Tốc độ đọc').inputValue()!==String(speed))throw new Error('reload_voice');
   result.status='passed';
