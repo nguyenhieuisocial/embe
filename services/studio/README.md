@@ -114,6 +114,14 @@ Xem [nguồn gốc minh họa](assets/PROVENANCE.md) và [catalog có nguồn t�
 
 ## Dựng bảng kiến thức có giọng đọc
 
+### Tự động từ bản nháp đến video (08/09/2026)
+
+- Bản mới mặc định `auto-south`, `autoRender: true`. Một giọng nữ miền Nam nhất quán (Thục Đoan v2), tự chậm lại ở cảnh có số liệu; chuẩn hóa phát âm chỉ cho lời đọc, không sửa số/liều, phụ đề hoặc nguồn. Tùy chỉnh thủ công được thu gọn và không bắt buộc.
+- Editor tự lưu sau 1,8 giây ngừng nhập; chọn kịch bản mẫu bắt đầu bản riêng tự động. Không tạo bản rỗng khi chỉ mở trang. Giữ chữ mới gõ trong lúc đang lưu, dừng khi có xung đột phiên bản; lỗi mạng thử lại tối đa 3 lần cách 30 giây và tiếp tục khi có mạng trở lại.
+- Migration `studio_automatic_drafts` cung cấp RPC chỉ `service_role`. Worker có sẵn đưa bản đã bật tự dựng, đủ cảnh/nguồn và ổn định 30 giây vào hàng đợi. Không phụ thuộc trang đang mở; tối đa 3 job trong hàng đợi, 100 bản dựng tổng, dùng unique revision và lock hiện có.
+- Bản hủy không tự bật lại ở cùng revision; bản cũ đang dựng được hủy khi chỉnh sửa hoặc tắt tự dựng. Chỉ lỗi hạ tầng được thử lại sau 2 phút, tối đa 3 lượt; lỗi nội dung giữ lại để xử lý, không lặp vô hạn.
+- Bản cũ không đổi khi chỉ xem. Lần lưu tiếp theo mặc định bật tự dựng nhưng giữ giọng đã chọn; video lịch sử không bị ghi đè. Không đụng dữ liệu sức khỏe, không tự duyệt y khoa hoặc tự đăng mạng xã hội.
+
 ### Giọng nữ miền Nam và hàng chờ duyệt trên web (07/09/2026)
 
 - `/studio/soan`: bản mới mặc định Thục Đoan, có thêm Mỹ Duyên (nữ miền Nam, kể/đọc truyện), tốc độ 0,95 / 1 / 1,05. Studio có nghe so sánh cùng một câu; chỉ tải khi mở và nhấn phát. Bản nháp cũ giữ đúng giọng đã lưu (Piper hoặc Ái Hân); đổi giọng tạo phiên bản mới, không sửa lịch sử video cũ.

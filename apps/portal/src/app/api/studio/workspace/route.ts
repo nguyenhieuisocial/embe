@@ -32,7 +32,7 @@ export async function POST(request:Request) {
     let payload=null;
     if(input.action==='save')payload=studioDocument(input.payload);
     if(input.action==='render'){
-      if(input.acknowledged!==true)return privateReply({error:'review_required'},400);
+      // Generating a private draft is not clinical approval or social publication.
       const current=await workspaceRpc('get',input.id);if(current.status!==200)return workspaceFailure(current.status);
       if(current.data.project.revision!==input.revision)return workspaceFailure(409);
       if(!readyToRender(studioDocument(current.data.project.payload)))return privateReply({error:'scenes_and_sources_required'},400);

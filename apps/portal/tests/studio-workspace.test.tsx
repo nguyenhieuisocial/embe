@@ -19,7 +19,11 @@ describe('Studio workspace boundaries',()=>{
   it('rejects bad document types, long scenes and unsafe source links',()=>{for(const value of [{...sample(),scenes:[]},{...sample(),title:44},{...sample(),sources:[{title:'X',url:'javascript:alert(1)'}]},{...sample(),scenes:[{heading:'ok',text:'x'.repeat(181)}]}])expect(()=>studioDocument(value)).toThrow();expect(studioDocument({...sample(),sources:[{title:'NHS',url:'https://www.nhs.uk/pregnancy/?token=SECRET'}]}).sources[0].url).not.toContain('SECRET');});
   it('denies access before RPC for reads and writes',async()=>{f.denied=true;expect((await GET(new Request('https://embe.hieu.asia/api/studio/workspace'))).status).toBe(401);expect((await POST(request({}))).status).toBe(401);expect(f.rpc).not.toHaveBeenCalled();});
   it('rejects unsupported actions and unknown fields in script',async()=>{expect((await POST(request({action:'worker',revision:0,id}))).status).toBe(400);expect((await POST(request({action:'save',revision:0,id,payload:{...sample(),raw_path:'C:/Anh'}}))).status).toBe(400);expect(f.rpc).not.toHaveBeenCalled();});
-  it('checks saved revision and acknowledgement before render',async()=>{expect((await POST(request({action:'render',id,revision:1}))).status).toBe(400);f.rpc.mockResolvedValue({status:200,data:{project:{revision:2,payload:sample()}}});expect((await POST(request({action:'render',id,revision:1,acknowledged:true}))).status).toBe(409);expect(f.rpc).toHaveBeenCalledTimes(1);});
+  it('requires the current saved revision but not a fake clinical acknowledgement to render a draft',async()=>{f.rpc.mockResolvedValueOnce({status:200,data:{project:{revision:2,payload:sample()}}});expect((await POST(request({action:'render',id,revision:1}))).status).toBe(409);expect(f.rpc).toHaveBeenCalledTimes(1);
+    f.rpc.mockResolvedValueOnce({status:200,data:{project:{revision:2,payload:sample()}}}).mockResolvedValueOnce({status:200,data:{render:{status:'queued'}}});
+    expect((await POST(request({action:'render',id,revision:2}))).status).toBe(200);
+    expect(f.rpc).toHaveBeenLastCalledWith('render',id,2,null);
+  });
   it('saves through existing private API and exposes conflict honestly',async()=>{f.rpc.mockResolvedValue({status:409,data:null});expect((await POST(request({action:'save',id,revision:1,payload:sample()}))).status).toBe(409);expect(f.rpc).toHaveBeenCalledWith('save',id,1,sample());});
 });
 describe('Editor and share workflow',()=>{
@@ -36,10 +40,34 @@ describe('Editor and share workflow',()=>{
     expect(sessionStorage.length).toBe(0);expect(revision).toBe(2);
   });
   it('preserves edits after a failed save and never queues stale content',async()=>{vi.spyOn(globalThis,'fetch').mockResolvedValue(Response.json({error:'down'},{status:503}));render(<StudioEditor/>);fireEvent.change(screen.getByLabelText('Tên nội dung'),{target:{value:'Bản đang viết'}});fireEvent.click(screen.getByRole('button',{name:'Lưu bản nháp'}));await screen.findByText(/Chưa kết nối được Studio/);expect(screen.getByLabelText('Tên nội dung')).toHaveValue('Bản đang viết');expect(sessionStorage.getItem('embe:studio-editor:new')).toContain('Bản đang viết');expect(screen.queryByRole('button',{name:'Dựng video có giọng Việt'})).toBeNull();});
-  it('separates save from explicit render and offers revision conflict recovery',async()=>{
+  it('keeps legacy projects unchanged on view and never queues unsaved edits',async()=>{
     let count=0;vi.spyOn(globalThis,'fetch').mockImplementation(async()=>{count++;return Response.json({project:{id,revision:1,payload:sample(),deleted:false,created_at:new Date().toISOString(),updated_at:new Date().toISOString()},renders:[],workerSeenAt:null});});
-    render(<StudioEditor projectId={id}/>);await screen.findByDisplayValue('Một điều nhỏ');expect(screen.getByRole('button',{name:'Dựng video có giọng Việt'})).toBeDisabled();expect(count).toBe(1);
-    fireEvent.click(screen.getByRole('checkbox'));expect(screen.getByRole('button',{name:'Dựng video có giọng Việt'})).toBeEnabled();fireEvent.change(screen.getByLabelText('Lời đọc cảnh 1'),{target:{value:'Bản thay đổi chưa lưu'}});expect(screen.getByRole('button',{name:'Dựng video có giọng Việt'})).toBeDisabled();expect(count).toBe(1);
+    render(<StudioEditor projectId={id}/>);await screen.findByDisplayValue('Một điều nhỏ');expect(screen.getByRole('button',{name:'Dựng video có giọng Việt'})).toBeEnabled();expect(count).toBe(1);
+    fireEvent.change(screen.getByLabelText('Lời đọc cảnh 1'),{target:{value:'Bản thay đổi chưa lưu'}});expect(screen.queryByRole('button',{name:'Dựng video có giọng Việt'})).toBeNull();expect(count).toBe(1);
+  });
+  it('autosaves edits without a save/render click and enables durable rendering',async()=>{
+    vi.spyOn(window.history,'replaceState').mockImplementation(()=>{});
+    const fetch=vi.spyOn(globalThis,'fetch').mockImplementation(async(_url,init)=>{const body=JSON.parse(String(init?.body));return Response.json({project:{id:body.id,revision:1,payload:body.payload,deleted:false}});});
+    render(<StudioEditor/>);expect(fetch).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Tên nội dung'),{target:{value:'Tự lưu'}});
+    await waitFor(()=>expect(fetch).toHaveBeenCalledOnce(),{timeout:3000});
+    const body=JSON.parse(String(fetch.mock.calls[0][1]?.body));
+    expect(body.action).toBe('save');expect(body.payload.voice).toEqual({id:'auto-south',speed:1});expect(body.payload.autoRender).toBe(true);
+    await screen.findByRole('button',{name:'Đã lưu'});expect(sessionStorage.length).toBe(0);
+  });
+  it('does not overwrite typing that happens during an automatic save',async()=>{
+    vi.spyOn(window.history,'replaceState').mockImplementation(()=>{});
+    let finish:((r:Response)=>void)|undefined;let payload:unknown;let target='';
+    vi.spyOn(globalThis,'fetch').mockImplementation((_url,init)=>{const body=JSON.parse(String(init?.body));payload=body.payload;target=body.id;return new Promise(resolve=>{finish=resolve;});});
+    render(<StudioEditor/>);fireEvent.change(screen.getByLabelText('Tên nội dung'),{target:{value:'Bản đầu'}});
+    await waitFor(()=>expect(finish).toBeDefined(),{timeout:3000});
+    expect(screen.getByLabelText('Tên nội dung')).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Tên nội dung'),{target:{value:'Bản mới đang gõ'}});
+    finish!(Response.json({project:{id:target,revision:1,payload,deleted:false}}));
+    await screen.findByText('Đã lưu trên EmBe.');
+    expect(screen.getByLabelText('Tên nội dung')).toHaveValue('Bản mới đang gõ');
+    expect(sessionStorage.getItem(`embe:studio-editor:${target}`)).toContain('Bản mới đang gõ');
+    expect([...Array(sessionStorage.length)].map((_,i)=>sessionStorage.getItem(sessionStorage.key(i)!)).join()).toContain('Bản mới đang gõ');
   });
   it('prepares a bounded file before a separate share gesture and does not claim publication',async()=>{
     const share=vi.fn().mockResolvedValue(undefined);Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:share});

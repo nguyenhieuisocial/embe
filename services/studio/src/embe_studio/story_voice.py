@@ -107,6 +107,11 @@ def finish_audio(pcm, rate=48000, speed=1.0):
     return pcm
 
 
+def automatic_speed(text: str) -> float:
+    """Keep one consistent voice; slow number/acronym-heavy scenes, not random voices."""
+    return .95 if re.search(r'\d|\b(?:DHA|NIPT|PDF|BMI|WHO)\b', text) else 1.0
+
+
 class StoryVoice:
     sample_rate = 48000
 
@@ -157,9 +162,15 @@ class StoryVoice:
 
     def speak(self, text, speed=1.0):
         if speed not in (.95, 1, 1.05): raise ValueError('invalid_voice_speed')
-        pcm = self.engine.infer(spoken_text(text, improved=self.improved), voice=self.name,
-            temperature=.8, max_chars=256 if self.improved else 130, batch_size=1)
-        return finish_audio(pcm, self.sample_rate, speed)
+        normalized=spoken_text(text, improved=self.improved)
+        for attempt in range(2 if self.improved else 1):
+            pcm = self.engine.infer(normalized, voice=self.name,
+                temperature=.8, max_chars=256 if self.improved else 130, batch_size=1)
+            try: return finish_audio(pcm, self.sample_rate, speed)
+            except ValueError as e:
+                # One local retry for invalid/silent PCM, never change words or
+                # medical quantities to make a failed audio check pass.
+                if not self.improved or attempt or str(e) not in {'voice_too_long','voice_unavailable'}: raise
 
     def close(self):
         self.engine.close()

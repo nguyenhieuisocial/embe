@@ -28,11 +28,12 @@ class ClaimLost(Exception):
     pass
 
 def validate_document(value):
-    if not isinstance(value, dict) or set(value) - {'voice'} != {'title','stage','caption','scenes','sources'}:
+    if not isinstance(value, dict) or set(value) - {'voice','autoRender'} != {'title','stage','caption','scenes','sources'}:
         raise ValueError('invalid_project')
+    if 'autoRender' in value and type(value['autoRender']) is not bool: raise ValueError('invalid_project')
     if 'voice' in value:
         v=value['voice']
-        if not isinstance(v,dict) or set(v)!={'id','speed'} or v['id'] not in {*VOICES,'ai-han-south','piper'} or type(v['speed']) not in (int,float) or v['speed'] not in (.95,1,1.05):
+        if not isinstance(v,dict) or set(v)!={'id','speed'} or v['id'] not in {*VOICES,'auto-south','ai-han-south','piper'} or type(v['speed']) not in (int,float) or v['speed'] not in (.95,1,1.05):
             raise ValueError('invalid_project')
     def text(v, n, required=False):
         if not isinstance(v,str) or len(v)>n or (required and not v.strip()):
@@ -67,6 +68,8 @@ def render_document(document, directory: Path, progress):
     from .render import font_at
     doc=validate_document(document)
     chosen=doc.get('voice',{'id':'piper','speed':1})
+    automatic=chosen['id']=='auto-south'
+    if automatic: chosen={'id':'thuc-doan-south-v2','speed':1}
     southern=chosen['id']=='ai-han-south'
     story=chosen['id'] in VOICES
     improved=chosen['id'].endswith('-v2')
@@ -74,6 +77,7 @@ def render_document(document, directory: Path, progress):
     if story:
         from .story_voice import StoryVoice
         voice=StoryVoice(chosen['id']);credit=voice.credit
+        if automatic: credit={**credit,'automatic':True,'policyVersion':1}
     elif southern:
         from .southern_voice import SouthernVoice,CREDIT
         voice=SouthernVoice();credit=CREDIT
@@ -89,7 +93,10 @@ def render_document(document, directory: Path, progress):
         for i,scene in enumerate(doc['scenes']):
             progress(5+int(i/len(doc['scenes'])*35))
             if southern or story:
-                pcm=voice.speak(scene.get('speechText',scene['text']),chosen['speed'])
+                from .story_voice import automatic_speed
+                speech=scene.get('speechText',scene['text'])
+                speed=automatic_speed(speech) if automatic else chosen['speed']
+                pcm=voice.speak(speech,speed)
             else:
                 sound_io=io.BytesIO()
                 with wave.open(sound_io,'wb') as wav:voice.synthesize_wav(scene.get('speechText',scene['text']),wav,syn_config=SynthesisConfig(length_scale=1.03/chosen['speed'],volume=.85))
@@ -176,6 +183,9 @@ class WebWorker:
         return {'path':path,'mime':mime,'size':len(data),'checksum':digest}
 
     def run_once(self):
+        # Durable, bounded scheduling continues after the phone closes. The SQL
+        # function only selects explicitly enabled, stable editorial revisions.
+        self.request('/rest/v1/rpc/embe_studio_autorender',b'{}')
         job=self.rpc('claim')
         if not job:return {'status':'idle'}
         work=ROOT/'data/studio-web-work';work.mkdir(parents=True,exist_ok=True)

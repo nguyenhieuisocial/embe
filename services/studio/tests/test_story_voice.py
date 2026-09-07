@@ -2,6 +2,29 @@ import pytest
 from embe_studio.story_voice import spoken_text
 
 
+def test_auto_pacing_slows_numbers_without_rewriting_them():
+    from embe_studio.story_voice import automatic_speed
+    for text in ['DHA và NIPT.', '0,5 mg; 120/80 mmHg', 'Tuần 12']:
+        assert automatic_speed(text)==.95
+    assert automatic_speed('Cùng mẹ, thật nhẹ nhàng.')==1
+
+
+def test_invalid_audio_retries_once_with_identical_text():
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from embe_studio.story_voice import StoryVoice
+    np=pytest.importorskip('numpy')
+    voice=object.__new__(StoryVoice);voice.name='Thục Đoan';voice.improved=True
+    tone=(.2*np.sin(2*np.pi*440*np.arange(48000)/48000)).astype(np.float32)
+    voice.engine=SimpleNamespace(infer=Mock(side_effect=[np.zeros(48000),tone]))
+    assert len(voice.speak('EmBe 0,5 mg.'))==48000
+    calls=voice.engine.infer.call_args_list
+    assert len(calls)==2 and calls[0]==calls[1] and calls[0].args==('Em Bé 0,5 mg.',)
+    voice.engine.infer=Mock(return_value=np.zeros(48000))
+    with pytest.raises(ValueError,match='voice_unavailable'):voice.speak('Giữ nguyên.')
+    assert voice.engine.infer.call_count==2
+
+
 def test_speech_only_cleanup_never_rewrites_medical_quantities():
     assert spoken_text('EmBe: 0,5 mg; 120/80 mmHg; 37,5°C. DHA và NIPT.') == 'Em Bé: 0,5 mg; 120/80 mmHg; 37,5°C. DHA và NIPT.'
     assert spoken_text('Mỹ Duyên\n  cùng Thục Đoan.') == 'Mỹ Duyên cùng Thục Đoan.'

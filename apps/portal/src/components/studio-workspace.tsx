@@ -36,7 +36,10 @@ export default function StudioWorkspace({templates}:{templates:StudioTopic[]}) {
 
 export function StudioEditor({projectId,template,ideaId}:{projectId?:string;template?:StudioTopic;ideaId?:string}) {
   const [id,setId]=useState(projectId||''),[doc,setDoc]=useState<StudioDocument>(()=>templateDocument(template)),[saved,setSaved]=useState<StudioProject|null>(null),[renders,setRenders]=useState<StudioRender[]>([]);
-  const [loaded,setLoaded]=useState(!projectId),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[seen,setSeen]=useState<string|null>(null),[ack,setAck]=useState(false),[deleteConfirm,setDeleteConfirm]=useState(false),[recovery,setRecovery]=useState<StudioDocument|null>(null);
+  const [loaded,setLoaded]=useState(!projectId),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[seen,setSeen]=useState<string|null>(null),[deleteConfirm,setDeleteConfirm]=useState(false),[recovery,setRecovery]=useState<StudioDocument|null>(null);
+  const [saving,setSaving]=useState(false),[autoError,setAutoError]=useState<'network'|'conflict'|'invalid'|null>(null),[retries,setRetries]=useState(0);
+  const editVersion=useRef(0),saveAutomatically=useRef(()=>{}),currentDocument=useRef(doc);
+  currentDocument.current=doc;
   const inFlight=useRef(false),cacheKey=`embe:studio-editor:${projectId||'new'}`;
   const dirty=!saved||JSON.stringify(doc)!==JSON.stringify(saved.payload);
   const latest=renders.find(r=>r.revision===saved?.revision);
@@ -47,6 +50,7 @@ export function StudioEditor({projectId,template,ideaId}:{projectId?:string;temp
   },[projectId]);
   useEffect(()=>{
     if(!id)setId(crypto.randomUUID());
+    if(template&&!projectId&&!ideaId)editVersion.current=1;
     if(projectId)void fetchProject().catch(e=>setMessage(e.message));
     if(ideaId)void api('?board=1').then(data=>{const item=data.items.find((i:{id:string})=>i.id===ideaId);if(item)setDoc({...templateDocument(),title:item.title.slice(0,120),caption:`${item.note}\n\nNguồn cảm hứng (không phải nguồn y khoa): ${item.url}`});}).catch(e=>setMessage(e.message));
     try{const value=sessionStorage.getItem(cacheKey);if(value)setRecovery(studioDocument(JSON.parse(value)));}catch{/* Keep a damaged cache intact; never overwrite cloud. */}
@@ -54,19 +58,34 @@ export function StudioEditor({projectId,template,ideaId}:{projectId?:string;temp
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[projectId,ideaId,fetchProject,cacheKey]);
   useEffect(()=>{if(!dirty)return;const unload=(e:BeforeUnloadEvent)=>{e.preventDefault();};window.addEventListener('beforeunload',unload);return()=>window.removeEventListener('beforeunload',unload);},[dirty]);
-  function edit(next:StudioDocument){setDoc(next);setAck(false);try{sessionStorage.setItem(saved?`embe:studio-editor:${id}`:cacheKey,JSON.stringify(next));}catch{setMessage('Trình duyệt không giữ được bản tạm. Hãy lưu lên EmBe trước khi rời trang.');}}
+  function edit(next:StudioDocument){next={...next,autoRender:next.autoRender??true};editVersion.current++;setDoc(next);if(autoError!=='conflict')setAutoError(null);setRetries(0);try{sessionStorage.setItem(saved?`embe:studio-editor:${id}`:cacheKey,JSON.stringify(next));}catch{setMessage('Trình duyệt không giữ được bản tạm. Hãy lưu lên EmBe trước khi rời trang.');}}
   const refreshStatus=useCallback(async()=>{if(!id||!saved)return;try{const data=await api(`?project=${id}`);setRenders(data.renders);setSeen(data.workerSeenAt);if(data.project.revision!==saved.revision)setMessage('Bản trên máy chủ đã thay đổi. Nội dung bạn đang viết vẫn giữ; lưu bản riêng hoặc mở lại bản trên máy chủ.');}catch(e){setMessage((e as Error).message);}},[id,saved]);
-  useEffect(()=>{if(!active)return;const timer=setInterval(()=>{if(document.visibilityState==='visible')void refreshStatus();},8000);return()=>clearInterval(timer);},[active,refreshStatus]);
+  useEffect(()=>{if(!active&&!(saved?.payload.autoRender&&readyToRender(saved.payload)&&(!latest||(latest.status==='failed'&&latest.attempts<3&&['interrupted','storage_unavailable','worker_unavailable'].includes(latest.error??'')))))return;const timer=setInterval(()=>{if(document.visibilityState==='visible')void refreshStatus();},8000);return()=>clearInterval(timer);},[active,latest,saved,refreshStatus]);
   useEffect(()=>{const focus=()=>{void refreshStatus();};window.addEventListener('focus',focus);return()=>window.removeEventListener('focus',focus);},[refreshStatus]);
-  async function save(copy=false):Promise<StudioProject|null>{
-    if(inFlight.current)return null;inFlight.current=true;setBusy(true);
-    try{const payload=studioDocument(doc);const target=copy?crypto.randomUUID():id;const data=await api('',{action:'save',id:target,revision:copy?0:saved?.revision??0,payload});setSaved(data.project);setDoc(data.project.payload);setId(target);setAck(false);setMessage('Đã lưu trên EmBe. Điện thoại khác có thể mở bản này.');try{sessionStorage.removeItem(cacheKey);sessionStorage.removeItem(`embe:studio-editor:${id}`);}catch{}setRecovery(null);window.history.replaceState(null,'',`/studio/soan?du-an=${target}`);return data.project;}
-    catch(e){setMessage((e as Error).message==='invalid_request'?'Kiểm tra độ dài kịch bản: tối đa 6 cảnh, 900 ký tự nội dung, 1.100 ký tự lời đọc riêng; nguồn cần liên kết HTTPS.':(e as Error).message);return null;}
-    finally{inFlight.current=false;setBusy(false);}
+  async function save(copy=false,automatic=false):Promise<StudioProject|null>{
+    if(inFlight.current)return null;inFlight.current=true;setSaving(true);if(!automatic)setBusy(true);
+    const version=editVersion.current;
+    try{const payload=studioDocument({...doc,autoRender:doc.autoRender??true});const target=copy?crypto.randomUUID():id;const data=await api('',{action:'save',id:target,revision:copy?0:saved?.revision??0,payload});setSaved(data.project);setId(target);setAutoError(null);setRetries(0);
+      if(version===editVersion.current){setDoc(data.project.payload);try{sessionStorage.removeItem(cacheKey);sessionStorage.removeItem(`embe:studio-editor:${id}`);}catch{}setRecovery(null);}
+      else{try{sessionStorage.setItem(`embe:studio-editor:${target}`,JSON.stringify(currentDocument.current));if(cacheKey!==`embe:studio-editor:${target}`)sessionStorage.removeItem(cacheKey);}catch{}}
+      setMessage(payload.autoRender&&readyToRender(payload)?'Đã lưu. EmBe sẽ tự dựng sau khi bạn ngừng sửa khoảng 30 giây; có thể rời trang.':'Đã lưu trên EmBe.');window.history.replaceState(null,'',`/studio/soan?du-an=${target}`);return data.project;}
+    catch(e){const reason=(e as Error).message;setAutoError(reason==='invalid_request'?'invalid':reason.includes('thiết bị khác')?'conflict':'network');setMessage(reason==='invalid_request'?'Kiểm tra độ dài kịch bản: tối đa 6 cảnh, 900 ký tự nội dung, 1.100 ký tự lời đọc riêng; nguồn cần liên kết HTTPS.':reason);return null;}
+    finally{inFlight.current=false;setSaving(false);if(!automatic)setBusy(false);}
   }
+  saveAutomatically.current=()=>{void save(false,true);};
+  useEffect(()=>{
+    if(!loaded||!id||!dirty||busy||saving||recovery||saved?.deleted||!editVersion.current||autoError)return;
+    const timer=setTimeout(()=>saveAutomatically.current(),1800);return()=>clearTimeout(timer);
+  },[loaded,id,dirty,busy,saving,recovery,saved,doc,autoError]);
+  useEffect(()=>{
+    if(autoError!=='network')return;
+    const resume=()=>{setRetries(0);setAutoError(null);};window.addEventListener('online',resume);
+    const timer=retries<3?setTimeout(()=>{setRetries(n=>n+1);setAutoError(null);},30000):null;
+    return()=>{window.removeEventListener('online',resume);if(timer)clearTimeout(timer);};
+  },[autoError,retries]);
   async function action(kind:'render'|'cancel'|'delete'){
     if(inFlight.current||!saved)return;inFlight.current=true;setBusy(true);
-    try{const data=await api('',{action:kind,id,revision:kind==='cancel'?active?.revision:saved.revision,acknowledged:ack});
+    try{const data=await api('',{action:kind,id,revision:kind==='cancel'?active?.revision:saved.revision});
       if(kind==='delete'){setSaved(data.project);setDeleteConfirm(false);setMessage('Đã chuyển vào mục Đã xóa. Có thể khôi phục ở Bàn làm việc.');}
       else{await refreshStatus();setMessage(kind==='render'?'Đã gửi yêu cầu dựng. Bạn có thể rời trang rồi quay lại xem kết quả.':'Đã hủy yêu cầu dựng.');}}
     catch(e){setMessage((e as Error).message);}finally{inFlight.current=false;setBusy(false);}
@@ -79,13 +98,14 @@ export function StudioEditor({projectId,template,ideaId}:{projectId?:string;temp
     <label className="studio-search">Tên nội dung<input value={doc.title} maxLength={120} onChange={e=>edit({...doc,title:e.target.value})}/></label>
     <label className="studio-search">Dành cho giai đoạn<input value={doc.stage} maxLength={80} placeholder="Mới mang thai, sau sinh…" onChange={e=>edit({...doc,stage:e.target.value})}/></label>
     <StudioVoicePicker value={doc.voice} onChange={voice=>edit({...doc,voice})}/>
+    <p className="discovery-help">Nội dung tự lưu khi bạn ngừng nhập. {doc.autoRender!==false?'Đủ cảnh và nguồn thì EmBe tự dựng video, không cần chọn giọng hoặc bấm dựng.':'Tự dựng đang tạm dừng; nội dung vẫn tự lưu.'}</p>
     <p className="discovery-help">Video dọc có giọng Việt và phụ đề trên hình. Tối đa 6 cảnh / 90 giây. Chỉ nhập nội dung bạn có quyền sử dụng, không đưa hồ sơ riêng vào đây.</p>
     <ol className="studio-edit-scenes">{doc.scenes.map((scene,index)=><li key={index}>
       <div className="studio-scene-heading"><h2>Cảnh {index+1}</h2><div className="discovery-platforms"><button disabled={index===0} aria-label={`Đưa cảnh ${index+1} lên`} onClick={()=>{const scenes=[...doc.scenes];[scenes[index-1],scenes[index]]=[scenes[index],scenes[index-1]];edit({...doc,scenes});}}>↑</button><button disabled={index===doc.scenes.length-1} aria-label={`Đưa cảnh ${index+1} xuống`} onClick={()=>{const scenes=[...doc.scenes];[scenes[index+1],scenes[index]]=[scenes[index],scenes[index+1]];edit({...doc,scenes});}}>↓</button><button disabled={doc.scenes.length===1} onClick={()=>edit({...doc,scenes:doc.scenes.filter((_,i)=>i!==index)})}>Bỏ cảnh {index+1}</button></div></div>
       <label className="studio-search">Tiêu đề cảnh {index+1}<input maxLength={80} value={scene.heading} onChange={e=>edit({...doc,scenes:doc.scenes.map((s,i)=>i===index?{...s,heading:e.target.value}:s)})}/></label>
       <label className="studio-search">Lời đọc cảnh {index+1}<textarea rows={3} maxLength={180} value={scene.text} onChange={e=>edit({...doc,scenes:doc.scenes.map((s,i)=>i===index?{...s,text:e.target.value}:s)})}/></label>
       <details className="studio-disclosure"><summary>Chỉnh phát âm{scene.speechText?' · đã tùy chỉnh':''}</summary>
-        <p className="discovery-help">Viết cách đọc tên riêng, chữ viết tắt hoặc thêm dấu câu để ngắt nghỉ. Chữ trên video giữ nguyên; kiểm tra số liệu ở cả hai ô.</p>
+        <p className="discovery-help">Không bắt buộc: EmBe đã tự xử lý cách đọc. Chỉ dùng nếu bạn muốn cách đọc riêng; chữ trên video giữ nguyên.</p>
         <label className="studio-search">Lời đọc riêng cảnh {index+1}<textarea rows={3} maxLength={240} value={scene.speechText??''} placeholder={scene.text} onChange={e=>edit({...doc,scenes:doc.scenes.map((s,i)=>i===index?{...s,speechText:e.target.value}:s)})}/></label>
         <p className="discovery-help">Để trống để đọc theo nội dung cảnh. Tối đa 240 ký tự/cảnh, 1.100 ký tự lời đọc cả video.</p>
       </details>
@@ -99,13 +119,15 @@ export function StudioEditor({projectId,template,ideaId}:{projectId?:string;temp
       <button className="discovery-button" disabled={doc.sources.length===6} onClick={()=>edit({...doc,sources:[...doc.sources,{title:'',url:''}]})}>Thêm nguồn</button>
     </details>
     </fieldset>
-    <div className="studio-editor-save"><button className="discovery-button" disabled={busy||!dirty} onClick={()=>void save()}>{busy?'Đang xử lý…':dirty?'Lưu bản nháp':'Đã lưu'}</button><button className="discovery-button" disabled={busy} onClick={()=>void save(true)}>Lưu thành bản riêng</button></div>
+    <div className="studio-editor-save"><button className="discovery-button" disabled={busy||saving||!dirty} onClick={()=>void save()}>{saving?'Đang tự lưu…':busy?'Đang xử lý…':dirty?'Lưu bản nháp':'Đã lưu'}</button><button className="discovery-button" disabled={busy||saving} onClick={()=>void save(true)}>Lưu thành bản riêng</button></div>
     <p role="status" className="discovery-status">{message}</p>
     {saved&&<section className="studio-render-panel" aria-label="Dựng video">
       <h2>Dựng & chia sẻ</h2><p className="discovery-help">{workerText(seen)}</p>
       <Link className="studio-back" href={`/studio/duyet-dang?du-an=${id}`}>Chuẩn bị duyệt chuyên môn & đăng →</Link>
-      {dirty?<p>Lưu thay đổi trước khi dựng để video khớp đúng kịch bản.</p>:<label className="studio-review-check"><input type="checkbox" checked={ack} onChange={e=>setAck(e.target.checked)}/>Tôi đã đọc bản nháp và nguồn. Video vẫn cần được rà soát chuyên môn trước khi đăng.</label>}
-      <div className="discovery-platforms"><button disabled={busy||dirty||!ack||!readyToRender(doc)||!!active||latest?.status==='completed'} onClick={()=>void action('render')}>{latest?.status==='failed'?'Thử dựng lại':'Dựng video có giọng Việt'}</button>{active&&<button disabled={busy} onClick={()=>void action('cancel')}>Hủy yêu cầu</button>}<button onClick={()=>void refreshStatus()}>Cập nhật tiến độ</button></div>
+      <p className="discovery-help">Video là bản nháp riêng, chưa duyệt chuyên môn và không tự đăng mạng xã hội.</p>
+      <label className="studio-review-check"><input type="checkbox" checked={doc.autoRender!==false} onChange={e=>edit({...doc,autoRender:e.target.checked})}/>Tự dựng khi nội dung đã lưu đầy đủ</label>
+      {dirty&&<p className="discovery-help">{saving?'Đang tự lưu nội dung mới…':'Đang giữ thay đổi; chỉ bản đã lưu mới được dựng.'}</p>}
+      <div className="discovery-platforms">{(!doc.autoRender||latest?.status==='failed'||latest?.status==='cancelled')&&<button disabled={busy||saving||dirty||!readyToRender(doc)||!!active||latest?.status==='completed'} onClick={()=>void action('render')}>{latest?.status==='failed'||latest?.status==='cancelled'?'Thử dựng lại':'Dựng video có giọng Việt'}</button>}{active&&<button disabled={busy} onClick={()=>void action('cancel')}>Hủy yêu cầu</button>}<button onClick={()=>void refreshStatus()}>Cập nhật tiến độ</button></div>
       {!readyToRender(doc)&&<p className="discovery-help">Cần điền đủ từng cảnh và thêm nguồn trong “Caption & nguồn đối chiếu”.</p>}
       {renders.map(r=><article className="studio-render-result" key={r.id}><p><strong>{renderLabels[r.status]}</strong> · phiên bản {r.revision}{r.status==='rendering'?` · ${r.progress}%`:''}</p>{r.error&&<p role="alert">{renderErrors[r.error]||'Chưa dựng được. Hãy thử lại sau.'}</p>}
         {r.status==='completed'&&<><p className="discovery-help">{r.output?.duration?.toFixed(1)} giây · có giọng đọc AI{r.revision!==saved.revision?' · bản cũ, chưa gồm thay đổi mới':''}</p><video className="studio-player" controls playsInline preload="metadata" poster={`/api/studio/renders/${r.id}/poster`} src={`/api/studio/renders/${r.id}/video`} aria-label={`Video phiên bản ${r.revision}`}/><StudioFileShare url={`/api/studio/renders/${r.id}/video`} title={doc.title} filename={`embe-${r.id}.mp4`}/><div className="discovery-platforms"><a href={`/api/studio/renders/${r.id}/script`}>Kịch bản đúng bản video</a><a href={`/api/studio/renders/${r.id}/subtitles`}>Tải phụ đề</a></div></>}
