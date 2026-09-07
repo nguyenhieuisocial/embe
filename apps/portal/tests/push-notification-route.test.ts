@@ -12,6 +12,7 @@ import * as configRoute from "../src/app/api/notifications/config/route";
 import * as subscriptionRoute from "../src/app/api/notifications/subscriptions/route";
 import * as dispatchRoute from "../src/app/api/notifications/dispatch/route";
 import * as activityRoute from "../src/app/api/notifications/activity/route";
+import * as previewRoute from "../src/app/api/notifications/preview/route";
 import { familyActivityKind } from "../src/lib/family-activity-notification";
 
 const originalEnvironment = { ...process.env };
@@ -98,8 +99,7 @@ describe("private family push routes", () => {
       body: "Nhật ký bữa ăn có thông tin mới.", url: "/me-bau/bua-an",
       tag: "activity:33333333-3333-4333-8333-333333333333"
     };
-    rpc.mockResolvedValueOnce({ data: true, error: null })
-      .mockResolvedValueOnce({ data: 1, error: null })
+    rpc.mockResolvedValueOnce({ data: 1, error: null })
       .mockResolvedValueOnce({ data: [notification], error: null })
       .mockResolvedValueOnce({ data: null, error: null });
     sendNotification.mockResolvedValueOnce({ statusCode: 201 });
@@ -114,17 +114,14 @@ describe("private family push routes", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ queued: 1, sent: 1, failed: 0 });
-    expect(rpc).toHaveBeenNthCalledWith(1, "embe_record_family_activity", {
+    expect(rpc).toHaveBeenNthCalledWith(1, "embe_publish_family_activity_v2", {
       p_event_id: "33333333-3333-4333-8333-333333333333",
       p_source_device_id: "44444444-4444-4444-8444-444444444444",
-      p_activity_kind: "meal"
-    });
-    expect(rpc).toHaveBeenNthCalledWith(2, "embe_enqueue_family_activity", {
-      p_event_id: "33333333-3333-4333-8333-333333333333",
       p_source_endpoint: "https://push.example.test/device/1",
-      p_activity_kind: "meal"
+      p_activity_kind: "meal", p_action: "updated", p_subject: "bữa ăn", p_target_url: "/me-bau/bua-an",
+      p_resource_type: null, p_resource_id: null
     });
-    expect(rpc).toHaveBeenNthCalledWith(3, "embe_claim_family_activity", {
+    expect(rpc).toHaveBeenNthCalledWith(2, "embe_claim_family_activity", {
       p_event_id: "33333333-3333-4333-8333-333333333333", p_limit: 20
     });
     expect(sendNotification.mock.calls[0][1]).toContain("Nhật ký bữa ăn có thông tin mới.");
@@ -134,7 +131,7 @@ describe("private family push routes", () => {
   it("returns recent activity from the other phone even when push is unavailable", async () => {
     rpc.mockResolvedValueOnce({ data: [{
       event_id: "33333333-3333-4333-8333-333333333333",
-      activity_kind: "meal", title: "Nhà mình vừa cập nhật",
+      activity_kind: "medical", title: "Mẹ Ngân đã cập nhật lịch khám", body: "Khám định kỳ · 08:30 09/09/2026 · BV Mẫu",
       target_url: "/me-bau/bua-an", created_at: "2026-09-02T15:00:00Z"
     }], error: null });
 
@@ -145,10 +142,10 @@ describe("private family push routes", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ activities: [{
       id: "33333333-3333-4333-8333-333333333333",
-      kind: "meal", title: "Nhà mình vừa cập nhật",
+      kind: "medical", title: "Mẹ Ngân đã cập nhật lịch khám", body: "Khám định kỳ · 08:30 09/09/2026 · BV Mẫu",
       url: "/me-bau/bua-an", createdAt: "2026-09-02T15:00:00Z"
     }] });
-    expect(rpc).toHaveBeenCalledWith("embe_list_family_activity", {
+    expect(rpc).toHaveBeenCalledWith("embe_list_family_activity_v2", {
       p_device_id: "44444444-4444-4444-8444-444444444444",
       p_after: "2026-09-02T14:00:00.000Z", p_limit: 10
     });
@@ -167,6 +164,19 @@ describe("private family push routes", () => {
     }));
     expect(unrelated.status).toBe(204);
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("reads and changes only the current phone's preview without sending a push", async () => {
+    const url = "https://embe.hieu.asia/api/notifications/preview";
+    rpc.mockResolvedValue({ data: { detailPreview: false }, error: null });
+    expect((await previewRoute.POST(request(url, "POST", { endpoint: "https://push.example.test/device/1" }, false))).status).toBe(401);
+    expect((await previewRoute.PATCH(request(url, "PATCH", { endpoint: "https://push.example.test/device/1", detailPreview: "true" }))).status).toBe(400);
+    expect(await (await previewRoute.POST(request(url, "POST", { endpoint: "https://push.example.test/device/1" }))).json()).toEqual({ detailPreview: false });
+    expect(rpc).toHaveBeenLastCalledWith("embe_push_preview", { p_endpoint: "https://push.example.test/device/1", p_enabled: null });
+    rpc.mockResolvedValueOnce({ data: { detailPreview: true }, error: null });
+    expect(await (await previewRoute.PATCH(request(url, "PATCH", { endpoint: "https://push.example.test/device/1", detailPreview: true }))).json()).toEqual({ detailPreview: true });
+    expect(rpc).toHaveBeenLastCalledWith("embe_push_preview", { p_endpoint: "https://push.example.test/device/1", p_enabled: true });
+    expect(sendNotification).not.toHaveBeenCalled();
   });
 
   it("covers family updates but ignores technical API operations", () => {

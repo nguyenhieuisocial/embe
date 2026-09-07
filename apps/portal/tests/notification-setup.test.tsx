@@ -33,6 +33,7 @@ describe("family notification setup", () => {
     vi.stubGlobal("Notification", { permission: "granted" });
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ roles: { mother: true, father: true }, enabledDevices: 2 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ detailPreview: false }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, testSent: true }), { status: 201 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -58,11 +59,33 @@ describe("family notification setup", () => {
     vi.stubGlobal("Notification", { permission: "granted" });
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ roles: { mother: true, father: false }, enabledDevices: 1 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ detailPreview: false }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, testSent: false }), { status: 201 })));
 
     render(<NotificationSetup role="mother" />);
     fireEvent.click(await screen.findByRole("button", { name: "Gửi thử" }));
 
     expect(await screen.findByText("Chưa nhận được thông báo thử. Hãy kiểm tra quyền thông báo của EmBe trên iPhone.")).toBeInTheDocument();
+  });
+
+  it("keeps preview off until the server confirms and preserves it on save failure", async () => {
+    const subscription = { endpoint: "https://push.example/device" };
+    Object.defineProperty(navigator, "serviceWorker", { configurable: true,
+      value: { ready: Promise.resolve({ pushManager: { getSubscription: vi.fn().mockResolvedValue(subscription) } }) } });
+    vi.stubGlobal("PushManager", class {}); vi.stubGlobal("Notification", { permission: "granted" });
+    const fetchMock = vi.fn().mockImplementation(async (path) => new Response(JSON.stringify(
+      path.endsWith("/preview") ? { detailPreview: false } : { roles: {} }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<NotificationSetup role="mother" />);
+    const toggle = await screen.findByRole("switch");
+    await waitFor(() => expect(toggle).not.toBeDisabled());
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ detailPreview: true }), { status: 200 }));
+    fireEvent.click(toggle);
+    await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "true"));
+    fetchMock.mockResolvedValueOnce(new Response("{}", { status: 503 }));
+    fireEvent.click(toggle);
+    expect(await screen.findByText(/Chưa xác nhận được cài đặt/)).toBeInTheDocument();
+    expect(toggle).toHaveAttribute("aria-checked", "true");
   });
 });

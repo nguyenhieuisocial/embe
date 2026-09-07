@@ -17,7 +17,8 @@ if (health.version !== expected) { console.log(JSON.stringify({ pending: true, v
 const output = resolve('data/medical-recognition-verification'); await mkdir(output, { recursive: true });
 const result = { version: expected, kind, format, syntheticOnly: true, browser: 'isolated Cent', widths: [], records: [] };
 const browser = await chromium.launch({ headless: true, executablePath: 'C:/Users/Admin/AppData/Local/CentBrowser/Application/chrome.exe' });
-const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
+// Synthetic document checks must not alert real family phones through the SW.
+const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
 await context.addInitScript(() => localStorage.setItem('embe:access-guide-dismissed-at', String(Date.now())));
 const page = await context.newPage(); let loggedIn = false; let documentId;
 const json = (path, method, data) => context.request.fetch(`${origin}${path}`, { method, headers: { origin, 'content-type': 'application/json' }, data });

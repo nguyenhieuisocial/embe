@@ -39,10 +39,17 @@ function familyActivityKind(pathname) {
   return null;
 }
 
-async function reportFamilyActivity(pathname, kind) {
+async function reportFamilyActivity(pathname, kind, method, responseStatus, resourceId) {
+  if (!/^(POST|PUT|PATCH|DELETE)$/.test(method)) return;
+  if (kind === "medical" && (/\/records\/[^/]+\/documents$/.test(pathname)
+    || /\/medication-scan$/.test(pathname) || /\/scan$/.test(pathname) && method !== "PATCH")) return;
   const now = Date.now();
-  if (now - (recentActivities.get(kind) || 0) < ACTIVITY_DEDUP_MS) return;
-  recentActivities.set(kind, now);
+  // Different records/actions must not suppress each other. Root writes without
+  // an identifier cannot safely be considered duplicate updates.
+  const key = resourceId || /[0-9a-f-]{36}/i.test(pathname) ? `${method}:${pathname}:${resourceId || ""}` : crypto.randomUUID();
+  for (const [oldKey, at] of recentActivities) if (now - at >= ACTIVITY_DEDUP_MS) recentActivities.delete(oldKey);
+  if (now - (recentActivities.get(key) || 0) < ACTIVITY_DEDUP_MS) return;
+  recentActivities.set(key, now);
   try {
     const deviceId = await readSourceDeviceId();
     if (!deviceId) throw new Error("device context unavailable");
@@ -56,12 +63,12 @@ async function reportFamilyActivity(pathname, kind) {
         sourceDeviceId: deviceId,
         sourceEndpoint: subscription?.endpoint ?? null,
         pathname,
-        method: "POST"
+        method, responseStatus, resourceId
       })
     });
     if (!response.ok) throw new Error("activity notification unavailable");
   } catch {
-    if (recentActivities.get(kind) === now) recentActivities.delete(kind);
+    if (recentActivities.get(key) === now) recentActivities.delete(key);
   }
 }
 
@@ -95,7 +102,8 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(responsePromise);
     event.waitUntil(responsePromise.then((response) => response.ok
       && (url.pathname !== "/api/meals" || response.headers.get("x-embe-activity-ready") === "1")
-      ? reportFamilyActivity(url.pathname, kind)
+      ? reportFamilyActivity(url.pathname, kind, request.method, response.status,
+        DEVICE_ID_PATTERN.test(response.headers.get("x-embe-activity-resource") || "") ? response.headers.get("x-embe-activity-resource") : null)
       : undefined).catch(() => undefined));
     return;
   }
@@ -149,7 +157,8 @@ self.addEventListener("push", (event) => {
       data: { url }
     }),
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => Promise.all(
-      windows.map((client) => client.postMessage({ type: "EMBE_FAMILY_ACTIVITY", title, url }))
+      windows.map((client) => client.postMessage({ type: "EMBE_FAMILY_ACTIVITY", title, body, url,
+        id: typeof message.tag === "string" && message.tag.startsWith("activity:") ? message.tag.slice(9) : null }))
     ))
   ]));
 });

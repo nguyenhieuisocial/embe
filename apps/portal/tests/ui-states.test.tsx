@@ -104,7 +104,7 @@ describe("offline and failure states", () => {
       const url = String(input);
       if (url.startsWith("/api/notifications/activity")) return new Response(JSON.stringify({ activities: [{
         id: "33333333-3333-4333-8333-333333333333", kind: "meal",
-        title: "Nhà mình vừa cập nhật", url: "/me-bau#bua-an", createdAt: new Date().toISOString()
+        title: "Mẹ Ngân đã cập nhật phiếu siêu âm", body: "Lần khám mẫu · 08:30 09/09/2026 · BV Mẫu", url: "/me-bau/ho-so#record-33333333-3333-4333-8333-333333333333", createdAt: new Date().toISOString()
       }] }), { status: 200 });
       return new Response(JSON.stringify({ status: "ok", version: "development" }), { status: 200 });
     });
@@ -113,13 +113,15 @@ describe("offline and failure states", () => {
     render(<PwaRuntime />);
 
     const action = await screen.findByRole("link", { name: "Mở" });
+    expect(screen.getByRole("status")).toHaveTextContent("Lần khám mẫu · 08:30 09/09/2026 · BV Mẫu");
+    expect(action).toHaveAttribute("href", "/me-bau/ho-so#record-33333333-3333-4333-8333-333333333333");
     expect(clearPrivateGetCache).toHaveBeenCalled();
     expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "EMBE_DEVICE_CONTEXT" }));
     const contextMessages = postMessage.mock.calls.length;
     serviceWorker.dispatchEvent(new Event("controllerchange"));
     expect(postMessage.mock.calls.length).toBeGreaterThan(contextMessages);
 
-    fireEvent.click(action);
+    fireEvent.click(screen.getByRole("button", { name: "Ẩn thông báo này" }));
     window.dispatchEvent(new Event("focus"));
     await waitFor(() => expect(fetchMock.mock.calls.filter(([input]) =>
       String(input).startsWith("/api/notifications/activity")).length).toBeGreaterThanOrEqual(2));

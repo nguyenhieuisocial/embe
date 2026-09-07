@@ -22,16 +22,13 @@ export async function POST(request: Request): Promise<Response> {
 
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
-  const recorded = await store.rpc("embe_record_family_activity", {
+  const queued = await store.rpc("embe_publish_family_activity_v2", {
     p_event_id: input.eventId,
     p_source_device_id: input.sourceDeviceId,
-    p_activity_kind: input.kind
-  });
-  if (recorded.error) return privateReply({ error: "temporarily_unavailable" }, 503);
-  const queued = await store.rpc("embe_enqueue_family_activity", {
-    p_event_id: input.eventId,
     p_source_endpoint: input.sourceEndpoint,
-    p_activity_kind: input.kind
+    p_activity_kind: input.kind,
+    p_action: input.action, p_subject: input.subject, p_target_url: input.url,
+    p_resource_type: input.resourceType, p_resource_id: input.resourceId
   });
   if (queued.error) return privateReply({ error: "temporarily_unavailable" }, 503);
   const claimed = await store.rpc("embe_claim_family_activity", { p_event_id: input.eventId, p_limit: 20 });
@@ -57,7 +54,7 @@ export async function GET(request: Request): Promise<Response> {
   }
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
-  const value = await store.rpc("embe_list_family_activity", {
+  const value = await store.rpc("embe_list_family_activity_v2", {
     p_device_id: deviceId, p_after: parsedAfter.toISOString(), p_limit: 10
   });
   if (value.error || !Array.isArray(value.data)) return privateReply({ error: "temporarily_unavailable" }, 503);
@@ -65,7 +62,7 @@ export async function GET(request: Request): Promise<Response> {
     isUuidV4(row.event_id) && typeof row.activity_kind === "string"
       && typeof row.title === "string" && typeof row.target_url === "string"
       && typeof row.created_at === "string"
-      ? [{ id: row.event_id, kind: row.activity_kind, title: row.title, url: row.target_url, createdAt: row.created_at }]
+      ? [{ id: row.event_id, kind: row.activity_kind, title: row.title, body: typeof row.body === "string" ? row.body : "", url: row.target_url, createdAt: row.created_at }]
       : []);
   return privateReply({ activities }, 200);
 }

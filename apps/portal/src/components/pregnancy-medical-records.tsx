@@ -79,6 +79,22 @@ export default function PregnancyMedicalRecords() {
   const saveLock = useRef(false);
   const recordId = useRef<string | null>(null);
   const documentAttempts = useRef(new Map<File, { id: string; result?: { documentId: string; mimeType: string } }>());
+  const openedRecordHash = useRef("");
+
+  useEffect(() => {
+    const openLinkedRecord = () => {
+      const hash = window.location.hash;
+      if (!/^#record-[0-9a-f-]{36}$/i.test(hash) || openedRecordHash.current === hash) return;
+      if (!records.some(record => `#record-${record.id}` === hash)) return;
+      setFilter("all");
+      requestAnimationFrame(() => {
+        const target = document.getElementById(hash.slice(1));
+        if (target) { target.scrollIntoView?.({ block: "center" }); openedRecordHash.current = hash; }
+      });
+    };
+    openLinkedRecord(); window.addEventListener("hashchange", openLinkedRecord);
+    return () => window.removeEventListener("hashchange", openLinkedRecord);
+  }, [records]);
 
   async function load() {
     try {

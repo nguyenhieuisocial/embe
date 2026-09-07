@@ -65,6 +65,8 @@ export async function POST(request: Request): Promise<Response> {
       p_measurements: input.measurements, p_medicines: input.medicines
     });
     if (result.error || !isUuidV4(result.data)) throw new Error("save unavailable");
-    return privateReply({ id: result.data }, input.id ? 200 : 201);
+    const response = privateReply({ id: result.data }, input.id ? 200 : 201);
+    response.headers.set("x-embe-activity-resource", result.data);
+    return response;
   } catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
 }

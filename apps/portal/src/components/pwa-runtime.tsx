@@ -26,7 +26,7 @@ function localDeviceId(storage: Storage): string {
 export default function PwaRuntime({ version = "development" }: { version?: string }) {
   const [connection, setConnection] = useState<Connection>("online");
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [familyActivity, setFamilyActivity] = useState<{ id: string | null; title: string; url: string } | null>(null);
+  const [familyActivity, setFamilyActivity] = useState<{ id: string | null; title: string; body: string; url: string; createdAt?: string } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -85,11 +85,14 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
     const checkFamilyActivity = async () => {
       if (!navigator.onLine || document.visibilityState === "hidden") return;
       const fallback = new Date(Date.now() - 60_000).toISOString();
-      const after = localStorage.getItem(ACTIVITY_SINCE_KEY) ?? fallback;
+      const storedAfter = localStorage.getItem(ACTIVITY_SINCE_KEY);
+      const parsedAfter = storedAfter ? Date.parse(storedAfter) : NaN;
+      const after = Number.isFinite(parsedAfter) && parsedAfter <= Date.now()
+        ? new Date(Math.max(parsedAfter, Date.now() - 6 * 86_400_000)).toISOString() : fallback;
       try {
         const response = await fetch(`/api/notifications/activity?deviceId=${encodeURIComponent(deviceId)}&after=${encodeURIComponent(after)}`, { cache: "no-store" });
         if (!response.ok) return;
-        const payload = await response.json() as { activities?: Array<{ id?: unknown; title?: unknown; url?: unknown; createdAt?: unknown }> };
+        const payload = await response.json() as { activities?: Array<{ id?: unknown; title?: unknown; body?: unknown; url?: unknown; createdAt?: unknown }> };
         const activities = Array.isArray(payload.activities) ? payload.activities : [];
         const latest = activities.at(-1);
         const latestAt = typeof latest?.createdAt === "string" ? latest.createdAt : new Date().toISOString();
@@ -98,7 +101,9 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
             && typeof latest.title === "string" && typeof latest.url === "string"
             && latest.url.startsWith("/") && !latest.url.startsWith("//")) {
           clearPrivateGetCache();
-          setFamilyActivity({ id: latest.id, title: latest.title.slice(0, 80), url: latest.url });
+          if (active) setFamilyActivity({ id: latest.id, title: latest.title.slice(0, 80),
+            body: typeof latest.body === "string" ? latest.body.slice(0, 240) : "Mở để xem nội dung vừa cập nhật.",
+            url: latest.url, createdAt: typeof latest.createdAt === "string" ? latest.createdAt : undefined });
         }
       } catch {
         // Push vẫn là đường chính; lần kiểm tra khi app mở sẽ thử lại sau.
@@ -121,7 +126,12 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
       clearPrivateGetCache();
       const title = typeof event.data.title === "string" ? event.data.title.slice(0, 80) : "Nhà mình vừa cập nhật";
       const url = typeof event.data.url === "string" && event.data.url.startsWith("/") && !event.data.url.startsWith("//") ? event.data.url : "/";
-      setFamilyActivity({ id: null, title, url });
+      const id = typeof event.data.id === "string" ? event.data.id : null;
+      if (id && id === localStorage.getItem(DISMISSED_ACTIVITY_KEY)) return;
+      const body = typeof event.data.body === "string" ? event.data.body.slice(0, 240) : "Mở để xem nội dung vừa cập nhật.";
+      setFamilyActivity({ id, title, body, url });
+      // Fetch the authenticated detail; never put private detail into public SW caches.
+      if (id) void checkFamilyActivity();
     };
     const updateTimer = window.setInterval(() => { void checkRelease(); }, UPDATE_CHECK_MS);
     const activityTimer = window.setInterval(() => { void checkFamilyActivity(); }, ACTIVITY_CHECK_MS);
@@ -162,12 +172,17 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
 
   if (familyActivity) return (
     <div className="app-update-banner" role="status" aria-live="polite">
-      <span><strong>{familyActivity.title}</strong><small>Có dữ liệu mới từ điện thoại còn lại.</small></span>
+      <span><strong>{familyActivity.title}</strong><small>{familyActivity.body}</small>
+        {familyActivity.createdAt && Number.isFinite(Date.parse(familyActivity.createdAt)) ? <small><time dateTime={familyActivity.createdAt}>{new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(familyActivity.createdAt))}</time></small> : null}</span>
       <Link href={familyActivity.url} onClick={() => {
         clearPrivateGetCache();
         if (familyActivity.id) localStorage.setItem(DISMISSED_ACTIVITY_KEY, familyActivity.id);
         setFamilyActivity(null);
       }}>Mở</Link>
+      <button className="activity-dismiss" type="button" aria-label="Ẩn thông báo này" onClick={() => {
+        if (familyActivity.id) localStorage.setItem(DISMISSED_ACTIVITY_KEY, familyActivity.id);
+        setFamilyActivity(null);
+      }}>×</button>
     </div>
   );
 

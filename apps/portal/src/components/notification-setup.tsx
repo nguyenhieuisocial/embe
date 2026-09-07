@@ -24,6 +24,9 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
   const [state, setState] = useState<State>("checking");
   const [testState, setTestState] = useState<TestState>("idle");
   const [notifyAt, setNotifyAt] = useState("08:00");
+  const [detailPreview, setDetailPreview] = useState(false);
+  const [previewKnown, setPreviewKnown] = useState(false);
+  const [previewState, setPreviewState] = useState<"loading" | "idle" | "saving" | "error">("loading");
   const [familyReady, setFamilyReady] = useState<{ mother: boolean; father: boolean } | null>(null);
 
   async function refreshFamilyReady() {
@@ -43,9 +46,32 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
     if (!available()) { setState("unsupported"); return; }
     if (Notification.permission === "denied") { setState("blocked"); return; }
     void navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription())
-      .then((subscription) => setState(subscription ? "on" : "off"))
+      .then(async (subscription) => { setState(subscription ? "on" : "off"); if (subscription) await loadPreview(subscription); })
       .catch(() => setState("off"));
   }, []);
+
+  async function loadPreview(subscription: PushSubscription) {
+    try {
+      const response = await fetch("/api/notifications/preview", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint }) });
+      const data = await response.json();
+      if (!response.ok || typeof data.detailPreview !== "boolean") throw new Error();
+      setDetailPreview(data.detailPreview); setPreviewKnown(true); setPreviewState("idle");
+    } catch { setPreviewState("error"); }
+  }
+
+  async function changePreview() {
+    setPreviewState("saving");
+    try {
+      const subscription = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+      if (!subscription) throw new Error();
+      const response = await fetch("/api/notifications/preview", { method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint, detailPreview: !detailPreview }) });
+      const data = await response.json();
+      if (!response.ok || typeof data.detailPreview !== "boolean") throw new Error();
+      setDetailPreview(data.detailPreview); setPreviewState("idle");
+    } catch { setPreviewState("error"); }
+  }
 
   async function saveSubscription(subscription: PushSubscription): Promise<boolean> {
     const saved = await fetch("/api/notifications/subscriptions", {
@@ -72,6 +98,7 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
       const testSent = await saveSubscription(subscription);
       setState("on");
       setTestState(testSent ? "sent" : "failed");
+      await loadPreview(subscription);
       await refreshFamilyReady();
     } catch { setState("error"); }
   }
@@ -142,6 +169,16 @@ export default function NotificationSetup({ role }: { role: DeviceRole | null })
     {familyReady ? <div className="notification-family" aria-label="Điện thoại nhận thông báo">
       <span data-ready={familyReady.mother}>{familyReady.mother ? "Mẹ Ngân đã bật" : "Mẹ Ngân chưa bật"}</span>
       <span data-ready={familyReady.father}>{familyReady.father ? "Ba Hiếu đã bật" : "Ba Hiếu chưa bật"}</span>
+    </div> : null}
+    {state === "on" ? <div className="notification-preview">
+      <button type="button" role="switch" aria-checked={detailPreview} disabled={previewState === "loading" || previewState === "saving"}
+        onClick={() => {
+          if (previewKnown) void changePreview();
+          else { setPreviewState("loading"); void navigator.serviceWorker.ready.then(r => r.pushManager.getSubscription()).then(s => { if (s) return loadPreview(s); setPreviewState("error"); }).catch(() => setPreviewState("error")); }
+        }}>Chi tiết trên màn hình khóa · {!previewKnown ? previewState === "error" ? "Thử lại" : "Đang tải" : detailPreview ? "Bật" : "Tắt"}</button>
+      <p>Tên hồ sơ, ngày khám, cơ sở khám có thể hiện khi điện thoại đang khóa. Tắt để chỉ báo loại cập nhật; mở EmBe vẫn xem đủ chi tiết.</p>
+      {previewState === "error" ? <p role="status">Chưa xác nhận được cài đặt. Kiểm tra mạng rồi thử lại.</p> : null}
+      {previewState === "saving" ? <p role="status">Đang lưu cho điện thoại này…</p> : null}
     </div> : null}
     <label className="notification-time"><span>Giờ nhắc hằng ngày</span><input aria-label="Giờ nhắc hằng ngày" disabled={state === "busy" || state === "checking"} type="time" value={notifyAt} onChange={(event) => void changeNotifyAt(event.target.value)} /></label>
   </div>;
