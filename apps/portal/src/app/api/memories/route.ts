@@ -1,6 +1,9 @@
 import { getMediaMemories } from "../../../lib/media";
 import { dayRange } from "../../../lib/calendar";
 import { verifySessionCookie } from "../../../lib/portal-auth";
+import { memberAuthorization } from "../../../lib/family-members-server";
+import { UUID } from "../../../lib/family-members";
+import { privateReply } from "../../../lib/photo-upload-server";
 
 function cookieValue(header: string | null, name: string): string | undefined {
   return header?.split(";").map((part) => part.trim().split("="))
@@ -24,6 +27,13 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const url = new URL(request.url);
+  if (url.searchParams.has("ids")) {
+    const denied = await memberAuthorization(request); if (denied) return denied;
+    const ids = url.searchParams.get("ids")!.split(",");
+    if (!ids.length || ids.length > 12 || new Set(ids).size !== ids.length || ids.some(id => !UUID.test(id))) return privateReply({ error: "invalid_request" }, 400);
+    try { return privateReply({ memories: await getMediaMemories({ ids, limit: 12, strict: true }), hasMore: false }, 200); }
+    catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
+  }
   const limit = Math.max(1, integerParam(url.searchParams.get("limit"), 24, 60));
   const offset = integerParam(url.searchParams.get("offset"), 0, 10_000);
   const date = url.searchParams.get("date");
@@ -41,8 +51,8 @@ export async function GET(request: Request): Promise<Response> {
       headers: { "Cache-Control": "private, no-store" }
     });
   }
-  const memories = await getMediaMemories({ ...(album ? { album } : {}), limit, offset, ...range });
-  return Response.json({ memories, hasMore: memories.length === limit }, {
-    headers: { "Cache-Control": "private, no-store" }
-  });
+  try {
+    const memories = await getMediaMemories({ ...(album ? { album } : {}), limit, offset, ...range, strict: true });
+    return privateReply({ memories, hasMore: memories.length === limit }, 200);
+  } catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
 }

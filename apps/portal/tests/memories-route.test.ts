@@ -31,7 +31,7 @@ describe("private paginated memories", () => {
     const response = await GET(request);
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(getMediaMemories).toHaveBeenCalledWith({ limit: 24, offset: 48 });
+    expect(getMediaMemories).toHaveBeenCalledWith({ limit: 24, offset: 48, strict: true });
   });
 
   it("filters one Vietnamese calendar day and rejects malformed dates", async () => {
@@ -46,6 +46,7 @@ describe("private paginated memories", () => {
       from: "2026-08-30T00:00:00+07:00",
       limit: 24,
       offset: 0,
+      strict: true,
       to: "2026-08-31T00:00:00+07:00"
     });
 
@@ -61,6 +62,6 @@ describe("private paginated memories", () => {
     const response = await GET(new Request("https://embe.hieu.asia/api/memories?album=da-lat-2025", { headers: { cookie } }));
 
     expect(response.status).toBe(200);
-    expect(getMediaMemories).toHaveBeenCalledWith({ album: "da-lat-2025", limit: 24, offset: 0 });
+    expect(getMediaMemories).toHaveBeenCalledWith({ album: "da-lat-2025", limit: 24, offset: 0, strict: true });
   });
 });

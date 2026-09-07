@@ -97,6 +97,7 @@ export default async function MemoriesPage({
         {dateHeading ? <p className="intro">{dateHeading}</p> : null}
       </section>
       <PhotoComposer />
+      <Link className="btn btn-quiet" href="/ky-niem/thai-ky">Ảnh bụng bầu theo tuần & thiệp kỷ niệm</Link>
       {selectedDate ? (
         <section className="selected-date-card" aria-label="Ngày đang xem">
           <div>

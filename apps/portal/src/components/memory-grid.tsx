@@ -162,7 +162,7 @@ function DayAlbumDetail({ memories, onOpen }: { memories: MediaMemory[]; onOpen:
   );
 }
 
-function PhotoViewer({ memory, index, total, onClose, onMove, onMetadataSaved }: {
+export function PhotoViewer({ memory, index, total, onClose, onMove, onMetadataSaved }: {
   memory: MediaMemory;
   index: number;
   total: number;

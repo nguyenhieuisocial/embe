@@ -85,10 +85,11 @@ export function parseMemory(raw: unknown): MediaMemory | null {
 }
 
 export async function getMediaMemories(
-  options: { album?: string; from?: string; limit?: number; offset?: number; to?: string } = {}
+  options: { album?: string; from?: string; limit?: number; offset?: number; to?: string; ids?: string[]; strict?: boolean } = {}
 ): Promise<MediaMemory[]> {
   const config = credentials();
-  if (!config) return [];
+  if (!config) { if (options.strict) throw new Error("media_unavailable"); return []; }
+  if (options.ids && (!options.ids.length || options.ids.length > 60 || options.ids.some(id => !UUID.test(id)))) throw new Error("invalid_media_ids");
   const limit = Number.isInteger(options.limit) && options.limit! >= 1 && options.limit! <= 60
     ? options.limit!
     : 60;
@@ -104,19 +105,22 @@ export async function getMediaMemories(
   if (options.from) query.append("event_at", `gte.${options.from}`);
   if (options.to) query.append("event_at", `lt.${options.to}`);
   if (options.album && ALBUM_KEY.test(options.album) && options.album.length <= 64) query.append("album_key", `eq.${options.album}`);
+  if (options.ids) query.append("id", `in.(${options.ids.join(",")})`);
   try {
     const response = await fetch(`${config.baseUrl}/rest/v1/embe_media_item?${query}`, {
       cache: "no-store",
+      signal: AbortSignal.timeout(8000),
       headers: { Accept: "application/json", apikey: config.secretKey }
     });
-    if (!response.ok) return [];
+    if (!response.ok) throw new Error("media_unavailable");
     const payload: unknown = await response.json();
-    if (!Array.isArray(payload)) return [];
+    if (!Array.isArray(payload)) throw new Error("invalid_media_response");
     return payload.flatMap((raw): MediaMemory[] => {
       const memory = parseMemory(raw);
       return memory ? [memory] : [];
     });
-  } catch {
+  } catch (error) {
+    if (options.strict) throw error;
     return [];
   }
 }

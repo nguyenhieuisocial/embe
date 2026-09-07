@@ -1,6 +1,7 @@
 import { UUID, validMemberRecord } from "../../../../../../lib/family-members";
 import { memberAuthorization, memberBody, memberFailure, memberRpc } from "../../../../../../lib/family-members-server";
 import { privateReply } from "../../../../../../lib/photo-upload-server";
+import { getMediaMemories } from "../../../../../../lib/media";
 
 type Context = { params: Promise<{ id: string }> };
 export async function GET(request: Request, context: Context): Promise<Response> {
@@ -10,7 +11,8 @@ export async function GET(request: Request, context: Context): Promise<Response>
   const offsetText = query.get("offset") ?? "0";
   const offset = Number(offsetText);
   if (!UUID.test(id) || !/^\d+$/.test(offsetText) || offset > 1000000 || (query.has("deleted") && !["true", "false"].includes(query.get("deleted")!))) return memberFailure(400);
-  const result = await memberRpc("embe_list_member_records", { p_member_id: id, p_offset: offset, p_deleted: query.get("deleted") === "true" });
+  if (query.has("collection") && query.get("collection") !== "pregnancy") return memberFailure(400);
+  const result = await memberRpc(query.get("collection") === "pregnancy" ? "embe_list_pregnancy_memories" : "embe_list_member_records", { p_member_id: id, p_offset: offset, p_deleted: query.get("deleted") === "true" });
   if (result.status !== 200) return memberFailure(result.status);
   const records = (result.data as { records?: unknown })?.records;
   const latest = (result.data as { latest?: unknown })?.latest;
@@ -27,6 +29,12 @@ export async function POST(request: Request, context: Context): Promise<Response
     return privateReply({ error: "invalid_request" }, error instanceof Error && error.message === "too_large" ? 413 : 400);
   }
   if (!validMemberRecord(value) || value.memberId !== id) return memberFailure(400);
+  if (value.pregnancyMemory && !value.deleted) {
+    try {
+      const media = await getMediaMemories({ ids: value.pregnancyMemory.mediaIds, limit: 12, strict: true });
+      if (media.length !== value.pregnancyMemory.mediaIds.length || !value.pregnancyMemory.mediaIds.every(id => media.some(photo => photo.id === id))) return privateReply({ error: "photo_unavailable" }, 409);
+    } catch { return memberFailure(503); }
+  }
   const result = await memberRpc("embe_save_member_record", { p_member_id: id, p_id: value.id, p_revision: value.revision, p_record: value });
   return result.status === 200 && validMemberRecord(result.data) && result.data.memberId === id
     ? privateReply({ record: result.data }, 200) : memberFailure(result.status === 200 ? 503 : result.status);

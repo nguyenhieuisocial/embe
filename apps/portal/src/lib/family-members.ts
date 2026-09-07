@@ -113,6 +113,7 @@ export type MemberRecord = {
   notes: string; source: string; nextDueDate: string | null;
   metric: string | null; value: number | null; secondaryValue: number | null; unit: string | null;
   measurementContext?: keyof typeof MEASUREMENT_CONTEXTS;
+  pregnancyMemory?: { dueDate: string; week: number; mediaIds: string[] };
   revision: number; deleted: boolean; updatedAt?: string;
 };
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -143,7 +144,14 @@ export function validFamilyMember(value: unknown): value is FamilyMember {
 }
 
 export function validMemberRecord(value: unknown): value is MemberRecord {
-  if (!object(value) || Object.keys(value).some(k => !["id","memberId","kind","title","occurredAt","notes","source","nextDueDate","metric","value","secondaryValue","unit","measurementContext","revision","deleted","updatedAt"].includes(k))) return false;
+  if (!object(value) || Object.keys(value).some(k => !["id","memberId","kind","title","occurredAt","notes","source","nextDueDate","metric","value","secondaryValue","unit","measurementContext","pregnancyMemory","revision","deleted","updatedAt"].includes(k))) return false;
+  if (value.pregnancyMemory !== undefined) {
+    const memory = value.pregnancyMemory;
+    if (value.kind !== "development" || !object(memory) || Object.keys(memory).some(k => !["dueDate", "week", "mediaIds"].includes(k))
+      || typeof memory.dueDate !== "string" || !parseDateKey(memory.dueDate) || !Number.isInteger(memory.week) || Number(memory.week) < 1 || Number(memory.week) > 42
+      || !Array.isArray(memory.mediaIds) || memory.mediaIds.length < 1 || memory.mediaIds.length > 12
+      || new Set(memory.mediaIds).size !== memory.mediaIds.length || memory.mediaIds.some(id => typeof id !== "string" || !UUID.test(id))) return false;
+  }
   if (value.measurementContext !== undefined && (typeof value.measurementContext !== "string" || !Object.hasOwn(MEASUREMENT_CONTEXTS, value.measurementContext))) return false;
   if (value.kind !== "measurement" && value.measurementContext !== undefined && value.measurementContext !== "unspecified") return false;
   if (!text(value.id, 36) || !UUID.test(value.id) || !text(value.memberId, 36) || !UUID.test(value.memberId)

@@ -201,7 +201,8 @@ function MemberRecords({ member, onEditing }: { member: FamilyMember; onEditing:
     {draft ? <form className="member-form member-record-editor" ref={editor} onSubmit={e => { e.preventDefault(); void save(draft); }}>
       <fieldset disabled={saving}>
         <legend>{draft.revision ? "Sửa bản ghi" : "Bản ghi mới"}</legend>
-        <label>Loại bản ghi<select value={draft.kind} onChange={e => {
+        {draft.pregnancyMemory ? <Link href="/ky-niem/thai-ky">Sửa ảnh và tuần tại Kỷ niệm thai kỳ</Link> : null}
+        <label>Loại bản ghi<select disabled={!!draft.pregnancyMemory} value={draft.kind} onChange={e => {
           const kind = e.target.value as RecordKind;
           change({ kind, measurementContext: "unspecified", metric: kind === "measurement" ? "weight" : null, value: null, secondaryValue: null,
             unit: kind === "measurement" ? "kg" : null, title: kind === "measurement" ? "Cân nặng" : "" });
