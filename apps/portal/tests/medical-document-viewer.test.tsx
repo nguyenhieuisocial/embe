@@ -40,9 +40,9 @@ describe('private medical original viewer', () => {
     expect(document.body.style.position).toBe('fixed');
     expect(fetch).toHaveBeenCalledWith(`/api/pregnancy/documents/${image.id}`, expect.objectContaining({ credentials: 'same-origin', cache: 'no-store' }));
     fireEvent.click(screen.getByRole('button', { name: 'Phóng to ảnh' }));
-    expect(screen.getByRole('img')).toHaveStyle({ transform: 'translate(0px, 0px) rotate(0deg) scale(1.5)' });
+    expect(screen.getByRole('img')).toHaveStyle({ transform: 'translate3d(0px, 0px, 0) scale(1.5)' });
     fireEvent.click(screen.getByRole('button', { name: 'Xoay ảnh' }));
-    expect(screen.getByRole('img')).toHaveStyle({ transform: 'translate(0px, 0px) rotate(90deg) scale(1)' });
+    expect(screen.getByRole('img')).toHaveStyle({ transform: 'translate3d(0px, 0px, 0) rotate(90deg) scale(1)' });
     fireEvent.click(screen.getByRole('button', { name: 'Quay lại hồ sơ' }));
     expect(back).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

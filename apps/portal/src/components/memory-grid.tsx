@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { groupByDay, groupIntoTrips } from "../lib/memory-groups";
 import type { MediaAlbum, MediaMemory } from "../lib/media";
@@ -12,6 +12,7 @@ import PhotoShareButton from "./photo-share-button";
 import PhotoDownloadButton from "./photo-download-button";
 import ViewportImage from "./viewport-image";
 import AutoLoadMore from "./auto-load-more";
+import PhotoViewerImage from "./photo-viewer-image";
 
 const PAGE_SIZE = 24;
 const REACTIONS = [
@@ -173,91 +174,13 @@ export function PhotoViewer({ memory, index, total, onClose, onMove, onMetadataS
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const dragStart = useRef<{ x: number; y: number; offsetX: number; offsetY: number; zoom: number } | null>(null);
-  const pinchStart = useRef<{ distance: number; zoom: number } | null>(null);
-  const usedPinch = useRef(false);
-  const zoomRef = useRef(1);
   const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [editing, setEditing] = useState(false);
   const [savingMetadata, setSavingMetadata] = useState(false);
   const [metadataMessage, setMetadataMessage] = useState("");
   const [capturedAt, setCapturedAt] = useState(toLocalDateTime(memory.eventAt));
   const [locationName, setLocationName] = useState(memory.placeCity ?? "");
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null | undefined>(undefined);
-
-  function applyZoom(next: number): void {
-    const value = Math.min(4, Math.max(1, Math.round(next * 100) / 100));
-    zoomRef.current = value;
-    setZoom(value);
-    if (value === 1) setOffset({ x: 0, y: 0 });
-  }
-
-  function resetZoom(): void {
-    applyZoom(1);
-    setOffset({ x: 0, y: 0 });
-  }
-
-  function boundedOffset(x: number, y: number, scale = zoomRef.current): { x: number; y: number } {
-    const stage = stageRef.current;
-    if (!stage || scale <= 1) return { x: 0, y: 0 };
-    const maxX = stage.clientWidth * (scale - 1) / 2;
-    const maxY = stage.clientHeight * (scale - 1) / 2;
-    return { x: Math.max(-maxX, Math.min(maxX, x)), y: Math.max(-maxY, Math.min(maxY, y)) };
-  }
-
-  function pointerDistance(): number {
-    const values = [...pointers.current.values()];
-    return values.length < 2 ? 0 : Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
-  }
-
-  function onPointerDown(event: PointerEvent<HTMLDivElement>): void {
-    if ((event.target as Element).closest("button")) return;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    if (pointers.current.size === 1) {
-      dragStart.current = { x: event.clientX, y: event.clientY, offsetX: offset.x, offsetY: offset.y, zoom: zoomRef.current };
-      usedPinch.current = false;
-    } else if (pointers.current.size === 2) {
-      pinchStart.current = { distance: pointerDistance(), zoom: zoomRef.current };
-      usedPinch.current = true;
-    }
-  }
-
-  function onPointerMove(event: PointerEvent<HTMLDivElement>): void {
-    if (!pointers.current.has(event.pointerId)) return;
-    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    if (pointers.current.size === 2 && pinchStart.current?.distance) {
-      applyZoom(pinchStart.current.zoom * pointerDistance() / pinchStart.current.distance);
-      return;
-    }
-    if (pointers.current.size === 1 && dragStart.current?.zoom && dragStart.current.zoom > 1) {
-      setOffset(boundedOffset(
-        dragStart.current.offsetX + event.clientX - dragStart.current.x,
-        dragStart.current.offsetY + event.clientY - dragStart.current.y
-      ));
-    }
-  }
-
-  function onPointerUp(event: PointerEvent<HTMLDivElement>): void {
-    const start = dragStart.current;
-    pointers.current.delete(event.pointerId);
-    if (start?.zoom === 1 && !usedPinch.current) {
-      const horizontal = event.clientX - start.x;
-      const vertical = event.clientY - start.y;
-      if (Math.abs(horizontal) > 48 && Math.abs(horizontal) > Math.abs(vertical)) onMove(horizontal > 0 ? -1 : 1);
-    }
-    if (pointers.current.size === 0) {
-      dragStart.current = null;
-      pinchStart.current = null;
-      usedPinch.current = false;
-    } else {
-      const remaining = [...pointers.current.values()][0];
-      dragStart.current = { x: remaining.x, y: remaining.y, offsetX: offset.x, offsetY: offset.y, zoom: zoomRef.current };
-    }
-  }
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -271,7 +194,7 @@ export function PhotoViewer({ memory, index, total, onClose, onMove, onMetadataS
   }, []);
 
   useEffect(() => {
-    resetZoom();
+    setZoom(1);
     setEditing(false);
     setCapturedAt(toLocalDateTime(memory.eventAt));
     setLocationName(memory.placeCity ?? "");
@@ -316,11 +239,6 @@ export function PhotoViewer({ memory, index, total, onClose, onMove, onMetadataS
       onClose();
       return;
     }
-    if (event.key === "ArrowLeft" && zoom === 1) onMove(-1);
-    if (event.key === "ArrowRight" && zoom === 1) onMove(1);
-    if (event.key === "+" || event.key === "=") applyZoom(zoomRef.current + .5);
-    if (event.key === "-") applyZoom(zoomRef.current - .5);
-    if (event.key === "0") resetZoom();
     if (event.key !== "Tab") return;
     const focusable = Array.from(
       dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), a[href]") ?? []
@@ -351,21 +269,8 @@ export function PhotoViewer({ memory, index, total, onClose, onMove, onMetadataS
           <button ref={closeRef} aria-label="Đóng ảnh" className="photo-viewer-close" onClick={onClose} type="button">×</button>
         </div>
       </header>
-      <div ref={stageRef} className={`photo-viewer-stage${zoom > 1 ? " is-zoomed" : ""}`}
-        onPointerCancel={onPointerUp} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt={memory.title} draggable="false" height={memory.height ?? 900} onDoubleClick={() => zoom > 1 ? resetZoom() : applyZoom(2)}
-          src={`/api/media/${memory.id}`} style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0) scale(${zoom})` }} width={memory.width ?? 1200} />
-        {total > 1 && zoom === 1 ? <>
-          <button aria-label="Ảnh trước" className="photo-viewer-prev" onClick={() => onMove(-1)} type="button">‹</button>
-          <button aria-label="Ảnh sau" className="photo-viewer-next" onClick={() => onMove(1)} type="button">›</button>
-        </> : null}
-        <div className="photo-viewer-zoom" aria-label="Điều khiển phóng to ảnh">
-          <button aria-label="Thu nhỏ ảnh" disabled={zoom === 1} onClick={() => applyZoom(zoom - .5)} type="button">−</button>
-          <button aria-label="Đặt ảnh về kích thước ban đầu" disabled={zoom === 1} onClick={resetZoom} type="button">{Math.round(zoom * 100)}%</button>
-          <button aria-label="Phóng to ảnh" disabled={zoom === 4} onClick={() => applyZoom(zoom + .5)} type="button">+</button>
-        </div>
-      </div>
+      <PhotoViewerImage key={memory.id} src={`/api/media/${memory.id}`} title={memory.title} width={memory.width ?? 1200} height={memory.height ?? 900}
+        total={total} onMove={onMove} onZoomChange={setZoom} />
       <footer>
         <div className="photo-viewer-caption"><time dateTime={memory.eventAt}>{dateLabel(memory.eventAt)}</time><strong>{memory.title}</strong><p>{memory.caption}</p></div>
         {editing ? <div className="photo-viewer-metadata">

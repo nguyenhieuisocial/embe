@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import './medical-document-viewer.css';
+import PhotoViewerImage from './photo-viewer-image';
 
 type DocumentFile = { id: string; originalFilename: string; mimeType: string };
 const HISTORY_KEY = 'embeMedicalViewer';
@@ -130,7 +131,8 @@ function MedicalDocumentViewer({ documents, initialId, pageNumber, token, onClos
         {error ? <div className="medical-viewer-notice" role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)}>Thử tải lại</button></div>
           : !current ? <p className="medical-viewer-notice" role="status">Đang tải bản gốc…</p>
             : isPdf ? <iframe className="medical-viewer-pdf" title={`PDF · ${item.originalFilename}`} src={`${current.url}#page=${item.id === initialId ? pageNumber : 1}`} />
-              : <DocumentImage key={current.url} src={current.url} filename={item.originalFilename} onError={() => setError('Chưa hiển thị được ảnh. Thử tải lại hoặc lưu bản gốc về máy.')} />}
+              : <PhotoViewerImage key={current.url} src={current.url} title={item.originalFilename} rotatable fitLabel="Vừa khung ảnh" showNavigation={false}
+                onMove={direction => setIndex(value => Math.max(0, Math.min(documents.length - 1, value + direction)))} onError={() => setError('Chưa hiển thị được ảnh. Thử tải lại hoặc lưu bản gốc về máy.')} />}
       </div>
       <footer className="medical-viewer-footer">
         {documents.length > 1 ? <nav aria-label="Tài liệu trong hồ sơ"><button type="button" disabled={index === 0} onClick={() => setIndex(value => value - 1)}>‹ Trước</button>
@@ -144,64 +146,4 @@ function MedicalDocumentViewer({ documents, initialId, pageNumber, token, onClos
       </footer>
     </div>
   </dialog>, document.body);
-}
-
-// Same bounded pointer/pinch interaction used in the family photo viewer, without album/edit/public-share actions.
-function DocumentImage({ src, filename, onError }: { src: string; filename: string; onError: () => void }) {
-  const stage = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 1, height: 1 });
-  const [natural, setNatural] = useState({ width: 1, height: 1 });
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const points = useRef(new Map<number, { x: number; y: number }>());
-  const gesture = useRef<{ distance: number; zoom: number; x: number; y: number; offset: { x: number; y: number } } | null>(null);
-  const swapped = rotation % 180 !== 0;
-  const fit = Math.min(size.width / (swapped ? natural.height : natural.width), size.height / (swapped ? natural.width : natural.height));
-  function bound(x: number, y: number, scale = zoom) {
-    const maxX = Math.max(0, (fit * (swapped ? natural.height : natural.width) * scale - size.width) / 2);
-    const maxY = Math.max(0, (fit * (swapped ? natural.width : natural.height) * scale - size.height) / 2);
-    return { x: Math.max(-maxX, Math.min(maxX, x)), y: Math.max(-maxY, Math.min(maxY, y)) };
-  }
-  function scale(value: number) { const next = Math.max(1, Math.min(4, value)); setZoom(next); setOffset(value => bound(value.x, value.y, next)); }
-  function reset() { setZoom(1); setOffset({ x: 0, y: 0 }); }
-  useEffect(() => {
-    const resize = () => { if (stage.current) { setSize({ width: stage.current.clientWidth, height: stage.current.clientHeight }); reset(); } };
-    resize(); const observer = new ResizeObserver(resize); observer.observe(stage.current!);
-    return () => observer.disconnect();
-  }, []);
-  function begin() {
-    const [a, b] = [...points.current.values()];
-    gesture.current = a ? { distance: b ? Math.hypot(a.x - b.x, a.y - b.y) : 0, zoom, x: a.x, y: a.y, offset } : null;
-  }
-  function move(event: PointerEvent<HTMLDivElement>) {
-    if (!points.current.has(event.pointerId) || !gesture.current) return;
-    points.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    const [a, b] = [...points.current.values()]; const start = gesture.current;
-    if (b && start.distance) scale(start.zoom * Math.hypot(a.x - b.x, a.y - b.y) / start.distance);
-    else if (!b) setOffset(bound(start.offset.x + a.x - start.x, start.offset.y + a.y - start.y));
-  }
-  return <div className="medical-image-view">
-    <div ref={stage} className="medical-image-stage" role="region" aria-label="Ảnh hồ sơ, phóng to và kéo để xem" tabIndex={0}
-      onPointerDown={event => { if (event.button !== 0) return; event.currentTarget.setPointerCapture(event.pointerId); points.current.set(event.pointerId, { x: event.clientX, y: event.clientY }); begin(); }}
-      onPointerMove={move} onPointerUp={event => { points.current.delete(event.pointerId); begin(); }} onPointerCancel={event => { points.current.delete(event.pointerId); begin(); }}
-      onDoubleClick={() => zoom > 1 ? reset() : scale(2)} onKeyDown={event => {
-        if (['+', '=', '-', '0', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) event.preventDefault();
-        if (event.key === '+' || event.key === '=') scale(zoom + .5);
-        if (event.key === '-') scale(zoom - .5);
-        if (event.key === '0') reset();
-        if (event.key.startsWith('Arrow')) setOffset(bound(offset.x + (event.key === 'ArrowLeft' ? 60 : event.key === 'ArrowRight' ? -60 : 0), offset.y + (event.key === 'ArrowUp' ? 60 : event.key === 'ArrowDown' ? -60 : 0)));
-      }}>
-      {/* Private object URL, never an image optimizer/public cache. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={filename} draggable={false} onLoad={event => setNatural({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} onError={onError}
-        style={{ width: natural.width * fit, height: natural.height * fit, transform: `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg) scale(${zoom})` }} />
-    </div>
-    <div className="medical-viewer-zoom" role="group" aria-label="Điều khiển ảnh hồ sơ">
-      <button type="button" aria-label="Thu nhỏ ảnh" disabled={zoom <= 1} onClick={() => scale(zoom - .5)}>−</button>
-      <button type="button" aria-label="Vừa khung ảnh" onClick={reset}>{Math.round(zoom * 100)}%</button>
-      <button type="button" aria-label="Phóng to ảnh" disabled={zoom >= 4} onClick={() => scale(zoom + .5)}>+</button>
-      <button type="button" aria-label="Xoay ảnh" onClick={() => { setRotation(value => (value + 90) % 360); reset(); }}>↻ Xoay</button>
-    </div>
-  </div>;
 }
