@@ -1,0 +1,6 @@
+# Optional isolated local renderer; GPL-3.0 Piper, voice dataset CC BY 4.0.
+piper-tts==1.8.0
+onnxruntime==1.29.0
+av==18.1.0
+Pillow==12.3.0
+numpy==2.5.3

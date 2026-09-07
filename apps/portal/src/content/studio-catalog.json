@@ -7,6 +7,240 @@
   "audio": false,
   "topics": [
     {
+      "slug": "bua-an-an-toan-3-dieu",
+      "title": "Bữa ăn thai kỳ: nhớ 3 điều này",
+      "pillar": "Ăn uống dễ hiểu",
+      "stage": "Suốt thai kỳ",
+      "hookB": "Không cần kiêng mọi món, hãy kiểm tra cách chuẩn bị.",
+      "caption": "Ba điều dễ nhớ khi chuẩn bị bữa ăn thai kỳ. Minh họa và giọng đọc AI; nội dung gốc EmBe, bản nháp chưa duyệt chuyên môn. Nguồn NHS bên dưới.",
+      "hashtags": [
+        "EmBeMeBau",
+        "AnUongThaiKy",
+        "BauAnGi"
+      ],
+      "duration": 28,
+      "beats": [
+        {
+          "heading": "Ăn ngon, nhớ an toàn",
+          "text": "Một bữa ăn an toàn không bắt đầu từ danh sách kiêng dài. Cùng nhớ ba điều dễ kiểm tra nhé.",
+          "start": 0,
+          "end": 5
+        },
+        {
+          "heading": "Nấu chín kỹ",
+          "text": "Thịt, trứng và hải sản cần được nấu chín kỹ. Tránh món sống hoặc chưa chín khi mang thai.",
+          "start": 5,
+          "end": 10
+        },
+        {
+          "heading": "Rửa rau quả",
+          "text": "Rửa kỹ rau và trái cây trước khi ăn. Với sữa, xem nhãn và chọn loại đã thanh trùng hoặc tiệt trùng.",
+          "start": 10,
+          "end": 16
+        },
+        {
+          "heading": "Giữ lạnh đúng cách",
+          "text": "Đồ ăn cần giữ lạnh phải được bảo quản đúng và dùng trước hạn. Đừng chỉ nhìn hoặc ngửi để đoán an toàn.",
+          "start": 16,
+          "end": 22
+        },
+        {
+          "heading": "Theo nhu cầu của mẹ",
+          "text": "Nếu có dị ứng hay chế độ ăn bác sĩ đã dặn, ưu tiên hướng dẫn riêng. Hình minh họa không phải khẩu phần được kê cho bạn.",
+          "start": 22,
+          "end": 28
+        }
+      ],
+      "audio": true,
+      "checkedAt": "2026-09-07",
+      "reviewDue": "2026-10-07",
+      "voiceCredit": {
+        "name": "Piper · vi_VN-vais1000-medium",
+        "attribution": "Dữ liệu VAIS1000: CC BY 4.0. Mô hình vais1000 từ rhasspy/piper-voices. Giọng đọc tổng hợp, không phải giọng người trong minh họa.",
+        "url": "https://huggingface.co/rhasspy/piper-voices/blob/1162a9173d0ce503555aed757976b7a9912eae4c/vi/vi_VN/vais1000/medium/MODEL_CARD",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "sources": [
+        {
+          "publisher": "NHS",
+          "title": "Foods to avoid in pregnancy",
+          "url": "https://www.nhs.uk/pregnancy/keeping-well/foods-to-avoid/",
+          "source_reviewed": "2026-06-15",
+          "jurisdiction": "Hướng dẫn Anh; không áp dụng ngoại lệ trứng British Lion cho Việt Nam."
+        }
+      ],
+      "assets": {
+        "video": {
+          "path": "editorial/489707c288878326b0fcc02f5cd566e29826046043d913430fe52b4a621a108e.mp4",
+          "mime": "video/mp4",
+          "size": 341258,
+          "checksum": "489707c288878326b0fcc02f5cd566e29826046043d913430fe52b4a621a108e"
+        },
+        "poster": {
+          "path": "editorial/cd38a667f33556eedbcd77b5c557f75402529d12efb8842019d985d91a134000.png",
+          "mime": "image/png",
+          "size": 130168,
+          "checksum": "cd38a667f33556eedbcd77b5c557f75402529d12efb8842019d985d91a134000"
+        }
+      }
+    },
+    {
+      "slug": "bua-nho-khi-nghen",
+      "title": "Đang nghén: thử một bữa nhỏ thôi",
+      "pillar": "Mẹ dễ chịu hơn",
+      "stage": "Khi có ốm nghén",
+      "hookB": "Mẹ không cần cố ăn hết một bữa lớn.",
+      "caption": "Gợi ý nhỏ cho ngày nghén, không phải điều trị nghén nặng. Minh họa và giọng đọc AI; bản nháp EmBe chưa duyệt chuyên môn.",
+      "hashtags": [
+        "EmBeMeBau",
+        "BuaNho",
+        "BaDongHanh"
+      ],
+      "duration": 30,
+      "beats": [
+        {
+          "heading": "Một chút cũng được",
+          "text": "Đang nghén mà thấy một bữa lớn quá khó ăn? Có thể thử ăn ít một và chia thành nhiều bữa nhỏ.",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "heading": "Món đơn giản",
+          "text": "Bánh mì, cơm hay bánh quy nhạt có thể dễ chịu hơn. Chọn món bạn dung nạp được, tránh mùi làm bạn buồn nôn.",
+          "start": 6,
+          "end": 12
+        },
+        {
+          "heading": "Nước, từng ngụm nhỏ",
+          "text": "Nhấp nước ít một, thường xuyên. Người đồng hành có thể giúp chuẩn bị bữa nhỏ và để nước gần mẹ.",
+          "start": 12,
+          "end": 18
+        },
+        {
+          "heading": "Đừng cố chịu",
+          "text": "Nôn nhiều, không giữ được nước, tiểu ít hoặc chóng mặt: liên hệ cơ sở y tế. Đừng chờ xem hết mẹo trên mạng.",
+          "start": 18,
+          "end": 24
+        },
+        {
+          "heading": "Không có mẹo cho tất cả",
+          "text": "Mỗi người có thể hợp cách khác nhau. Nếu vẫn khó chịu, hỏi người chăm sóc thai kỳ; đừng tự dùng thuốc chống nôn.",
+          "start": 24,
+          "end": 30
+        }
+      ],
+      "audio": true,
+      "checkedAt": "2026-09-07",
+      "reviewDue": "2026-10-07",
+      "voiceCredit": {
+        "name": "Piper · vi_VN-vais1000-medium",
+        "attribution": "Dữ liệu VAIS1000: CC BY 4.0. Mô hình vais1000 từ rhasspy/piper-voices. Giọng đọc tổng hợp, không phải giọng người trong minh họa.",
+        "url": "https://huggingface.co/rhasspy/piper-voices/blob/1162a9173d0ce503555aed757976b7a9912eae4c/vi/vi_VN/vais1000/medium/MODEL_CARD",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "sources": [
+        {
+          "publisher": "NHS",
+          "title": "Vomiting and morning sickness",
+          "url": "https://www.nhs.uk/pregnancy/common-symptoms/vomiting-and-morning-sickness/",
+          "source_reviewed": "2024-04-17",
+          "jurisdiction": "Gợi ý sinh hoạt phổ thông; liên hệ cơ sở y tế tại Việt Nam khi có triệu chứng đáng lo."
+        }
+      ],
+      "assets": {
+        "video": {
+          "path": "editorial/9984eb1aac7da8c9b545464d0be1be0da7c26bd5cc091dad2f6ba89f83bc68f4.mp4",
+          "mime": "video/mp4",
+          "size": 365677,
+          "checksum": "9984eb1aac7da8c9b545464d0be1be0da7c26bd5cc091dad2f6ba89f83bc68f4"
+        },
+        "poster": {
+          "path": "editorial/1b27d99af316f7349302bde0d9ef5000bcd36dcd84b0706e6e8131885ff9fc1c.png",
+          "mime": "image/png",
+          "size": 141034,
+          "checksum": "1b27d99af316f7349302bde0d9ef5000bcd36dcd84b0706e6e8131885ff9fc1c"
+        }
+      }
+    },
+    {
+      "slug": "vi-chat-khong-chia-theo-thang",
+      "title": "Vi chất: đừng chia mỗi tháng một loại",
+      "pillar": "Hiểu đúng để yên tâm",
+      "stage": "Chuẩn bị mang thai và thai kỳ",
+      "hookB": "Một bảng đẹp trên mạng chưa phải lịch uống của mẹ.",
+      "caption": "Đọc nhãn và hỏi đúng người, không lấy bảng viral làm đơn thuốc. Minh họa và giọng đọc AI; bản nháp EmBe chưa duyệt chuyên môn.",
+      "hashtags": [
+        "EmBeMeBau",
+        "ViChatThaiKy",
+        "HieuDungDeYenTam"
+      ],
+      "duration": 33,
+      "beats": [
+        {
+          "heading": "Không phải lịch uống",
+          "text": "Bảng mỗi tháng một loại vitamin trông rất dễ nhớ. Nhưng không nên dùng nó để tự bắt đầu hay dừng vi chất.",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "heading": "Trao đổi từ sớm",
+          "text": "Axit folic cần được chú ý từ khi chuẩn bị mang thai và giai đoạn đầu. Thực phẩm không luôn thay được phần bổ sung cần thiết.",
+          "start": 6,
+          "end": 12
+        },
+        {
+          "heading": "Đọc đúng nhãn",
+          "text": "Kiểm tra thành phần và hàm lượng trên sản phẩm. Tránh tự bổ sung dầu gan cá hoặc vitamin A dạng retinol khi mang thai.",
+          "start": 12,
+          "end": 19
+        },
+        {
+          "heading": "Mang danh sách đi khám",
+          "text": "Ghi lại mọi thuốc và vi chất đang dùng, kể cả loại tự mua. Nhờ bác sĩ hoặc dược sĩ đối chiếu trước khi thêm sản phẩm.",
+          "start": 19,
+          "end": 26
+        },
+        {
+          "heading": "Liều theo hướng dẫn riêng",
+          "text": "Nhu cầu có thể khác nhau theo sức khỏe và kết quả khám. Video này không kê liều, không thay đổi chỉ định bạn đang có.",
+          "start": 26,
+          "end": 33
+        }
+      ],
+      "audio": true,
+      "checkedAt": "2026-09-07",
+      "reviewDue": "2026-10-07",
+      "voiceCredit": {
+        "name": "Piper · vi_VN-vais1000-medium",
+        "attribution": "Dữ liệu VAIS1000: CC BY 4.0. Mô hình vais1000 từ rhasspy/piper-voices. Giọng đọc tổng hợp, không phải giọng người trong minh họa.",
+        "url": "https://huggingface.co/rhasspy/piper-voices/blob/1162a9173d0ce503555aed757976b7a9912eae4c/vi/vi_VN/vais1000/medium/MODEL_CARD",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "sources": [
+        {
+          "publisher": "NHS",
+          "title": "Pregnancy vitamins and supplements",
+          "url": "https://www.nhs.uk/pregnancy/keeping-well/pregnancy-vitamins-and-supplements/",
+          "source_reviewed": "2026-06-03",
+          "jurisdiction": "Không áp lịch vitamin D theo mùa tại Anh cho Việt Nam; không thay chỉ định cá nhân."
+        }
+      ],
+      "assets": {
+        "video": {
+          "path": "editorial/5c8a22ed2468b1b7f8943d18b3f5dcdfe76082cf2568b68445d706f64f2e4e58.mp4",
+          "mime": "video/mp4",
+          "size": 426627,
+          "checksum": "5c8a22ed2468b1b7f8943d18b3f5dcdfe76082cf2568b68445d706f64f2e4e58"
+        },
+        "poster": {
+          "path": "editorial/cc539bf365a8ca77493fb0c0bff6659ca40291ad0269abd1ad5195c00fe11d9d.png",
+          "mime": "image/png",
+          "size": 138183,
+          "checksum": "cc539bf365a8ca77493fb0c0bff6659ca40291ad0269abd1ad5195c00fe11d9d"
+        }
+      }
+    },
+    {
       "slug": "ca-phe-tra-sua",
       "title": "Bầu uống cà phê: đừng chỉ đếm số ly",
       "pillar": "Ăn uống dễ hiểu",

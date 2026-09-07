@@ -12,7 +12,9 @@ Tạo **chủ đề → kịch bản → storyboard → phụ đề → video d�
 
 **Giao diện web:** `/studio`, có lối vào ở Hôm nay và Nhà mình. Xem/tìm/lọc các chủ đề, xem từng video, chép kịch bản/caption, tải video/phụ đề/kịch bản và đọc nguồn ngay sau khi đăng nhập EmBe. 22 ý tưởng được tách riêng và ghi rõ chưa nghiên cứu đủ.
 
-**Chưa có:** giọng đọc/TTS, nhạc, tài khoản mạng xã hội, tự đăng bài, lấy trend trực tiếp, LLM tự nghiên cứu vô hạn hoặc nút tạo/chỉnh sửa bản dựng trong portal. API worker không được mở ra Internet, không tự khởi động cùng Windows. Toàn bộ đầu ra là bản nháp chưa duyệt chuyên môn; không dùng chữ “đã duyệt y khoa”.
+**Bổ sung 07/09/2026:** ba video gốc dạng bảng hai cột, lấy cảm hứng từ bố cục Rednote đã xem; có giọng đọc AI tiếng Việt, nhấn sáng hàng theo lời và phụ đề. Tổng cộng 11 video, trong đó 8 bản đầu vẫn không có giọng đọc. Xem [đối chiếu mẫu và giới hạn](../../docs/design/studio-rednote-review.md).
+
+**Chưa có:** nhạc, tài khoản mạng xã hội, tự đăng bài, lấy trend trực tiếp, LLM tự nghiên cứu vô hạn hoặc nút tạo/chỉnh sửa bản dựng trong portal. API worker không được mở ra Internet, không tự khởi động cùng Windows. Toàn bộ đầu ra là bản nháp chưa duyệt chuyên môn; không dùng chữ “đã duyệt y khoa”.
 
 ## Đưa một bộ đã dựng lên web
 
@@ -90,6 +92,18 @@ Sao lưu catalog, mã nguồn, artwork và cả campaign bằng snapshot nhất 
 | [SQLite](https://www.sqlite.org/copyright.html) | Hàng đợi giao dịch, public domain |
 | Font | Dùng Arial sẵn trên Windows hoặc DejaVu Sans trên Linux; không phân phối lại Arial |
 | Whiteboard Studio được gửi qua Drive | Chưa nhập mã vì chưa xác minh giấy phép; chỉ tham khảo hướng kiến trúc |
-| [Piper](https://github.com/OHF-Voice/piper1-gpl) | Chưa tích hợp; runtime GPL-3.0 và từng voice model cần kiểm tra quyền riêng trước khi dùng |
+| [Piper](https://github.com/OHF-Voice/piper1-gpl) | TTS tùy chọn trong môi trường cô lập; runtime GPL-3.0, module `narrated.py` GPL-3.0-or-later; VAIS1000 model card ghi dataset CC BY 4.0, có attribution trong portal/script |
 
 Xem [nguồn gốc minh họa](assets/PROVENANCE.md) và [catalog có nguồn từng bài](content/catalog.json). Chạy kiểm tra liên quan: `python -m pytest services/studio/tests -q`; CI riêng không thay dependency các service khác.
+
+## Dựng bảng kiến thức có giọng đọc
+
+Môi trường `.venv-studio-voice` riêng, cài `requirements-voice.txt` và `pip install -e services/studio`. Không thay môi trường nhận diện y tế/thức ăn. Model tải từ revision cố định `1162a9173d0ce503555aed757976b7a9912eae4c` tại [Piper voices](https://huggingface.co/rhasspy/piper-voices/tree/1162a9173d0ce503555aed757976b7a9912eae4c/vi/vi_VN/vais1000/medium), đặt `.onnx` và `.onnx.json` vào `data/studio-voice/models`. Compiler kiểm tra SHA-256 cả hai, không tự tải model khác.
+
+```powershell
+.\.venv-studio-voice\Scripts\python.exe -m embe_studio.narrated --catalog services/studio/content/infographic-v2.json --model data/studio-voice/models/vi_VN-vais1000-medium.onnx --output data/studio-voice/rednote-boards-v1 --artwork services/studio/assets
+.\.venv-studio-voice\Scripts\python.exe -m unittest discover -s services/studio/voice_tests -v
+node services/studio/scripts/publish-portal.mjs --campaign data/studio-voice/rednote-boards-v1 --catalog services/studio/content/infographic-v2.json --env-file secrets/runtime/portal-sync.env --output apps/portal/src/content/studio-catalog.json --merge
+```
+
+Lệnh dựng chạy hữu hạn ba bài, giữ WAV từng cảnh để biên tập viên nghe lại. TTS có thể khác nhẹ giữa lần dựng; lưu bản đầu ra đã chọn và checksum, không hứa bit-for-bit deterministic. `*.timeline.json` riêng hỗ trợ cảnh theo đúng độ dài lời đọc, không lách giới hạn 8 giây/cảnh của API Project cũ. Publisher `--merge` giữ bộ cũ và ý tưởng, kiểm tra catalog chưa đổi sau khi render, không xuất file quá 4 MB hoặc báo có giọng khi chưa xác minh AAC. Không gọi compiler bằng input từ web.

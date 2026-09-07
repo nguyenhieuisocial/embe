@@ -1,7 +1,7 @@
 // Explicit live read-only feature check. Creates one normal login session and revokes only that session.
 // No health data is submitted. No credentials or cookies are written to disk or printed.
 import { createRequire } from 'node:module';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 
@@ -10,6 +10,9 @@ const { chromium } = require(process.env.EMBE_PLAYWRIGHT_PATH || 'C:/Users/Admin
 const origin = 'https://embe.hieu.asia';
 const password = process.env.EMBE_VERIFY_PASSWORD;
 const expected = process.env.EMBE_VERIFY_VERSION;
+const catalog = JSON.parse(await readFile(resolve('apps/portal/src/content/studio-catalog.json'), 'utf8'));
+const narrated = catalog.topics.filter(topic => topic.audio === true);
+const targetSlug = narrated[0]?.slug ?? 'ca-phe-tra-sua';
 if (!password || !expected) throw new Error('verification_requires_password_and_version');
 const health = await (await fetch(`${origin}/api/health`, { signal: AbortSignal.timeout(15000) })).json();
 if (health.version !== expected) { console.log(JSON.stringify({ status: 'deployment_pending', version: health.version })); process.exit(2); }
@@ -31,14 +34,15 @@ try {
   await page.waitForURL(`${origin}/studio`, { timeout: 45000 });
   loggedIn = true;
   await page.locator('.studio-topic').first().waitFor();
-  if (await page.locator('.studio-topic').count() !== 8) throw new Error('missing_topics');
-  await page.getByLabel('Tìm chủ đề').fill('om nghen');
+  if (await page.locator('.studio-topic').count() !== catalog.topics.length) throw new Error('missing_topics');
+  await page.getByLabel('Tìm chủ đề').fill('ca phe');
   await page.waitForFunction(() => document.querySelectorAll('.studio-topic').length === 1, undefined, { timeout: 5000 });
   await page.getByLabel('Tìm chủ đề').fill('');
-  await page.getByRole('button', { name: 'Ý tưởng 22' }).click();
-  await page.waitForFunction(() => document.querySelectorAll('.studio-ideas li').length === 22);
-  await page.getByRole('button', { name: 'Kịch bản & video 8' }).click();
-  await page.waitForFunction(() => document.querySelectorAll('.studio-topic').length === 8);
+  await page.getByRole('button', { name: `Ý tưởng ${catalog.ideas.length}` }).click();
+  await page.waitForFunction(count => document.querySelectorAll('.studio-ideas li').length === count, catalog.ideas.length);
+  await page.getByRole('button', { name: `Kịch bản & video ${catalog.topics.length}` }).click();
+  await page.waitForFunction(count => document.querySelectorAll('.studio-topic').length === count, catalog.topics.length);
+  if (await page.getByText(/Có giọng đọc AI/).count() !== narrated.length) throw new Error('narration_labels_mismatch');
   const sizes = [[375, 667], [393, 852], [430, 932], [412, 915], [768, 1024], [1280, 900]];
   async function checkSize(width, height, view) {
     await page.setViewportSize({ width, height });
@@ -75,12 +79,19 @@ try {
     result.videos.push({ slug, bytes: body.length, range: 206, checksumVerified: true, milliseconds: Date.now() - start });
     console.log(`Live video verified: ${slug}`);
   }
-  await page.goto(`${origin}/studio/ca-phe-tra-sua`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${origin}/studio/${targetSlug}`, { waitUntil: 'domcontentloaded' });
   await page.locator('video').evaluate(video => video.play());
   await page.waitForFunction(() => { const video = document.querySelector('video'); return video && video.currentTime > 0; });
   await page.locator('video').evaluate(video => { video.pause(); video.currentTime = 15; });
   await page.waitForFunction(() => { const video = document.querySelector('video'); return video && !video.seeking && video.currentTime >= 15; });
   result.playbackAndSeek = true;
+  if (narrated.length) {
+    if (!await page.getByText(/Có giọng đọc AI tiếng Việt/).isVisible()) throw new Error('missing_voice_hint');
+    result.decodedAudioBytes = await page.locator('video').evaluate(video => video.webkitAudioDecodedByteCount ?? null);
+    if (result.decodedAudioBytes !== null && result.decodedAudioBytes <= 0) throw new Error('audio_not_decoded');
+    await page.getByText('Minh họa & giọng đọc', { exact: true }).click();
+    if (!await page.getByRole('link', { name: 'Nguồn mô hình giọng đọc' }).isVisible()) throw new Error('missing_voice_attribution');
+  }
   for (const [width, height] of sizes) await checkSize(width, height, 'detail');
   await page.setViewportSize({ width: 393, height: 852 });
   await page.locator('summary').filter({ hasText: 'Nguồn đối chiếu' }).click();
@@ -111,7 +122,9 @@ try {
     console.log(JSON.stringify(await page.evaluate(() => ({ search: document.querySelector('input[type=search]')?.value,
       topics: document.querySelectorAll('.studio-topic').length, ideas: document.querySelectorAll('.studio-ideas li').length }))));
   }
-  throw error;
+  result.status = 'failed';
+  result.error = error instanceof Error && /^[a-zA-Z0-9_-]+$/.test(error.message) ? error.message : 'verification_failed';
+  process.exitCode = 1;
 } finally {
   if (loggedIn) {
     const logout = await context.request.post(`${origin}/api/auth/logout`, { headers: { origin }, maxRedirects: 0 });

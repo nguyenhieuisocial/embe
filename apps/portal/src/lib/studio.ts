@@ -10,7 +10,7 @@ export function studioAsset(slug: string, kind: 'video' | 'poster') {
   return data.topics.find(topic => topic.slug === slug)?.assets[kind];
 }
 export function studioScript(topic: StudioTopic): string {
-  return `${topic.title}\nBản nháp — chưa duyệt chuyên môn.\n\n${topic.beats.map(beat => `${beat.start}–${beat.end}s | ${beat.heading}\n${beat.text}`).join('\n\n')}\n\nMở đầu khác: ${topic.hookB}\n\nCaption: ${topic.caption}\n${topic.hashtags.map(tag => `#${tag}`).join(' ')}\n\nNguồn đối chiếu:\n${topic.sources.map(source => `${source.publisher}: ${source.url}`).join('\n')}`;
+  return `${topic.title}\nBản nháp — chưa duyệt chuyên môn.\n\n${topic.beats.map(beat => `${beat.start}–${beat.end}s | ${beat.heading}\n${beat.text}`).join('\n\n')}\n\nMở đầu khác: ${topic.hookB}\n\nCaption: ${topic.caption}\n${topic.hashtags.map(tag => `#${tag}`).join(' ')}\n\nNguồn đối chiếu:\n${topic.sources.map(source => `${source.publisher}: ${source.url}`).join('\n')}${topic.voiceCredit ? `\n\nGiọng đọc AI: ${topic.voiceCredit.name}\n${topic.voiceCredit.attribution}\n${topic.voiceCredit.url}\n${topic.voiceCredit.license}` : ''}`;
 }
 export function studioSubtitles(topic: StudioTopic): string {
   const time = (seconds: number) => `00:${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}.000`;

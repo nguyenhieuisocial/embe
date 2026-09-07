@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "brand": "EmBe Mẹ Bầu",
+  "editorial_status": "draft",
+  "clinical_review": "not_reviewed",
+  "sources_checked_at": "2026-09-07",
+  "review_due": "2026-10-07",
+  "sources": {
+    "food": {"publisher": "NHS", "title": "Foods to avoid in pregnancy", "url": "https://www.nhs.uk/pregnancy/keeping-well/foods-to-avoid/", "source_reviewed": "2026-06-15", "jurisdiction": "Hướng dẫn Anh; không áp dụng ngoại lệ trứng British Lion cho Việt Nam."},
+    "nausea": {"publisher": "NHS", "title": "Vomiting and morning sickness", "url": "https://www.nhs.uk/pregnancy/common-symptoms/vomiting-and-morning-sickness/", "source_reviewed": "2024-04-17", "jurisdiction": "Gợi ý sinh hoạt phổ thông; liên hệ cơ sở y tế tại Việt Nam khi có triệu chứng đáng lo."},
+    "vitamins": {"publisher": "NHS", "title": "Pregnancy vitamins and supplements", "url": "https://www.nhs.uk/pregnancy/keeping-well/pregnancy-vitamins-and-supplements/", "source_reviewed": "2026-06-03", "jurisdiction": "Không áp lịch vitamin D theo mùa tại Anh cho Việt Nam; không thay chỉ định cá nhân."}
+  },
+  "items": [
+    {"slug": "bua-an-an-toan-3-dieu", "title": "Bữa ăn thai kỳ: nhớ 3 điều này", "pillar": "Ăn uống dễ hiểu", "stage": "Suốt thai kỳ", "risk": "moderate", "priority": 100,
+      "illustration": "bua-an-an-toan-v2.png", "hook_b": "Không cần kiêng mọi món, hãy kiểm tra cách chuẩn bị.", "sources": ["food"],
+      "board": {"title": "Bữa ăn thai kỳ", "subtitle": "3 điều dễ nhớ", "columns": ["Ưu tiên", "Cần lưu ý"], "rows": [
+        {"label": "Thịt · trứng · hải sản", "left": "Nấu chín kỹ trước khi ăn", "right": "Tránh món sống hoặc chưa chín"},
+        {"label": "Rau quả · sữa", "left": "Rửa kỹ rau quả; xem nhãn sữa", "right": "Chọn sữa thanh trùng hoặc tiệt trùng"},
+        {"label": "Bảo quản", "left": "Giữ lạnh đúng; dùng trước hạn", "right": "Không chỉ nhìn hay ngửi để đoán"}
+      ], "caveat": "Có dị ứng hoặc chế độ ăn riêng? Theo hướng dẫn của bác sĩ."},
+      "beats": [
+        {"heading": "Ăn ngon, nhớ an toàn", "text": "Một bữa ăn an toàn không bắt đầu từ danh sách kiêng dài. Cùng nhớ ba điều dễ kiểm tra nhé.", "kind": "hook"},
+        {"heading": "Nấu chín kỹ", "text": "Thịt, trứng và hải sản cần được nấu chín kỹ. Tránh món sống hoặc chưa chín khi mang thai.", "kind": "action"},
+        {"heading": "Rửa rau quả", "text": "Rửa kỹ rau và trái cây trước khi ăn. Với sữa, xem nhãn và chọn loại đã thanh trùng hoặc tiệt trùng.", "kind": "action"},
+        {"heading": "Giữ lạnh đúng cách", "text": "Đồ ăn cần giữ lạnh phải được bảo quản đúng và dùng trước hạn. Đừng chỉ nhìn hoặc ngửi để đoán an toàn.", "kind": "action"},
+        {"heading": "Theo nhu cầu của mẹ", "text": "Nếu có dị ứng hay chế độ ăn bác sĩ đã dặn, ưu tiên hướng dẫn riêng. Hình minh họa không phải khẩu phần được kê cho bạn.", "kind": "caveat"}
+      ],
+      "caption": "Ba điều dễ nhớ khi chuẩn bị bữa ăn thai kỳ. Minh họa và giọng đọc AI; nội dung gốc EmBe, bản nháp chưa duyệt chuyên môn. Nguồn NHS bên dưới.", "hashtags": ["EmBeMeBau", "AnUongThaiKy", "BauAnGi"]},
+    {"slug": "bua-nho-khi-nghen", "title": "Đang nghén: thử một bữa nhỏ thôi", "pillar": "Mẹ dễ chịu hơn", "stage": "Khi có ốm nghén", "risk": "moderate", "priority": 99,
+      "illustration": "bua-nho-v2.png", "hook_b": "Mẹ không cần cố ăn hết một bữa lớn.", "sources": ["nausea"],
+      "board": {"title": "Ngày mẹ đang nghén", "subtitle": "Nhỏ một chút, dễ chịu hơn", "columns": ["Có thể thử", "Nhớ để ý"], "rows": [
+        {"label": "Bữa ăn", "left": "Chia bữa nhỏ; chọn món đơn giản", "right": "Tránh mùi làm mẹ buồn nôn"},
+        {"label": "Nước uống", "left": "Nhấp từng ngụm, thường xuyên", "right": "Nhờ người thân để nước gần mẹ"},
+        {"label": "Khi khó chịu nhiều", "left": "Liên hệ cơ sở y tế để được giúp", "right": "Nôn nhiều, không giữ được nước, tiểu ít, chóng mặt"}
+      ], "caveat": "Không có mẹo hợp tất cả. Đừng tự dùng thuốc chống nôn."},
+      "beats": [
+        {"heading": "Một chút cũng được", "text": "Đang nghén mà thấy một bữa lớn quá khó ăn? Có thể thử ăn ít một và chia thành nhiều bữa nhỏ.", "kind": "hook"},
+        {"heading": "Món đơn giản", "text": "Bánh mì, cơm hay bánh quy nhạt có thể dễ chịu hơn. Chọn món bạn dung nạp được, tránh mùi làm bạn buồn nôn.", "kind": "action"},
+        {"heading": "Nước, từng ngụm nhỏ", "text": "Nhấp nước ít một, thường xuyên. Người đồng hành có thể giúp chuẩn bị bữa nhỏ và để nước gần mẹ.", "kind": "action"},
+        {"heading": "Đừng cố chịu", "text": "Nôn nhiều, không giữ được nước, tiểu ít hoặc chóng mặt: liên hệ cơ sở y tế. Đừng chờ xem hết mẹo trên mạng.", "kind": "caveat"},
+        {"heading": "Không có mẹo cho tất cả", "text": "Mỗi người có thể hợp cách khác nhau. Nếu vẫn khó chịu, hỏi người chăm sóc thai kỳ; đừng tự dùng thuốc chống nôn.", "kind": "cta"}
+      ],
+      "caption": "Gợi ý nhỏ cho ngày nghén, không phải điều trị nghén nặng. Minh họa và giọng đọc AI; bản nháp EmBe chưa duyệt chuyên môn.", "hashtags": ["EmBeMeBau", "BuaNho", "BaDongHanh"]},
+    {"slug": "vi-chat-khong-chia-theo-thang", "title": "Vi chất: đừng chia mỗi tháng một loại", "pillar": "Hiểu đúng để yên tâm", "stage": "Chuẩn bị mang thai và thai kỳ", "risk": "moderate", "priority": 98,
+      "illustration": "doi-chieu-vi-chat-v2.png", "hook_b": "Một bảng đẹp trên mạng chưa phải lịch uống của mẹ.", "sources": ["vitamins"],
+      "board": {"title": "Vi chất trong thai kỳ", "subtitle": "Đừng chia mỗi tháng một loại", "columns": ["Nên làm", "Không tự làm"], "rows": [
+        {"label": "Ngay từ sớm", "left": "Trao đổi về axit folic", "right": "Dùng bảng viral thay hướng dẫn riêng"},
+        {"label": "Khi chọn sản phẩm", "left": "Đọc thành phần và hàm lượng", "right": "Tự bổ sung dầu gan cá / retinol"},
+        {"label": "Mang theo khi khám", "left": "Danh sách cả thuốc và loại tự mua", "right": "Tự thêm hay dừng vi chất"}
+      ], "caveat": "Bác sĩ / dược sĩ đối chiếu giúp mẹ. Video không kê liều."},
+      "beats": [
+        {"heading": "Không phải lịch uống", "text": "Bảng mỗi tháng một loại vitamin trông rất dễ nhớ. Nhưng không nên dùng nó để tự bắt đầu hay dừng vi chất.", "kind": "hook"},
+        {"heading": "Trao đổi từ sớm", "text": "Axit folic cần được chú ý từ khi chuẩn bị mang thai và giai đoạn đầu. Thực phẩm không luôn thay được phần bổ sung cần thiết.", "kind": "fact"},
+        {"heading": "Đọc đúng nhãn", "text": "Kiểm tra thành phần và hàm lượng trên sản phẩm. Tránh tự bổ sung dầu gan cá hoặc vitamin A dạng retinol khi mang thai.", "kind": "action"},
+        {"heading": "Mang danh sách đi khám", "text": "Ghi lại mọi thuốc và vi chất đang dùng, kể cả loại tự mua. Nhờ bác sĩ hoặc dược sĩ đối chiếu trước khi thêm sản phẩm.", "kind": "action"},
+        {"heading": "Liều theo hướng dẫn riêng", "text": "Nhu cầu có thể khác nhau theo sức khỏe và kết quả khám. Video này không kê liều, không thay đổi chỉ định bạn đang có.", "kind": "caveat"}
+      ],
+      "caption": "Đọc nhãn và hỏi đúng người, không lấy bảng viral làm đơn thuốc. Minh họa và giọng đọc AI; bản nháp EmBe chưa duyệt chuyên môn.", "hashtags": ["EmBeMeBau", "ViChatThaiKy", "HieuDungDeYenTam"]}
+  ],
+  "research_backlog": []
+}
