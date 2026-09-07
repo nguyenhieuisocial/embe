@@ -62,6 +62,7 @@ try {
         await page.locator('.medical-records > .medical-add, .medical-records .medical-add').first().click();
         await page.locator('#medical-record-form').waitFor();
       }
+      if (route === '/nha-minh/ho-so') await page.locator('.member-form input[type="date"]').first().waitFor();
       for (const width of [375, 393, 430]) {
         await page.setViewportSize({ width, height: 852 });
         const actual = await page.locator(temporal).evaluateAll(els => els.filter(el => el.getClientRects().length).map(el => {
@@ -69,7 +70,9 @@ try {
           return { type: el.type, width: r.width, fits: r.left >= p.left - 1 && r.right <= p.right + 1 && r.right <= innerWidth + 1, height: r.height };
         }));
         result.actualForms.push({ route, width, count: actual.length, fits: actual.every(x => x.fits && x.height >= 44) });
+        if (route !== '/studio/kham-pha' && !actual.length) result.failures.push(`missing_form_${route}`);
         if (actual.some(x => !x.fits || x.height < 44)) result.failures.push(`actual_${route}_${width}`);
+        if (route === '/me-bau/ho-so' && width === 393) await page.locator('#medical-record-form').screenshot({ path: resolve(output, 'live-medical-form.png') });
       }
     }
     for (const url of urls) styles += await (await context.request.get(url)).text();
