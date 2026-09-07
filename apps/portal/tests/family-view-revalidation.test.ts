@@ -9,6 +9,6 @@ describe("family view revalidation", () => {
   it("invalidates the server-rendered Today page after a successful write", () => {
     revalidateFamilyViews();
 
-    expect(revalidatePath).toHaveBeenCalledWith("/");
+    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
   });
 });

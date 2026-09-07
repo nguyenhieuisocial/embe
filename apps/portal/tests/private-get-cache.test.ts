@@ -67,4 +67,16 @@ describe("short-lived private GET cache", () => {
     expect(await (await cachedPrivateGet("/api/pregnancy/health?days=28")).json()).toEqual({ health: 1 });
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+  it("does not let a failed older request evict refreshed data", async () => {
+    let fail!: (response: Response) => void;
+    const fetchMock = vi.fn().mockImplementationOnce(() => new Promise<Response>(resolve => { fail = resolve; }))
+      .mockResolvedValueOnce(Response.json({ revision: 2 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const stale = cachedPrivateGet("/api/pregnancy/records");
+    clearPrivateGetCache();
+    expect(await (await cachedPrivateGet("/api/pregnancy/records")).json()).toEqual({ revision: 2 });
+    fail(new Response(null, { status: 503 })); await stale;
+    expect(await (await cachedPrivateGet("/api/pregnancy/records")).json()).toEqual({ revision: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

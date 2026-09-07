@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import { shouldShowBirthPrompt } from "../lib/family-lifecycle";
 
 const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
@@ -69,6 +70,16 @@ export default function BirthTransition({ dueDate = "", manual = false }: { dueD
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
+  useFamilyDataRefresh(async canApply => {
+    const response = await cachedPrivateGet("/api/family/lifecycle");
+    if (!response.ok) return;
+    const value = await response.json() as BirthRecord;
+    if (!canApply()) return;
+    setRecord(value);
+    if (value.birthOccurredAt) localStorage.setItem(BIRTH_DATE_KEY, value.birthOccurredAt);
+    else localStorage.removeItem(BIRTH_DATE_KEY);
+    window.dispatchEvent(new Event(FAMILY_STAGE_EVENT));
+  }, !loading && !saving && !open);
 
   useEffect(() => {
     let active = true;

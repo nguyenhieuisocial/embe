@@ -97,10 +97,20 @@ self.addEventListener("fetch", (event) => {
 
   if (request.method !== "GET") {
     const kind = familyActivityKind(url.pathname);
-    if (!kind) return;
+    const dataMutation = /^\/(?:api)\/(?:pregnancy|family|meals|memories|photo-uploads|journal|tasks|inventory|procurement|baby|postpartum|birth-prep|trash|studio)(?:\/|$)/.test(url.pathname)
+      && /^(POST|PUT|PATCH|DELETE)$/.test(request.method);
+    if (!kind && !dataMutation) return;
     const responsePromise = fetch(request);
     event.respondWith(responsePromise);
+    // Refresh all open app windows even if push is denied or activity reporting
+    // fails. No request/response body or personal data is sent between windows.
+    if (dataMutation) event.waitUntil(responsePromise.then(async response => {
+      if (!response.ok) return;
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of windows) client.postMessage({ type: 'EMBE_DATA_CHANGED' });
+    }).catch(() => undefined));
     event.waitUntil(responsePromise.then((response) => response.ok
+      && kind
       && (url.pathname !== "/api/meals" || response.headers.get("x-embe-activity-ready") === "1")
       ? reportFamilyActivity(url.pathname, kind, request.method, response.status,
         DEVICE_ID_PATTERN.test(response.headers.get("x-embe-activity-resource") || "") ? response.headers.get("x-embe-activity-resource") : null)

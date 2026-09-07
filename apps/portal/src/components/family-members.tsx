@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { dateKey } from "../lib/calendar";
+import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import { ClinicalRecordDetails, ClinicalRecordFields } from './family-clinical-record';
 import FamilyRecordDocuments from './family-record-documents';
 import { MEMBER_ROLES, PROFILE_GROUPS, PROFILE_HISTORY_FIELDS, FAMILY_METRICS, RECORD_KINDS, MEASUREMENT_CONTEXTS, memberAge, validFamilyMember,
@@ -39,18 +40,19 @@ export default function FamilyMembers({ initialRole, initialTab = "profile" }: {
   const member = drafts[selected] ?? members.find(m => m.id === selected);
   const allMembers = [...members.filter(m => !drafts[m.id]), ...Object.values(drafts)];
 
-  async function load() {
+  async function load(background = false, canApply = () => true) {
     controller.current?.abort();
     const abort = new AbortController(); controller.current = abort;
-    setLoading(true); setError("");
+    if (!background) { setLoading(true); setError(""); }
     try {
       const result = await request<{ members: FamilyMember[] }>("/api/family/members", undefined, abort.signal);
       if (!Array.isArray(result.members) || !result.members.every(validFamilyMember)) throw new Error("Chưa thể đọc hồ sơ. Hãy thử lại.");
-      if (abort.signal.aborted) return;
+      if (abort.signal.aborted || !canApply()) return;
       setMembers(result.members); setSelected(id => id || result.members.find(m => !m.archived && m.role === initialRole)?.id || result.members.find(m => !m.archived)?.id || "");
-    } catch (err) { if (!abort.signal.aborted) setError((err as Error).message); }
-    finally { if (!abort.signal.aborted) setLoading(false); }
+    } catch (err) { if (!background && !abort.signal.aborted) setError((err as Error).message); }
+    finally { if (!background && !abort.signal.aborted) setLoading(false); }
   }
+  useFamilyDataRefresh(canApply => load(true, canApply), !loading && !saving && !recordEditing && !Object.keys(drafts).length);
   useEffect(() => { void load(); return () => controller.current?.abort(); }, []);
 
   function edit(patch: Partial<FamilyMember>) {
@@ -176,6 +178,23 @@ function MemberRecords({ member, onEditing }: { member: FamilyMember; onEditing:
     finally { if (sequence.current === seq) setLoading(false); }
   }
   useEffect(() => { void load(); return () => { sequence.current++; }; }, [member.id, deleted, filter, query]);
+  useFamilyDataRefresh(async canApply => {
+    const seq = ++sequence.current;
+    const refreshed: MemberRecord[] = [];
+    let offset: number | null = 0;
+    let last: { records: MemberRecord[]; latest: MemberRecord[]; nextOffset: number | null } | undefined;
+    // Re-fetch only pages already visible; never collapse an expanded history.
+    const pages = Math.max(1, Math.ceil(records.length / 40));
+    for (let page = 0; page < pages && offset !== null; page++) {
+      last = await request(`/api/family/members/${member.id}/records?offset=${offset}&deleted=${deleted}&kind=${encodeURIComponent(filter)}&q=${encodeURIComponent(query)}`);
+      if (!canApply() || seq !== sequence.current || !last) return;
+      refreshed.push(...last.records); offset = last.nextOffset;
+    }
+    if (last && canApply() && seq === sequence.current) {
+      setRecords([...new Map(refreshed.map(record => [record.id, record])).values()]);
+      setLatest(last.latest); setNextOffset(offset);
+    }
+  }, !loading && !saving && !draft && !documentBusy && !documentPanels.length);
   function begin(record?: MemberRecord, clinical = false) {
     setDraft(record ?? { id: crypto.randomUUID(), memberId: member.id, kind: "measurement", title: "Cân nặng", occurredAt: new Date().toISOString(),
       notes: "", source: "Nhập tay", nextDueDate: null, metric: "weight", value: null, secondaryValue: null, unit: "kg", revision: 0, deleted: false });

@@ -4,6 +4,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { validFamilyMember, type FamilyMember } from "../lib/family-members";
 import { FOOD_ALLERGENS, nutritionContextHash, personalizedMealMenus, recordedFoodAllergens, type NutritionContext } from "../lib/personalized-meal-menu";
 import type { MealMenuHistory, MealType } from "../lib/pregnancy-menu";
+import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import "./daily-care-tools.css";
 
 export default function PersonalizedMealSuggestions({ meal, history, choose }: { meal: MealType; history: MealMenuHistory[]; choose: (menu: string) => void }) {
@@ -15,8 +16,8 @@ export default function PersonalizedMealSuggestions({ meal, history, choose }: {
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
-  async function load() {
-    setLoading(true); setError(""); setHash("");
+  async function load(background = false, canApply = () => true) {
+    if (!background) { setLoading(true); setError(""); setHash(""); }
     try {
       const responses = await Promise.all([fetch("/api/family/members", { cache: "no-store" }), fetch("/api/pregnancy/profile", { cache: "no-store" })]);
       if (responses.some(r => !r.ok)) throw new Error();
@@ -25,11 +26,13 @@ export default function PersonalizedMealSuggestions({ meal, history, choose }: {
       if (!validFamilyMember(mother) || typeof pregnancy.profile?.allergies !== "string" || typeof pregnancy.profile?.medicalNotes !== "string") throw new Error();
       const nextContext = { allergies: pregnancy.profile.allergies, medicalNotes: pregnancy.profile.medicalNotes, dueDate: pregnancy.profile.dueDate ?? null };
       const digest = await nutritionContextHash(mother, nextContext);
+      if (!canApply()) return;
       setMember(mother); setContext(nextContext); setHash(digest); setDraft(mother.details);
       setEditing(mother.details.nutritionContextHash !== digest || mother.details.nutritionReviewed !== "Đã đối chiếu");
-    } catch { setError("Chưa đọc được hồ sơ để lọc món. Thử lại khi có mạng; không dùng gợi ý chưa đối chiếu."); }
-    finally { setLoading(false); }
+    } catch { if (canApply()) { setHash(""); setError("Chưa đọc được hồ sơ để lọc món. Thử lại khi có mạng; không dùng gợi ý chưa đối chiếu."); } }
+    finally { if (!background) setLoading(false); }
   }
+  useFamilyDataRefresh(canApply => load(true, canApply), !!member && !editing && !loading && !saving);
   const result = useMemo(() => member && context ? personalizedMealMenus(member, context, hash, meal, history) : null, [member, context, hash, meal, history]);
   function change(key: string, value: string) { setDraft(old => ({ ...old, [key]: value })); }
   async function save(e: FormEvent<HTMLFormElement>) {

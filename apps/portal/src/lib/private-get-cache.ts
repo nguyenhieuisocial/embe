@@ -25,14 +25,15 @@ export async function cachedPrivateGet(url: string): Promise<Response> {
     headers: { accept: "application/json" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   }).then((value) => {
-    if (!value.ok) entries.delete(url);
+    if (!value.ok && entries.get(url) === entry) entries.delete(url);
     return value;
   }).catch((error) => {
-    entries.delete(url);
+    if (entries.get(url) === entry) entries.delete(url);
     throw error;
   });
 
-  entries.set(url, { expiresAt: now + CACHE_MS, response });
+  const entry: CacheEntry = { expiresAt: now + CACHE_MS, response };
+  entries.set(url, entry);
   return (await response).clone();
 }
 

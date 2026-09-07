@@ -4,6 +4,7 @@ import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
 import AppShell from "../components/app-shell";
 import DevicePreferencesRuntime from "../components/device-preferences-runtime";
 import PwaRuntime from "../components/pwa-runtime";
+import FamilyDataRuntime from "../components/family-data-runtime";
 import { currentAppVersion } from "../lib/app-version";
 import "./globals.css";
 
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <DevicePreferencesRuntime />
         <AppShell>{children}</AppShell>
         <PwaRuntime version={currentAppVersion()} />
+        <FamilyDataRuntime />
       </body>
     </html>
   );

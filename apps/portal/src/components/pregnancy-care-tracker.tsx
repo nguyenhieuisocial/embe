@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import { readDeviceRole, type DeviceRole } from "../lib/device-preferences";
 import {
@@ -156,7 +157,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
   const [deviceRole, setDeviceRole] = useState<DeviceRole | null>(null);
   const lastIphoneRefreshRef = useRef(0);
 
-  async function load(currentDay: string) {
+  async function load(currentDay: string, background = false, canApply = () => true) {
     try {
       const [careResponse, mealsResponse] = await Promise.all([
         cachedPrivateGet(`/api/pregnancy/care?day=${currentDay}&days=0`),
@@ -165,12 +166,15 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       if (!careResponse.ok) throw new Error("care unavailable");
       const care = await careResponse.json() as { snapshot?: Snapshot };
       const mealPayload = mealsResponse.ok ? await mealsResponse.json() as { history?: MealEntry[] } : {};
-      setSnapshot(care.snapshot ?? EMPTY_SNAPSHOT);
-      setMeals(Array.isArray(mealPayload.history) ? mealPayload.history : []);
+      if (!canApply()) return;
+      setSnapshot(current => background ? { ...(care.snapshot ?? EMPTY_SNAPSHOT), iphone_health_history: current.iphone_health_history } : care.snapshot ?? EMPTY_SNAPSHOT);
+      if (Array.isArray(mealPayload.history)) setMeals(mealPayload.history);
       lastIphoneRefreshRef.current = Date.now();
-      setStatus("idle");
-    } catch { setStatus("error"); }
+      if (!background) setStatus("idle");
+      else setStatus(current => current === "error" ? "idle" : current);
+    } catch { if (!background) setStatus("error"); }
   }
+  useFamilyDataRefresh(canApply => load(day, true, canApply), Boolean(day) && status !== "loading" && status !== "saving" && !showPlan);
 
   useEffect(() => {
     const currentDay = localDateKey();

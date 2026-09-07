@@ -5,6 +5,8 @@ vi.mock("next/font/google", () => ({
   Be_Vietnam_Pro: () => ({ className: "font-body", style: {}, variable: "font-body" }),
   Noto_Serif: () => ({ className: "font-display", style: {}, variable: "font-display" })
 }));
+// This test renders the root without Next's router provider.
+vi.mock("next/navigation", () => ({ usePathname: () => "/", useRouter: () => ({ refresh: vi.fn() }) }));
 
 import RootLayout from "../src/app/layout";
 import LoginPage from "../src/app/login/page";

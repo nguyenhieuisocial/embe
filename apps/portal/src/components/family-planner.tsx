@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { Icon } from "./embe-icon";
+import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import {
   dateInVietnam, LINK_DETAILS, type FamilyTask, type LinkTarget,
   type OwnerRole, type RepeatRule, type TaskCategory
@@ -71,17 +72,18 @@ export default function FamilyPlanner({ selectedDate, startOpen = false, templat
   const days = useMemo(() => nearbyDays(selectedDate), [selectedDate]);
   const completed = tasks.filter((task) => task.completed).length;
 
-  async function load() {
+  async function load(background = false, canApply = () => true) {
     const sequence = ++loadSequence.current;
-    setLoading(true); setError("");
+    if (!background) { setLoading(true); setError(""); }
     try {
       const response = await fetch(`/api/tasks?from=${selectedDate}&to=${selectedDate}`, { cache: "no-store" });
       if (!response.ok) await responseError(response);
       const payload = await response.json() as { tasks?: FamilyTask[] };
-      if (sequence === loadSequence.current) setTasks(Array.isArray(payload.tasks) ? payload.tasks : []);
-    } catch { if (sequence === loadSequence.current) setError("Chưa mở được kế hoạch. Chạm để thử lại."); }
-    finally { if (sequence === loadSequence.current) setLoading(false); }
+      if (sequence === loadSequence.current && canApply()) setTasks(Array.isArray(payload.tasks) ? payload.tasks : []);
+    } catch { if (!background && sequence === loadSequence.current) setError("Chưa mở được kế hoạch. Chạm để thử lại."); }
+    finally { if (!background && sequence === loadSequence.current) setLoading(false); }
   }
+  useFamilyDataRefresh(canApply => load(true, canApply), !loading && !open && !saving && !pendingToggles.length);
 
   useEffect(() => { void load(); return () => { loadSequence.current++; }; }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {

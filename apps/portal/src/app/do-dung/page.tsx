@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useFamilyDataRefresh } from "../../lib/use-family-data-refresh";
 
 import AppHeader from "../../components/app-header";
 
@@ -71,13 +72,14 @@ export default function InventoryPage() {
   const loadingRef = useRef(false);
   const optimisticAmountsRef = useRef(new Map<number, number>());
 
-  const load = useCallback(async (preserveMessage = false) => {
+  const load = useCallback(async (preserveMessage = false, canApply: () => boolean = () => true) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
     try {
       const response = await fetch("/api/inventory", { cache: "no-store" });
       if (!response.ok) throw new Error("inventory unavailable");
       const next = await response.json() as Snapshot;
+      if (!canApply()) return;
       let reconciliationFailed = false;
       if (optimisticAmountsRef.current.size) {
         const remaining = new Map<number, number>();
@@ -100,12 +102,14 @@ export default function InventoryPage() {
       storeSnapshot(next);
       if (reconciliationFailed) setScreenState("sync-error");
       else if (!preserveMessage) setScreenState("ready");
+      else setScreenState(current => current === "error" ? "ready" : current);
     } catch {
-      setScreenState("error");
+      if (!preserveMessage) setScreenState("error");
     } finally {
       loadingRef.current = false;
     }
   }, []);
+  useFamilyDataRefresh(canApply => load(true, canApply), !showForm && screenState !== "saving" && screenState !== "loading");
 
   useEffect(() => {
     optimisticAmountsRef.current = pendingAmounts(localStorage.getItem(INVENTORY_PENDING_KEY));

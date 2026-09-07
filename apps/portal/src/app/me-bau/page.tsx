@@ -7,6 +7,7 @@ import AppHeader from "../../components/app-header";
 import BirthTransition from "../../components/birth-transition";
 import PregnancySafetySearch from "../../components/pregnancy-safety-search";
 import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
+import { useFamilyDataRefresh } from "../../lib/use-family-data-refresh";
 import { LINKED_DAILY_ACTION_EVENT, linkedDailyAction } from "../../lib/linked-daily-actions";
 import {
   dailyChecklist,
@@ -72,6 +73,8 @@ export default function PregnancyPage() {
   const revisionRef = useRef(0);
   const writeQueueRef = useRef<Promise<void>>(Promise.resolve());
   const checklistKey = todayKey ? `embe:pregnancy:checklist:${todayKey}` : "";
+  const refreshState = useRef<(canApply: () => boolean) => Promise<void>>(async () => {});
+  useFamilyDataRefresh(canApply => refreshState.current(canApply), ready && syncStatus !== "saving" && syncStatus !== "loading");
 
   useEffect(() => {
     const currentDay = localDateKey();
@@ -86,9 +89,9 @@ export default function PregnancyPage() {
     setReady(true);
 
     let active = true;
-    async function synchronize() {
+    async function synchronize(background = false, canApply = () => true) {
       const revision = revisionRef.current;
-      setSyncStatus("loading");
+      if (!background) setSyncStatus("loading");
       try {
         const localDueDate = localStorage.getItem(DUE_DATE_KEY) ?? "";
         const hasLocalDueDate = localStorage.getItem(DUE_DATE_KEY) !== null;
@@ -102,7 +105,7 @@ export default function PregnancyPage() {
         const response = await cachedPrivateGet(`/api/pregnancy?day=${currentDay}`);
         if (!response.ok) throw new Error("pregnancy state unavailable");
         let remote = (await response.json()) as PregnancyState;
-        if (!active || revision !== revisionRef.current) return;
+        if (!active || !canApply() || revision !== revisionRef.current) return;
 
         const update: Record<string, unknown> = { day: currentDay };
         if (dueDateDirty || (!remote.hasProfile && hasLocalDueDate)) update.dueDate = localDueDate || null;
@@ -118,7 +121,7 @@ export default function PregnancyPage() {
           clearPrivateGetCache("/api/pregnancy?");
           remote = (await saveResponse.json()) as PregnancyState;
         }
-        if (!active || revision !== revisionRef.current) return;
+        if (!active || !canApply() || revision !== revisionRef.current) return;
 
         if (remote.hasProfile) {
           setDueDate(remote.dueDate ?? "");
@@ -138,11 +141,13 @@ export default function PregnancyPage() {
       }
     }
 
+    refreshState.current = canApply => synchronize(true, canApply);
+    const reconnect = () => { void synchronize(); };
     void synchronize();
-    window.addEventListener("online", synchronize);
+    window.addEventListener("online", reconnect);
     return () => {
       active = false;
-      window.removeEventListener("online", synchronize);
+      window.removeEventListener("online", reconnect);
     };
   }, []);
 

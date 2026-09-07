@@ -101,6 +101,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
             && typeof latest.title === "string" && typeof latest.url === "string"
             && latest.url.startsWith("/") && !latest.url.startsWith("//")) {
           clearPrivateGetCache();
+          window.dispatchEvent(new Event('embe:local-data-changed'));
           if (active) setFamilyActivity({ id: latest.id, title: latest.title.slice(0, 80),
             body: typeof latest.body === "string" ? latest.body.slice(0, 240) : "Mở để xem nội dung vừa cập nhật.",
             url: latest.url, createdAt: typeof latest.createdAt === "string" ? latest.createdAt : undefined });

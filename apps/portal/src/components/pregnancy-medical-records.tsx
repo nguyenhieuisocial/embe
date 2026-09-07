@@ -16,6 +16,7 @@ import MedicalDocumentIntake from './medical-document-intake';
 import MedicalDocumentButton from './medical-document-viewer';
 import type { MedicationScanMedicine } from "../lib/medication-scan-contract";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import { MEDICAL_MEASUREMENTS, medicalMeasurementSeries } from "../lib/medical-measurements";
 
 const kinds: Record<string, string> = {
@@ -96,16 +97,20 @@ export default function PregnancyMedicalRecords() {
     return () => window.removeEventListener("hashchange", openLinkedRecord);
   }, [records]);
 
-  async function load() {
+  async function load(background = false, canApply = () => true) {
     try {
       const response = await cachedPrivateGet("/api/pregnancy/records");
       if (!response.ok) throw new Error("records unavailable");
       const payload = await response.json() as { records?: MedicalRecord[] };
       const nextRecords = payload.records ?? [];
-      setRecords(nextRecords); setStatus("idle");
-      void restoreMedicationScans(nextRecords);
-    } catch { setStatus("error"); }
+      if (!canApply()) return;
+      setRecords(nextRecords);
+      if (background) setStatus(current => current === "error" ? "idle" : current);
+      if (!background) { setStatus("idle"); void restoreMedicationScans(nextRecords); }
+    } catch { if (!background) setStatus("error"); }
   }
+  useFamilyDataRefresh(canApply => load(true, canApply), !showForm && status !== "loading" && status !== "saving"
+    && !medicationScans.some(scan => scan.status === "review" || scan.status === "saving"));
 
   useEffect(() => {
     const quick = new URLSearchParams(window.location.search).get("quick");

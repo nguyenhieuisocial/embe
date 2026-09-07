@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } 
 
 import { localDateKey } from "../lib/pregnancy";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import type { PregnancyHealthMetric, PregnancyWeightPlan } from "./pregnancy-health-charts";
 
 const PregnancyHealthCharts = lazy(() => import("./pregnancy-health-charts"));
@@ -107,12 +108,14 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
   const [editing, setEditing] = useState(true);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const dirtyRef = useRef(false);
+  const reload = useRef<(canApply: () => boolean) => Promise<void>>(async () => {});
+  useFamilyDataRefresh(canApply => reload.current(canApply), !dirtyRef.current && status !== "saving" && status !== "loading");
 
   useEffect(() => {
     const day = localDateKey();
     setToday(day);
     let active = true;
-    async function load() {
+    async function load(background = false, canApply = () => true) {
       try {
         const [response, careResponse] = await Promise.all([
           cachedPrivateGet(`/api/pregnancy/health?end=${day}&days=28`),
@@ -120,7 +123,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
         ]);
         if (!response.ok) throw new Error("health unavailable");
         const payload = await response.json() as { history?: PregnancyHealthMetric[] };
-        if (!active || !Array.isArray(payload.history)) return;
+        if (!active || !canApply() || !Array.isArray(payload.history)) return;
         setHistory(payload.history);
         if (careResponse.ok) {
           const care = await careResponse.json() as { snapshot?: { profile?: {
@@ -129,6 +132,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
             clinician_weight_gain_max_kg?: number | null;
           } | null } };
           const profile = care.snapshot?.profile;
+          if (!active || !canApply()) return;
           if (profile) setWeightPlan({
             prePregnancyWeightKg: profile.pre_pregnancy_weight_kg ?? null,
             clinicianGainMinKg: profile.clinician_weight_gain_min_kg ?? null,
@@ -140,11 +144,13 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           setForm(metricToForm(todayMetric));
           setEditing(!todayMetric || !metricHasValues(todayMetric));
         }
-        setStatus("idle");
+        if (!background) setStatus("idle");
+        else setStatus(current => current === "error" ? "idle" : current);
       } catch {
-        if (active) setStatus("error");
+        if (active && !background) setStatus("error");
       }
     }
+    reload.current = canApply => load(true, canApply);
     void load();
     return () => { active = false; };
   }, []);

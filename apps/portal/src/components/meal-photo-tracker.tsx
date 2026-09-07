@@ -9,6 +9,7 @@ import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition
 import { deriveMealSafetyFlags, hasMealSafetyConcern, inferMealFoodGroups } from "../lib/meal-safety";
 import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import { currentMealType, type MealType } from "../lib/pregnancy-menu";
 import PersonalizedMealSuggestions from "./personalized-meal-suggestions";
 import { suggestPopularFoods, VIETNAMESE_POPULAR_FOODS } from "../lib/vietnamese-food-catalog";
@@ -197,21 +198,21 @@ export default function MealPhotoTracker() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  async function loadHistory(days = range, fresh = false) {
+  async function loadHistory(days = range, fresh = false, background = false, canApply = () => true) {
     const requestId = ++historyRequestRef.current;
-    setHistoryLoading(true);
-    setHistoryLoadError(false);
+    if (!background) { setHistoryLoading(true); setHistoryLoadError(false); }
     try {
       if (fresh) clearPrivateGetCache("/api/meals?");
       const response = await cachedPrivateGet(`/api/meals?days=${days}`);
       if (!response.ok) throw new Error("history_unavailable");
       const payload = await response.json() as { history?: MealHistoryEntry[]; suggestions?: string[]; worker?: Worker };
-      if (requestId !== historyRequestRef.current) return;
+      if (requestId !== historyRequestRef.current || !canApply()) return;
       setHistory(payload.history ?? []);
+      setHistoryLoadError(false);
       setSuggestions(payload.suggestions ?? []);
       setWorker(payload.worker ?? { status: "unknown" });
-    } catch { if (requestId === historyRequestRef.current) setHistoryLoadError(true); }
-    finally { if (requestId === historyRequestRef.current) setHistoryLoading(false); }
+    } catch { if (!background && requestId === historyRequestRef.current) setHistoryLoadError(true); }
+    finally { if (!background && requestId === historyRequestRef.current) setHistoryLoading(false); }
   }
 
   const completedHistory = useMemo(
@@ -227,6 +228,8 @@ export default function MealPhotoTracker() {
   const medicationLike = looksLikeMedication(note);
   const hasMealInput = Boolean(file || note.trim() || manualFoods.length || manualFoodInput.trim());
   const captureBusy = status === "sending" || status === "analyzing" || status === "saving";
+  useFamilyDataRefresh(canApply => loadHistory(range, false, true, canApply),
+    !historyLoading && !historySaving && !historyDeletingId && !historyEditor && !captureBusy);
   const medicationRouteOpen = medicationLike && confirmedMedicationText !== note.trim();
   const medicationDestination = medicationCareDestination(note);
   const popularSuggestions = useMemo(() => suggestPopularFoods(note), [note]);

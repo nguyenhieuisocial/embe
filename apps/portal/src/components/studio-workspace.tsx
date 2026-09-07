@@ -5,6 +5,7 @@ import { documentScript, readyToRender, renderErrors, renderLabels, studioDocume
 import type { StudioTopic } from '../lib/studio-types';
 import StudioFileShare from './studio-file-share';
 import StudioVoicePicker from './studio-voice-picker';
+import { useFamilyDataRefresh } from '../lib/use-family-data-refresh';
 
 async function api(query='',body?:unknown) {
   const response=await fetch(`/api/studio/workspace${query}`,{method:body?'POST':'GET',cache:'no-store',signal:AbortSignal.timeout(18000),...(body?{headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{})});
@@ -17,6 +18,7 @@ function workerText(at:string|null) { return at&&Date.now()-Date.parse(at)<12000
 export default function StudioWorkspace({templates}:{templates:StudioTopic[]}) {
   const [projects,setProjects]=useState<StudioProject[]>([]),[message,setMessage]=useState('Đang mở bàn làm việc…'),[seen,setSeen]=useState<string|null>(null),[trash,setTrash]=useState(false),[loaded,setLoaded]=useState(false),[busy,setBusy]=useState(false);
   const refresh=useCallback(async()=>{try{const data=await api();setProjects(data.projects);setSeen(data.workerSeenAt);setLoaded(true);setMessage('');}catch(e){setMessage((e as Error).message);}},[]);
+  useFamilyDataRefresh(async canApply => { const data=await api(); if(canApply()){setProjects(data.projects);setSeen(data.workerSeenAt);} }, loaded && !busy);
   useEffect(()=>{void refresh();const focus=()=>{void refresh();};window.addEventListener('focus',focus);return()=>window.removeEventListener('focus',focus);},[refresh]);
   async function restore(p:StudioProject){if(busy)return;setBusy(true);try{await api('',{action:'restore',id:p.id,revision:p.revision});await refresh();setMessage('Đã khôi phục bản nháp.');}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
   return <section aria-label="Bàn làm việc Studio">
@@ -45,6 +47,12 @@ export function StudioEditor({projectId,template,ideaId}:{projectId?:string;temp
   const latest=renders.find(r=>r.revision===saved?.revision);
   const active=renders.find(r=>['queued','rendering'].includes(r.status));
   const completed=renders.find(r=>r.status==='completed');
+  useFamilyDataRefresh(async canApply => {
+    const data=await api(`?project=${id}`);
+    if(!canApply())return;
+    setRenders(data.renders);setSeen(data.workerSeenAt);
+    if(data.project.revision!==saved?.revision){setSaved(data.project);setDoc(data.project.payload);setMessage('Đã đồng bộ bản mới từ thiết bị khác.');}
+  }, loaded && !!saved && !dirty && !busy && !saving && !recovery);
   const fetchProject=useCallback(async()=>{
     const data=await api(`?project=${projectId}`);setSaved(data.project);setDoc(data.project.payload);setRenders(data.renders);setSeen(data.workerSeenAt);setLoaded(true);return data;
   },[projectId]);
