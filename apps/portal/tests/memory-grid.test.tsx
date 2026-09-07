@@ -1,8 +1,24 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import MemoryGrid from "../src/components/memory-grid";
 import type { MediaMemory } from "../src/lib/media";
+
+function observePaging() {
+  const observers: Observer[] = [];
+  class Observer {
+    target: Element | null = null;
+    constructor(readonly callback: IntersectionObserverCallback) { observers.push(this); }
+    observe(target: Element) { this.target = target; }
+    disconnect() { this.target = null; }
+  }
+  vi.stubGlobal("IntersectionObserver", Observer);
+  return () => act(() => {
+    const observer = observers.findLast(o => o.target?.classList.contains("auto-load-more"));
+    // Exercise burst callbacks, as rapid mobile scroll can queue more than one.
+    for (let i = 0; i < 3; i++) observer?.callback([{ isIntersecting: true } as IntersectionObserverEntry], observer as unknown as IntersectionObserver);
+  });
+}
 
 function memory(index: number): MediaMemory {
   return {
@@ -26,6 +42,7 @@ function memory(index: number): MediaMemory {
 describe("mobile memory grid", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     Reflect.deleteProperty(navigator, "share");
     Reflect.deleteProperty(navigator, "canShare");
   });
@@ -38,11 +55,69 @@ describe("mobile memory grid", () => {
     }), { status: 200, headers: { "content-type": "application/json" } }));
 
     render(<MemoryGrid date="2026-08-30" initial={initial} />);
-    fireEvent.click(screen.getByRole("button", { name: "Xem thêm kỷ niệm" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tải thêm ảnh" }));
 
     await waitFor(() => expect(screen.getByAltText("Kỷ niệm 24")).toBeInTheDocument());
     expect(screen.getByAltText("Kỷ niệm 0")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Xem thêm kỷ niệm" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tải thêm ảnh" })).not.toBeInTheDocument();
+  });
+
+  it.each(["album", "ngay-thang", "chuyen-di", "ban-do"] as const)("auto-loads near the end in %s without requiring a click", async view => {
+    const approachEnd = observePaging();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ memories: [memory(24)], hasMore: false }));
+    render(<MemoryGrid album="da-lat-2025" date="2026-08-30" initial={Array.from({ length: 24 }, (_, i) => memory(i))} initialView={view} />);
+    expect(fetchMock).not.toHaveBeenCalled();
+    approachEnd();
+    await waitFor(() => expect(screen.getByText("25 ảnh đang hiển thị.")).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const url = new URL(String(fetchMock.mock.calls[0][0]), "https://embe.hieu.asia");
+    expect(url.searchParams.get("date")).toBe("2026-08-30");
+    expect(url.searchParams.get("album")).toBe("da-lat-2025");
+    expect(url.searchParams.get("offset")).toBe("24");
+    approachEnd(); expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not request photo pages behind the folder overview or an open viewer", async () => {
+    const approachEnd = observePaging();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ memories: [], hasMore: false }));
+    const initial = Array.from({ length: 24 }, (_, i) => memory(i));
+    const { unmount } = render(<MemoryGrid initial={initial} initialView="album" />);
+    approachEnd(); expect(fetchMock).not.toHaveBeenCalled(); unmount();
+    render(<MemoryGrid initial={initial} initialView="album" album="da-lat-2025" />);
+    fireEvent.click(screen.getByRole("button", { name: "Mở ảnh Kỷ niệm 0" }));
+    approachEnd(); expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Đóng ảnh" }));
+    approachEnd(); await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("deduplicates overlapping pages and advances by rows received instead of visible count", async () => {
+    const approachEnd = observePaging();
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({ memories: [memory(23), memory(24)], hasMore: true }))
+      .mockResolvedValueOnce(Response.json({ memories: [], hasMore: true }));
+    render(<MemoryGrid date="2026-08-30" initial={Array.from({ length: 24 }, (_, i) => memory(i))} />);
+    approachEnd();
+    await waitFor(() => expect(screen.getByText("25 ảnh đang hiển thị.")).toBeInTheDocument());
+    expect(screen.getAllByRole("button", { name: "Mở ảnh Kỷ niệm 23" })).toHaveLength(1);
+    approachEnd();
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Tải thêm ảnh" })).not.toBeInTheDocument());
+    expect(String(fetchMock.mock.calls[1][0])).toContain("offset=26");
+    approachEnd(); expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps existing photos on failure and waits for explicit retry instead of looping", async () => {
+    const approachEnd = observePaging();
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(Response.json({ error: "unavailable" }, { status: 503 }))
+      .mockResolvedValueOnce(Response.json({ memories: [memory(24)], hasMore: false }));
+    render(<MemoryGrid date="2026-08-30" initial={Array.from({ length: 24 }, (_, i) => memory(i))} />);
+    approachEnd();
+    expect(await screen.findByRole("button", { name: "Thử lại" })).toBeEnabled();
+    expect(screen.getByAltText("Kỷ niệm 0")).toBeInTheDocument();
+    approachEnd(); expect(fetchMock).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(await screen.findByAltText("Kỷ niệm 24")).toBeInTheDocument();
+    expect(fetchMock.mock.calls[0][0]).toBe(fetchMock.mock.calls[1][0]);
   });
 
   it("links each day album to the matching day detail", () => {

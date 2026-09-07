@@ -64,4 +64,13 @@ describe("private paginated memories", () => {
     expect(response.status).toBe(200);
     expect(getMediaMemories).toHaveBeenCalledWith({ album: "da-lat-2025", limit: 24, offset: 0, strict: true });
   });
+
+  it("rejects out-of-range offsets instead of silently repeating the first page", async () => {
+    process.env.EMBE_PORTAL_SESSION_SECRET = SECRET;
+    const cookie = `embe_session=${createSessionCookie(SECRET, new Date(), "11111111-1111-4111-8111-111111111111")}`;
+    for (const offset of ["-1", "oops", "1000001"]) {
+      expect((await GET(new Request(`https://embe.hieu.asia/api/memories?offset=${offset}`, { headers: { cookie } }))).status).toBe(400);
+    }
+    expect(getMediaMemories).not.toHaveBeenCalled();
+  });
 });

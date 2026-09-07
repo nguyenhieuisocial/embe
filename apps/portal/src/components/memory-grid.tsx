@@ -11,6 +11,7 @@ import { readDeviceRole } from "../lib/device-preferences";
 import PhotoShareButton from "./photo-share-button";
 import PhotoDownloadButton from "./photo-download-button";
 import ViewportImage from "./viewport-image";
+import AutoLoadMore from "./auto-load-more";
 
 const PAGE_SIZE = 24;
 const REACTIONS = [
@@ -392,27 +393,41 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(initial.length === PAGE_SIZE);
   const [state, setState] = useState<"ready" | "loading" | "error">("ready");
+  const nextOffset = useRef(initial.length);
+  const pendingPage = useRef<AbortController | null>(null);
+  useEffect(() => () => pendingPage.current?.abort(), []);
   const selectedAlbumCount = albums.find((item) => item.key === album)?.count;
 
   async function loadMore() {
-    if (state === "loading") return;
+    if (pendingPage.current || !hasMore) return;
+    const controller = new AbortController();
+    pendingPage.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 15000);
     setState("loading");
     try {
-      const params = new URLSearchParams({ offset: String(memories.length), limit: String(PAGE_SIZE) });
+      const params = new URLSearchParams({ offset: String(nextOffset.current), limit: String(PAGE_SIZE) });
       if (date) params.set("date", date);
       if (album) params.set("album", album);
       const response = await fetch(`/api/memories?${params}`, {
         credentials: "same-origin",
+        cache: "no-store",
+        signal: controller.signal,
         headers: { Accept: "application/json" }
       });
       if (!response.ok) throw new Error("load failed");
       const payload = await response.json() as { memories?: MediaMemory[]; hasMore?: boolean };
       if (!Array.isArray(payload.memories)) throw new Error("invalid response");
-      setMemories((current) => [...current, ...payload.memories!]);
-      setHasMore(Boolean(payload.hasMore));
+      // Advance by rows read, not by unique visible photos. A new upload can
+      // shift offset pages; duplicates must not repeat frames or stall paging.
+      nextOffset.current += payload.memories.length;
+      setMemories((current) => [...new Map([...current, ...payload.memories!].map(memory => [memory.id, memory])).values()]);
+      setHasMore(Boolean(payload.hasMore) && payload.memories.length > 0);
       setState("ready");
     } catch {
       setState("error");
+    } finally {
+      clearTimeout(timeout);
+      pendingPage.current = null;
     }
   }
 
@@ -508,13 +523,10 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
       ) : null}
 
       {view === "ban-do" ? <MemoryMap memories={memories} /> : null}
-      {hasMore && !(view === "album" && !album) ? (
-        <button className="memory-more" disabled={state === "loading"} onClick={loadMore} type="button">
-          {state === "loading" ? "Đang mở thêm…" : state === "error" ? "Thử mở lại" : view === "ngay-thang" && !date ? "Xem thêm ngày" : "Xem thêm kỷ niệm"}
-        </button>
-      ) : null}
+      <AutoLoadMore hasMore={hasMore && !(view === "album" && !album)} loading={state === "loading"} error={state === "error"}
+        paused={activeIndex !== null} pageKey={`${view}:${nextOffset.current}`} onLoadMore={loadMore} />
       <p className="sr-only" aria-live="polite">
-        {state === "error" ? "Chưa mở được ảnh mới. Chạm Thử mở lại." : `${memories.length} ảnh đang hiển thị.`}
+        {state === "error" ? "Chưa mở được ảnh mới. Chạm Thử lại." : `${memories.length} ảnh đang hiển thị.`}
       </p>
       {activeIndex != null && memories[activeIndex] ? (
         <PhotoViewer index={activeIndex} memory={memories[activeIndex]} onClose={() => setActiveIndex(null)} onMove={moveViewer}

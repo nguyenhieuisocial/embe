@@ -35,7 +35,9 @@ export async function GET(request: Request): Promise<Response> {
     catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
   }
   const limit = Math.max(1, integerParam(url.searchParams.get("limit"), 24, 60));
-  const offset = integerParam(url.searchParams.get("offset"), 0, 10_000);
+  const offsetText = url.searchParams.get("offset");
+  if (offsetText !== null && (!/^\d+$/.test(offsetText) || Number(offsetText) > 1_000_000)) return privateReply({ error: "invalid_offset" }, 400);
+  const offset = integerParam(offsetText, 0, 1_000_000);
   const date = url.searchParams.get("date");
   const album = url.searchParams.get("album");
   const range = date ? dayRange(date) : null;

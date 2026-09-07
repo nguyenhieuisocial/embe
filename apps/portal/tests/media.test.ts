@@ -30,6 +30,13 @@ describe("private media read model", () => {
     const url = fetchMock.mock.calls[0][0].toString();
     expect(url).toContain("limit=24");
     expect(url).toContain("offset=48");
+    expect(new URL(url).searchParams.get("order")).toBe("event_at.desc,id.desc");
+  });
+
+  it("does not reset a large album offset back to its first photos", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json([]));
+    await getMediaMemories({ limit: 24, offset: 10008 });
+    expect(new URL(String(fetchMock.mock.calls[0][0])).searchParams.get("offset")).toBe("10008");
   });
 
   it("filters a gallery by a safe semantic album key", async () => {

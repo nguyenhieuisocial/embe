@@ -6,6 +6,7 @@
 .bump-picks button { flex: 0 0 100px; font-size: .8rem; }
 .bump-picks img { width: 76px; height: 76px; object-fit: contain; }
 .bump-photo-picker { display: grid; gap: 8px; }
+.bump-photo-scroll { max-height: 480px; max-height: min(52dvh, 480px); overflow-y: auto; overscroll-behavior-y: contain; padding: 2px; }
 .bump-photo-picker button { display: flex; gap: 12px; align-items: center; text-align: left; }
 .bump-photo-picker button span { min-width: 0; overflow-wrap: anywhere; }
 .bump-photo-picker img { flex: 0 0 64px; width: 64px; height: 64px; object-fit: contain; }

@@ -93,12 +93,12 @@ export async function getMediaMemories(
   const limit = Number.isInteger(options.limit) && options.limit! >= 1 && options.limit! <= 60
     ? options.limit!
     : 60;
-  const offset = Number.isInteger(options.offset) && options.offset! >= 0 && options.offset! <= 10_000
+  const offset = Number.isInteger(options.offset) && options.offset! >= 0 && options.offset! <= 1_000_000
     ? options.offset!
     : 0;
   const query = new URLSearchParams({
     select: MEDIA_SELECT,
-    order: "event_at.desc",
+    order: "event_at.desc,id.desc",
     limit: String(limit),
     offset: String(offset)
   });

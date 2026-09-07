@@ -1,0 +1,3 @@
+.auto-load-more { min-height: 44px; display: grid; justify-items: center; gap: 4px; padding: 8px 0; color: var(--ink-soft); font-size: .85rem; }
+.auto-load-more > button { min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
+.auto-load-more > .auto-load-keyboard:not(:focus) { position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; margin: -1px; border: 0; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }

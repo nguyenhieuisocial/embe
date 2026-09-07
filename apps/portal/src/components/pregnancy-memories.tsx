@@ -10,6 +10,7 @@ import type { MediaMemory } from "../lib/media";
 import { toLocalDateTime } from "../lib/photo-metadata";
 import PhotoComposer from "./photo-composer";
 import { PhotoViewer } from "./memory-grid";
+import AutoLoadMore from "./auto-load-more";
 import "./daily-care-tools.css";
 import "./pregnancy-memories.css";
 
@@ -29,6 +30,7 @@ export default function PregnancyMemories() {
   const [nextOffset, setNextOffset] = useState<number | null>(null);
   const [deleted, setDeleted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [draft, setDraft] = useState<MemberRecord | null>(null);
@@ -36,6 +38,7 @@ export default function PregnancyMemories() {
   const [photoOffset, setPhotoOffset] = useState(0);
   const [morePhotos, setMorePhotos] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
   const [photoDate, setPhotoDate] = useState("");
   const [viewer, setViewer] = useState<{ photos: MediaMemory[]; index: number } | null>(null);
   const [compare, setCompare] = useState<string[]>([]);
@@ -44,14 +47,14 @@ export default function PregnancyMemories() {
   const loadId = useRef(0); const saveLock = useRef(false); const photoRequest = useRef(0);
 
   async function list(id: string, trash: boolean, offset = 0) {
-    const sequence = ++loadId.current; setLoading(true);
+    const sequence = ++loadId.current; setLoading(true); setListError(false);
     try {
       const data = await api<{ records: MemberRecord[]; nextOffset: number | null }>(`/api/family/members/${id}/records?collection=pregnancy&deleted=${trash}&offset=${offset}`);
       if (!Array.isArray(data.records) || !data.records.every(r => validMemberRecord(r) && r.pregnancyMemory)) throw new Error("Chưa đọc được album theo tuần.");
       if (sequence !== loadId.current) return;
       setRecords(old => offset ? [...new Map([...old, ...data.records].map(r => [r.id, r])).values()] : data.records);
       setNextOffset(data.nextOffset); setDeleted(trash);
-    } catch (err) { if (sequence === loadId.current) setMessage((err as Error).message); }
+    } catch (err) { if (sequence === loadId.current) { setListError(true); setMessage((err as Error).message); } }
     finally { if (sequence === loadId.current) setLoading(false); }
   }
   async function initialize() {
@@ -67,13 +70,13 @@ export default function PregnancyMemories() {
   useEffect(() => () => { if (card) URL.revokeObjectURL(card.url); }, [card]);
 
   async function loadPhotos(offset = 0, date = photoDate) {
-    const sequence = ++photoRequest.current; setPhotoLoading(true);
+    const sequence = ++photoRequest.current; setPhotoLoading(true); setPhotoError(false);
     try {
       const data = await api<{ memories: MediaMemory[]; hasMore: boolean }>(`/api/memories?limit=24&offset=${offset}${date ? `&date=${date}` : ""}`);
       if (sequence !== photoRequest.current) return;
       setPhotos(old => offset ? [...new Map([...old, ...data.memories].map(p => [p.id, p])).values()] : data.memories);
-      setPhotoOffset(offset + 24); setMorePhotos(data.hasMore);
-    } catch (err) { if (sequence === photoRequest.current) setMessage((err as Error).message); }
+      setPhotoOffset(offset + data.memories.length); setMorePhotos(data.hasMore && data.memories.length > 0);
+    } catch (err) { if (sequence === photoRequest.current) { setPhotoError(true); setMessage((err as Error).message); } }
     finally { if (sequence === photoRequest.current) setPhotoLoading(false); }
   }
   function start(record?: MemberRecord) {
@@ -168,9 +171,12 @@ export default function PregnancyMemories() {
         <button type="button" disabled={photoLoading} onClick={() => void loadPhotos()}>Tải lại ảnh</button>
         <p>Đã chọn {draft.pregnancyMemory.mediaIds.length}/12 ảnh. Có thể bỏ từng ảnh trước khi lưu.</p>
         {draft.pregnancyMemory.mediaIds.length ? <div className="bump-picks">{draft.pregnancyMemory.mediaIds.map((id, i) => <button type="button" key={id} aria-label={`Bỏ ảnh đã chọn ${i + 1}`} onClick={() => patch({ pregnancyMemory: { ...draft.pregnancyMemory!, mediaIds: draft.pregnancyMemory!.mediaIds.filter(p => p !== id) } })}><img src={`/api/media/${id}`} alt={`Ảnh đã chọn ${i + 1}`} />Bỏ ảnh {i + 1}</button>)}</div> : null}
+        <div className="bump-photo-scroll" data-photo-scroll role="region" aria-label="Ảnh để chọn vào tuần" tabIndex={0}>
         <div className="bump-photo-picker">{photos.map(p => <button type="button" key={p.id} aria-pressed={draft.pregnancyMemory!.mediaIds.includes(p.id)} aria-label={`Chọn ${p.title}`} onClick={() => pick(p)}><img loading="lazy" src={`/api/media/${p.id}`} alt="" /><span>{p.title}<small>{new Date(p.eventAt).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}</small></span></button>)}</div>
         {photoLoading ? <p>Đang tải ảnh…</p> : !photos.length ? <p>Chưa thấy ảnh trong lựa chọn này. Thử ngày khác hoặc tải lại sau khi đồng bộ.</p> : null}
-        {morePhotos ? <button type="button" disabled={photoLoading} onClick={() => void loadPhotos(photoOffset)}>Ảnh tiếp theo</button> : null}
+        <AutoLoadMore hasMore={morePhotos} loading={photoLoading} error={photoError} paused={saving}
+          pageKey={`${photoDate}:${photoOffset}`} onLoadMore={() => loadPhotos(photoOffset)} />
+        </div>
       </fieldset><div className="care-inline-actions"><button type="submit" disabled={saving || !draft.pregnancyMemory.mediaIds.length}>{saving ? "Đang lưu…" : "Lưu kỷ niệm"}</button><button type="button" disabled={saving} onClick={() => setDraft(null)}>Hủy thay đổi</button></div>
     </form> : null}
     {card ? <section className="bump-card-preview"><h2>Thiệp đã sẵn sàng</h2><img src={card.url} alt="Thiệp kỷ niệm vừa tạo" /><div className="care-inline-actions"><button type="button" onClick={() => void shareCard()}>Chia sẻ thiệp</button><a href={card.url} download={card.file.name}>Tải thiệp</a><button type="button" onClick={() => setCard(null)}>Đóng</button></div><p>Thiệp được tạo trên điện thoại, không tự tạo link công khai hay gửi cho ai.</p></section> : null}
@@ -183,7 +189,8 @@ export default function PregnancyMemories() {
       <button type="button" aria-pressed={compare.includes(group.mediaIds[0])} onClick={() => setCompare(old => old.includes(group.mediaIds[0]) ? old.filter(id => id !== group.mediaIds[0]) : [...old.slice(-1), group.mediaIds[0]])}>{compare.includes(group.mediaIds[0]) ? "Đã chọn so sánh" : "Chọn ảnh so sánh"}</button>
       {group.records.map(record => <details key={record.id}><summary>{record.title} · {record.pregnancyMemory!.mediaIds.length} ảnh</summary><p>{record.notes}</p><Link href={`/lich?date=${dateInVietnam(new Date(record.occurredAt))}`}>Xem ngày trên lịch</Link><div className="care-inline-actions"><button type="button" disabled={saving || !!draft} onClick={() => start(record)}>Sửa</button><button type="button" disabled={saving} onClick={() => void makeCard(record)}>Tạo thiệp</button><button type="button" disabled={saving || !!draft} onClick={() => { if (window.confirm("Cất kỷ niệm vào mục đã xóa? Ảnh gốc vẫn giữ nguyên.")) void save({ ...record, deleted: true }, false); }}>Xóa khỏi tuần</button></div></details>)}
     </article>)}
-    {nextOffset !== null ? <button type="button" disabled={loading} onClick={() => void list(memberId, deleted, nextOffset)}>Xem thêm kỷ niệm</button> : null}
+    <AutoLoadMore hasMore={nextOffset !== null} loading={loading} error={listError} paused={saving || !!draft || !!viewer}
+      label="kỷ niệm" pageKey={`${deleted}:${nextOffset}`} onLoadMore={() => list(memberId, deleted, nextOffset ?? 0)} />
     {viewer ? <PhotoViewer key={viewer.photos[viewer.index].id} memory={viewer.photos[viewer.index]} index={viewer.index} total={viewer.photos.length} onClose={() => setViewer(null)} onMove={direction => setViewer(v => v ? { ...v, index: (v.index + direction + v.photos.length) % v.photos.length } : null)} onMetadataSaved={memory => setViewer(v => v ? { ...v, photos: v.photos.map(p => p.id === memory.id ? memory : p) } : null)} /> : null}
   </section>;
 }

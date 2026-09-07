@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PregnancyMemories from "../src/components/pregnancy-memories";
 import { pregnancyMemoryGroups } from "../src/lib/pregnancy-memories";
@@ -69,5 +69,36 @@ describe("explicit weekly pregnancy memories", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lưu kỷ niệm" }));
     await waitFor(() => expect(screen.queryByLabelText("Tiêu đề")).not.toBeInTheDocument());
     expect(writes).toHaveLength(2); expect(writes[0]).toEqual(writes[1]);
+  });
+
+  it("auto-pages the photo picker without losing the draft or selecting new photos", async () => {
+    let approachEnd: (() => void) | undefined;
+    const roots: (Element | Document | null | undefined)[] = [];
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor(private callback: IntersectionObserverCallback, options?: IntersectionObserverInit) { roots.push(options?.root); }
+      observe(target: Element) {
+        if (target.closest("[data-photo-scroll]")) approachEnd = () => this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      }
+      disconnect() {}
+    });
+    const writes = mockNetwork([]);
+    const originalFetch = fetch;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.startsWith("/api/memories?")) return Response.json(url.includes("offset=1")
+        ? { memories: [{ ...photo, id: "44444444-4444-4444-8444-444444444444", title: "Ảnh tiếp" }], hasMore: false }
+        : { memories: [photo], hasMore: true });
+      return originalFetch(url, init);
+    }));
+    render(<PregnancyMemories />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Thêm kỷ niệm theo tuần" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Thêm kỷ niệm theo tuần" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Chọn Ảnh thử" }));
+    fireEvent.change(screen.getByLabelText("Tiêu đề"), { target: { value: "Mẹ muốn giữ ngày này" } });
+    act(() => approachEnd?.());
+    expect(await screen.findByRole("button", { name: "Chọn Ảnh tiếp" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Chọn Ảnh thử" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Tiêu đề")).toHaveValue("Mẹ muốn giữ ngày này");
+    expect(roots).toContain(screen.getByRole("region", { name: "Ảnh để chọn vào tuần" }));
+    expect(writes).toHaveLength(0);
   });
 });

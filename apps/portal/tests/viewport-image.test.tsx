@@ -22,6 +22,7 @@ describe("ViewportImage", () => {
 
     act(() => reveal?.());
     expect(screen.getByRole("img", { name: "Kỷ niệm" })).toHaveAttribute("src", "/api/media/example");
+    expect(screen.getByRole("img", { name: "Kỷ niệm" })).toHaveAttribute("loading", "eager");
   });
 
   it("loads the first visible cover immediately", () => {

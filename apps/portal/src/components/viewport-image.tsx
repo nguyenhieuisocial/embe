@@ -22,7 +22,7 @@ export default function ViewportImage({ alt, eager = false, height, src, width }
       if (!entries.some((entry) => entry.isIntersecting)) return;
       setVisible(true);
       observer.disconnect();
-    }, { rootMargin: "160px" });
+    }, { rootMargin: "400px" });
     observer.observe(imageRef.current);
     return () => observer.disconnect();
   }, [visible]);
@@ -31,7 +31,7 @@ export default function ViewportImage({ alt, eager = false, height, src, width }
     // Private media stays behind the authenticated endpoint; the source is
     // attached only when this frame is close to the mobile viewport.
     // eslint-disable-next-line @next/next/no-img-element
-    <img alt={alt} decoding="async" height={height} loading="lazy" ref={imageRef}
+    <img alt={alt} decoding="async" height={height} loading={visible ? "eager" : "lazy"} ref={imageRef}
       src={visible ? src : undefined} width={width} />
   );
 }
