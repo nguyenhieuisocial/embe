@@ -129,9 +129,7 @@ describe("pregnancy medical record book", () => {
     expect(appointment).not.toBeNull();
     expect(within(appointment!).getByText("Cần làm xét nghiệm nào?")).toBeInTheDocument();
     expect(within(appointment!).getByText(/Mang giấy tờ và sổ khám/)).toBeInTheDocument();
-    expect(within(appointment!).getByRole("link", { name: /phieu-hen\.pdf/i })).toHaveAttribute(
-      "href", "/api/pregnancy/documents/22222222-2222-4222-8222-222222222222"
-    );
+    expect(within(appointment!).getByRole("button", { name: /phieu-hen\.pdf/i })).toHaveAttribute("aria-haspopup", "dialog");
 
     fireEvent.click(screen.getByRole("button", { name: "Chuẩn bị buổi khám" }));
     expect(screen.getByRole("heading", { name: "Chuẩn bị buổi khám" })).toBeInTheDocument();

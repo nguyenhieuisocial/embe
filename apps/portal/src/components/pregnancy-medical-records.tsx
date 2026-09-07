@@ -13,6 +13,7 @@ import {
 } from "../lib/pregnancy-medical";
 import { uploadDocument } from "../lib/medical-upload-client";
 import MedicalDocumentIntake from './medical-document-intake';
+import MedicalDocumentButton from './medical-document-viewer';
 import type { MedicationScanMedicine } from "../lib/medication-scan-contract";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 import { MEDICAL_MEASUREMENTS, medicalMeasurementSeries } from "../lib/medical-measurements";
@@ -328,7 +329,7 @@ export default function PregnancyMedicalRecords() {
             return <>
               {workspace.questions.length ? <div className="appointment-prepared-block"><b>Câu hỏi đã chuẩn bị</b><ul>{workspace.questions.map((question) => <li key={question}>{question}</li>)}</ul></div> : <p>Chưa có câu hỏi. Ghi trước để vào phòng khám không quên.</p>}
               <div className="appointment-check-summary"><b>Trước khi đi</b>{APPOINTMENT_CHECKLIST.map((item) => <span key={item.id} className={workspace.checklist.includes(item.id) ? "is-done" : ""}>{workspace.checklist.includes(item.id) ? "✓" : "○"} {item.label}</span>)}</div>
-              {insights.upcoming.documents.length ? <div className="medical-documents">{insights.upcoming.documents.map((document) => <a key={document.id} href={`/api/pregnancy/documents/${document.id}`} target="_blank" rel="noreferrer">{document.mimeType === "application/pdf" ? "PDF" : "Ảnh"} · {document.originalFilename}</a>)}</div> : null}
+              {insights.upcoming.documents.length ? <div className="medical-documents">{insights.upcoming.documents.map((document) => <MedicalDocumentButton key={document.id} document={document} documents={insights.upcoming!.documents} />)}</div> : null}
             </>;
           })()}
           {insights.upcoming.followUpFromCompleted
@@ -404,6 +405,7 @@ export default function PregnancyMedicalRecords() {
         <header><div><strong>Kiểm tra đơn thuốc</strong><small>Đối chiếu từng dòng với ảnh gốc</small></div>
           <span>{scan.status === "queued" || scan.status === "processing" ? "Đang đọc…" : scan.status === "confirmed" ? "Đã xác nhận" : scan.status === "failed" ? "Chưa đọc được" : "Cần Mẹ kiểm tra"}</span></header>
         <img src={`/api/pregnancy/documents/${scan.documentId}`} alt="Ảnh đơn thuốc gốc" />
+        <MedicalDocumentButton document={{ id: scan.documentId, originalFilename: 'Đơn thuốc gốc', mimeType: 'image/jpeg' }}>Xem ảnh đơn thuốc</MedicalDocumentButton>
         {scan.status === "failed" ? <div className="medication-scan-message"><p>Máy chưa đọc được ảnh này. Ảnh vẫn được lưu an toàn.</p><button type="button" onClick={() => void queueMedicationScan(scan.documentId)}>Thử đọc lại</button></div> : null}
         {scan.status === "review" || scan.status === "saving" ? <div className="medication-scan-editor">
           {scan.medicines.map((medicine, index) => <div className="medical-medicine-row" key={index}>
@@ -462,7 +464,7 @@ export default function PregnancyMedicalRecords() {
               </div>;
             })() : record.notes ? <p className="medical-record-note">{record.notes}</p> : null}
             {record.documents.length ? <div className="medical-documents">{record.documents.map((document) => <div key={document.id}>
-              <a href={`/api/pregnancy/documents/${document.id}`} target="_blank" rel="noreferrer">{document.mimeType === "application/pdf" ? "PDF" : "Ảnh"} · {document.originalFilename}</a>
+              <MedicalDocumentButton document={document} documents={record.documents} />
               <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>{document.imported ? 'Đã thêm vào hồ sơ · xem bản đọc' : document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? 'Đã đọc · xác nhận vào hồ sơ' : document.scanStatus === 'queued' || document.scanStatus === 'processing' ? 'Đang đọc · xem tiến độ' : 'Đọc & đối chiếu'}</Link>
             </div>)}</div> : null}
           </article>)}

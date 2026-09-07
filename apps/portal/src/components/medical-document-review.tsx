@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import MedicalDocumentImport from './medical-document-import';
+import MedicalDocumentButton from './medical-document-viewer';
 import { DOCUMENT_TYPES, SCAN_ERROR_TEXT, documentAnalysisText, validDocumentAnalysis, withPrintedUnit,
   type DocumentAnalysis, type DocumentPage, type DocumentScan, type ExtractedField, type ExtractedMedicine, type ExtractedCharge } from '../lib/medical-document-scan';
 
@@ -36,13 +37,13 @@ function DocumentOriginal({ documentId, scan, pageNumber }: { documentId: string
         <button type="button" disabled={zoom >= 3} aria-label="Phóng to bản gốc" onClick={() => setZoom(value => Math.min(3, value + .5))}>+</button>
         <small>Vuốt để xem khi phóng to</small>
       </div>
-      {failed ? <p role="status">Chưa tải được ảnh. Dùng liên kết mở bản gốc bên dưới.</p> : <div className="document-image-scroll" tabIndex={0} role="region" aria-label="Ảnh tài liệu gốc, có thể cuộn">
+      {failed ? <p role="status">Chưa tải được ảnh. Dùng nút xem toàn màn hình bên dưới để thử lại.</p> : <div className="document-image-scroll" tabIndex={0} role="region" aria-label="Ảnh tài liệu gốc, có thể cuộn">
         {/* Authenticated original: no public image optimizer or persisted browser copy. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={url} alt="Bản gốc tài liệu để đối chiếu" style={{ width: `${zoom * 100}%` }} onError={() => setFailed(true)} />
       </div>}
     </div> : null}
-    <a className="document-original" href={isImage ? url : `${url}#page=${pageNumber}`} target="_blank" rel="noreferrer">Mở bản gốc · {scan.filename}</a>
+    <MedicalDocumentButton className="document-original" document={{ id: documentId, originalFilename: scan.filename, mimeType: scan.mimeType }} pageNumber={pageNumber}>Xem toàn màn hình · {scan.filename}</MedicalDocumentButton>
   </div>;
 }
 

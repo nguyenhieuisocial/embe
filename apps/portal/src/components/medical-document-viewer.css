@@ -1,0 +1,27 @@
+.medical-document-trigger { align-items: center; background: var(--surface, #fffefd); border: 1px solid var(--line, #eadde3); border-radius: 12px; color: var(--ink, #35282e); display: inline-flex; font: inherit; font-size: .82rem; min-height: 44px; min-width: 44px; max-width: 100%; padding: 8px 12px; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.medical-viewer { box-sizing: border-box; position: fixed; inset: 0; width: 100%; height: 100vh; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: #fff8fb; color: #35282e; overscroll-behavior: contain; }
+.medical-viewer::backdrop { background: #35282e99; }
+.medical-viewer *, .medical-viewer *::before, .medical-viewer *::after { box-sizing: border-box; }
+.medical-viewer-layout { display: flex; flex-direction: column; height: 100%; overflow: hidden; padding-top: env(safe-area-inset-top); padding-right: env(safe-area-inset-right); padding-left: env(safe-area-inset-left); }
+.medical-viewer button { flex-shrink: 0; font: inherit; font-size: .875rem; font-weight: 600; line-height: 1.3; min-height: 44px; min-width: 44px; padding: 8px 12px; color: #71334c; border: 1px solid #e4cbd5; border-radius: 12px; background: #fffefd; cursor: pointer; }
+.medical-viewer button:disabled { opacity: .45; cursor: default; }
+.medical-viewer :focus-visible { outline: 3px solid #a54a6a; outline-offset: -3px; }
+.medical-viewer-header { display: flex; flex: none; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #eadde3; }
+.medical-viewer-header > div { min-width: 0; }
+.medical-viewer-header strong { display: block; font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.medical-viewer-header small { font-size: .72rem; color: #746269; }
+.medical-viewer-content { flex: 1; min-height: 0; position: relative; background: #f0e9ed; overflow: hidden; }
+.medical-viewer-notice { padding: 24px; margin: 0; text-align: center; overflow-wrap: anywhere; }
+.medical-viewer-pdf { width: 100%; height: 100%; display: block; border: 0; background: #fff; }
+.medical-image-view { display: flex; flex-direction: column; height: 100%; }
+.medical-image-stage { flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+.medical-image-stage img { flex: none; display: block; max-width: none; max-height: none; object-fit: contain; transform-origin: center; -webkit-user-drag: none; }
+.medical-viewer-zoom { flex: none; display: flex; justify-content: center; gap: 6px; padding: 6px 10px; background: #fff8fb; }
+.medical-viewer-footer { flex: none; background: #fff8fb; border-top: 1px solid #eadde3; padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); }
+.medical-viewer-footer nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: .8rem; }
+.medical-viewer-file-actions { display: flex; gap: 6px; }
+.medical-viewer-file-actions > button { flex: 1; padding-inline: 8px; }
+.medical-viewer .medical-viewer-done { color: #fff; background: #a54a6a; border-color: #a54a6a; }
+.medical-viewer-footer p { font-size: .72rem; line-height: 1.4; color: #746269; margin: 6px 0 0; }
+@media (min-width: 768px) { .medical-viewer { max-width: 960px; margin-inline: auto; } }
+@media (max-height: 500px) { .medical-viewer-header { padding-block: 2px; } .medical-viewer-footer p { display: none; } .medical-viewer-footer nav { position: absolute; top: calc(58px + env(safe-area-inset-top)); right: 12px; gap: 4px; z-index: 1; } }

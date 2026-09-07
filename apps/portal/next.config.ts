@@ -8,6 +8,7 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
+  "frame-src 'self' blob:",
   `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com`,
   "connect-src 'self' https://tpqqzowhndbkmkckpbgv.supabase.co https://www.google-analytics.com https://*.google-analytics.com",
   "img-src 'self' data: blob: https://www.google-analytics.com",
