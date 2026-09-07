@@ -58,7 +58,7 @@ export function StudioEditor({projectId,template,ideaId}:{projectId?:string;temp
   useEffect(()=>{const focus=()=>{void refreshStatus();};window.addEventListener('focus',focus);return()=>window.removeEventListener('focus',focus);},[refreshStatus]);
   async function save(copy=false):Promise<StudioProject|null>{
     if(inFlight.current)return null;inFlight.current=true;setBusy(true);
-    try{const payload=studioDocument(doc);const target=copy?crypto.randomUUID():id;const data=await api('',{action:'save',id:target,revision:copy?0:saved?.revision??0,payload});setSaved(data.project);setDoc(data.project.payload);setId(target);setAck(false);setMessage('Đã lưu trên EmBe. Điện thoại khác có thể mở bản này.');try{sessionStorage.removeItem(cacheKey);}catch{}setRecovery(null);window.history.replaceState(null,'',`/studio/soan?du-an=${target}`);return data.project;}
+    try{const payload=studioDocument(doc);const target=copy?crypto.randomUUID():id;const data=await api('',{action:'save',id:target,revision:copy?0:saved?.revision??0,payload});setSaved(data.project);setDoc(data.project.payload);setId(target);setAck(false);setMessage('Đã lưu trên EmBe. Điện thoại khác có thể mở bản này.');try{sessionStorage.removeItem(cacheKey);sessionStorage.removeItem(`embe:studio-editor:${id}`);}catch{}setRecovery(null);window.history.replaceState(null,'',`/studio/soan?du-an=${target}`);return data.project;}
     catch(e){setMessage((e as Error).message==='invalid_request'?'Kiểm tra độ dài kịch bản: tối đa 6 cảnh, 900 ký tự lời đọc; nguồn cần liên kết HTTPS.':(e as Error).message);return null;}
     finally{inFlight.current=false;setBusy(false);}
   }

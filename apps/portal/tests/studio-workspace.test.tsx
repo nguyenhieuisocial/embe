@@ -23,6 +23,18 @@ describe('Studio workspace boundaries',()=>{
   it('saves through existing private API and exposes conflict honestly',async()=>{f.rpc.mockResolvedValue({status:409,data:null});expect((await POST(request({action:'save',id,revision:1,payload:sample()}))).status).toBe(409);expect(f.rpc).toHaveBeenCalledWith('save',id,1,sample());});
 });
 describe('Editor and share workflow',()=>{
+  it('clears temporary edits after saving a newly created project again',async()=>{
+    vi.spyOn(window.history,'replaceState').mockImplementation(()=>{});
+    let revision=0;
+    vi.spyOn(globalThis,'fetch').mockImplementation(async(_url,init)=>{const body=JSON.parse(String(init?.body));return Response.json({project:{id:body.id,revision:++revision,payload:body.payload,deleted:false,created_at:new Date().toISOString(),updated_at:new Date().toISOString()}});});
+    render(<StudioEditor/>);
+    fireEvent.change(screen.getByLabelText('Tên nội dung'),{target:{value:'Bản mới'}});
+    fireEvent.click(screen.getByRole('button',{name:'Lưu bản nháp'}));await screen.findByRole('button',{name:'Đã lưu'});
+    fireEvent.change(screen.getByLabelText('Tên nội dung'),{target:{value:'Đã sửa lần hai'}});
+    expect(sessionStorage.length).toBe(1);expect(sessionStorage.getItem('embe:studio-editor:new')).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Lưu bản nháp'}));await screen.findByRole('button',{name:'Đã lưu'});
+    expect(sessionStorage.length).toBe(0);expect(revision).toBe(2);
+  });
   it('preserves edits after a failed save and never queues stale content',async()=>{vi.spyOn(globalThis,'fetch').mockResolvedValue(Response.json({error:'down'},{status:503}));render(<StudioEditor/>);fireEvent.change(screen.getByLabelText('Tên nội dung'),{target:{value:'Bản đang viết'}});fireEvent.click(screen.getByRole('button',{name:'Lưu bản nháp'}));await screen.findByText(/Chưa kết nối được Studio/);expect(screen.getByLabelText('Tên nội dung')).toHaveValue('Bản đang viết');expect(sessionStorage.getItem('embe:studio-editor:new')).toContain('Bản đang viết');expect(screen.queryByRole('button',{name:'Dựng video có giọng Việt'})).toBeNull();});
   it('separates save from explicit render and offers revision conflict recovery',async()=>{
     let count=0;vi.spyOn(globalThis,'fetch').mockImplementation(async()=>{count++;return Response.json({project:{id,revision:1,payload:sample(),deleted:false,created_at:new Date().toISOString(),updated_at:new Date().toISOString()},renders:[],workerSeenAt:null});});
