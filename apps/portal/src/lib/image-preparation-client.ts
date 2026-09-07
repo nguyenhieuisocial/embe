@@ -3,6 +3,8 @@ type ImagePreparationOptions = {
   maxBytes: number;
   maxDimension: number;
   quality: number;
+  /** Medical documents should not lose fine print through repeated JPEG encoding. */
+  preserveOriginal?: boolean;
 };
 
 function loadImage(file: File): Promise<HTMLImageElement> {
@@ -18,6 +20,8 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 export async function prepareImageForUpload(file: File, options: ImagePreparationOptions): Promise<File> {
   if ((file.type && !file.type.startsWith("image/")) || file.size < 1) throw new Error("invalid_image");
   const image = await loadImage(file);
+  if (options.preserveOriginal && ['image/jpeg', 'image/png', 'image/webp'].includes(file.type)
+      && file.size <= options.maxBytes && image.naturalWidth * image.naturalHeight <= 16_000_000) return file;
   const scale = Math.min(1, options.maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));

@@ -4,6 +4,21 @@
 .document-review .document-intro { margin: 4px 0 16px; color: var(--ink-soft); }
 .document-back, .document-original { display: flex; align-items: center; min-height: 44px; color: var(--rose-press); overflow-wrap: anywhere; }
 .document-original { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.document-source { border-top: 1px solid var(--line); padding-top: 8px; }
+.document-source-toggle { width: 100%; text-align: left; }
+.document-zoom { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+.document-zoom button { min-width: 44px; }
+.document-zoom small { color: var(--ink-soft); font-size: .73rem; }
+.document-image-scroll { max-height: 340px; max-height: 42svh; overflow: auto; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 10px; overscroll-behavior: contain; }
+.document-image-scroll img { display: block; max-width: none; height: auto; }
+.document-review-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 14px 0; }
+.document-review-tools p { margin: 0; color: var(--ink-soft); font-size: .8rem; }
+.document-review-tools button[aria-pressed=true], .document-page-picker button[aria-current=page] { background: var(--surface-soft); border-color: var(--rose); }
+.document-page-picker { display: flex; overflow-x: auto; gap: 8px; padding: 4px 2px 8px; }
+.document-page-picker button { flex: 0 0 auto; text-align: left; max-width: 190px; }
+.document-page-picker small { display: block; color: var(--ink-soft); font-size: .7rem; }
+.document-filter-empty { color: var(--ink-soft); font-size: .8rem; }
+.document-review [hidden] { display: none !important; }
 .document-state { color: var(--ink-soft); font-weight: 600; margin: 12px 0; }
 .document-notice { background: var(--surface-soft); border-left: 2px solid var(--rose); border-radius: 0 10px 10px 0; padding: 10px 12px; font-size: .8rem; }
 .document-review button { min-height: 44px; padding: 9px 14px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--rose-press); font: inherit; cursor: pointer; }
@@ -35,4 +50,5 @@
 .document-warnings { font-size: .8rem; padding-left: 20px; }
 .document-message { color: var(--rose-press); }
 .document-review :is(a, button, input, textarea, select, summary):focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+.document-image-scroll:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .document-review * { scroll-behavior: auto; } }

@@ -51,12 +51,13 @@ export function withPrintedUnit(value: string, unit: string): string {
   return !unit || value.trim().toLocaleLowerCase('vi').endsWith(unit.trim().toLocaleLowerCase('vi')) ? value : `${value} ${unit}`.trim();
 }
 
-export function documentAnalysisText(value: DocumentAnalysis): string {
-  return value.pages.map(page => [
+export function documentAnalysisText(value: DocumentAnalysis, confirmed = false): string {
+  const mark = (unclear: boolean) => unclear ? ' [Cần kiểm tra lại với bản gốc]' : '';
+  return `${confirmed ? 'Bản chép đã được người dùng đối chiếu' : 'Bản nháp — chưa xác nhận toàn bộ với bản gốc'}. Không thay thế tài liệu y tế gốc.\n\n` + value.pages.map(page => [
     `Trang ${page.page} — ${DOCUMENT_TYPES[page.kind]}: ${page.title}`,
-    ...page.fields.map(row => `${row.label}: ${withPrintedUnit(row.value, row.unit)}${row.reference ? ` | Khoảng tham chiếu trên phiếu: ${row.reference}` : ''}`),
-    ...page.medicines.map(row => [row.name, row.ingredients, row.dose, row.frequency, row.instructions].filter(Boolean).join(' | ')),
-    ...page.charges.map(row => `${row.label}: ${row.amount} ${row.currency}`),
+    ...page.fields.map(row => `${row.label}: ${withPrintedUnit(row.value, row.unit)}${row.reference ? ` | Khoảng tham chiếu trên phiếu: ${row.reference}` : ''}${mark(row.unclear)}`),
+    ...page.medicines.map(row => [row.name, row.ingredients, row.dose, row.frequency, row.instructions].filter(Boolean).join(' | ') + mark(row.unclear)),
+    ...page.charges.map(row => `${row.label}: ${withPrintedUnit(row.amount, row.currency)}${mark(row.unclear)}`),
     ...page.warnings
   ].join('\n')).join('\n\n');
 }

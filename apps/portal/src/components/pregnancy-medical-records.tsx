@@ -62,7 +62,7 @@ function MeasurementHistory({ records }: { records: MedicalRecord[] }) {
 
 async function uploadDocument(recordId: string, file: File, documentId: string): Promise<{ documentId: string; mimeType: string }> {
   const prepared = file.type === "application/pdf" ? file : await prepareImageForUpload(file, {
-    filename: file.name.replace(/\.[^.]+$/, '') + '.jpg', maxBytes: 15_000_000, maxDimension: 3200, quality: 0.94
+    filename: file.name.replace(/\.[^.]+$/, '') + '.jpg', maxBytes: 15_000_000, maxDimension: 3200, quality: 0.94, preserveOriginal: true
   });
   const created = await fetch(`/api/pregnancy/records/${recordId}/documents`, {
     method: "POST", headers: { "content-type": "application/json" },
