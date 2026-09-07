@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { StudioVoice } from '../lib/studio-project';
 export function SouthernVoiceSample(){
   const [open,setOpen]=useState(false),[failed,setFailed]=useState(false);
-  return <div className="studio-voice-sample">{!open?<button type="button" className="discovery-button" onClick={()=>setOpen(true)}>Nghe mẫu Ái Hân</button>:<><audio controls preload="none" aria-label="Nghe giọng nữ miền Nam Ái Hân" src="/api/studio/voice-preview" onError={()=>setFailed(true)}/><p className="discovery-help">Nhấn phát để nghe. Không tự phát âm thanh.</p>{failed&&<p role="alert">Chưa tải được mẫu. <a href="/api/studio/voice-preview">Mở bản nghe thử</a></p>}</>}</div>;
+  return <div className="studio-voice-sample">{!open?<button type="button" className="discovery-button" onClick={()=>setOpen(true)}>Nghe mẫu Ái Hân</button>:<><audio controls preload="none" aria-label="Nghe giọng nữ miền Nam Ái Hân" src="/api/studio/voice-preview" onError={()=>setFailed(true)}/><p className="discovery-help">Nhấn phát để nghe. Không tự phát âm thanh.</p>{failed&&<p role="alert">Chưa tải được mẫu. <button type="button" className="discovery-button" onClick={()=>{setFailed(false);setOpen(false);}}>Thử tải lại</button></p>}</>}</div>;
 }
 export default function StudioVoicePicker({value,onChange}:{value?:StudioVoice;onChange:(v:StudioVoice)=>void}){
   const selected=value??{id:'piper',speed:1};
