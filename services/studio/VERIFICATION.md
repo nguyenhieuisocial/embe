@@ -1,4 +1,20 @@
-# Bản đầu đã chạy — 07/09/2026
+# Studio đã có trên web — 07/09/2026
+
+## Kiểm tra trực tiếp trên tên miền chính
+
+Đường dẫn: `https://embe.hieu.asia/studio`, đăng nhập bằng cơ chế gia đình hiện có. Có lối vào từ Hôm nay và Nhà mình. Bản ứng dụng kiểm tra: `b60a89fbf45542002a75f591cd75b218469694e9`.
+
+- 8 kịch bản, 8 video, 22 ý tưởng hiện trên web; tìm kiếm không dấu và chuyển mục hoạt động.
+- Cả 8 ảnh xem trước giải mã thành công; 8 video tải HTTP 200, kiểm tra SHA-256 khớp. Cả 8 hỗ trợ `Range: bytes=0-1` trả HTTP 206 đúng 2 byte; không redirect ra URL nhà cung cấp.
+- Phát video và tua đến giây 15 trên trình duyệt thật đạt. Sao chép caption, tải kịch bản TXT, mở nguồn tham khảo đạt. Kiểm tra sao chép dùng clipboard giả trong trình duyệt cô lập, không ghi đè clipboard máy người dùng.
+- Kiểm tra thư viện và trang chi tiết ở 375×667, 393×852, 430×932, 412×915, 768×1024 và 1280×900: không tràn ngang, không có control thuộc Studio thấp dưới 43px. Keyboard focus đạt. Ảnh chụp thư viện và chi tiết đã xem trực quan.
+- API media chặn truy cập không đăng nhập; bucket `embe-studio-drafts` private, `storage.objects` bật RLS, không có policy public. Publisher đã kiểm tra checksum sau upload cho 16 object.
+- Màn hình thiết lập quyền sức khỏe/vị trí không còn che Studio trên thiết bị mới; vẫn giữ cho trang chăm sóc sức khỏe.
+- CI run `34117337888` đạt. Lượt kiểm tra web đăng nhập một phiên riêng, chỉ đọc nội dung và đăng xuất đúng phiên đó; không sửa dữ liệu sức khỏe hay tác động phiên của gia đình.
+
+Bằng chứng cục bộ: `data/studio-web-verification/result.json`, `studio-iphone.png`, `studio-detail-iphone.png`. Script tái lập: `scripts/health/studio-live-smoke.mjs`. Dùng Cent Browser headless trong phiên cô lập với viewport mô phỏng; **chưa phải kiểm tra Safari/WebKit hoặc iPhone vật lý**. Không mở cửa sổ PowerShell, không khởi động lại Docker.
+
+## Bản dựng nguồn trên máy
 
 Campaign: `campaign-f6622f746066`, dưới `C:\EmBe\data\studio-editorial`. Không công khai, không dùng dữ liệu gia đình. 8 kịch bản, 22 ý tưởng nghiên cứu tiếp, 8 MP4 dựng thành công trong lần thử đầu tiên.
 
@@ -29,6 +45,6 @@ Phạm vi: idempotency/conflict, giới hạn queue, phục hồi job, khóa wor
 
 - Không có duyệt chuyên môn; tất cả card có nhãn bản nháp. Chủ đề vận động còn yêu cầu kiểm tra lại vì lịch review trên nguồn đã quá hạn.
 - Không có đo retention, lượt chia sẻ hay bằng chứng viral. Mở đầu A/B mới là phương án biên tập, chưa chạy thử với người xem.
-- Chưa có TTS/nhạc, tài khoản đăng bài, lịch đăng, giao diện Studio trong EmBe hoặc backup ngoài máy cho campaign.
-- Worker/API không được cài tự chạy, không đổi Docker, không đọc Supabase, Immich hoặc ảnh từ `C:\Anh`.
+- Chưa có TTS/nhạc, tài khoản đăng bài, lịch đăng hay công cụ sửa/tạo video trực tiếp trên web. Giao diện xem/tải Studio đã lên web; 16 file đầu ra đã có bản trên Supabase private, không đồng nghĩa toàn bộ queue/campaign cục bộ có backup độc lập.
+- Worker/API dựng video không được cài tự chạy, không đổi Docker, không đọc dữ liệu gia đình từ Supabase, Immich hoặc ảnh từ `C:\Anh`. Publisher chỉ ghi file biên tập vào bucket riêng.
 - Giá trị hiện có: bộ nội dung có nguồn, artwork gốc, bản dựng xem thử và pipeline tái lập; không phải chứng nhận an toàn y khoa hay sản phẩm truyền thông production hoàn chỉnh.

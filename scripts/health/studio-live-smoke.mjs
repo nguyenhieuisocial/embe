@@ -50,6 +50,17 @@ try {
   }
   for (const [width, height] of sizes) await checkSize(width, height, 'library');
   await page.setViewportSize({ width: 393, height: 852 });
+  // Full-page captures do not wait for lazy images below the viewport. Scroll each
+  // preview into view and verify decoding so a blank thumbnail cannot pass.
+  const posters = page.locator('.studio-topic img');
+  for (let index = 0; index < await posters.count(); index++) {
+    const poster = posters.nth(index);
+    await poster.scrollIntoViewIfNeeded();
+    await poster.evaluate(image => image.decode());
+    if (!(await poster.evaluate(image => image.naturalWidth > 0))) throw new Error('poster_decode_failed');
+  }
+  result.postersDecoded = await posters.count();
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: resolve(output, 'studio-iphone.png'), fullPage: true });
   const topics = await page.locator('.studio-topic').evaluateAll(elements => elements.map(element => element.getAttribute('href').split('/').pop()));
   for (const slug of topics) {
@@ -74,6 +85,8 @@ try {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.locator('summary').filter({ hasText: 'Nguồn đối chiếu' }).click();
   if (!(await page.locator('.studio-disclosure a').first().isVisible())) throw new Error('sources_not_accessible');
+  await page.locator('.studio-heading h1').click();
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: resolve(output, 'studio-detail-iphone.png'), fullPage: true });
   // Avoid overwriting the user's OS clipboard during unattended verification.
   await page.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__studioCopied = text; } } }); });
