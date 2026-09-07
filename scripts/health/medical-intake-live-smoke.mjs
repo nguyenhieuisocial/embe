@@ -8,12 +8,14 @@ const { chromium } = require('C:/Users/Admin/.cache/codex-runtimes/codex-primary
 const origin = 'https://embe.hieu.asia';
 const expected = process.env.EMBE_VERIFY_VERSION; const password = process.env.EMBE_VERIFY_PASSWORD;
 const kind = process.env.EMBE_VERIFY_DOCUMENT_KIND ?? 'ultrasound';
+const format = process.env.EMBE_VERIFY_DOCUMENT_FORMAT ?? 'image';
 if (!['ultrasound', 'prescription'].includes(kind)) throw new Error('invalid_verification_kind');
+if (!['image', 'pdf'].includes(format)) throw new Error('invalid_verification_format');
 if (!expected || !password) throw new Error('missing_verification_config');
 const health = await (await fetch(`${origin}/api/health?verify=${expected}`, { cache: 'no-store' })).json();
 if (health.version !== expected) { console.log(JSON.stringify({ pending: true, version: health.version })); process.exit(2); }
 const output = resolve('data/medical-recognition-verification'); await mkdir(output, { recursive: true });
-const result = { version: expected, kind, syntheticOnly: true, browser: 'isolated Cent', widths: [], records: [] };
+const result = { version: expected, kind, format, syntheticOnly: true, browser: 'isolated Cent', widths: [], records: [] };
 const browser = await chromium.launch({ headless: true, executablePath: 'C:/Users/Admin/AppData/Local/CentBrowser/Application/chrome.exe' });
 const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
 await context.addInitScript(() => localStorage.setItem('embe:access-guide-dismissed-at', String(Date.now())));
@@ -24,7 +26,10 @@ try {
   const fixture = await browser.newPage({ viewport: { width: 1700, height: 2100 } });
   const medicalRows = kind === 'prescription' ? '<p>Sản phẩm mẫu A (không phải thuốc thật)</p><p>Thành phần: chất mẫu 0,5 mg</p><p>Liều mỗi lần: 1 viên</p><p>Số lần: 2 lần/ngày</p><p>Đường dùng: uống</p><p>Thời gian dùng: 5 ngày</p><p>Số lượng cấp: 10 viên</p><p>Cách dùng: sau ăn</p>' : '<p>Tuổi thai: 12 tuần</p><p>CRL: 45,6 mm</p><p>NT: 1,2 mm</p><p>Nhịp tim thai: 160 lần/phút</p>';
   await fixture.setContent(`<html lang="vi"><meta charset="utf-8"><body style="font:36px Arial;padding:65px;line-height:1.5;background:white;color:black"><h1 style="font-size:48px">${kind === 'prescription' ? 'ĐƠN THUỐC MẪU' : 'PHIẾU SIÊU ÂM MẪU'}</h1><p>Bệnh viện: BV Mẫu EmBe</p><p>Họ tên: NGƯỜI MẪU</p><p>Ngày khám: 07/09/2026</p><p>Bác sĩ: BS Mẫu</p>${medicalRows}<p>DỮ LIỆU KIỂM TRA — KHÔNG PHẢI HỒ SƠ THẬT</p></body></html>`);
-  const file = resolve(output, `intake-synthetic-${kind}.png`); await fixture.screenshot({ path: file }); await fixture.close();
+  const file = resolve(output, `intake-synthetic-${kind}.${format === 'pdf' ? 'pdf' : 'png'}`);
+  if (format === 'pdf') await fixture.pdf({ path: file, width: '1700px', height: '2100px', printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
+  else await fixture.screenshot({ path: file });
+  await fixture.close();
   await page.goto(`${origin}/me-bau/ho-so`, { waitUntil: 'domcontentloaded' });
   await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Vào sổ gia đình', exact: true }).click();
@@ -61,6 +66,17 @@ try {
   result.autoMatch = true;
   await page.getByText('Kiểm tra ngày, cơ sở và lần khám', { exact: true }).click();
   await page.getByLabel('Tên hồ sơ', { exact: true }).fill('EMBE SYNTHETIC IMPORTED SCAN');
+  if (format === 'pdf') {
+    const source = scan.analysis.pages[0].fields.find(row => row.label === 'Bệnh viện');
+    if (source?.pdfValue !== 'BV Mẫu EmBe' || source.pdfEvidence !== 'Bệnh viện: BV Mẫu EmBe') throw new Error('native_pdf_text_missing');
+    const row = page.locator('.document-row').filter({ has: page.locator('summary strong', { hasText: /^Bệnh viện$/ }) });
+    await row.locator('summary').click();
+    await row.getByLabel('Nội dung / kết quả').fill('EMBE SYNTHETIC TYPO');
+    await row.getByRole('button', { name: 'Dùng chữ từ PDF cho mục này' }).focus();
+    await page.keyboard.press('Enter');
+    if (await row.getByLabel('Nội dung / kết quả').inputValue() !== source.pdfValue || !await row.getByLabel('Mục này vẫn cần kiểm tra lại').isChecked()) throw new Error('native_pdf_selection_not_applied');
+    result.pdfSourceCompared = true;
+  }
   if (kind === 'prescription') {
     const medicine = scan.analysis.pages[0].medicines[0];
     if (scan.analysis.pages[0].medicines.length !== 1 || medicine.quantity !== '10 viên' || medicine.duration !== '5 ngày' || medicine.route !== 'uống' || medicine.dose !== '1 viên') throw new Error('prescription_details_missing');
@@ -93,6 +109,7 @@ try {
   result.structuredMeasurements = stored.measurements;
   const after = await (await context.request.get(`${origin}/api/pregnancy/documents/${documentId}/scan`)).json();
   if (after.status !== 'confirmed') throw new Error('transcription_not_confirmed');
+  if (format === 'pdf' && after.analysis.pages[0].fields.find(row => row.label === 'Bệnh viện')?.pdfValue !== 'BV Mẫu EmBe') throw new Error('pdf_source_not_persisted');
   const original = await context.request.get(`${origin}/api/pregnancy/documents/${documentId}`);
   if (!(await original.body()).equals(await readFile(file))) throw new Error('original_changed'); result.originalUnchanged = true;
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -110,6 +127,6 @@ finally {
   if (documentId) { try { result.deletedDocumentBlocked = (await context.request.get(`${origin}/api/pregnancy/documents/${documentId}/import`)).status() === 404; } catch { result.deletedDocumentBlocked = false; } }
   if (loggedIn) { try { result.ownSessionRevoked = (await context.request.post(`${origin}/api/auth/logout`, { headers: { origin }, maxRedirects: 0 })).status() === 303; } catch { result.ownSessionRevoked = false; } }
   if (result.cleanup.some(r => !r.softDeleted) || loggedIn && !result.ownSessionRevoked) { result.status = 'cleanup_needed'; process.exitCode = 1; }
-  await writeFile(resolve(output, `intake-live-result-${kind}.json`), JSON.stringify(result, null, 2)); await browser.close();
+  await writeFile(resolve(output, `intake-live-result-${kind}${format === 'pdf' ? '-pdf' : ''}.json`), JSON.stringify(result, null, 2)); await browser.close();
 }
 console.log(JSON.stringify(result));

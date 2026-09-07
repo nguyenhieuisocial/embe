@@ -186,12 +186,21 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
               <small>{'value' in row ? [withPrintedUnit(row.value, row.unit), row.context].filter(Boolean).join(' · ') : 'amount' in row ? withPrintedUnit(row.amount, row.currency) : [row.dose, row.frequency].filter(Boolean).join(' · ')}</small></span>
               <span>{row.unclear ? 'Chưa rõ' : 'Sửa'}</span></summary>
             <div className="document-row-form">
-              {Object.entries({ ...row, ...Object.fromEntries(Object.entries(DOCUMENT_DETAIL_DEFAULTS[group]).filter(([key]) => !(key in row))) }).filter(([key]) => key !== 'evidence' && key !== 'unclear').map(([key, value]) => <label key={key}>{key === 'quantity' && group === 'medicines' ? 'Số lượng cấp phát (không phải liều)' : FIELD_LABELS[key] ?? key}
+              {Object.entries({ ...row, ...Object.fromEntries(Object.entries(DOCUMENT_DETAIL_DEFAULTS[group]).filter(([key]) => !(key in row))) }).filter(([key]) => !['evidence', 'unclear', 'pdfValue', 'pdfEvidence'].includes(key)).map(([key, value]) => <label key={key}>{key === 'quantity' && group === 'medicines' ? 'Số lượng cấp phát (không phải liều)' : FIELD_LABELS[key] ?? key}
                 {['value', 'ingredients', 'instructions'].includes(key)
                   ? <textarea rows={2} value={String(value)} maxLength={MAX[key]} onChange={e => changeRow(pageIndex, group, rowIndex, key, e.target.value)} />
                   : <input value={String(value)} maxLength={group === 'charges' && key === 'label' ? 160 : MAX[key]} onChange={e => changeRow(pageIndex, group, rowIndex, key, e.target.value)} />}
               </label>)}
-              <blockquote><small>Chữ được đọc từ bản gốc</small>{row.evidence || 'Không đọc rõ; cần tự đối chiếu.'}</blockquote>
+              <blockquote><small>Câu trích trong bản đọc · có thể đọc sai</small>{row.evidence || 'Không đọc rõ; cần tự đối chiếu.'}</blockquote>
+              {'pdfValue' in row && row.pdfValue && row.pdfEvidence ? <div className="document-pdf-comparison">
+                <blockquote><small>Chữ lấy trực tiếp từ PDF</small>{row.pdfEvidence}</blockquote>
+                {row.value !== row.pdfValue && !row.unit && !row.reference && !row.context ? <>
+                  <p>Khác nội dung đang nhập. Xem trang gốc rồi chọn bản đúng.</p>
+                  <button type="button" onClick={() => changePage(pageIndex, p => ({ ...p, fields: p.fields.map((field, i) => i === rowIndex
+                    ? { ...field, value: row.pdfValue!, unclear: true } : field) }))}>Dùng chữ từ PDF cho mục này</button>
+                </> : null}
+                <small>Lớp chữ của PDF cũng có thể sai hoặc thiếu; không thay thế hình trang gốc.</small>
+              </div> : null}
               <label className="document-check"><input type="checkbox" checked={row.unclear} onChange={e => changeRow(pageIndex, group, rowIndex, 'unclear', e.target.checked)} />Mục này vẫn cần kiểm tra lại</label>
               <button type="button" onClick={() => changePage(pageIndex, p => ({ ...p, [group]: p[group].filter((_, i) => i !== rowIndex) }))}>Bỏ dòng này</button>
             </div>

@@ -17,6 +17,19 @@ const record = { documentId: id, recordId: id, filename: 'mau.pdf', mimeType: 'a
 afterEach(() => { mock.denied = false; mock.calls.mockReset(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('document recognition contract', () => {
+  it('accepts paired PDF source cells without weakening old scan validation', () => {
+    const a = structuredClone(analysis);
+    a.pages[0].fields[0].pdfValue = 'Sản';
+    expect(validDocumentAnalysis(a)).toBe(false);
+    a.pages[0].fields[0].pdfEvidence = 'Khoa: Sản';
+    expect(validDocumentAnalysis(a)).toBe(true);
+    expect(documentAnalysisText(a)).toContain('Chữ trong PDF khác bản nhập: Khoa: Sản');
+    a.pages[0].fields[0].pdfEvidence = 'x'.repeat(1801);
+    expect(validDocumentAnalysis(a)).toBe(false);
+    const injected = structuredClone(analysis);
+    injected.pages[0].medicines = [{ name: 'Mẫu', ingredients: '', dose: '', frequency: '', instructions: '', evidence: '', unclear: true, pdfValue: 'not allowed' } as never];
+    expect(validDocumentAnalysis(injected)).toBe(false);
+  });
   it('preserves decimal text and rejects missing pages or unexpected fields', () => {
     expect(validDocumentAnalysis(analysis)).toBe(true);
     expect(validDocumentAnalysis({ ...analysis, pages: [{ ...analysis.pages[0], page: 2 }] })).toBe(false);
@@ -151,5 +164,29 @@ describe('document review UX', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lưu bản đối chiếu' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('phản hồi lưu'));
     expect(screen.getByLabelText('Tiêu đề')).toHaveValue('Cần giữ bản này');
+  });
+  it('shows the independent PDF wording, lets the user select it and preserves both source quotes', async () => {
+    const sourceAnalysis = structuredClone(analysis);
+    sourceAnalysis.pages[0].fields = [{ label: 'Khoa', value: 'Sán', unit: '', reference: '', evidence: 'Khoa: Sán',
+      unclear: true, pdfValue: 'Sản', pdfEvidence: 'Khoa: Sản' }];
+    const fetcher = vi.fn(async (_url: unknown, options?: RequestInit) => {
+      if (options?.method === 'PATCH') return new Response(JSON.stringify({ ...record, status: 'confirmed', analysis: JSON.parse(String(options.body)).analysis }));
+      return new Response(JSON.stringify({ ...record, analysis: sourceAnalysis }));
+    });
+    vi.stubGlobal('fetch', fetcher);
+    render(<MedicalDocumentReview documentId={id} />);
+    await screen.findByText('Khoa', { selector: 'strong' });
+    fireEvent.click(screen.getByText('Khoa', { selector: 'strong' }));
+    expect(screen.getByLabelText('Nội dung / kết quả')).toHaveValue('Sán');
+    expect(screen.getByText('Chữ lấy trực tiếp từ PDF')).toBeVisible();
+    expect(screen.queryByLabelText('pdfValue')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Dùng chữ từ PDF cho mục này' }));
+    expect(screen.getByLabelText('Nội dung / kết quả')).toHaveValue('Sản');
+    expect(screen.getByLabelText('Mục này vẫn cần kiểm tra lại')).toBeChecked();
+    fireEvent.click(screen.getByLabelText('Tôi đã đối chiếu các trang với bản gốc'));
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu bản đối chiếu' }));
+    await screen.findByText('Đã lưu bản đối chiếu vào tài liệu này.');
+    const saved = JSON.parse(String(fetcher.mock.calls.find(call => call[1]?.method === 'PATCH')?.[1]?.body));
+    expect(saved.analysis.pages[0].fields[0]).toMatchObject({ value: 'Sản', evidence: 'Khoa: Sán', pdfValue: 'Sản', pdfEvidence: 'Khoa: Sản', unclear: true });
   });
 });

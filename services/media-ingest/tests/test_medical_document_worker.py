@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from medical_document_worker import MedicalDocumentWorker, ScanFailure, document_pages, image_bytes, validate_page, page_views, check_evidence, merge_page_readings
 from meal_analysis_worker import Config, HttpResponse
+from medical_document_text import pdf_field_candidates, reconcile_pdf_fields
 
 
 def sample_page():
@@ -328,3 +329,112 @@ def test_clinical_conclusions_and_text_disagreements_always_require_review():
     page['fields'] = [dict(label='Chẩn đoán in trên giấy', value='NỘI DUNG MẪU', unit='', reference='', evidence='Chẩn đoán: NỘI DUNG MẪU', unclear=False),
                       dict(label='Khoa', value='Sản', unit='', reference='', evidence='Khoa: Sán', unclear=False)]
     assert all(row['unclear'] for row in validate_page(page)['fields'])
+
+
+def test_pdf_anchors_preserve_diacritics_without_overwriting_ai_value():
+    page = sample_page()
+    page['fields'] = [dict(label='Khoa', value='Sán', unit='', reference='', evidence='Khoa: Sán', unclear=False)]
+    printed = 'Khoa: Sản\nNgày ra viện: 07/09/2026\nChẩn đoán: THEO DÕI MẪU'
+    reconcile_pdf_fields(page, printed, 64)
+    row = page['fields'][0]
+    assert row['value'] == 'Sán' and row['evidence'] == 'Khoa: Sán'
+    assert row['pdfValue'] == 'Sản' and row['pdfEvidence'] == 'Khoa: Sản' and row['unclear']
+    assert [(r['label'], r['value']) for r in page['fields'][1:]] == [('Ngày ra viện', '07/09/2026'), ('Chẩn đoán', 'THEO DÕI MẪU')]
+    assert all(r['unclear'] for r in validate_page(page)['fields'])
+
+
+def test_pdf_anchors_never_guess_tables_wrapped_narratives_or_multiple_patients():
+    printed = ('Họ tên: NGƯỜI A\nHọ tên: NGƯỜI B\nHGB: 11,2 g/dL\n'
+               'Kết luận: phần đầu\nphần còn lại trên dòng sau\n'
+               'Ngày khám: 07/09/2026  Bác sĩ: BS MẪU\n'
+               'Số hóa đơn: INV-TEST\nGiờ lấy mẫu: 08:15\n'
+               'Tên thuốc: Sản phẩm A 5 mg\nBác sĩ: BS MẪU')
+    cells = pdf_field_candidates(printed)
+    assert [c['label'] for c in cells] == ['Số hóa đơn', 'Giờ lấy mẫu', 'Bác sĩ']
+    assert cells[1]['value'] == '08:15'
+
+
+def test_pdf_context_or_conflicting_rows_do_not_get_automatic_source_alignment():
+    page = sample_page()
+    page['fields'] = [dict(label='Ngày khám', value='07/09/2026', unit='', reference='', context='Lần 1', evidence='', unclear=True)]
+    reconcile_pdf_fields(page, 'Ngày khám: 08/09/2026', 64)
+    assert 'pdfValue' not in page['fields'][0]
+    page['fields'][0]['context'] = ''
+    page['fields'].append(dict(page['fields'][0]))
+    reconcile_pdf_fields(page, 'Ngày khám: 08/09/2026', 64)
+    assert all('pdfValue' not in r for r in page['fields'])
+
+
+def test_pdf_source_metadata_is_paired_bounded_and_not_model_controlled():
+    page = sample_page(); page['fields'][0]['pdfValue'] = '46,1'
+    with pytest.raises(ScanFailure):
+        validate_page(page)
+    page['fields'][0]['pdfEvidence'] = 'x' * 1801
+    with pytest.raises(ScanFailure):
+        validate_page(page)
+    page['fields'][0]['pdfEvidence'] = 'CRL: 46,1 mm'
+    def transport(*args):
+        return HttpResponse(200, {}, json.dumps({'message': {'content': json.dumps(page)}}).encode())
+    result = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport).analyze_page(image_bytes(Image.new('RGB', (500, 500))), '')
+    assert 'pdfValue' not in result['fields'][0] and 'pdfEvidence' not in result['fields'][0]
+
+
+def test_pdf_full_text_checked_even_beyond_model_context_without_claiming_complete():
+    page = sample_page()
+    captured = []
+    def transport(method, url, headers, data=None):
+        captured.append(json.loads(data))
+        return HttpResponse(200, {}, json.dumps({'message': {'content': json.dumps(page)}}).encode())
+    printed = 'x' * 12010 + '\nSố hóa đơn: INV-TEST-TAIL'
+    result = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport).analyze_page(image_bytes(Image.new('RGB', (500, 500))), printed)
+    assert 'INV-TEST-TAIL' not in captured[0]['messages'][1]['content']
+    assert any(r['value'] == 'INV-TEST-TAIL' for r in result['fields'])
+    assert any('chỉ nhận một phần' in w for w in result['warnings'])
+
+
+def test_pdf_metadata_capacity_has_visible_coverage_warning():
+    page = sample_page()
+    reconcile_pdf_fields(page, 'Bác sĩ: BS Mẫu', 1)
+    assert len(page['fields']) == 1
+    assert any('hết chỗ' in w for w in page['warnings'])
+
+
+@pytest.mark.parametrize('value,unit,want', [('45,6 mm', 'mm', '45,6'), ('< 0,01 mIU/L', 'mIU/L', '< 0,01'),
+                                         ('110/70 mmHg', 'mmHg', '110/70'), ('45,6 cm', 'mm', '45,6 cm'),
+                                         ('12 - 15 mm', 'mm', '12 - 15 mm')])
+def test_exact_duplicate_unit_is_split_without_reinterpreting_results(value, unit, want):
+    page = sample_page(); page['fields'][0].update(value=value, unit=unit, evidence=f'Mục mẫu: {value}')
+    row = validate_page(page)['fields'][0]
+    assert row['value'] == want and row['unit'] == unit and row['evidence'] == f'Mục mẫu: {value}'
+
+
+def test_normal_page_uses_full_detail_first_long_receipts_use_strips():
+    calls = []
+    def transport(method, url, headers, data=None):
+        calls.append(json.loads(data))
+        return HttpResponse(200, {}, json.dumps({'message': {'content': json.dumps(sample_page())}}).encode())
+    worker = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport)
+    worker.analyze_page(image_bytes(Image.new('RGB', (1400, 2600), 'white')), '')
+    worker.analyze_page(image_bytes(Image.new('RGB', (1200, 4800), 'white'), (4000, 6000)), '')
+    assert len(calls[0]['messages'][1]['images']) == 1
+    assert len(calls[1]['messages'][1]['images']) > 1
+
+
+def test_oversized_pdf_text_fails_before_allocating_text_or_render(monkeypatch):
+    import pypdfium2 as pdfium
+    class TextPage:
+        def count_chars(self): return 48001
+        def get_text_bounded(self): raise AssertionError('must not allocate oversized text')
+        def close(self): pass
+    class Page:
+        def get_size(self): return (595, 842)
+        def get_textpage(self): return TextPage()
+        def render(self, **kwargs): raise AssertionError('must not render oversized layer')
+        def close(self): pass
+    class Document:
+        def __len__(self): return 1
+        def __getitem__(self, index): return Page()
+        def close(self): pass
+    monkeypatch.setattr(pdfium, 'PdfDocument', lambda body: Document())
+    with pytest.raises(ScanFailure, match='text_layer_too_large'):
+        list(document_pages(b'%PDF-synthetic', 'application/pdf'))

@@ -1,5 +1,16 @@
 # Hồ sơ thai kỳ — đọc và đối chiếu giấy tờ
 
+## Đối chiếu chữ gốc và giữ chi tiết ảnh — 07/09/2026, `medical-source-v3`
+
+- Trang thông thường được đọc bằng ảnh nguyên độ chi tiết trước; phiếu dài vẫn dùng các vùng chồng mép. Khi thiếu bảng xét nghiệm, nhãn chung hoặc đầu ra bị cắt, mới đọc bổ sung vùng. Thử chỉ đọc một ảnh cho mọi loại đã cho thấy mất bảng xét nghiệm, nên không bỏ luồng phục hồi chi tiết.
+- Chỉ tách đơn vị lặp ở cuối một biểu thức số khớp chính xác (ví dụ `45,6 mm` + `mm`); giữ nguyên dấu thập phân, dấu so sánh và câu trích, không quy đổi đơn vị hay diễn giải khoảng số.
+- Với PDF có lớp chữ: giữ thêm `fields.pdfValue`/`pdfEvidence` theo cặp, tương thích version 1. Bộ đọc PDF độc lập đối chiếu nhãn rõ, duy nhất trên cùng trang; bổ sung mục hành chính còn thiếu và giữ cả hai bản nếu khác AI. Không đoán bảng, không ghép nhãn trùng, nhiều cột hay câu bị xuống dòng. Những mục bổ sung vẫn cần người dùng đối chiếu; không tự ghi đè chỉ số/thuốc.
+- Giao diện giữ hai câu trích riêng. Nút **Dùng chữ từ PDF cho mục này** thay nội dung đang sửa nhưng vẫn giữ dấu cần kiểm tra và cả hai nguồn; chọn bằng cảm ứng hoặc bàn phím. Chữ từ PDF cũng có thể là lớp OCR sai, không được gọi là kết quả y tế đã xác minh.
+- PDF text layer được kiểm tra giới hạn 48.000 ký tự trước khi cấp phát. AI nhận tối đa 12.000 ký tự và luôn có ảnh cả trang; lớp chữ dài có cảnh báo, đối chiếu mục có nhãn vẫn dùng phần còn lại. Bản đọc quá 60 KB báo rõ cần tách tài liệu, không cắt dữ liệu âm thầm.
+- Không thêm model, AI bên ngoài, bảng database hay quyền truy cập. Dữ liệu vẫn riêng tư, file gốc không thay đổi; các tài liệu đã lưu không bị tự chạy lại hoặc ghi đè.
+- Sáu tài liệu giả lập: phân loại 6/6 đúng, 16/16 nhóm ô mục tiêu đạt trong lượt so sánh mới (8,17–19,79 giây; không tính hàng đợi). Bản trước đạt 15/16; câu giả lập “THEO DÕI MẪU” nay chép đúng trong lượt này. Đây là tập kiểm tra nhỏ trên máy hiện tại, **không phải độ chính xác trên hồ sơ thật**, không bảo đảm hết lỗi dấu/chữ viết tay.
+- Verifier `medical-intake-live-smoke.mjs` thêm `EMBE_VERIFY_DOCUMENT_FORMAT=pdf` để kiểm tra PDF có chữ, lựa chọn nguồn bằng bàn phím, lưu/mở lại, khớp cơ sở và giữ nguyên file. Kết quả chạy trực tiếp ở `data/medical-recognition-verification/`, không chứa hồ sơ gia đình.
+
 ## Chi tiết có cấu trúc — 07/09/2026
 
 - Giữ tương thích bản đọc version 1 cũ. Trường bổ sung tùy chọn: `fields.context`; thuốc có `route`, `duration`, `quantity`; khoản thu có `quantity`, `unitPrice`. Tất cả lưu dạng chữ nguyên văn, có thể sửa, sao chép và mở lại; số lượng cấp phát không thay cho liều.

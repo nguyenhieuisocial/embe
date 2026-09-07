@@ -50,6 +50,7 @@ def extra_sheet(kind):
 def run():
     parser = argparse.ArgumentParser()
     parser.add_argument('--kind', choices=['receipt', 'prescription', 'ultrasound', 'clinical', 'laboratory', 'discharge'])
+    parser.add_argument('--single-view', action='store_true', help='Compare the original full-resolution reading without detail crops')
     args = parser.parse_args()
     output = ROOT / 'data/medical-recognition-verification'
     output.mkdir(parents=True, exist_ok=True)
@@ -67,7 +68,7 @@ def run():
         'discharge': [('fields', 'label', 'Ngày ra viện', {'value': '07/09/2026'}), ('fields', 'label', 'Ngày hẹn', {'value': '14/09/2026'}),
                       ('fields', 'label', 'Chẩn đoán', {'value': 'THEO DÕI MẪU'})],
     }
-    report = {'syntheticOnly': True, 'engineRevision': ENGINE_REVISION, 'cases': []}
+    report = {'syntheticOnly': True, 'engineRevision': ENGINE_REVISION, 'singleView': args.single_view, 'cases': []}
     for kind, expected in checks.items():
         if args.kind and args.kind != kind:
             continue
@@ -76,7 +77,7 @@ def run():
         case = {'kind': kind}
         started = time.monotonic()
         try:
-            analysis = worker.analyze_page(image, '')
+            analysis = worker.analyze_page(image, '', detailed=not args.single_view)
             case['correctKind'] = analysis['kind'] == kind
             case['cells'] = {f'{group}:{label}:{key}:{list(values.values())}': any(label.casefold() in row[identity].casefold() and all((value.casefold() in row.get(k, '').casefold()) if k == 'ingredients' else (value.casefold() == row.get(k, '').casefold()) for k, value in values.items()) for row in analysis[group])
                              for group, identity, label, values in expected for key in [','.join(values)]}
@@ -85,7 +86,7 @@ def run():
             case['error'] = str(error)
         case['seconds'] = round(time.monotonic() - started, 2)
         report['cases'].append(case)
-        (output / f'quality-benchmark{("-" + args.kind) if args.kind else ""}.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+        (output / f'quality-benchmark{("-" + args.kind) if args.kind else ""}{"-single" if args.single_view else ""}.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
         print(json.dumps({k: v for k, v in case.items() if k != 'analysis'}, ensure_ascii=False), flush=True)
     # This is a diagnostic benchmark, not a silently passing accuracy gate.
     if any(case.get('error') or not case.get('correctKind') or not all(case.get('cells', {}).values()) for case in report['cases']):

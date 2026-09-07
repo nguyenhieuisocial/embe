@@ -2,7 +2,7 @@ export const DOCUMENT_TYPES: Record<string, string> = {
   receipt: 'Phiếu thu / hóa đơn', prescription: 'Đơn thuốc', ultrasound: 'Siêu âm',
   laboratory: 'Xét nghiệm', clinical: 'Bệnh án / phiếu khám', discharge: 'Giấy ra viện', other: 'Tài liệu khác'
 };
-export type ExtractedField = { label: string; value: string; unit: string; reference: string; context?: string; evidence: string; unclear: boolean };
+export type ExtractedField = { label: string; value: string; unit: string; reference: string; context?: string; evidence: string; unclear: boolean; pdfValue?: string; pdfEvidence?: string };
 export type ExtractedMedicine = { name: string; ingredients: string; dose: string; frequency: string; instructions: string; route?: string; duration?: string; quantity?: string; evidence: string; unclear: boolean };
 export type ExtractedCharge = { label: string; amount: string; currency: string; quantity?: string; unitPrice?: string; evidence: string; unclear: boolean };
 export const DOCUMENT_ROW_LIMITS = { fields: 64, medicines: 24, charges: 80 };
@@ -26,6 +26,7 @@ function rows(value: unknown, limits: Record<string, number>, max: number, optio
   return Array.isArray(value) && value.length <= max && value.every(row => object(row)
     && Object.keys(row).every(key => key === 'unclear' || Object.hasOwn(limits, key) || Object.hasOwn(optional, key)) && typeof row.unclear === 'boolean'
     && Object.entries(limits).every(([key, size]) => text(row[key], size))
+    && Object.hasOwn(row, 'pdfValue') === Object.hasOwn(row, 'pdfEvidence')
     && Object.entries(optional).every(([key, size]) => !Object.hasOwn(row, key) || text(row[key], size)));
 }
 export function validDocumentAnalysis(value: unknown): value is DocumentAnalysis {
@@ -33,7 +34,7 @@ export function validDocumentAnalysis(value: unknown): value is DocumentAnalysis
     || value.pages.length < 1 || value.pages.length > 6 || new TextEncoder().encode(JSON.stringify(value)).length > 60_000) return false;
   return value.pages.every((page, index) => object(page) && exact(page, ['page', 'kind', 'title', 'fields', 'medicines', 'charges', 'warnings'])
     && page.page === index + 1 && typeof page.kind === 'string' && Object.hasOwn(DOCUMENT_TYPES, page.kind) && text(page.title, 160)
-    && rows(page.fields, { label: 120, value: 1600, unit: 40, reference: 160, evidence: 500 }, DOCUMENT_ROW_LIMITS.fields, { context: 160 })
+    && rows(page.fields, { label: 120, value: 1600, unit: 40, reference: 160, evidence: 500 }, DOCUMENT_ROW_LIMITS.fields, { context: 160, pdfValue: 1600, pdfEvidence: 1800 })
     && rows(page.medicines, { name: 100, ingredients: 1200, dose: 80, frequency: 80, instructions: 200, evidence: 500 }, DOCUMENT_ROW_LIMITS.medicines, { route: 80, duration: 80, quantity: 80 })
     && rows(page.charges, { label: 160, amount: 80, currency: 20, evidence: 500 }, DOCUMENT_ROW_LIMITS.charges, { quantity: 80, unitPrice: 80 })
     && Array.isArray(page.warnings) && page.warnings.length <= 8 && page.warnings.every(warning => text(warning, 240)));
@@ -42,6 +43,8 @@ export function validDocumentAnalysis(value: unknown): value is DocumentAnalysis
 export const SCAN_ERROR_TEXT: Record<string, string> = {
   too_many_pages: 'PDF quá 6 trang. Tách thành các file tối đa 6 trang rồi tải lại; chưa trang nào bị âm thầm bỏ qua.',
   invalid_pdf: 'PDF hỏng hoặc có mật khẩu. Dùng bản PDF mở được hoặc chụp từng trang.',
+  text_layer_too_large: 'Lớp chữ trong PDF quá lớn để đối chiếu an toàn. Xuất lại PDF hoặc chụp từng trang; bản gốc vẫn được giữ.',
+  document_too_detailed: 'Đã đọc nhưng tài liệu có quá nhiều chi tiết để lưu trong một bản đọc. Tách thành file ít trang hơn; bản gốc vẫn còn, chưa ghi thiếu vào hồ sơ.',
   invalid_image: 'Không mở được ảnh. Hãy chụp lại đủ sáng, thẳng trang và thấy đủ bốn góc.',
   image_too_large: 'Ảnh có kích thước điểm ảnh quá lớn. Chụp riêng từng trang.',
   local_ai_unavailable: 'Máy xử lý AI tại nhà chưa sẵn sàng. Tài liệu vẫn được lưu; có thể đọc lại sau.',
@@ -58,7 +61,7 @@ export function documentAnalysisText(value: DocumentAnalysis, confirmed = false)
   const mark = (unclear: boolean) => unclear ? ' [Cần kiểm tra lại với bản gốc]' : '';
   return `${confirmed ? 'Bản chép đã được người dùng đối chiếu' : 'Bản nháp — chưa xác nhận toàn bộ với bản gốc'}. Không thay thế tài liệu y tế gốc.\n\n` + value.pages.map(page => [
     `Trang ${page.page} — ${DOCUMENT_TYPES[page.kind]}: ${page.title}`,
-    ...page.fields.map(row => `${row.label}: ${withPrintedUnit(row.value, row.unit)}${row.context ? ` | Ngữ cảnh trên phiếu: ${row.context}` : ''}${row.reference ? ` | Khoảng tham chiếu trên phiếu: ${row.reference}` : ''}${mark(row.unclear)}`),
+    ...page.fields.map(row => `${row.label}: ${withPrintedUnit(row.value, row.unit)}${row.context ? ` | Ngữ cảnh trên phiếu: ${row.context}` : ''}${row.reference ? ` | Khoảng tham chiếu trên phiếu: ${row.reference}` : ''}${mark(row.unclear)}${row.pdfValue && row.pdfValue !== row.value ? `\n  Chữ trong PDF khác bản nhập: ${row.pdfEvidence}. Cần đối chiếu trang gốc.` : ''}`),
     ...page.medicines.map(row => [row.name, row.ingredients, row.dose, row.frequency, row.route && `Đường dùng: ${row.route}`, row.duration && `Thời gian: ${row.duration}`, row.quantity && `Số lượng cấp: ${row.quantity}`, row.instructions].filter(Boolean).join(' | ') + mark(row.unclear)),
     ...page.charges.map(row => `${row.label}: ${withPrintedUnit(row.amount, row.currency)}${row.quantity ? ` | Số lượng: ${row.quantity}` : ''}${row.unitPrice ? ` | Đơn giá: ${row.unitPrice}` : ''}${mark(row.unclear)}`),
     ...page.warnings
