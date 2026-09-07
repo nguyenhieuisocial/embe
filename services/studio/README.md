@@ -1,5 +1,11 @@
 # EmBe Mẹ Bầu — xưởng nội dung kiến thức
 
+## Bàn làm việc trên web (07/09/2026)
+
+Mở `/studio/ban-lam-viec`: tạo/sửa/lưu kịch bản trên EmBe, dựng MP4 có giọng Việt ngay từ web, xem/tải/chia sẻ file. `/studio/kham-pha` lưu sổ chung trên cloud, có nhập sổ cũ từ thiết bị. Nút sửa bản riêng ở từng video giữ nguyên bản gốc. Xem [kiến trúc, giới hạn và vận hành hiện hành](../../docs/design/studio-workspace.md).
+
+Máy dựng Windows chạy pythonw trong môi trường giọng đã có, poll 30 giây; máy nhà cần đang bật và đăng nhập Windows. Không dùng API local cũ để expose Internet. Các phần bên dưới mô tả pipeline hữu hạn ban đầu; giới hạn “chưa có nút sửa/dựng” đã được thay bằng bàn làm việc. Tự đăng mạng xã hội vẫn chưa có.
+
 Tạo **chủ đề → kịch bản → storyboard → phụ đề → video dọc nháp** cho nội dung cộng đồng. Không bắt đầu từ Kỷ Niệm, không lấy ảnh, hồ sơ sức khỏe hoặc nhật ký của gia đình.
 
 ## Đã có trong bản đầu

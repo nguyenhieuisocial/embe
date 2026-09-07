@@ -52,7 +52,7 @@ describe('Studio content and controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Chép caption' }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('Caption'));
     expect(screen.getByRole('link', { name: 'Tải video' })).toHaveAttribute('href', '/api/studio/an-ca/video?download=1');
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Đã chép caption.'));
+    await waitFor(() => expect(screen.getByText('Đã chép caption.')).toBeInTheDocument());
   });
 });
 

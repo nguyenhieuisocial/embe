@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AppHeader from '../../../components/app-header';
+import StudioNav from '../../../components/studio-nav';
 import { editorialSeries, researchCautions, researchCoverage, researchDate, researchProfile, researchTools } from '../../../content/studio-research';
 import '../studio.css';
 
@@ -9,6 +10,7 @@ export const metadata: Metadata = { title: 'Nghiên cứu nội dung — EmBe St
 export default function StudioResearchPage() {
   return <main className="page studio-main">
     <AppHeader note="EmBe Mẹ Bầu" />
+    <StudioNav />
     <Link className="studio-back" href="/studio">‹ Về Studio</Link>
     <header className="studio-heading"><h1>Từ tham khảo đến nội dung EmBe</h1><p>Đối chiếu ngày {researchDate}. Học cách giải thích, không sao chép tác phẩm.</p></header>
     <aside className="studio-notice"><strong>Độ phủ nghiên cứu</strong><p>Đã lập chỉ mục {researchCoverage.indexed} bài theo tiêu đề và liên kết hiển thị. {researchCoverage.reachedEnd ? 'Đã tới điểm cuối mà giao diện cho xem.' : 'Chưa xác nhận đã tới cuối kênh.'} Chưa đọc hết từng ảnh, từng lời trong toàn bộ bài.</p></aside>

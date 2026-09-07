@@ -72,32 +72,43 @@ describe('Read-only trend collector boundary', () => {
 });
 
 describe('Discovery mobile workflow', () => {
-  function setup() { vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ status: 'ready', checkedAt: new Date().toISOString(), xml }))); return render(<StudioDiscovery />); }
-  it('saves canonical sources, prevents duplicates, edits, reloads and undoes deletion', async () => {
-    const view = setup(); fireEvent.click(screen.getByText('Những mẫu Rednote đã xem'));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Lưu mẫu này' })[0]); expect(JSON.parse(localStorage.getItem(discoveryKey)!)).toHaveLength(1);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Lưu mẫu này' })[0]); expect(screen.getByText('Liên kết này đã có trong sổ.')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Sửa ý tưởng & ghi số liệu')); fireEvent.change(screen.getByDisplayValue('Cách trình bày dòng thời gian thai kỳ'), { target: { value: 'Ý tưởng riêng' } }); fireEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
-    expect(JSON.parse(localStorage.getItem(discoveryKey)!)[0].title).toBe('Ý tưởng riêng');
-    view.unmount(); setup(); expect(screen.getByRole('link', { name: 'Ý tưởng riêng' })).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Sửa ý tưởng & ghi số liệu')); fireEvent.click(screen.getByRole('button', { name: 'Xóa ý tưởng' })); expect(JSON.parse(localStorage.getItem(discoveryKey)!)).toEqual([]);
-    fireEvent.click(screen.getByRole('button', { name: 'Hoàn tác xóa' })); expect(JSON.parse(localStorage.getItem(discoveryKey)!)[0].title).toBe('Ý tưởng riêng');
-    await waitFor(() => expect(screen.getByText('Đã lấy tín hiệu từ Google Trends Việt Nam.')).toBeInTheDocument());
+  let cloud: DiscoveryItem[]; let revision: number; let failWrites: boolean;
+  beforeEach(() => { cloud=[];revision=0;failWrites=false;
+    vi.spyOn(globalThis,'fetch').mockImplementation(async (url,options) => {
+      if(String(url).endsWith('/discovery'))return Response.json({status:'ready',checkedAt:new Date().toISOString(),xml});
+      if(options?.method==='POST') { const input=JSON.parse(String(options.body)); if(failWrites)return Response.json({error:'unavailable'},{status:503});
+        if(input.revision!==revision)return Response.json({error:'conflict'},{status:409}); cloud=input.items;revision++; }
+      return Response.json({items:cloud,revision});
+    });
   });
-  it('does not silently reset a corrupt board or fabricate trending posts', async () => {
-    localStorage.setItem(discoveryKey, '{broken'); setup(); expect(screen.getByText(/Không đọc được sổ/)).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Những mẫu Rednote đã xem')); expect(screen.getAllByRole('button', { name: 'Lưu mẫu này' })[0]).toBeDisabled(); expect(localStorage.getItem(discoveryKey)).toBe('{broken');
-    await waitFor(() => expect(screen.getByText(/Đã lấy tín hiệu/)).toBeInTheDocument());
+  async function setup(){const view=render(<StudioDiscovery/>);await waitFor(()=>expect(screen.getByRole('button',{name:'Lưu ý tưởng'})).not.toBeDisabled());return view;}
+  it('saves to cloud, prevents duplicates, edits, reloads and undoes deletion',async()=>{
+    const view=await setup();fireEvent.click(screen.getByText('Những mẫu Rednote đã xem'));
+    fireEvent.click(screen.getAllByRole('button',{name:'Lưu mẫu này'})[0]);await waitFor(()=>expect(cloud).toHaveLength(1));
+    await waitFor(()=>expect(screen.getAllByRole('button',{name:'Lưu mẫu này'})[0]).not.toBeDisabled());
+    fireEvent.click(screen.getAllByRole('button',{name:'Lưu mẫu này'})[0]);expect(screen.getByText('Liên kết này đã có trong sổ.')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Sửa ý tưởng & ghi số liệu'));fireEvent.change(screen.getByDisplayValue('Cách trình bày dòng thời gian thai kỳ'),{target:{value:'Ý tưởng riêng'}});fireEvent.click(screen.getByRole('button',{name:'Lưu thay đổi'}));
+    await waitFor(()=>expect(cloud[0].title).toBe('Ý tưởng riêng'));view.unmount();await setup();
+    expect(screen.getByRole('link',{name:'Ý tưởng riêng'})).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Sửa ý tưởng & ghi số liệu'));fireEvent.click(screen.getByRole('button',{name:'Xóa ý tưởng'}));await waitFor(()=>expect(cloud).toEqual([]));
+    fireEvent.click(await screen.findByRole('button',{name:'Hoàn tác xóa'}));await waitFor(()=>expect(cloud[0].title).toBe('Ý tưởng riêng'));
+    expect(localStorage.getItem(discoveryKey)).toBeNull();
   });
-  it('preserves form content when storage write fails', () => {
-    setup(); fireEvent.click(screen.getByText('Thêm bài viết, video hoặc kênh')); fireEvent.change(screen.getByLabelText('Tên ý tưởng'), { target: { value: 'Giữ bản nháp' } }); fireEvent.change(screen.getByLabelText('Liên kết gốc'), { target: { value: 'https://rednote.com/discovery/item/123' } });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('Storage full'); });
-    fireEvent.click(screen.getByRole('button', { name: 'Lưu ý tưởng' })); expect(screen.getByLabelText('Tên ý tưởng')).toHaveValue('Giữ bản nháp'); expect(screen.getByText(/Chưa lưu được trên máy/)).toBeInTheDocument();
+  it('leaves a corrupt legacy board untouched and does not invent trends',async()=>{
+    localStorage.setItem(discoveryKey,'{broken');await setup();fireEvent.click(screen.getByText('Sao lưu & nhập sổ cũ'));fireEvent.click(screen.getByRole('button',{name:'Nhập sổ cũ trên thiết bị'}));
+    await waitFor(()=>expect(screen.getByText(/Chưa đọc được sổ cũ/)).toBeInTheDocument());expect(localStorage.getItem(discoveryKey)).toBe('{broken');expect(cloud).toEqual([]);
   });
-  it('filters unrelated trends and labels missing evidence', async () => {
-    setup(); await waitFor(() => expect(screen.getByText(/Đã lấy tín hiệu/)).toBeInTheDocument()); fireEvent.click(screen.getByText(/Tín hiệu mới tại Việt Nam/));
-    expect(screen.getByRole('link', { name: 'mẹ bầu' })).toBeInTheDocument(); expect(screen.queryByRole('link', { name: 'bóng đá' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Xem xu hướng chung' })); expect(screen.getByRole('link', { name: 'bóng đá' })).toBeInTheDocument();
-    expect(screen.getByText(/chưa tự đồng bộ hai điện thoại/)).toBeInTheDocument();
+  it('preserves form content when cloud write fails',async()=>{
+    await setup();fireEvent.click(screen.getByText('Thêm bài viết, video hoặc kênh'));fireEvent.change(screen.getByLabelText('Tên ý tưởng'),{target:{value:'Giữ bản nháp'}});fireEvent.change(screen.getByLabelText('Liên kết gốc'),{target:{value:'https://rednote.com/discovery/item/123'}});
+    failWrites=true;fireEvent.click(screen.getByRole('button',{name:'Lưu ý tưởng'}));await screen.findByText(/Chưa lưu được lên EmBe/);expect(screen.getByLabelText('Tên ý tưởng')).toHaveValue('Giữ bản nháp');
+  });
+  it('does not overwrite another phone revision',async()=>{
+    await setup();revision++;fireEvent.click(screen.getByText('Những mẫu Rednote đã xem'));fireEvent.click(screen.getAllByRole('button',{name:'Lưu mẫu này'})[0]);
+    await screen.findByText(/Sổ đã đổi ở thiết bị khác/);expect(cloud).toEqual([]);
+  });
+  it('filters unrelated trends and labels the real cloud scope',async()=>{
+    await setup();await screen.findByText(/Đã lấy tín hiệu/);fireEvent.click(screen.getByText(/Tín hiệu mới tại Việt Nam/));
+    expect(screen.getByRole('link',{name:'mẹ bầu'})).toBeInTheDocument();expect(screen.queryByRole('link',{name:'bóng đá'})).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Xem xu hướng chung'}));expect(screen.getByRole('link',{name:'bóng đá'})).toBeInTheDocument();expect(screen.getByText(/Lưu riêng trên EmBe/)).toBeInTheDocument();
   });
 });

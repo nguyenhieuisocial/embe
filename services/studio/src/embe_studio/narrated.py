@@ -105,7 +105,7 @@ def frame_image(background, photo, local_frame: int, scene_frames: int, overall:
     return image
 
 
-def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndarray) -> dict:
+def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndarray, on_progress=None) -> dict:
     started = time.monotonic()
     total_frames = sum(seconds) * FPS
     frame_count, audio_cursor = 0, 0
@@ -120,6 +120,8 @@ def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndar
         audio.bit_rate = 48000
         for (background, photo), duration in zip(visuals, seconds, strict=True):
             for index in range(duration * FPS):
+                if on_progress and frame_count % (FPS * 10) == 0:
+                    on_progress(45 + int(frame_count / total_frames * 45))
                 if frame_count % FPS == 0 and (time.monotonic() - started > 480 or (path.exists() and path.stat().st_size > MAX_BYTES)):
                     raise RuntimeError("render_budget_exceeded")
                 image = frame_image(background, photo, index, duration * FPS, (frame_count + 1) / total_frames)

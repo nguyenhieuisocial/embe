@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from 'react';
+import StudioFileShare from './studio-file-share';
 
 export default function StudioActions({ slug, script, caption }: { slug: string; script: string; caption: string }) {
   const [message, setMessage] = useState(''); const [manual, setManual] = useState('');
@@ -10,10 +11,10 @@ export default function StudioActions({ slug, script, caption }: { slug: string;
     catch { setManual(value); setMessage('Chạm vào ô bên dưới để chọn và sao chép.'); }
   }
   return <section className="studio-actions" aria-label="Lưu nội dung">
+    <StudioFileShare url={`/api/studio/${slug}/video`} title="EmBe Mẹ Bầu" filename={`embe-${slug}.mp4`} />
     <div className="studio-action-grid">
       <button type="button" onClick={() => void copy(script, 'kịch bản')}>Chép kịch bản</button>
       <button type="button" onClick={() => void copy(caption, 'caption')}>Chép caption</button>
-      <a href={`/api/studio/${slug}/video?download=1`} download>Tải video</a>
       <a href={`/api/studio/${slug}/subtitles?download=1`} download>Tải phụ đề</a>
     </div>
     <p role="status" className="studio-copy-status">{message}</p>

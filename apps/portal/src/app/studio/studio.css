@@ -1,4 +1,20 @@
 .studio-main { color: var(--ink); }
+.studio-fields { min-width:0; border:0; padding:0; margin:0; }
+.studio-nav { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:3px; margin:10px 0 18px; border-bottom:1px solid var(--line); }
+.studio-nav a { display:flex; align-items:center; justify-content:center; min-height:48px; padding:5px 2px; font-size:.72rem; color:var(--ink-soft); text-decoration:none; text-align:center; }
+.studio-nav a[aria-current="page"] { color:var(--rose-press); box-shadow:inset 0 -3px var(--rose); font-weight:600; }
+.studio-edit-scenes { list-style:none; padding:0; margin:18px 0; }
+.studio-edit-scenes>li { border-top:1px solid var(--line); padding:8px 0 12px; }
+.studio-scene-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px; }
+.studio-main .studio-scene-heading h2,.studio-render-panel h2 { font-size:1rem; margin:12px 0; }
+.studio-scene-heading button { min-width:44px; }
+.studio-editor-save { display:flex; gap:8px; flex-wrap:wrap; padding:12px 0; }
+.studio-editor-save button:first-child { background:var(--rose); color:white; }
+.studio-review-check { display:flex; align-items:flex-start; gap:10px; font-size:.8rem; line-height:1.6; }
+.studio-review-check input { flex:none; width:44px; height:44px; accent-color:var(--rose); }
+.studio-render-result { padding:12px 0; border-top:1px solid var(--line); }
+.studio-render-result>p,.studio-render-panel>p { font-size:.82rem; line-height:1.6; }
+.studio-file-share { margin:12px 0; }
 .discovery-platforms { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .discovery-platforms a, .discovery-platforms button, .discovery-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 12px; color: var(--rose-press); background: var(--surface); font: inherit; font-size: .82rem; text-decoration: none; overflow-wrap: anywhere; }
 .discovery-help { color: var(--ink-soft); font-size: .78rem; line-height: 1.65; }

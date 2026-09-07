@@ -1,5 +1,7 @@
 # Khám phá nội dung EmBe — 07/09/2026
 
+> Bản tiếp theo đã chuyển sổ sang cloud, chống ghi đè bằng revision và nối “Viết kịch bản từ ý tưởng” vào bàn làm việc. Xem [Studio workspace](studio-workspace.md). Phần localStorage và bằng chứng commit dưới đây là lịch sử của bản đầu; sổ cũ không tự xóa, có nút nhập gộp lên EmBe.
+
 ## Phạm vi chạy thật
 
 `/studio/kham-pha`, sau đăng nhập: 10 nhóm từ khóa do EmBe biên tập, tiếng Việt/Trung/Anh; mở search ở 6 nền tảng xã hội và Google Trends. Google Trends VN RSS được lấy tự động khi mở trang. Đây là tín hiệu Google Search, không phải collector social hay bằng chứng y khoa. Không tìm thấy từ khớp là kết quả hợp lệ, không tạo dữ liệu mẫu thay thế.
