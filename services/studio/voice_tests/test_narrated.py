@@ -12,6 +12,21 @@ from embe_studio.narrated import FPS, RATE, SIZE, frame_image, layers, render_vi
 
 
 class NarratedRenderTests(unittest.TestCase):
+    def test_hifi_mux_preserves_48khz_and_rejects_misaligned_audio(self):
+        with tempfile.TemporaryDirectory(prefix="embe-hifi-check-") as temp:
+            path=Path(temp)/'hifi.mp4'
+            with Image.new('RGB',SIZE,'white') as bg, Image.new('RGB',(80,60),'pink') as photo:
+                rate=48000
+                pcm=(.1*np.sin(2*np.pi*440*np.arange(rate*2)/rate)).astype(np.float32)
+                with self.assertRaisesRegex(ValueError,'audio_timeline_mismatch'):
+                    render_video(path,[(bg,photo)],[2],pcm,audio_rate=RATE)
+                result=render_video(path,[(bg,photo)],[2],pcm,audio_rate=rate,audio_bitrate=128000)
+                self.assertEqual(result['audio_sample_rate'],48000)
+                with av.open(str(path)) as media:
+                    self.assertEqual(media.streams.audio[0].codec_context.sample_rate,48000)
+                    self.assertGreater(media.streams.audio[0].bit_rate,90000)
+                    self.assertTrue(all(np.isfinite(f.to_ndarray()).all() for f in media.decode(audio=0)))
+
     def test_all_catalog_boards_fit_and_highlighting_is_visible(self):
         studio = Path(__file__).resolve().parents[1]
         catalog = json.loads((studio / "content/infographic-v2.json").read_text(encoding="utf-8"))

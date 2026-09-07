@@ -1,6 +1,6 @@
 import type { StudioTopic } from './studio-types';
 
-export type StudioVoice = { id: 'ai-han-south' | 'piper'; speed: 0.95 | 1 | 1.05 };
+export type StudioVoice = { id: 'thuc-doan-south-v1' | 'my-duyen-south-v1' | 'ai-han-south' | 'piper'; speed: 0.95 | 1 | 1.05 };
 export type StudioDocument = { title: string; stage: string; caption: string; scenes: { heading: string; text: string }[]; sources: { title: string; url: string }[]; voice?: StudioVoice };
 export type StudioProject = { id: string; revision: number; payload: StudioDocument; deleted: boolean; created_at: string; updated_at: string };
 export type StudioRender = { id: string; revision: number; status: 'queued' | 'rendering' | 'completed' | 'failed' | 'cancelled'; progress: number; error: string | null; attempts: number; output?: { duration: number; voiceCredit: { attribution: string; url: string; license: string }; beats: { heading: string; text: string; start: number; end: number }[] } | null };
@@ -13,7 +13,7 @@ export function studioDocument(raw: unknown): StudioDocument {
   let voice: StudioVoice | undefined;
   if (value.voice !== undefined) {
     const v=record(value.voice);
-    if (Object.keys(v).some(k=>!['id','speed'].includes(k)) || !['ai-han-south','piper'].includes(String(v.id)) || typeof v.speed!=='number' || ![.95,1,1.05].includes(v.speed)) throw new Error('invalid_request');
+    if (Object.keys(v).some(k=>!['id','speed'].includes(k)) || !['thuc-doan-south-v1','my-duyen-south-v1','ai-han-south','piper'].includes(String(v.id)) || typeof v.speed!=='number' || ![.95,1,1.05].includes(v.speed)) throw new Error('invalid_request');
     voice={id:v.id as StudioVoice['id'],speed:v.speed as StudioVoice['speed']};
   }
   if (!Array.isArray(value.scenes) || value.scenes.length < 1 || value.scenes.length > 6 || !Array.isArray(value.sources) || value.sources.length > 6) throw new Error('invalid_request');
@@ -26,7 +26,7 @@ export function studioDocument(raw: unknown): StudioDocument {
   return { title: text(value.title, 120, true), stage: text(value.stage, 80), caption: text(value.caption, 1500), scenes, sources, ...(voice?{voice}:{}) };
 }
 export function templateDocument(topic?: StudioTopic): StudioDocument {
-  const voice: StudioVoice = {id:'ai-han-south',speed:1};
+  const voice: StudioVoice = {id:'thuc-doan-south-v1',speed:1};
   return topic ? { title: topic.title, stage: topic.stage, caption: `${topic.caption}\n${topic.hashtags.map(t=>`#${t}`).join(' ')}`, scenes: topic.beats.slice(0,6).map(b=>({heading:b.heading,text:b.text})), sources: topic.sources.slice(0,6).map(s=>({ title: s.publisher, url:s.url })), voice }
     : { title: 'Ý tưởng mới', stage: 'Mẹ bầu', caption: '', scenes: [{heading:'Mở đầu',text:''},{heading:'Một điều cần biết',text:''},{heading:'Việc nhỏ hôm nay',text:''}], sources: [], voice };
 }

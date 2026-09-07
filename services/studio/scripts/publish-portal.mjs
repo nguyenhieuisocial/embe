@@ -69,8 +69,12 @@ async function main() {
     const project = JSON.parse(await sourceFile(resolve(campaign, `${topic.slug}.${narrated ? 'timeline' : 'project'}.json`)));
     if (!Array.isArray(project.scenes) || project.scenes.some(scene => !Number.isInteger(scene.seconds) || scene.seconds < 2 || scene.seconds > 26)) throw new Error('invalid_timeline');
     if (narrated && (project.format !== report.format || rendered.audio !== true || project.audio !== true || rendered.result.audio_codec !== 'aac')) throw new Error('narration_not_verified');
-    if (narrated && (!project.voiceCredit?.attribution || !project.voiceCredit.url?.startsWith('https://huggingface.co/rhasspy/piper-voices/')
-      || project.voiceCredit.license !== 'https://creativecommons.org/licenses/by/4.0/')) throw new Error('missing_voice_credit');
+    const credit=project.voiceCredit;
+    const piper=credit?.url?.startsWith('https://huggingface.co/rhasspy/piper-voices/')&&credit.license==='https://creativecommons.org/licenses/by/4.0/';
+    const turbo=credit?.url==='https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Turbo'&&credit.license==='https://www.apache.org/licenses/LICENSE-2.0'
+      &&credit.modelRevision==='8b7e9cffb4b41918cb638b9f62f0a751184d14a6'&&credit.presetChecksum==='0e3119d663c50e04855ebbe23b558e31759d3f9cd45c66abbaebfc79dad8984a'
+      &&rendered.result.audio_sample_rate===48000&&rendered.result.audio_target_bitrate===128000;
+    if(narrated&&(!credit?.attribution||(!piper&&!turbo)))throw new Error('missing_voice_credit');
     const poster = manifest[project.scenes[0].asset_id];
     if (poster?.provenance !== 'embe_educational_layout' || !/^[a-f0-9-]{36}\.png$/.test(poster.file)) throw new Error('invalid_poster');
     const image = await sourceFile(resolve(campaign, 'cards', poster.file));

@@ -42,7 +42,7 @@ export default function StudioReviewBoard({initialProject}:{initialProject?:stri
   return <section aria-label="Quy trình duyệt và đăng">
     <ol className="studio-review-steps"><li><span>1</span>Giọng & video</li><li><span>2</span>Duyệt chuyên môn</li><li><span>3</span>Đăng bài</li></ol>
     <aside className="studio-notice"><strong>Chưa bật đăng tự động</strong><p>Cần người duyệt có chuyên môn được xác định và tài khoản đích được kết nối. AI, góp ý của gia đình và việc thêm nguồn không thay thế duyệt chuyên môn.</p></aside>
-    <details className="studio-disclosure"><summary>Giọng nữ miền Nam</summary><SouthernVoiceSample/><p>Ái Hân · giọng tổng hợp. Chọn giọng và tốc độ trong màn hình soạn; lưu và dựng lại để áp dụng.</p><Link href="/studio/soan">Soạn video với giọng miền Nam</Link></details>
+    <details className="studio-disclosure"><summary>Nghe giọng nữ miền Nam mới</summary><SouthernVoiceSample/><p>Thục Đoan và Mỹ Duyên: giọng AI kể chuyện, âm thanh 48 kHz. Chọn giọng trong màn hình soạn; lưu và dựng lại để áp dụng.</p><Link href="/studio/soan">Soạn video với giọng miền Nam</Link></details>
     <section className="studio-review-card"><h2>Chuẩn bị bản cần duyệt</h2>
       <label className="studio-search">Chọn bản nháp<select value={selected} disabled={busy} onChange={e=>setSelected(e.target.value)}><option value="">Chọn nội dung đã lưu</option>{projects.map(p=><option key={p.id} value={p.id}>{p.payload.title}</option>)}</select></label>
       {project&&<><p className="discovery-help">Phiên bản {project.revision} · {render?'Đã có video đúng phiên bản':'Chưa có video đúng phiên bản'}</p><Link className="studio-back" href={`/studio/soan?du-an=${project.id}`}>{render?'Sửa nội dung hoặc giọng đọc':'Mở bản soạn để dựng video'} →</Link>

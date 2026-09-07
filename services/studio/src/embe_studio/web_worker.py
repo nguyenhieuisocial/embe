@@ -31,7 +31,7 @@ def validate_document(value):
         raise ValueError('invalid_project')
     if 'voice' in value:
         v=value['voice']
-        if not isinstance(v,dict) or set(v)!={'id','speed'} or v['id'] not in {'ai-han-south','piper'} or type(v['speed']) not in (int,float) or v['speed'] not in (.95,1,1.05):
+        if not isinstance(v,dict) or set(v)!={'id','speed'} or v['id'] not in {'ai-han-south','piper','thuc-doan-south-v1','my-duyen-south-v1'} or type(v['speed']) not in (int,float) or v['speed'] not in (.95,1,1.05):
             raise ValueError('invalid_project')
     def text(v, n, required=False):
         if not isinstance(v,str) or len(v)>n or (required and not v.strip()):
@@ -64,7 +64,12 @@ def render_document(document, directory: Path, progress):
     doc=validate_document(document)
     chosen=doc.get('voice',{'id':'piper','speed':1})
     southern=chosen['id']=='ai-han-south'
-    if southern:
+    story=chosen['id'] in {'thuc-doan-south-v1','my-duyen-south-v1'}
+    rate=48000 if story else RATE
+    if story:
+        from .story_voice import StoryVoice
+        voice=StoryVoice(chosen['id']);credit=voice.credit
+    elif southern:
         from .southern_voice import SouthernVoice,CREDIT
         voice=SouthernVoice();credit=CREDIT
     else:
@@ -78,7 +83,7 @@ def render_document(document, directory: Path, progress):
     try:
         for i,scene in enumerate(doc['scenes']):
             progress(5+int(i/len(doc['scenes'])*35))
-            if southern:
+            if southern or story:
                 pcm=voice.speak(scene['text'],chosen['speed'])
             else:
                 sound_io=io.BytesIO()
@@ -87,11 +92,11 @@ def render_document(document, directory: Path, progress):
                 with wave.open(sound_io,'rb') as wav:
                     if wav.getframerate()!=RATE or wav.getnchannels()!=1 or wav.getsampwidth()!=2:raise ValueError('worker_unavailable')
                     pcm=np.frombuffer(wav.readframes(wav.getnframes()),dtype='<i2').astype(np.float32)/32768
-            if not RATE<=len(pcm)<=25*RATE:raise ValueError('voice_too_long')
+            if not rate<=len(pcm)<=25*rate:raise ValueError('voice_too_long')
             if np.max(np.abs(pcm))<.01:raise ValueError('worker_unavailable')
-            duration=math.ceil(len(pcm)/RATE+.45)
+            duration=math.ceil(len(pcm)/rate+.45)
             if elapsed+duration>90:raise ValueError('voice_too_long')
-            padded=np.zeros(duration*RATE,dtype=np.float32);start=round(RATE*.15);padded[start:start+len(pcm)]=pcm
+            padded=np.zeros(duration*rate,dtype=np.float32);start=round(rate*.15);padded[start:start+len(pcm)]=pcm
             sounds.append(padded);durations.append(duration)
             background=Image.new('RGB',(720,1280),(255,248,246));draw=ImageDraw.Draw(background)
             draw.rounded_rectangle((48,65,300,115),radius=25,fill=(249,224,231))
@@ -117,11 +122,12 @@ def render_document(document, directory: Path, progress):
                 poster.save(directory/'poster.png',optimize=True);poster.close()
             beats.append({'heading':scene['heading'],'text':scene['text'],'start':elapsed,'end':elapsed+duration});elapsed+=duration
         progress(45)
-        result=render_video(directory/'video.mp4',visuals,durations,np.concatenate(sounds),on_progress=progress)
+        result=render_video(directory/'video.mp4',visuals,durations,np.concatenate(sounds),on_progress=progress,
+            audio_rate=rate,audio_bitrate=128000 if story else 48000)
         return {'duration':elapsed,'beats':beats,'voiceCredit':credit,'verification':result}
     finally:
         for background,photo in visuals:background.close();photo.close()
-        if southern:voice.close()
+        if southern or story:voice.close()
 
 class WebWorker:
     def __init__(self, env: Path):

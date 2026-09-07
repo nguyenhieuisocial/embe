@@ -105,7 +105,11 @@ def frame_image(background, photo, local_frame: int, scene_frames: int, overall:
     return image
 
 
-def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndarray, on_progress=None) -> dict:
+def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndarray, on_progress=None, *, audio_rate=RATE, audio_bitrate=48000) -> dict:
+    if audio_rate not in (RATE, 48000) or audio_bitrate not in (48000, 128000):
+        raise ValueError('invalid_audio_format')
+    if len(samples) != sum(seconds)*audio_rate:
+        raise ValueError('audio_timeline_mismatch')
     started = time.monotonic()
     total_frames = sum(seconds) * FPS
     frame_count, audio_cursor = 0, 0
@@ -115,9 +119,9 @@ def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndar
         video.pix_fmt = "yuv420p"
         video.codec_context.thread_count = 2
         video.options = {"preset": "veryfast", "crf": "27", "maxrate": "500k", "bufsize": "1000k"}
-        audio = container.add_stream("aac", rate=RATE)
+        audio = container.add_stream("aac", rate=audio_rate)
         audio.layout = "mono"
-        audio.bit_rate = 48000
+        audio.bit_rate = audio_bitrate
         for (background, photo), duration in zip(visuals, seconds, strict=True):
             for index in range(duration * FPS):
                 if on_progress and frame_count % (FPS * 10) == 0:
@@ -129,9 +133,9 @@ def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndar
                 frame.pts, frame.time_base = frame_count, Fraction(1, FPS)
                 for packet in video.encode(frame):
                     container.mux(packet)
-                end = round((frame_count + 1) * RATE / FPS)
+                end = round((frame_count + 1) * audio_rate / FPS)
                 sound = av.AudioFrame.from_ndarray(samples[audio_cursor:end].reshape(1, -1), format="fltp", layout="mono")
-                sound.sample_rate, sound.pts, sound.time_base = RATE, audio_cursor, Fraction(1, RATE)
+                sound.sample_rate, sound.pts, sound.time_base = audio_rate, audio_cursor, Fraction(1, audio_rate)
                 for packet in audio.encode(sound):
                     container.mux(packet)
                 audio_cursor, frame_count = end, frame_count + 1
@@ -143,16 +147,16 @@ def render_video(path: Path, visuals: list, seconds: list[int], samples: np.ndar
     with av.open(str(path)) as container:
         video, audio = container.streams.video[0], container.streams.audio[0]
         duration = float(container.duration / av.time_base)
-        if video.codec_context.name != "h264" or audio.codec_context.name != "aac" or video.frames != total_frames:
+        if video.codec_context.name != "h264" or audio.codec_context.name != "aac" or video.frames != total_frames or audio.codec_context.sample_rate != audio_rate:
             raise RuntimeError("av_verification_failed")
         if abs(duration - sum(seconds)) > .15 or (video.width, video.height) != SIZE:
             raise RuntimeError("av_timeline_mismatch")
     return {"width": SIZE[0], "height": SIZE[1], "fps": FPS, "frames": frame_count,
-            "duration_seconds": sum(seconds), "byte_size": path.stat().st_size, "audio_codec": "aac",
+            "duration_seconds": sum(seconds), "byte_size": path.stat().st_size, "audio_codec": "aac", "audio_sample_rate": audio_rate, "audio_target_bitrate": audio_bitrate,
             "checksum_sha256": checksum(path), "render_seconds": round(time.monotonic() - started, 2)}
 
 
-def build(catalog_path: Path, model: Path, root: Path, artwork: Path) -> dict:
+def build(catalog_path: Path, model: Path, root: Path, artwork: Path, story_voice_id=None) -> dict:
     catalog = load_catalog(catalog_path)
     if checksum(model) != MODEL_SHA256:
         raise ValueError("voice_model_checksum_mismatch")
@@ -165,6 +169,11 @@ def build(catalog_path: Path, model: Path, root: Path, artwork: Path) -> dict:
                        config=PiperConfig.from_dict(json.loads(config_path.read_text(encoding="utf-8"))))
     if voice.config.sample_rate != RATE:
         raise ValueError("unexpected_voice_sample_rate")
+    rate, credit = RATE, VOICE_CREDIT
+    if story_voice_id:
+        from .story_voice import StoryVoice
+        voice = StoryVoice(story_voice_id)
+        rate, credit = voice.sample_rate, voice.credit
     root = root.resolve()
     root.mkdir(parents=True, exist_ok=True)
     cards = root / "cards"
@@ -181,17 +190,22 @@ def build(catalog_path: Path, model: Path, root: Path, artwork: Path) -> dict:
         for index, beat in enumerate(item["beats"]):
             wav_path = root / f"{slug}-{index + 1}.wav"
             with wave.open(str(wav_path), "wb") as output:
-                voice.synthesize_wav(beat["text"], output, syn_config=synthesis)
+                if story_voice_id:
+                    pcm = voice.speak(beat['text'])
+                    output.setparams((1,2,rate,0,'NONE','not compressed'))
+                    output.writeframes((pcm*32767).astype('<i2').tobytes())
+                else:
+                    voice.synthesize_wav(beat["text"], output, syn_config=synthesis)
             with wave.open(str(wav_path), "rb") as sound:
-                if sound.getnchannels() != 1 or sound.getsampwidth() != 2 or sound.getframerate() != RATE:
+                if sound.getnchannels() != 1 or sound.getsampwidth() != 2 or sound.getframerate() != rate:
                     raise ValueError("invalid_voice_output")
                 pcm = np.frombuffer(sound.readframes(sound.getnframes()), dtype="<i2").astype(np.float32) / 32768
-            if len(pcm) < RATE or len(pcm) > RATE * 25 or np.max(np.abs(pcm)) < .01:
+            if len(pcm) < rate or len(pcm) > rate * 25 or np.max(np.abs(pcm)) < .01:
                 raise ValueError("empty_or_unbounded_narration")
-            duration = math.ceil(len(pcm) / RATE + .45)
+            duration = math.ceil(len(pcm) / rate + .45)
             # Small breath at each scene boundary; no narration cut off by scene timing.
-            padded = np.zeros(duration * RATE, dtype=np.float32)
-            padded[round(RATE * .15):round(RATE * .15) + len(pcm)] = pcm
+            padded = np.zeros(duration * rate, dtype=np.float32)
+            padded[round(rate * .15):round(rate * .15) + len(pcm)] = pcm
             sounds.append(padded)
             durations.append(duration)
             background, photo = layers(beat, item, index, len(item["beats"]), illustration)
@@ -202,10 +216,10 @@ def build(catalog_path: Path, model: Path, root: Path, artwork: Path) -> dict:
             manifest[asset_id] = {"file": card_path.name, "provenance": "embe_educational_layout", "checksum_sha256": checksum(card_path)}
             scenes.append({"asset_id": asset_id, "seconds": duration})
             print(f"Voice ready: {slug} {index + 1}/{len(item['beats'])} ({duration}s)", flush=True)
-        timeline = {"format": "infographic-voice-v1", "scenes": scenes, "audio": True, "voiceCredit": VOICE_CREDIT}
+        timeline = {"format": "infographic-voice-v1", "scenes": scenes, "audio": True, "voiceCredit": credit}
         (root / f"{slug}.timeline.json").write_text(json.dumps(timeline, ensure_ascii=False, indent=2), encoding="utf-8")
         video_path = root / f"{slug}.mp4"
-        result = render_video(video_path, visuals, durations, np.concatenate(sounds))
+        result = render_video(video_path, visuals, durations, np.concatenate(sounds),audio_rate=rate,audio_bitrate=128000 if story_voice_id else 48000)
         videos.append({"slug": slug, "status": "completed", "local_path": str(video_path), "audio": True, "result": result})
         print(f"Video ready: {slug} ({result['duration_seconds']}s, {result['byte_size']} bytes)", flush=True)
         for background, photo in visuals:
@@ -215,6 +229,7 @@ def build(catalog_path: Path, model: Path, root: Path, artwork: Path) -> dict:
     report = {"format": "infographic-voice-v1", "status": "draft", "published": False, "clinical_review": "not_reviewed", "catalog_sha256": checksum(catalog_path),
               "voice_model_sha256": checksum(model), "voice_config_sha256": checksum(config_path), "videos": videos}
     (root / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    if story_voice_id: voice.close()
     return report
 
 
@@ -224,5 +239,6 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--artwork", type=Path, required=True)
+    parser.add_argument("--voice", choices=['thuc-doan-south-v1','my-duyen-south-v1'])
     args = parser.parse_args()
-    build(args.catalog, args.model, args.output, args.artwork)
+    build(args.catalog, args.model, args.output, args.artwork, args.voice)

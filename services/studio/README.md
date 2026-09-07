@@ -106,7 +106,7 @@ Xem [nguồn gốc minh họa](assets/PROVENANCE.md) và [catalog có nguồn t�
 
 ### Giọng nữ miền Nam và hàng chờ duyệt trên web (07/09/2026)
 
-- `/studio/soan`: Ái Hân (nữ miền Nam), tốc độ 0,95 / 1 / 1,05; mẫu nghe chỉ tải khi người dùng mở và nhấn phát. Bản nháp cũ giữ Piper; đổi giọng tạo phiên bản mới, không sửa video cũ.
+- `/studio/soan`: bản mới mặc định Thục Đoan, có thêm Mỹ Duyên (nữ miền Nam, kể/đọc truyện), tốc độ 0,95 / 1 / 1,05. Studio có nghe so sánh cùng một câu; chỉ tải khi mở và nhấn phát. Bản nháp cũ giữ đúng giọng đã lưu (Piper hoặc Ái Hân); đổi giọng tạo phiên bản mới, không sửa lịch sử video cũ.
 - `/studio/duyet-dang`: lưu yêu cầu theo đúng kịch bản + video, nguồn, nơi đăng dự kiến, góp ý, rút/đưa lại vào hàng chờ, xuất hồ sơ dạng TXT. Sửa hoặc xóa dự án khiến yêu cầu trước đó có nhãn bản cũ.
 - **Đây là hàng chờ nội bộ, không phải đã gửi bác sĩ hoặc đã thẩm định y khoa.** Tài khoản gia đình dùng chung không chứng minh danh tính/chuyên môn của người duyệt. Không có action approve/publish/schedule. Năm nền tảng chưa có kết nối API, chưa tự đăng. Việc trao quyền cho một người duyệt và kết nối tài khoản đích là điều kiện còn thiếu, không thể thay bằng AI hoặc cookie trình duyệt.
 - Tách quyền schema `embe_studio`; endpoint yêu cầu phiên đang hoạt động và same-origin khi ghi. Request gắn revision/render; lịch sử append-only, tối đa 100 yêu cầu và 100 sự kiện/yêu cầu. Không đọc hồ sơ gia đình.
@@ -114,6 +114,14 @@ Xem [nguồn gốc minh họa](assets/PROVENANCE.md) và [catalog có nguồn t�
 Voice runtime: `vieneu==3.6.4` cài `--no-deps`, sau đó `requirements-southern-voice.txt` bên trong `.venv-studio-voice` đã có `requirements-voice.txt`. Không cài Torch/Gradio hay tạo thêm Docker. Chạy `python -m embe_studio.southern_voice` một lần để tải 6 artifact Nano (~282 MB), revision cố định và SHA-256 trong module. Runtime chỉ đọc model local và preset đúng checksum; dùng CPU 2 luồng, không gọi TTS bên ngoài, không sao chép giọng cá nhân.
 
 [VieNeu v3 Nano](https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Nano) và preset Ái Hân được phát hành Apache 2.0, có xác nhận quyền preset trong model card; KHÔNG dùng bộ preset VieNeu cũ có hạn chế phi thương mại. Nano còn thử nghiệm, cần nghe lại phát âm; không tuyên bố đã đạt chất lượng giọng thu chuyên nghiệp. Bản MP4 giữ nhãn giọng AI và attribution trong kịch bản tải về. Mẫu riêng không chứa thông tin sức khỏe.
+
+### Nâng chất lượng giọng kể chuyện (07/09/2026)
+
+- [VieNeu v3 Turbo](https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Turbo) fp32 ONNX + hai preset nữ miền Nam có sẵn, Apache 2.0. Pin revision/checksum trong `story_voice.py`; cài bằng `python -m embe_studio.story_voice` (~521 MB) một lần. Không dùng clone, encoder/denoiser, Torch, GPU pack, API TTS trả phí hoặc dữ liệu gia đình.
+- SDK 3.6.4 chưa chuyển tiếp `codec_dir`; adapter nhỏ đưa engine ONNX local vào chính pipeline SDK, giữ cách chia câu, phonemizer, khoảng nghỉ và repetition guard. Bộ so sánh chặn socket trong suốt inference để xác minh không gọi mạng.
+- Giữ 48 kHz đến MP4, AAC mono 128 kbps, tốc độ bằng FFmpeg `atempo` không đổi cao độ; cân mức âm có giới hạn, giữ ngữ điệu, fade 5 ms tránh tiếng bật đầu/cuối. Chỉ sửa phát âm thương hiệu EmBe → Em Bé ở đầu vào đọc; không thay số, đơn vị, kịch bản hoặc phụ đề.
+- Giọng cũ vẫn có ID và engine riêng. Không âm thầm thay giọng trong phiên bản đã lưu hoặc yêu cầu duyệt. Các mẫu catalog thay locator/checksum mới nhưng giữ kho file cũ. Không tuyên bố đã nghe duyệt chuyên môn hay giọng đạt thu âm người thật.
+- Kiểm tra `test_story_voice.py`, `test_narrated.py`, `studio-story-voice.test.tsx`; `compare_story_voices.py --upload` chỉ dựng và đưa mẫu tự viết vào kho private. Chưa tự đăng mạng xã hội. Verifier live `scripts/health/studio-story-voice-live.mjs` chỉ chỉnh một bản demo được xác minh danh tính.
 
 Kiểm tra: `apps/portal/tests/studio-review.test.tsx`, `services/studio/tests/test_web_worker.py`, và verifier live hữu hạn `scripts/health/studio-review-live.mjs`. Không có bài mạng xã hội nào được đăng trong kiểm tra. Kiểm tra trình duyệt iPhone-sized không thay kiểm tra iPhone/Safari thật.
 
