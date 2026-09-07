@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import AppHeader from '../../components/app-header';
 import StudioCollection from '../../components/studio-collection';
 import { studioInfo, studioTopics } from '../../lib/studio';
@@ -12,5 +13,6 @@ export default function StudioPage() {
     <header className="studio-heading"><h1>Studio</h1><p>Kiến thức gần gũi cùng EmBe Mẹ Bầu.</p></header>
     <aside className="studio-notice"><strong>Bản nháp, chưa duyệt chuyên môn</strong><p>Xem và chuẩn bị nội dung tại đây. Chưa tự đăng mạng xã hội.</p></aside>
     <StudioCollection topics={topics} ideas={studioInfo.ideas} />
+    <Link className="studio-back" href="/studio/nghien-cuu">Nghiên cứu & hướng nội dung</Link>
   </main>;
 }

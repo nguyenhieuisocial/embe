@@ -1,0 +1,55 @@
+// Editorial research, not a clinical knowledge base or permission to reuse media.
+export const researchDate = '07/09/2026';
+export const researchProfile = 'https://www.rednote.com/user/profile/5837955482ec397a4e05478e';
+export const researchCoverage = { indexed: 210, reachedEnd: true };
+
+export const editorialSeries = [
+  { title: '40 tuần, mỗi tuần một điều', format: 'Dòng thời gian', brief: 'Một thay đổi dễ hiểu, một việc nhỏ và một câu hỏi cho lần khám. Không dự báo sức khỏe từ kích thước trái cây.' },
+  { title: 'Ăn ngon, không kiêng oan', format: 'Bảng đối chiếu', brief: 'Tách an toàn thực phẩm, dị ứng và những lời đồn tương khắc. Dùng món Việt, không dán nhãn món ăn là thuốc.' },
+  { title: 'Ngày mẹ đang nghén', format: 'Ba lựa chọn', brief: 'Những cách ăn uống dễ chịu hơn và khi nào nên liên hệ người chăm sóc thai kỳ. Không hứa chữa khỏi nghén.' },
+  { title: 'Đọc nhãn vi chất cùng mẹ', format: 'Minh họa từng bước', brief: 'Tên chất, đơn vị, khẩu phần và câu hỏi cần hỏi bác sĩ/dược sĩ. Không tự kê liều theo tháng.' },
+  { title: 'Đi khám đỡ quên', format: 'Checklist', brief: 'Mang gì, ghi gì, hỏi gì và lưu kết quả ở đâu. Lịch xét nghiệm phải theo cơ sở khám tại Việt Nam.' },
+  { title: 'Ba có thể làm gì hôm nay?', format: 'Tình huống ngắn', brief: 'Một việc nhà, một lời hỏi thăm, một cách giúp mẹ nghỉ. Không đổ trách nhiệm sức khỏe lên mẹ.' },
+  { title: 'Giỏ đi sinh gọn thật sự', format: 'Cần / tùy nơi sinh', brief: 'Tách giấy tờ, đồ mẹ, đồ bé và đồ bệnh viện cấp. Không biến checklist thành quảng cáo mua sắm.' },
+  { title: 'Sau sinh, mẹ cũng cần được chăm', format: 'Thẻ nhắc', brief: 'Nghỉ ngơi, hỗ trợ tinh thần và liên hệ chăm sóc khi có dấu hiệu đáng lo. Không đặt mục tiêu ép cân.' },
+  { title: 'Bé ngủ an toàn', format: 'Bố trí minh họa', brief: 'Tái sử dụng nội dung có nguồn của EmBe; phân biệt hình đẹp và môi trường ngủ an toàn.' },
+  { title: 'Ăn dặm không rối', format: 'Lộ trình nhỏ', brief: 'Nghiên cứu dấu hiệu sẵn sàng, kết cấu và nguy cơ hóc. Không dùng bảng cấm phối hợp thực phẩm làm chuẩn.' },
+  { title: 'Mua ít, chọn đúng', format: 'Tiêu chí chọn', brief: 'So nhu cầu, cách dùng và cảnh báo an toàn; công khai tài trợ nếu có, không chép bảng xếp hạng của người khác.' },
+  { title: 'Chơi cùng con, không so con', format: 'Hoạt động thực hành', brief: 'Ý tưởng chơi phù hợp giai đoạn, có giám sát; không hứa tăng IQ hoặc chiều cao nhờ sản phẩm.' },
+];
+
+export const researchTools = [
+  { name: 'Piper', url: 'https://github.com/OHF-Voice/piper1-gpl', status: 'Đã dùng', license: 'GPL-3.0; mô hình có điều kiện riêng', note: 'Giọng Việt chạy cục bộ cho ba video mới. Có ghi nguồn VAIS1000; không sao chép giọng tác giả.' },
+  { name: 'FFmpeg / PyAV', url: 'https://github.com/PyAV-Org/PyAV', status: 'Đã dùng', license: 'PyAV BSD-3-Clause; FFmpeg/codec riêng', note: 'Giữ bộ dựng MP4 hiện có, giới hạn số luồng xử lý. Không thêm MoviePy chỉ để bọc lại cùng công việc.' },
+  { name: 'Pillow', url: 'https://github.com/python-pillow/Pillow', status: 'Đã dùng', license: 'HPND', note: 'Dàn chữ và bảng kiến thức. Minh họa gốc được tạo bằng ChatGPT, không xóa chữ hoặc logo của tác giả.' },
+  { name: 'PaddleOCR', url: 'https://github.com/PaddlePaddle/PaddleOCR', status: 'Ứng viên', license: 'Apache-2.0', note: 'Phù hợp bóc chữ và bảng trong ảnh được phép xử lý. Cần giữ tọa độ, đơn vị, độ tin cậy và bước đối chiếu; chưa tích hợp vào Studio.' },
+  { name: 'faster-whisper', url: 'https://github.com/SYSTRAN/faster-whisper', status: 'Ứng viên', license: 'MIT', note: 'Dùng khi có video/giọng nói được phép nhập. CTranslate2 xử lý lời nói; không phải NVENC. Chưa có benchmark trên máy này.' },
+  { name: 'WhisperX', url: 'https://github.com/m-bain/whisperX', status: 'Chưa cần', license: 'BSD-2-Clause; mô hình riêng', note: 'Căn thời gian từng từ khi cần phụ đề karaoke. Phải kiểm tra mô hình căn chỉnh tiếng Việt; số và đơn vị có thể căn sai.' },
+  { name: 'pyVideoTrans', url: 'https://github.com/jianchang512/pyvideotrans', status: 'Tham khảo kiến trúc', license: 'GPL-3.0', note: 'Repo đúng là jianchang512/pyvideotrans, có CLI và GUI cho dịch/lồng tiếng. Không phải pyvideotrans/typewriter; không ghép cả ứng dụng vào EmBe.' },
+  { name: 'yt-dlp', url: 'https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/xiaohongshu.py', status: 'Có điều kiện', license: 'Unlicense cho nguồn chính; bản đóng gói có dependency riêng', note: 'Có extractor Xiaohongshu cho URL bài trên xiaohongshu.com. Không đồng nghĩa đọc được cả profile rednote.com, album ảnh hoặc mọi link có hạn chế. Chưa chạy tải.' },
+  { name: 'XHS-Downloader', url: 'https://github.com/JoeanAmier/XHS-Downloader', status: 'Có điều kiện', license: 'GPL-3.0', note: 'Ứng viên có lưu ID chống trùng, kiểm tra file và tải tiếp. Giấy phép công cụ không cấp quyền dùng ảnh/video. Chưa cài hoặc lấy cookie.' },
+  { name: 'MediaCrawler', url: 'https://github.com/NanmiCoder/MediaCrawler/blob/main/LICENSE', status: 'Không chọn', license: 'Non-Commercial Learning License 1.1', note: 'Chỉ nghiên cứu phi thương mại; cấm crawl quy mô lớn/gây gián đoạn, thương mại cần đồng ý bằng văn bản. Không coi là phần mềm được tự do dùng thương mại.' },
+  { name: 'edge-tts', url: 'https://github.com/rany2/edge-tts', status: 'Chưa chọn', license: 'Xem LICENSE; phụ thuộc dịch vụ Microsoft', note: 'Thư viện gọi dịch vụ online, không phải cam kết API sản xuất miễn phí không giới hạn. Chưa xác minh quyền sử dụng dịch vụ cho pipeline thương mại; giữ Piper cục bộ.' },
+  { name: 'Coqui TTS', url: 'https://github.com/idiap/coqui-ai-TTS', status: 'Chưa cần', license: 'MPL-2.0; mô hình riêng', note: 'Nhánh idiap còn được cập nhật. Repo coqui-ai/TTS có lần push hiển thị từ 2024; không gán nhầm là archived. Chưa cần thêm runtime giọng nói nặng.' },
+  { name: 'Ollama', url: 'https://github.com/ollama/ollama', status: 'Tái sử dụng khi cần', license: 'MIT; mô hình riêng', note: 'Có thể dùng runtime EmBe hiện có để soạn nháp theo cấu trúc. Không coi mô hình là nguồn y khoa; chi phí điện, RAM và thời gian vẫn tồn tại.' },
+  { name: 'LangChain', url: 'https://github.com/langchain-ai/langchain', status: 'Chưa cần', license: 'MIT', note: 'Chưa có luồng phức tạp đủ để thêm framework. Adapter nhỏ vào runtime hiện có là đủ cho bước biên tập nháp.' },
+  { name: 'chatgpt-web', url: 'https://github.com/Chanzhaoyu/chatgpt-web', status: 'Không chọn', license: 'MIT; repository archived', note: 'Là giao diện chat Express/Vue, không cung cấp API LLM miễn phí. Không giải quyết việc dịch hoặc sản xuất nội dung của Studio.' },
+  { name: 'PySceneDetect', url: 'https://github.com/Breakthrough/PySceneDetect', status: 'Có điều kiện', license: 'BSD-3-Clause', note: 'Tìm điểm chuyển cảnh để biên tập video có quyền sử dụng. Không xáo cảnh ngẫu nhiên nhằm né nhận diện trùng lặp.' },
+  { name: 'Playwright', url: 'https://github.com/microsoft/playwright', status: 'Đã dùng để kiểm tra', license: 'Apache-2.0', note: 'Repo đúng thuộc Microsoft, không phải Facebook. Không dùng stealth, giả tương tác hoặc tự đăng lại nội dung chưa có quyền.' },
+  { name: 'social-auto-upload', url: 'https://github.com/dreammis/social-auto-upload', status: 'Chưa chọn', license: 'MIT', note: 'Repo xác minh là dreammis/social-auto-upload. Automation dựa vào phiên đăng nhập dễ hỏng khi giao diện đổi; không thay quyền xuất bản hoặc điều khoản nền tảng.' },
+  { name: 'APScheduler', url: 'https://github.com/agronholm/apscheduler', status: 'Chưa cần', license: 'MIT', note: 'Chỉ thêm khi cần lịch chạy cụ thể. Hiện giữ các lượt dựng hữu hạn và hàng đợi SQLite, không bật việc nền 24/7.' },
+  { name: 'Prefect', url: 'https://github.com/PrefectHQ/prefect', status: 'Để sau', license: 'Apache-2.0', note: 'Hữu ích khi nhiều bước, nhiều máy và cần quan sát workflow. Chưa có lý do vận hành thêm server cho ba video nháp.' },
+  { name: 'Celery', url: 'https://github.com/celery/celery', status: 'Không chọn hiện tại', license: 'Xem LICENSE theo phiên bản', note: 'Tài liệu dự án nói không hỗ trợ Windows chính thức. Không thêm Redis/RabbitMQ/Docker chỉ để thay hàng đợi một worker đang có.' },
+  { name: 'Airflow', url: 'https://github.com/apache/airflow', status: 'Để sau', license: 'Apache-2.0', note: 'Phù hợp điều phối dữ liệu nhiều tác vụ hơn nhu cầu Studio hiện tại. Chưa triển khai.' },
+  { name: 'RVC', url: 'https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI', status: 'Không cần', license: 'MIT; trọng số/giọng có quyền riêng', note: 'Chuyển đổi giọng không cần thiết cho EmBe. Không clone giọng người trong video tham khảo.' },
+  { name: 'ComfyUI', url: 'https://github.com/Comfy-Org/ComfyUI', status: 'Chưa cần', license: 'GPL-3.0; mô hình riêng', note: 'Có ích cho pipeline đồ họa lớn, nhưng EmBe đang dùng minh họa ChatGPT. Không cài thêm GPU stack hoặc inpaint xóa dấu tác giả.' },
+  { name: 'AUTOMATIC1111', url: 'https://github.com/AUTOMATIC1111/stable-diffusion-webui', status: 'Chưa cần', license: 'AGPL-3.0; mô hình riêng', note: 'Không thêm một WebUI tạo ảnh trùng chức năng. Nếu dùng sau này phải rà giấy phép từng model và extension.' },
+];
+
+export const researchCautions = [
+  { title: 'Dịch và thêm avatar không tự biến thành nội dung có quyền sử dụng', text: 'Fair use tại Mỹ phải xét từng trường hợp, không có công thức tỷ lệ hoặc hiệu ứng bảo đảm. Quy định tại Việt Nam và nền tảng còn là các lớp riêng; đây không phải kết luận pháp lý cho một clip cụ thể.', url: 'https://www.copyright.gov/fair-use/', label: 'U.S. Copyright Office — Fair use' },
+  { title: 'Được dùng tác phẩm và được bật kiếm tiền là hai việc khác nhau', text: 'YouTube tách chính sách reused content khỏi bản quyền. Đổi tốc độ, pitch, hash hoặc ghép nhiều clip không bảo đảm đủ tính nguyên gốc hay được kiếm tiền.', url: 'https://support.google.com/youtube/answer/1311392?hl=en', label: 'YouTube — Chính sách kiếm tiền' },
+  { title: 'Không thể mặc định dùng API để tự đăng TikTok cho riêng gia đình', text: 'Hướng dẫn Direct Post không chấp nhận ứng dụng sao chép nội dung tùy ý từ nền tảng khác, hoặc tiện ích chỉ đăng cho các tài khoản của chính nhóm vận hành. Cần kiểm tra điều kiện trước khi chọn tích hợp; hiện EmBe chỉ cung cấp tải bản nháp.', url: 'https://developers.tiktok.com/doc/content-sharing-guidelines/', label: 'TikTok — Content Sharing Guidelines' },
+  { title: 'Benchmark phải gắn với máy và tác vụ', text: 'faster-whisper công bố mức tăng tốc tùy cấu hình, không bảo đảm video một phút luôn xong trong 2–3 giây. NVENC mã hóa video, không chạy mô hình nhận diện lời nói; vẫn cần CPU cho các phần khác.', url: 'https://github.com/SYSTRAN/faster-whisper#benchmark', label: 'faster-whisper — Benchmark' },
+  { title: 'Nội dung viral không phải hướng dẫn chăm sóc', text: 'Bài ăn dặm đã xem có quảng cáo và khuyến nghị cần đối chiếu. NHS hướng dẫn bắt đầu quanh 6 tháng cùng dấu hiệu sẵn sàng; không bê nguyên mốc trên nhãn hoặc bảng thực phẩm tương khắc sang EmBe.', url: 'https://www.nhs.uk/baby/weaning-and-feeding/babys-first-solid-foods/', label: 'NHS — Bữa ăn dặm đầu tiên' },
+];

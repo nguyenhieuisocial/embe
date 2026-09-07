@@ -1,4 +1,6 @@
 .studio-main { color: var(--ink); }
+.studio-research-title { font-size: 1.1rem; margin: 16px 0 10px; }
+.studio-research-tool { padding: 8px 0; border-bottom: 1px solid var(--line); }
 .studio-heading { margin: 12px 0 16px; }
 .studio-heading h1 { font-size: clamp(1.4rem, 5.5vw, 1.8rem); line-height: 1.35; margin: 0; text-wrap: balance; }
 .studio-heading p { color: var(--ink-soft); font-size: .82rem; margin: 6px 0; line-height: 1.5; }

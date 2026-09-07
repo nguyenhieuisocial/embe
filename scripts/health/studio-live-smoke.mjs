@@ -53,6 +53,22 @@ try {
     result.viewports.push({ width, height, view, ...metrics });
   }
   for (const [width, height] of sizes) await checkSize(width, height, 'library');
+  await page.getByRole('link', { name: 'Nghiên cứu & hướng nội dung' }).click();
+  await page.waitForURL('**/studio/nghien-cuu');
+  if (!await page.getByText(/Chưa đọc hết từng ảnh/).isVisible()) throw new Error('research_scope_missing');
+  for (const [width, height] of sizes) await checkSize(width, height, 'research');
+  await page.getByText('Công cụ đã rà và lựa chọn cho EmBe', { exact: true }).click();
+  if (!await page.getByRole('link', { name: 'MediaCrawler', exact: true }).isVisible()) throw new Error('research_tools_missing');
+  await page.getByText('Những khẳng định cần sửa', { exact: true }).click();
+  if (!await page.getByRole('link', { name: 'TikTok — Content Sharing Guidelines', exact: true }).isVisible()) throw new Error('research_sources_missing');
+  await page.setViewportSize({ width: 393, height: 852 });
+  await checkSize(393, 852, 'research-expanded');
+  await page.getByText('Công cụ đã rà và lựa chọn cho EmBe', { exact: true }).click();
+  await page.getByText('Những khẳng định cần sửa', { exact: true }).click();
+  await page.screenshot({ path: resolve(output, 'studio-research-iphone.png'), fullPage: true });
+  result.research = { coverageVisible: true, expandableTools: true, sourcesVisible: true };
+  await page.getByRole('link', { name: '‹ Về Studio' }).click();
+  await page.waitForURL('**/studio');
   await page.setViewportSize({ width: 393, height: 852 });
   // Full-page captures do not wait for lazy images below the viewport. Scroll each
   // preview into view and verify decoding so a blank thumbnail cannot pass.
