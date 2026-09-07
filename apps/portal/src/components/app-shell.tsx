@@ -12,12 +12,13 @@ const BARE_ROUTES = new Set(["/login", "/offline"]);
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const showNav = !BARE_ROUTES.has(pathname ?? "") && !pathname?.startsWith("/in-anh/") && !pathname?.startsWith("/chia-se/");
+  const isStudio = pathname === "/studio" || pathname?.startsWith("/studio/");
 
   return (
     <div className={showNav ? "app-shell has-nav" : "app-shell is-bare"}>
       <a className="skip-link" href="#main-content">Bỏ qua đến nội dung chính</a>
       <div className="app-canvas" id="main-content" tabIndex={-1}>{children}</div>
-      {showNav ? <><DeviceAccessPrompt /><QuickActions key={pathname} /><FamilyNav /></> : null}
+      {showNav ? <>{!isStudio && <DeviceAccessPrompt />}<QuickActions key={pathname} /><FamilyNav /></> : null}
     </div>
   );
 }
