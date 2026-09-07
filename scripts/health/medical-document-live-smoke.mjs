@@ -70,6 +70,8 @@ try {
   result.charges = scan.analysis.pages[0].charges.length;
   result.receiptLineAmounts = ['251.000', '254.500', '279.000', '289.500', '3.200.000'].every(amount => scan.analysis.pages[0].charges.some(row => row.amount.includes(amount)));
   if (!result.receiptLineAmounts) throw new Error('receipt_line_items_missing');
+  result.noEmptyExtractedFields = scan.analysis.pages[0].fields.every(row => [row.value, row.unit, row.reference].some(value => value.trim()));
+  if (!result.noEmptyExtractedFields) throw new Error('empty_model_fields');
   console.log('Synthetic receipt uploaded and recognized through the live worker.');
   await page.getByText('Đã đọc · cần đối chiếu', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'Xem bản gốc ngay tại đây' }).click();

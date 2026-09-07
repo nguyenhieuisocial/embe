@@ -85,6 +85,12 @@ def validate_page(value: Any) -> dict[str, Any]:
                 row['unclear'] = True
     if not isinstance(value['warnings'], list) or len(value['warnings']) > 8 or not all(text(v, 240) for v in value['warnings']):
         raise ScanFailure('unreadable_output')
+    # Some structured decoders emit every example label even on unrelated forms
+    # (e.g. an empty BPD on a receipt). No result means no extracted information.
+    # This applies ONLY to machine output; user-added rows remain editable.
+    value['fields'] = [row for row in value['fields'] if any(row[key].strip() for key in ['value', 'unit', 'reference'])]
+    for group in ['medicines', 'charges']:
+        value[group] = [row for row in value[group] if any(row[key].strip() for key in LIMITS[group] if key != 'evidence')]
     # Patient identity and dates must be checked even when the model sounds certain.
     for row in value['fields']:
         identity_text = (row['label'] + ' ' + row['evidence']).casefold()

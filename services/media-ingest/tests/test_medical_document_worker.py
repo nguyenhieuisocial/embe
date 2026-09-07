@@ -148,6 +148,16 @@ def test_english_identity_labels_cannot_bypass_review_and_saturated_output_is_vi
     assert any('giới hạn' in warning for warning in result['warnings'])
 
 
+def test_discards_empty_model_templates_not_partial_values():
+    page = sample_page()
+    page['fields'] += [dict(label='BPD', value='', unit='', reference='', evidence='Không thấy', unclear=True),
+                       dict(label='Mục có số không', value='0', unit='', reference='', evidence='0', unclear=False)]
+    page['medicines'] = [dict(name='', ingredients='', dose='', frequency='', instructions='', evidence='', unclear=True)]
+    result = validate_page(page)
+    assert [row['label'] for row in result['fields']] == ['CRL', 'Mục có số không']
+    assert result['medicines'] == []
+
+
 def test_detail_views_bounded_and_do_not_change_source():
     source = Image.new('RGB', (1200, 5500), 'white')
     body = image_bytes(source, (4000, 6000))
