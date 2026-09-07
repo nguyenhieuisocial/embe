@@ -1,4 +1,13 @@
 .studio-main { color: var(--ink); }
+.discovery-platforms { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.discovery-platforms a, .discovery-platforms button, .discovery-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 12px; color: var(--rose-press); background: var(--surface); font: inherit; font-size: .82rem; text-decoration: none; overflow-wrap: anywhere; }
+.discovery-help { color: var(--ink-soft); font-size: .78rem; line-height: 1.65; }
+.discovery-source { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.discovery-status { font-size: .82rem; line-height: 1.5; color: var(--rose-press); }
+.discovery-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.discovery-snapshot { margin-top: 16px; }
+.studio-main button:disabled { opacity: .6; cursor: wait; }
+.studio-main .studio-ideas p { overflow-wrap: anywhere; }
 .studio-research-title { font-size: 1.1rem; margin: 16px 0 10px; }
 .studio-research-tool { padding: 8px 0; border-bottom: 1px solid var(--line); }
 .studio-heading { margin: 12px 0 16px; }

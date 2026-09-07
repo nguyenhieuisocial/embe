@@ -31,6 +31,14 @@ export default function StudioResearchPage() {
       <p>Không tìm thấy repo công khai tại các tên XingLaoTi/Xiaohongshu-Spider, LokerL/xiaohongshu_spider, XingLaoTi/social-auto-upload và pyvideotrans/typewriter trong lần kiểm tra này. “mocr” chưa đủ rõ để xác định đúng công cụ.</p>
     </details>
     <details className="studio-disclosure">
+      <summary>Khám phá xu hướng: phần đã chạy và giới hạn</summary>
+      <Link href="/studio/kham-pha">Mở Khám phá chủ đề & sổ ý tưởng</Link>
+      <p>Đã có RSS Google Trends Việt Nam, mười nhóm từ khóa Việt–Trung–Anh, liên kết tìm kiếm bảy nền tảng/công cụ, sổ lưu trên thiết bị và dàn ý xuất được. Chưa có collector tự động cho Xiaohongshu, Douyin, TikTok, Bilibili hoặc Kuaishou; chưa có đồng bộ sổ lên cloud hoặc lịch quét nền.</p>
+      <p>Tổng tương tác chia tuổi bài chỉ là chỉ số ưu tiên có giảm theo thời gian, không đo tốc độ tăng thực. EmBe tính chênh lệch cùng chỉ số giữa hai lần ghi nhận, yêu cầu cách ít nhất một giờ; số thiếu không thay bằng 0. Không trộn thứ hạng giữa các nền tảng hoặc suy ra nhu cầu y khoa.</p>
+      <p>Chưa tìm thấy repo công khai tại PaulS22/yt-dlp, JoeanA/XiaohongshuCrawler, Tencent/QingLong, NyanSank/bilibili-manga-downloader, im2233/hot-list, ourfor/news-now, Geoff-Ford/shazamio và dotMPEG/ShazamAPI ở lần kiểm tra này. Tên mơ hồ như BilibiliReq, hot-list cần xác định lại, không tự coi là tích hợp có sẵn.</p>
+      <p>Nhận diện nhạc không cấp quyền dùng nhạc; chưa có bằng chứng cho con số “BGM quyết định 50% viral”. Mạng người theo dõi không chứng minh seeding hoặc MCN. Không thêm bot tương tác, né chặn, affiliate tự động hoặc phân tích lợi nhuận vào sản phẩm mẹ bầu hiện tại.</p>
+    </details>
+    <details className="studio-disclosure">
       <summary>Những khẳng định cần sửa</summary>
       {researchCautions.map(item => <section key={item.title}><h3>{item.title}</h3><p>{item.text}</p><a href={item.url} target="_blank" rel="noopener noreferrer">{item.label}</a></section>)}
     </details>
