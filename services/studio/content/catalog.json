@@ -1,0 +1,179 @@
+{
+  "brand": "EmBe Mẹ Bầu",
+  "version": 1,
+  "editorial_status": "draft",
+  "clinical_review": "not_reviewed",
+  "sources_checked_at": "2026-09-07",
+  "review_due": "2026-10-07",
+  "scope": "Kiến thức phổ thông bằng tiếng Việt; không dùng dữ liệu gia đình, không tư vấn cá nhân hoặc tự đăng công khai.",
+  "sources": {
+    "nhs-food": {"publisher": "NHS", "title": "Foods to avoid in pregnancy", "url": "https://www.nhs.uk/pregnancy/keeping-well/foods-to-avoid/", "source_reviewed": "2026-06-15", "jurisdiction": "UK; không áp dụng ngoại lệ trứng British Lion cho Việt Nam"},
+    "fda-fish": {"publisher": "FDA/EPA", "title": "Advice about Eating Fish", "url": "https://www.fda.gov/food/consumers/advice-about-eating-fish", "source_reviewed": "2021-10", "jurisdiction": "US; không suy loài cá từ tên dân gian Việt Nam"},
+    "fda-fish-faq": {"publisher": "FDA/EPA", "title": "Questions and Answers about Eating Fish", "url": "https://www.fda.gov/food/consumers/questions-answers-fdaepa-advice-about-eating-fish-those-who-might-become-or-are-pregnant-or", "source_reviewed": null, "jurisdiction": "US; khẩu phần tính trước khi nấu, không khuyến khích ăn cá sống khi mang thai"},
+    "nhs-nausea": {"publisher": "NHS", "title": "Vomiting and morning sickness", "url": "https://www.nhs.uk/pregnancy/common-symptoms/vomiting-and-morning-sickness/", "source_reviewed": "2024-04-17", "jurisdiction": "UK; thay hotline UK bằng cơ sở y tế địa phương"},
+    "nhs-sleep": {"publisher": "NHS", "title": "Sudden infant death syndrome (SIDS)", "url": "https://www.nhs.uk/baby/caring-for-a-newborn/sudden-infant-death-syndrome-sids/", "source_reviewed": "2025-11-25", "jurisdiction": "UK; không suy nhiệt độ phòng cố định cho khí hậu Việt Nam"},
+    "nhs-bag": {"publisher": "NHS", "title": "Hospital bag checklist", "url": "https://www.nhs.uk/best-start-in-life/pregnancy/preparing-for-labour-and-birth/hospital-bag-checklist/", "source_reviewed": null, "jurisdiction": "UK; cần đối chiếu danh sách bệnh viện tại Việt Nam"},
+    "nhs-mental": {"publisher": "NHS", "title": "Mental health in pregnancy", "url": "https://www.nhs.uk/pregnancy/mental-health-in-pregnancy-and-after-the-birth/mental-health/", "source_reviewed": "2026-03-11", "jurisdiction": "UK; không giới thiệu dịch vụ UK cho người Việt"},
+    "cdc-warning": {"publisher": "CDC", "title": "Urgent Maternal Warning Signs and Symptoms", "url": "https://www.cdc.gov/hearher/maternal-warning-signs/index.html", "source_reviewed": "2024-05-15", "jurisdiction": "US; thông tin nhận biết, không phải công cụ chẩn đoán"},
+    "nhs-exercise": {"publisher": "NHS", "title": "Exercise in pregnancy", "url": "https://www.nhs.uk/pregnancy/keeping-well/exercise/", "source_reviewed": "2023-03-15", "jurisdiction": "UK; mốc review trên trang đã quá hạn, cần bác sĩ đối chiếu trước phát hành"}
+  },
+  "items": [
+    {
+      "slug": "ca-phe-tra-sua",
+      "pillar": "Ăn uống dễ hiểu", "stage": "Thai kỳ", "risk": "moderate", "priority": 100,
+      "title": "Bầu uống cà phê: đừng chỉ đếm số ly",
+      "hook_b": "Không uống cà phê, vẫn có thể nạp caffeine?",
+      "sources": ["nhs-food"],
+      "beats": [
+        {"heading": "Đừng chỉ đếm số ly", "text": "Bầu uống cà phê: điều cần tính là tổng caffeine trong ngày.", "kind": "hook"},
+        {"heading": "Không chỉ cà phê", "text": "Trà, cola và chocolate cũng có caffeine.", "kind": "fact"},
+        {"heading": "Mốc tham khảo", "text": "NHS khuyên không quá 200 mg caffeine mỗi ngày khi mang thai.", "kind": "fact"},
+        {"heading": "Một ly không cố định", "text": "Hãy xem nhãn hoặc hỏi nơi bán. Không mặc định mọi ly đều giống nhau.", "kind": "action"},
+        {"heading": "Theo kế hoạch riêng", "text": "Nếu bác sĩ dặn khác, làm theo hướng dẫn của bác sĩ.", "kind": "caveat"},
+        {"heading": "Lưu để xem lại", "text": "Đây là giới hạn tham khảo, không phải lượng cần uống cho đủ.", "kind": "cta"}
+      ],
+      "caption": "Cùng EmBe Mẹ Bầu đọc nhãn đồ uống. Nguồn ở dưới; không thay tư vấn cá nhân.",
+      "hashtags": ["EmBeMeBau", "AnUongThaiKy", "HieuDungDeYenTam"]
+    },
+    {
+      "slug": "bau-an-ca",
+      "pillar": "Ăn uống dễ hiểu", "stage": "Thai kỳ và cho con bú", "risk": "moderate", "priority": 98,
+      "title": "Có bầu không đồng nghĩa phải kiêng hết cá",
+      "hook_b": "Đi mua cá khi mang thai: xem điều gì trước?",
+      "sources": ["fda-fish", "fda-fish-faq"],
+      "beats": [
+        {"heading": "Không kiêng hết cá", "text": "Điều quan trọng là chọn loại ít thủy ngân và ăn đa dạng.", "kind": "hook"},
+        {"heading": "Những lựa chọn quen", "text": "Cá hồi, cá mòi và tôm nằm trong nhóm Best Choices của FDA/EPA.", "kind": "fact"},
+        {"heading": "Tần suất tham khảo", "text": "FDA/EPA gợi ý 2–3 khẩu phần mỗi tuần từ nhóm này khi mang thai hoặc cho con bú.", "kind": "fact"},
+        {"heading": "Khẩu phần là bao nhiêu?", "text": "Một khẩu phần người lớn khoảng 113 g, tính trước khi nấu.", "kind": "fact"},
+        {"heading": "Đúng loài mới tra được", "text": "Tên gọi ngoài chợ có thể khác. Chưa rõ loài thì đừng đoán mức thủy ngân.", "kind": "caveat"},
+        {"heading": "Chọn đúng, nấu chín", "text": "Không ăn cá sống khi mang thai. Đối chiếu bảng nguồn và chỉ định ăn uống riêng.", "kind": "cta"}
+      ],
+      "caption": "Chọn có căn cứ, không kiêng quá rộng. Hướng dẫn FDA/EPA là nguồn tham khảo, không phải thực đơn cá nhân.",
+      "hashtags": ["EmBeMeBau", "BauAnGi", "ChonThucPham"]
+    },
+    {
+      "slug": "om-nghen-bua-nho",
+      "pillar": "Mẹ dễ chịu hơn", "stage": "Tam cá nguyệt đầu", "risk": "moderate", "priority": 96,
+      "title": "Ốm nghén không phải lúc nào cũng vào buổi sáng",
+      "hook_b": "Ăn một bữa lớn thấy khó chịu? Thử đổi cách chia bữa",
+      "sources": ["nhs-nausea"],
+      "beats": [
+        {"heading": "Không chỉ buổi sáng", "text": "Buồn nôn thai kỳ có thể xuất hiện cả ngày lẫn đêm.", "kind": "hook"},
+        {"heading": "Thử chia nhỏ bữa", "text": "Ăn ít một, nhiều lần. Chọn món đơn giản bạn thấy dễ chịu.", "kind": "action"},
+        {"heading": "Nhấp nước từng ngụm", "text": "Uống ít một và thường xuyên; tránh mùi khiến bạn buồn nôn.", "kind": "action"},
+        {"heading": "Không cần cố chịu", "text": "Nôn nhiều, không giữ được nước, tiểu ít hoặc chóng mặt: liên hệ cơ sở y tế.", "kind": "caveat"},
+        {"heading": "Mỗi người một khác", "text": "Không có mẹo nào hiệu quả cho tất cả. Đừng tự dùng thuốc chống nôn.", "kind": "caveat"},
+        {"heading": "Nhờ một việc nhỏ", "text": "Người đồng hành có thể giúp chuẩn bị bữa nhỏ và ghi điều làm mẹ khó chịu.", "kind": "cta"}
+      ],
+      "caption": "Gợi ý sinh hoạt, không phải điều trị nghén nặng. Có triệu chứng đáng lo thì đi khám, không chờ phản hồi bình luận.",
+      "hashtags": ["EmBeMeBau", "OmNghen", "BaDongHanh"]
+    },
+    {
+      "slug": "be-ngu-an-toan",
+      "pillar": "Chăm bé an toàn", "stage": "Sau sinh", "risk": "high", "priority": 94,
+      "title": "Giường bé ít đồ hơn, không phải ít yêu thương hơn",
+      "hook_b": "Gối và thú bông có cần ở trong chỗ ngủ của bé?",
+      "sources": ["nhs-sleep"],
+      "beats": [
+        {"heading": "Ít đồ, không ít yêu", "text": "Chỗ ngủ an toàn của bé không cần đầy gối và thú bông.", "kind": "hook"},
+        {"heading": "Đặt bé nằm ngửa", "text": "Bắt đầu mỗi giấc ngủ bằng tư thế nằm ngửa, trên nệm phẳng và chắc.", "kind": "fact"},
+        {"heading": "Dọn chỗ ngủ thoáng", "text": "Không để gối, chăn lỏng, thú bông hay vật chèn giữ bé trong cũi.", "kind": "action"},
+        {"heading": "Cùng phòng, chỗ riêng", "text": "Cho bé ngủ chỗ riêng trong phòng bố mẹ ít nhất 6 tháng đầu.", "kind": "fact"},
+        {"heading": "Tránh ngủ quên trên sofa", "text": "Không ngủ cùng bé trên sofa hoặc ghế bành.", "kind": "caveat"},
+        {"heading": "Cùng kiểm tra tối nay", "text": "Đây là cách giảm nguy cơ, không phải bảo đảm tuyệt đối.", "kind": "cta"}
+      ],
+      "caption": "Trao đổi với nhân viên y tế nếu bé sinh non hoặc có nhu cầu chăm sóc riêng. Minh họa không thay hướng dẫn thực hành.",
+      "hashtags": ["EmBeMeBau", "BeNguAnToan", "LanDauLamMe"]
+    },
+    {
+      "slug": "gio-di-sinh",
+      "pillar": "Chuẩn bị đi sinh", "stage": "Tam cá nguyệt cuối", "risk": "low", "priority": 92,
+      "title": "Giỏ đi sinh: chia ba nhóm để dễ tìm",
+      "hook_b": "Đừng mua thêm trước khi xem danh sách bệnh viện",
+      "sources": ["nhs-bag"],
+      "beats": [
+        {"heading": "Chia nhóm, đỡ tìm", "text": "Giỏ đi sinh có thể gọn hơn khi đồ được chia theo người dùng.", "kind": "hook"},
+        {"heading": "Hồ sơ trước", "text": "Để hồ sơ thai kỳ, kế hoạch sinh và danh sách thuốc ở chỗ dễ lấy.", "kind": "action"},
+        {"heading": "Một túi cho mẹ", "text": "Quần áo thoải mái, đồ vệ sinh cá nhân, băng sau sinh và sạc điện thoại.", "kind": "action"},
+        {"heading": "Một túi cho bé", "text": "Quần áo và bỉm theo nhu cầu; kiểm tra bệnh viện đã cung cấp gì.", "kind": "action"},
+        {"heading": "Người đồng hành biết chỗ", "text": "Cùng xem từng ngăn trước ngày đi sinh, đừng để mẹ phải tìm hộ mọi thứ.", "kind": "cta"}
+      ],
+      "caption": "Cách chia túi là gợi ý biên tập EmBe. Danh sách cuối cùng cần theo bệnh viện bạn chọn, không phải danh sách mua sắm bắt buộc.",
+      "hashtags": ["EmBeMeBau", "GioDiSinh", "ChuanBiDiSinh"]
+    },
+    {
+      "slug": "me-khong-can-luon-vui",
+      "pillar": "Mẹ được lắng nghe", "stage": "Thai kỳ", "risk": "high", "priority": 90,
+      "title": "Mang thai không có nghĩa mẹ phải vui mọi lúc",
+      "hook_b": "Một câu người đồng hành nên hỏi hôm nay",
+      "sources": ["nhs-mental", "cdc-warning"],
+      "beats": [
+        {"heading": "Không cần luôn vui", "text": "Lo âu và khó khăn tinh thần có thể xuất hiện trong thai kỳ.", "kind": "hook"},
+        {"heading": "Nói điều mình đang cần", "text": "Chia sẻ cảm xúc với người tin cậy hoặc nhân viên y tế đang chăm sóc bạn.", "kind": "action"},
+        {"heading": "Một câu hỏi nhẹ nhàng", "text": "Hôm nay em muốn anh lắng nghe, hay giúp một việc cụ thể?", "kind": "action"},
+        {"heading": "Có hỗ trợ chuyên môn", "text": "Nếu lo về sức khỏe tinh thần, hãy trao đổi với bác sĩ; không tự ngừng thuốc đang dùng.", "kind": "caveat"},
+        {"heading": "Không đợi bình luận", "text": "Nếu có nguy cơ làm hại bản thân hoặc em bé, cần hỗ trợ y tế khẩn cấp.", "kind": "caveat"}
+      ],
+      "caption": "Câu hỏi dành cho người đồng hành là gợi ý giao tiếp, không phải liệu pháp. EmBe không chẩn đoán qua bình luận.",
+      "hashtags": ["EmBeMeBau", "MeDuocLangNghe", "NguoiDongHanh"]
+    },
+    {
+      "slug": "sau-sinh-can-di-kham",
+      "pillar": "Biết lúc cần trợ giúp", "stage": "Thai kỳ và sau sinh", "risk": "high", "priority": 88,
+      "title": "Sinh xong vẫn cần để ý sức khỏe của mẹ",
+      "hook_b": "Đừng gạt mọi khó chịu sau sinh thành chuyện phải chịu",
+      "sources": ["cdc-warning"],
+      "beats": [
+        {"heading": "Mẹ vẫn cần được chăm", "text": "Một số dấu hiệu nguy hiểm có thể xuất hiện cả trong và sau thai kỳ.", "kind": "hook"},
+        {"heading": "Khó thở hoặc đau ngực", "text": "Cần được đánh giá y tế ngay, không tự đoán do mệt.", "kind": "caveat"},
+        {"heading": "Đau đầu nặng, nhìn mờ", "text": "Đừng chỉ chờ nghỉ ngơi sẽ hết; hãy tìm hỗ trợ y tế ngay.", "kind": "caveat"},
+        {"heading": "Sau sinh ra máu nhiều", "text": "Thấm một băng hoặc hơn trong một giờ là dấu hiệu cần trợ giúp ngay.", "kind": "caveat"},
+        {"heading": "Nói rõ với nhân viên y tế", "text": "Cho biết bạn đang mang thai hoặc đã sinh trong vòng một năm.", "kind": "action"},
+        {"heading": "Không phải danh sách đầy đủ", "text": "Thấy có điều không ổn thì liên hệ cơ sở y tế. Đừng chờ phản hồi của EmBe.", "kind": "cta"}
+      ],
+      "caption": "Nội dung nhận biết theo CDC, không dùng để tự loại trừ biến chứng. Khi có dấu hiệu nguy hiểm, tìm hỗ trợ y tế ngay.",
+      "hashtags": ["EmBeMeBau", "ChamMeSauSinh", "BietLucCanTroGiup"]
+    },
+    {
+      "slug": "van-dong-khong-can-kiet-suc",
+      "pillar": "Sinh hoạt vừa sức", "stage": "Thai kỳ", "risk": "moderate", "priority": 86,
+      "title": "Tập khi mang thai không cần đến kiệt sức",
+      "hook_b": "Bài tập tốt có nhất thiết phải khiến mẹ rất mệt?",
+      "sources": ["nhs-exercise"],
+      "beats": [
+        {"heading": "Không cần kiệt sức", "text": "Vận động khi mang thai nên phù hợp thể trạng và hướng dẫn của người chăm sóc thai kỳ.", "kind": "hook"},
+        {"heading": "Bắt đầu vừa sức", "text": "Nếu trước đó ít vận động, đừng đột ngột tập nặng.", "kind": "action"},
+        {"heading": "Còn nói chuyện được?", "text": "Nếu nói chuyện mà hụt hơi khi tập, bạn có thể đang gắng sức quá mức.", "kind": "fact"},
+        {"heading": "Tránh quá nóng", "text": "Uống đủ nước và tránh tập nặng trong thời tiết nóng.", "kind": "action"},
+        {"heading": "Có chỉ định riêng?", "text": "Hỏi bác sĩ trước khi đổi bài tập; video này không thay kế hoạch vận động cá nhân.", "kind": "caveat"}
+      ],
+      "caption": "Chưa phát hành: cần đối chiếu chuyên môn vì lịch review trên trang nguồn đã quá hạn. Không hướng dẫn động tác dành cho mọi thai phụ.",
+      "hashtags": ["EmBeMeBau", "VanDongThaiKy", "VuaSucMoiNgay"]
+    }
+  ],
+  "research_backlog": [
+    "Bầu ăn rau ngót: món ăn và nước ép cô đặc có giống nhau?",
+    "Nước dừa: đồ uống hay lời hứa làm đẹp cho con?",
+    "Mẹo nhìn bụng đoán giới tính: đâu là giải trí, đâu là bằng chứng?",
+    "Bầu ăn cay: khó chịu của mẹ không đồng nghĩa gây hại thai nhi",
+    "Trứng lòng đào ở Việt Nam: đừng áp dụng ngoại lệ nước ngoài",
+    "Đọc nhãn sữa bầu: đừng chỉ nhìn chữ dành cho mẹ",
+    "Sắt và canxi: mang gì đi hỏi bác sĩ hoặc dược sĩ?",
+    "Một viên prenatal có thay được bữa ăn?",
+    "Đường huyết thai kỳ: không tự cắt hết tinh bột",
+    "Ăn lẩu khi mang thai: tách đồ sống và đồ chín",
+    "Một bữa ăn nhiều màu, không cần nhiều tiền",
+    "Bầu bị ợ nóng: thử điều chỉnh gì trước?",
+    "Đi khám thai: ba câu hỏi nên ghi lại",
+    "NIPT là sàng lọc, không phải lời khẳng định tuyệt đối",
+    "Thai máy thay đổi: đừng dùng ứng dụng để trì hoãn gọi bác sĩ",
+    "Cơn gò: đồng hồ không thay quyết định của cơ sở sản khoa",
+    "Sau sinh mổ: lịch sinh hoạt cần hỏi đội chăm sóc",
+    "Sữa mẹ và sữa công thức: hỗ trợ mẹ, không phán xét",
+    "Bé khóc: kiểm tra nhu cầu, không đoán bệnh bằng âm thanh",
+    "Bế bé: điều gì cần được nhân viên y tế hướng dẫn trực tiếp?",
+    "Ở cữ có cần kiêng tắm và nằm than?",
+    "Ba giúp mẹ ngủ thêm: chia việc thực tế trong một ngày"
+  ]
+}
