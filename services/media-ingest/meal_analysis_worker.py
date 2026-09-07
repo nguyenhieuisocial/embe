@@ -63,6 +63,7 @@ def _load_food_catalog() -> tuple[dict[str, Any], ...]:
 
 
 VIETNAMESE_POPULAR_DISHES = _load_food_catalog()
+FOOD_GROUP_TERMS = json.loads(FOOD_CATALOG_PATH.with_name("vietnamese-food-groups.json").read_text(encoding="utf-8"))
 POPULAR_DISH_PROMPT = ", ".join(item["name"] for item in VIETNAMESE_POPULAR_DISHES)
 MANUAL_FOOD_PREFIX = "Món thêm ngoài ảnh:"
 
@@ -103,48 +104,69 @@ def popular_food_suggestions(value: str, limit: int = 5) -> list[str]:
 
 
 def _note_food_candidates(note: str) -> list[str]:
-    normalized = " ".join(note.split())
-    manual_part = normalized.split(MANUAL_FOOD_PREFIX, 1)[1] if MANUAL_FOOD_PREFIX in normalized else normalized
-    candidates = re.split(r"[,;+/]|(?:\s+và\s+)|(?:\s+voi\s+)|(?:\s+kèm\s+)|(?:\s+kem\s+)", manual_part, flags=re.IGNORECASE)
+    # Preserve both the note and additions; a decimal comma is not a dish separator.
+    candidates = re.split(r",(?!\d)|(?<!\d),|[;+/\n]|\s+(?:và|va|với|voi|kèm|kem)\s+",
+                          note.replace(MANUAL_FOOD_PREFIX, ";"), flags=re.IGNORECASE)
     return [candidate.strip(" .:-") for candidate in candidates if candidate.strip(" .:-")]
+
+
+def _written_food_portion(candidate: str) -> tuple[str, float | None]:
+    amount = r"(?P<amount>\d+(?:[.,]\d+)?)\s*(?P<unit>kg|gam|grams?|g)"
+    match = re.fullmatch(rf"{amount}\s+(?P<name>.+)", candidate, flags=re.IGNORECASE)
+    if not match:
+        match = re.fullmatch(rf"(?P<name>.+?)\s+{amount}", candidate, flags=re.IGNORECASE)
+    if not match:
+        return candidate, None
+    grams = float(match["amount"].replace(",", ".")) * (1000 if match["unit"].lower() == "kg" else 1)
+    return match["name"].strip(), round(grams, 1)
 
 
 def quick_written_meal_analysis(note: str) -> dict[str, Any] | None:
     matches: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for candidate in [note, *_note_food_candidates(note)]:
-        catalog_match = _catalog_food(candidate, allow_variant=False) or _catalog_food(candidate)
+    for candidate in _note_food_candidates(note):
+        name, grams = _written_food_portion(candidate)
+        if grams is not None and not 1 <= grams <= 3000:
+            return None
+        # Fast only when the whole input is understood. Prefix matching drops
+        # unknown dishes, cooking qualifiers and portions from mixed notes.
+        catalog_match = _catalog_food(name, allow_variant=False)
         if catalog_match:
             name_vi = catalog_match["name"]
             query = catalog_match["query"]
         else:
-            folded_candidate = _fold_food_name(candidate)
+            folded_candidate = _fold_food_name(name)
             nutrition_match = next((
                 (name, query) for name, query in VIETNAMESE_NUTRITION_QUERIES
                 if _fold_food_name(name) == folded_candidate
             ), None)
             if not nutrition_match:
-                continue
+                return None
             name_vi, query = nutrition_match
             name_vi = name_vi[:1].upper() + name_vi[1:]
-        if name_vi.casefold() in seen:
+        safety_flags = _trusted_safety_flags(name, [], 0.96)
+        # Keep qualifiers such as "tái" visible when the catalog has a generic alias.
+        if safety_flags:
+            name_vi = name[:1].upper() + name[1:]
+        existing = next((food for food in matches if food["name_vi"].casefold() == name_vi.casefold()), None)
+        if existing:
+            if grams is None or existing["estimated_grams"] is None or existing["estimated_grams"] + grams > 3000:
+                return None
+            existing["estimated_grams"] = round(existing["estimated_grams"] + grams, 1)
             continue
-        seen.add(name_vi.casefold())
         matches.append({
             "name_vi": name_vi,
             "search_name_en": query,
-            "estimated_grams": None,
+            "estimated_grams": grams,
             "confidence": 0.96,
             "food_groups": _trusted_food_groups(name_vi, ["other"]),
-            "safety_flags": _trusted_safety_flags(name_vi, [], 0.96),
+            "safety_flags": safety_flags,
         })
-        if len(matches) >= 8:
-            break
-    if not matches:
+    if not matches or len(matches) > 8:
         return None
     return {
         "foods": matches,
-        "needs_user_confirmation": ["Thêm khẩu phần nếu muốn ước lượng dinh dưỡng sát hơn."],
+        "needs_user_confirmation": ["Thêm khẩu phần nếu muốn ước lượng dinh dưỡng sát hơn."]
+        if any(food["estimated_grams"] is None for food in matches) else [],
         "estimate_notice": "Nhận diện nhanh từ món Mẹ đã nhập; cần xác nhận khẩu phần trước khi lưu.",
     }
 
@@ -166,21 +188,31 @@ def _trusted_safety_flags(name: str, model_flags: list[str], confidence: float) 
 
 
 def _trusted_food_groups(name: str, model_groups: list[str]) -> list[str]:
-    folded = _fold_food_name(name)
-    words = set(folded.split())
-    def present(term: str) -> bool:
-        if term == "chao":
-            return folded == "chao" or folded.startswith("chao ")
-        return term in folded if " " in term else term in words
-    rules = (
-        ("starch", ("pho", "bun", "mi", "mien", "banh", "com", "chao", "xoi", "nui", "khoai", "bap")),
-        ("protein", ("bo", "ga", "thit", "ca", "tom", "muc", "cua", "trung", "dau hu", "ngheu", "oc", "suon", "cha", "nem")),
-        ("vegetables", ("rau", "canh", "bi", "cai", "gia", "goi", "nom", "ca chua", "dua leo", "bong cai")),
-        ("fruit", ("chuoi", "tao", "cam", "buoi", "oi", "xoai", "dua hau", "thanh long", "nho", "du du", "dau tay", "kiwi", "trai bo")),
-        ("dairy", ("sua", "yaourt", "yogurt")),
-        ("fat", ("dau an", "bo lac", "mayonnaise")),
-    )
-    trusted = [group for group, terms in rules if any(present(term) for term in terms)]
+    tokens = re.findall(r"[^\W_]+", unicodedata.normalize("NFC", name).casefold())
+    matches: list[tuple[str, int, int]] = []
+    for group, terms in FOOD_GROUP_TERMS.items():
+        for term in terms:
+            phrase = term.split()
+            for start in range(len(tokens) - len(phrase) + 1):
+                if not all(
+                    token == word if token != _fold_food_name(token) else token == _fold_food_name(word)
+                    for token, word in zip(tokens[start:start + len(phrase)], phrase)
+                ):
+                    continue
+                if len(phrase) == 1 and tokens[start] in {"bo", "ca"}:
+                    continue
+                if term == "cháo" and start > 0 and _fold_food_name(tokens[start - 1]) == "ap":
+                    continue
+                matches.append((group, start, len(phrase)))
+    occupied: set[int] = set()
+    groups: set[str] = set()
+    for group, start, length in sorted(matches, key=lambda match: -match[2]):
+        positions = set(range(start, start + length))
+        if positions & occupied:
+            continue
+        occupied.update(positions)
+        groups.add(group)
+    trusted = [group for group in FOOD_GROUP_TERMS if group in groups]
     if trusted:
         return trusted[:4]
     fallback = [group for group in model_groups if group not in {"dairy", "fat"}]

@@ -17,7 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className={showNav ? "app-shell has-nav" : "app-shell is-bare"}>
       <a className="skip-link" href="#main-content">Bỏ qua đến nội dung chính</a>
       <div className="app-canvas" id="main-content" tabIndex={-1}>{children}</div>
-      {showNav ? <><DeviceAccessPrompt /><QuickActions /><FamilyNav /></> : null}
+      {showNav ? <><DeviceAccessPrompt /><QuickActions key={pathname} /><FamilyNav /></> : null}
     </div>
   );
 }

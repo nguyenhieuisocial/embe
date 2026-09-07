@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { shouldShowBirthPrompt } from "../lib/family-lifecycle";
 
 const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
 const FAMILY_STAGE_EVENT = "embe:family-stage-change";
@@ -62,7 +63,7 @@ function optionalNumber(form: FormData, name: string): number | null {
   return value ? Number(value) : null;
 }
 
-export default function BirthTransition() {
+export default function BirthTransition({ dueDate = "", manual = false }: { dueDate?: string; manual?: boolean }) {
   const [record, setRecord] = useState<BirthRecord>(EMPTY_RECORD);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -130,12 +131,15 @@ export default function BirthTransition() {
     }
   }
 
+  // Hide during loading as well, so the early-pregnancy page never flashes the prompt.
+  if (loading || (!manual && !record.hasBirthRecord && !shouldShowBirthPrompt(dueDate))) return null;
+
   return (
     <section className="birth-transition" id="embe-chao-doi">
       <button className="birth-transition-summary" type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
         <span>
-          <strong>{record.hasBirthRecord ? "Thông tin lúc em bé chào đời" : "Em bé đã chào đời?"}</strong>
-          <small>{record.hasBirthRecord ? "Chạm để xem hoặc cập nhật" : "Lưu một lần để EmBe tự chuyển sang sau sinh"}</small>
+          <strong>{record.hasBirthRecord ? "Thông tin lúc em bé chào đời" : manual ? "Ghi nhận ngày sinh khi cần" : "Em bé đã chào đời?"}</strong>
+          <small>{record.hasBirthRecord ? "Chạm để xem hoặc cập nhật" : manual ? "Dùng khi bé đã sinh, kể cả sinh sớm" : "Chỉ ghi khi bé đã sinh để chuyển sang sau sinh"}</small>
         </span>
         <i aria-hidden="true">⌄</i>
       </button>

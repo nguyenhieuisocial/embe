@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 
 import { EMPTY_FAMILY_PROFILE, parentBirthSummary, type FamilyProfile as Profile } from "../lib/family-profile";
 import { dateKey } from "../lib/calendar";
@@ -66,6 +67,7 @@ export default function FamilyProfile() {
           {status === "saved" ? "Đã lưu và nối với lịch gia đình." : status === "error" ? "Chưa thể tải hoặc lưu. Hãy thử lại." : "Dùng để tính tuổi, lịch âm, sinh nhật và mốc sức khỏe phù hợp."}
         </p>
       </form>
+      <Link className="btn btn-quiet btn-block" href="/nha-minh/ho-so">Hồ sơ chi tiết của Ba, Mẹ và các con</Link>
     </section>
   );
 }

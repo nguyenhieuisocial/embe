@@ -1,0 +1,23 @@
+[
+  {"name":"Bò","groups":["protein"]},
+  {"name":"Bơ","groups":["fruit"]},
+  {"name":"Bơ lạc","groups":["fat"]},
+  {"name":"Bơ lạt","groups":["fat"]},
+  {"name":"Cá hồi áp chảo","groups":["protein"]},
+  {"name":"Cà chua","groups":["vegetables"]},
+  {"name":"ca chua","groups":["vegetables"]},
+  {"name":"Cà tím","groups":["vegetables"]},
+  {"name":"Sữa đậu nành","groups":["protein"]},
+  {"name":"sua dau nanh","groups":["protein"]},
+  {"name":"Sữa yến mạch","groups":["other"]},
+  {"name":"Yến mạch","groups":["starch"]},
+  {"name":"Sữa chua và chuối","groups":["fruit","dairy"]},
+  {"name":"Cơm gạo lứt với cá hồi và rau cải","groups":["starch","protein","vegetables"]},
+  {"name":"Canh gà","groups":["protein"]},
+  {"name":"Canh bí đỏ","groups":["vegetables"]},
+  {"name":"bo","groups":["other"]},
+  {"name":"Nước lọc","groups":["other"]},
+  {"name":"Thịt bò và bơ","groups":["protein","fruit"]},
+  {"name":"ap chao","groups":["other"]},
+  {"name":"Bánh canh cua","groups":["starch","protein"]}
+]

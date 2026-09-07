@@ -13,6 +13,13 @@ const familyTools: Array<{
   label: string;
 }> = [
   {
+    href: "/nha-minh/ho-so",
+    icon: "care",
+    title: "Hồ sơ từng người",
+    detail: "Ba, Mẹ, các con — thông tin và lịch sử sức khỏe.",
+    label: "Mở hồ sơ từng người"
+  },
+  {
     href: "/cai-dat",
     icon: "settings",
     title: "Cài đặt",
@@ -71,21 +78,20 @@ export default function FamilyHomePage() {
       <AppHeader note="Công cụ & thiết lập" />
 
       <section className="family-home-hero">
-        <p className="eyebrow">Công cụ của gia đình</p>
         <h1>Nhà mình</h1>
-        <p className="intro">Chọn công cụ cần mở hoặc thiết lập điện thoại này.</p>
+        <p className="intro">Lịch, kỷ niệm và thiết lập của hai mình.</p>
       </section>
 
       <nav className="section shortcut-list" aria-label="Công cụ của nhà mình">
         {familyTools.map((tool) => (
-          <a className="shortcut" href={tool.href} key={tool.href} aria-label={tool.label}>
+          <Link className="shortcut" href={tool.href} key={tool.href} aria-label={tool.label}>
             <span className="shortcut-mark" aria-hidden="true"><Icon name={tool.icon} /></span>
             <span className="shortcut-text">
               <strong>{tool.title}</strong>
               <small>{tool.detail}</small>
             </span>
             <Icon name="arrow" className="icon icon-chevron" />
-          </a>
+          </Link>
         ))}
       </nav>
 

@@ -1,5 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { webcrypto } from "node:crypto";
+import { nutritionContextHash } from "../src/lib/personalized-meal-menu";
+import type { FamilyMember } from "../src/lib/family-members";
 
 import MealPhotoTracker, { looksLikeMedication } from "../src/components/meal-photo-tracker";
 
@@ -28,8 +31,66 @@ const history = [{
   }
 }];
 
+async function reviewedMenu() {
+  vi.stubGlobal("crypto", webcrypto);
+  const member: FamilyMember = { id: "11111111-1111-4111-8111-111111111111", role: "mother", fullName: "Mẹ thử nghiệm", preferredName: "Mẹ",
+    birthDate: null, sexAtBirth: "female", archived: false, revision: 1, details: { nutritionReviewed: "Đã đối chiếu", nutritionSpecialDiet: "Không" } };
+  const profile = { allergies: "", medicalNotes: "", dueDate: null };
+  member.details.nutritionContextHash = await nutritionContextHash(member, profile);
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => Response.json(url === "/api/family/members" ? { members: [member] }
+    : url === "/api/pregnancy/profile" ? { profile } : { history: [], suggestions: [], worker: { status: "online" } })));
+}
+
 describe("mobile meal journal", () => {
   afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
+
+  it("keeps a written draft when changing views and appends a suggested menu", async () => {
+    await reviewedMenu();
+    render(<MealPhotoTracker />);
+    const note = screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh");
+    fireEvent.change(note, { target: { value: "Một ly sữa" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
+    expect(note).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Ghi bữa" }));
+    expect(note).toBeVisible();
+    expect(note).toHaveValue("Một ly sữa");
+    fireEvent.click(screen.getByText("Gợi ý món riêng cho Mẹ"));
+    const choice = (await screen.findAllByText(/Phù hợp bộ lọc đã xác nhận/))[0].closest("button")!;
+    const title = choice.querySelector("strong")!.textContent;
+    fireEvent.click(choice);
+    expect(note).toHaveValue(`Một ly sữa, ${title}`);
+  });
+
+  it("keeps added foods after removing the photo and can recognize them without a photo", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ history: [], suggestions: [] })));
+    vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:preview"), revokeObjectURL: vi.fn() });
+    mealClient.createMealNote.mockResolvedValue(history[0].id);
+    mealClient.waitForMealDraft.mockResolvedValue({ analysis: { foods: [], needsUserConfirmation: [], estimateNotice: "Ước lượng" } });
+    render(<MealPhotoTracker />);
+    expect(screen.getByLabelText("Chụp bữa ăn")).toHaveAttribute("capture", "environment");
+    expect(screen.getByLabelText("Chọn ảnh bữa ăn")).not.toHaveAttribute("capture");
+    fireEvent.change(screen.getByLabelText("Chọn ảnh bữa ăn"), { target: { files: [new File(["image"], "meal.jpg", { type: "image/jpeg" })] } });
+    fireEvent.change(screen.getByLabelText("Món thêm cùng ảnh"), { target: { value: "Canh bí đỏ" } });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm món cùng ảnh" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bỏ ảnh bữa ăn" }));
+    expect(screen.getByRole("button", { name: "Bỏ món thêm Canh bí đỏ" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Nhận diện từ ghi chú" }));
+    expect(await screen.findByDisplayValue("Canh bí đỏ")).toBeVisible();
+    expect(mealClient.createMealNote).toHaveBeenCalledWith(expect.objectContaining({ note: "Món thêm ngoài ảnh: Canh bí đỏ" }));
+  });
+
+  it("shows a retry instead of an empty history when the connection fails", async () => {
+    let fail = true;
+    vi.stubGlobal("fetch", vi.fn(async () => fail ? new Response("", { status: 503 }) : Response.json({ history, suggestions: [] })));
+    render(<MealPhotoTracker />);
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Chưa tải được lịch sử");
+    expect(screen.queryByText("Chưa có bữa nào trong khoảng này.")).not.toBeInTheDocument();
+    fail = false;
+    fireEvent.click(screen.getByRole("button", { name: "Tải lại" }));
+    expect(await screen.findByText("Cơm và rau")).toBeVisible();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 
   it("routes medicine-like notes away from meals until the mother explicitly continues", async () => {
     expect(looksLikeMedication("Uống vitamin D 1 viên")).toBe(true);
@@ -79,19 +140,19 @@ describe("mobile meal journal", () => {
 
     render(<MealPhotoTracker />);
     expect(await screen.findByText("Máy nhà đang tắt")).toBeInTheDocument();
-    const insights = screen.getByText("Nhìn lại dinh dưỡng").closest("details");
-    expect(insights).not.toHaveAttribute("open");
-    if (insights) fireEvent.click(within(insights).getByText("Nhìn lại dinh dưỡng"));
-    expect(insights).toHaveAttribute("open");
-    expect(screen.getByText("Năng lượng theo ngày")).toBeInTheDocument();
-    expect(screen.getByText("Nhóm thực phẩm xuất hiện")).toBeInTheDocument();
-    expect(screen.getByText("Lịch sử từng bữa")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ghi bữa" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("heading", { name: "Năng lượng theo ngày" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Dinh dưỡng" }));
+    expect(screen.getByRole("heading", { name: "Năng lượng theo ngày" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Nhóm thực phẩm xuất hiện" })).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "28 ngày" }));
     await waitFor(() => expect(fetch).toHaveBeenLastCalledWith(
       "/api/meals?days=28",
       expect.objectContaining({ cache: "no-store", credentials: "same-origin" })
     ));
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
+    expect(screen.getByRole("heading", { name: "Lịch sử từng bữa" })).toBeVisible();
     fireEvent.click(screen.getByText("Cơm và rau"));
     expect(screen.getByRole("img", { name: "Ảnh bữa trưa" })).toHaveAttribute(
       "src", "/api/meals/11111111-1111-4111-8111-111111111111/image"
@@ -165,19 +226,19 @@ describe("mobile meal journal", () => {
     expect(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh")).toHaveValue("Bún riêu cua");
   });
 
-  it("offers a current meal menu immediately and fills the note with one tap", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
-      history: [], suggestions: [], worker: { status: "online" }
-    }), { status: 200 })));
+  it("loads a reviewed personal menu on demand and fills the note with one tap", async () => {
+    await reviewedMenu();
 
     render(<MealPhotoTracker />);
 
-    const menu = await screen.findByLabelText(/Gợi ý bữa .* bây giờ/i);
-    expect(menu).not.toHaveAccessibleName(/bữa bữa/i);
-    const choice = within(menu).getAllByRole("button")[0];
+    const menu = screen.getByText("Gợi ý món riêng cho Mẹ").closest("details")!;
+    expect(menu).not.toHaveAttribute("open");
+    fireEvent.click(within(menu).getByText("Gợi ý món riêng cho Mẹ"));
+    const choice = (await screen.findAllByText(/Phù hợp bộ lọc đã xác nhận/))[0].closest("button")!;
+    const title = choice.querySelector("strong")!.textContent;
     expect(choice).toBeEnabled();
     fireEvent.click(choice);
-    expect(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh")).toHaveValue(choice.textContent);
+    expect(screen.getByLabelText("Ghi chú món ăn · có thể lưu không cần ảnh")).toHaveValue(title);
   });
 
   it("lets the mother save or add a missing food when a written note is ambiguous", async () => {
@@ -296,6 +357,7 @@ describe("mobile meal journal", () => {
 
     render(<MealPhotoTracker />);
     const summary = await screen.findByText("Cơm và rau");
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
     fireEvent.click(summary);
     fireEvent.click(screen.getByRole("button", { name: "Sửa bữa này" }));
     fireEvent.change(screen.getByLabelText("Sửa tên món"), { target: { value: "Đậu hũ" } });
@@ -328,6 +390,7 @@ describe("mobile meal journal", () => {
     }), { status: 200 })));
 
     render(<MealPhotoTracker />);
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
     fireEvent.click(await screen.findByText("Chưa nhận diện được · ghi chú vẫn còn"));
     fireEvent.click(screen.getByRole("button", { name: "Sửa bữa này" }));
     fireEvent.click(screen.getByRole("button", { name: "Thêm món vào bữa đã lưu" }));
@@ -351,6 +414,7 @@ describe("mobile meal journal", () => {
     vi.stubGlobal("fetch", fetch);
 
     render(<MealPhotoTracker />);
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
     fireEvent.click(await screen.findByText("Chưa nhận diện được · ghi chú vẫn còn"));
     fireEvent.click(screen.getByRole("button", { name: "Xóa bữa này" }));
 
@@ -378,6 +442,7 @@ describe("mobile meal journal", () => {
     }), { status: 200 })));
 
     render(<MealPhotoTracker />);
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
     fireEvent.click(await screen.findByText("Chờ Mẹ kiểm tra"));
     expect(screen.getByRole("button", { name: "Kiểm tra và lưu" })).toBeEnabled();
   });
@@ -390,6 +455,7 @@ describe("mobile meal journal", () => {
     vi.stubGlobal("fetch", fetch);
 
     render(<MealPhotoTracker />);
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
     fireEvent.click(await screen.findByText("Cơm và rau"));
     fireEvent.click(screen.getByRole("button", { name: "Sửa bữa này" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
@@ -458,6 +524,7 @@ describe("mobile meal journal", () => {
     }), { status: 200 })));
 
     render(<MealPhotoTracker />);
+    fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
     fireEvent.click(await screen.findByText("Cơm và rau"));
     fireEvent.error(screen.getByRole("img", { name: "Ảnh bữa trưa" }));
 

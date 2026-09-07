@@ -20,6 +20,8 @@ export default function PregnancyHealthPage() {
         <h1>Sức khỏe của Mẹ</h1>
         <p className="intro">Cân nặng, huyết áp, giấc ngủ và những điều cần nhớ khi đi khám.</p>
       </header>
+      <Link className="btn btn-primary btn-block" href="/nha-minh/ho-so?role=mother&tab=records">Ghi số đo nhiều lần trong ngày</Link>
+      <p className="state-note">Lưu từng giờ và trước / sau ăn ở sổ số đo. Phần dưới vẫn là bản tổng hợp theo ngày.</p>
       <PregnancyHealthTracker pregnancyWeek={week} />
     </main>
   );

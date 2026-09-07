@@ -45,4 +45,40 @@ describe("one-handed family planner", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lưu việc" }));
     await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/tasks", expect.objectContaining({ method: "POST" })));
   });
+
+  it("recovers an uncertain create without duplicating it, then applies an edited draft", async () => {
+    const writes: { method: string; body: Record<string, unknown> }[] = [];
+    let disconnected = true;
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+      if (!init?.method) return Response.json({ tasks: [] });
+      writes.push({ method: init.method, body: JSON.parse(String(init.body)) });
+      if (init.method === "POST" && disconnected) { disconnected = false; throw new Error("response_lost"); }
+      return Response.json({ id: "99", ok: true });
+    }));
+    render(<FamilyPlanner selectedDate="2026-09-03" startOpen />);
+    await screen.findByText("Ngày này đang thật nhẹ");
+    fireEvent.change(screen.getByLabelText("Việc cần làm"), { target: { value: "Chuẩn bị giấy tờ" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu việc" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Nội dung vẫn được giữ");
+    fireEvent.change(screen.getByLabelText("Việc cần làm"), { target: { value: "Chuẩn bị giấy tờ và hồ sơ" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu việc" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(writes).toHaveLength(3);
+    expect(writes[0]).toEqual(writes[1]);
+    expect(writes[2]).toMatchObject({ method: "PATCH", body: { id: "99", title: "Chuẩn bị giấy tờ và hồ sơ" } });
+  });
+
+  it("locks a pending toggle and rolls it back on failure", async () => {
+    let finish: (value: Response) => void = () => {};
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => init?.method
+      ? new Promise<Response>(resolve => { finish = resolve; }) : Response.json({ tasks: [task] })));
+    render(<FamilyPlanner selectedDate="2026-09-03" />);
+    const button = await screen.findByRole("button", { name: "Đánh dấu Đặt lịch khám đã xong" });
+    fireEvent.click(button); fireEvent.click(button);
+    expect(button).toBeDisabled();
+    finish(new Response("", { status: 503 }));
+    await waitFor(() => expect(button).toBeEnabled());
+    expect(screen.getByText("0/1 việc đã xong")).toBeInTheDocument();
+    expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "PATCH")).toHaveLength(1);
+  });
 });

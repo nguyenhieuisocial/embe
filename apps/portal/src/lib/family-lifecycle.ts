@@ -1,4 +1,5 @@
 import { calculatePregnancyWeek } from "./pregnancy";
+import { dateInVietnam, isIsoDate } from "./family-task-contract";
 
 export type FamilyStage =
   | "pregnancy-unknown"
@@ -17,6 +18,14 @@ export type FamilyLifecycleDates = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// UX timing only: show from 37 weeks (21 days before the due date).
+// Keep it available after the due date; only a saved birth changes the stage.
+export function shouldShowBirthPrompt(dueDate: string | null, now = new Date()): boolean {
+  if (!isIsoDate(dueDate) || !Number.isFinite(now.getTime())) return false;
+  const daysUntilDue = (Date.parse(`${dueDate}T00:00:00Z`) - Date.parse(`${dateInVietnam(now)}T00:00:00Z`)) / DAY_MS;
+  return daysUntilDue <= 21;
+}
 
 export function deriveFamilyStage(
   lifecycle: FamilyLifecycleDates,

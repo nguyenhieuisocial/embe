@@ -1,6 +1,7 @@
 import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
 import { MEDICAL_KINDS, medicalInsights, normalizeMedicalRecord } from "../../../../lib/pregnancy-medical";
 import { verifySessionCookie } from "../../../../lib/portal-auth";
+import { validMedicalMeasurements } from "../../../../lib/medical-measurements";
 
 function session(request: Request): boolean {
   const cookie = request.headers.get("cookie")?.split(";").map((part) => part.trim().split("="))
@@ -26,8 +27,8 @@ function validPayload(value: unknown): value is Record<string, unknown> {
     && typeof input.notes === "string" && input.notes.length <= 2000
     && (input.gestationalWeek === null || Number.isInteger(input.gestationalWeek) && Number(input.gestationalWeek) >= 1 && Number(input.gestationalWeek) <= 42)
     && (input.nextAppointmentAt === null || validDate(input.nextAppointmentAt))
-    && Boolean(measurements && typeof measurements === "object" && !Array.isArray(measurements)
-      && Object.values(measurements).every((item) => typeof item === "number" && Number.isFinite(item) && item >= 0 && item <= 10000))
+    && validMedicalMeasurements(measurements)
+    && (Object.keys(measurements).length === 0 || input.measurementsConfirmed === true)
     && Array.isArray(medicines) && medicines.length <= 12 && medicines.every((item) => {
       if (!item || typeof item !== "object") return false;
       const medicine = item as Record<string, unknown>;

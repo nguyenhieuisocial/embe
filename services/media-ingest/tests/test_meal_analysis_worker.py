@@ -3,6 +3,7 @@ import hashlib
 import json
 import sqlite3
 import sys
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from meal_analysis_worker import (  # noqa: E402
     nutrition_search_query,
     parse_vision_result,
     run_worker_loop,
+    _trusted_food_groups,
 )
 
 
@@ -72,6 +74,65 @@ def config():
         ollama_url="http://127.0.0.1:11434",
         ollama_model="qwen3-vl:4b-instruct",
     )
+
+
+@pytest.mark.parametrize("case", json.loads((
+    ROOT.parents[1] / "apps/portal/tests/fixtures/meal-food-groups.json"
+).read_text(encoding="utf-8")))
+def test_food_groups_match_the_portal_and_preserve_vietnamese_accents(case):
+    assert _trusted_food_groups(case["name"], ["other"]) == case["groups"]
+    assert _trusted_food_groups(unicodedata.normalize("NFD", case["name"]), ["other"]) == case["groups"]
+
+
+@pytest.mark.parametrize("note", [
+    "Cơm trắng, món bí mật tự nấu", "Cơm trắng với món chưa biết",
+    "Cơm trắng ít dầu", "Cơm trắng 0g", "Cơm trắng 4kg",
+    "Cơm trắng, một ly sữa", "Cơm trắng; Món thêm ngoài ảnh: món chưa biết",
+    "Cơm trắng 100ml", "Cơm trắng 1-2 bát",
+])
+def test_fast_path_requires_the_entire_note_to_be_understood(note):
+    assert quick_written_meal_analysis(note) is None
+
+
+@pytest.mark.parametrize("note", ["Cơm trắng 150g", "150 g cơm trắng", "Cơm trắng 0,15 kg", "0.15kg cơm trắng"])
+def test_fast_path_keeps_explicit_portions_without_ai(note):
+    result = quick_written_meal_analysis(note)
+    assert result["foods"][0]["estimated_grams"] == 150
+    assert result["needs_user_confirmation"] == []
+
+
+def test_fast_path_preserves_all_lines_and_explicit_added_foods():
+    result = quick_written_meal_analysis("Cơm trắng 150g\nChuối 80g; Món thêm ngoài ảnh: Sữa chua")
+    assert [food["name_vi"] for food in result["foods"]] == ["Cơm trắng", "Chuối", "Sữa chua"]
+    assert [food["estimated_grams"] for food in result["foods"]] == [150, 80, None]
+
+
+def test_fast_path_sums_repeated_known_portions_instead_of_dropping_one():
+    result = quick_written_meal_analysis("Cơm trắng 100g, Cơm trắng 50g")
+    assert len(result["foods"]) == 1
+    assert result["foods"][0]["estimated_grams"] == 150
+
+
+def test_fast_path_keeps_cooking_qualifiers_and_relevant_warning():
+    result = quick_written_meal_analysis("Phở bò tái 400g")
+    assert result["foods"][0]["name_vi"] == "Phở bò tái"
+    assert result["foods"][0]["safety_flags"] == ["raw_or_undercooked"]
+
+
+def test_worker_sends_the_complete_mixed_note_to_ai_instead_of_returning_partial_foods():
+    note = "Cơm trắng, món mới tự nấu"
+    def transport(method, url, headers, body=None):
+        assert url.endswith("/api/chat")
+        assert note in json.loads(body)["messages"][0]["content"]
+        return HttpResponse(200, {}, json.dumps({"message": {"content": json.dumps({
+            "foods": [
+                {"name_vi": name, "search_name_en": name, "estimated_grams": None,
+                 "confidence": 0.7, "food_groups": ["other"], "safety_flags": []}
+                for name in ["Cơm trắng", "Món mới tự nấu"]
+            ], "needs_user_confirmation": []
+        })}}).encode())
+    result = MealAnalysisWorker(config(), transport)._analyze(None, note)
+    assert [food["name_vi"] for food in result["foods"]] == ["Cơm trắng", "Món mới tự nấu"]
 
 
 def test_rejects_unbounded_or_invented_vision_payloads():

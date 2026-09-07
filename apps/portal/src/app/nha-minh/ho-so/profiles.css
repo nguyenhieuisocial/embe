@@ -1,0 +1,42 @@
+.member-workspace { display: grid; gap: 12px; min-width: 0; }
+.member-page h1 { font-size: 1.6rem; }
+.member-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.member-people { display: flex; overflow-x: auto; gap: 8px; padding: 4px 2px 8px; }
+.member-people button { flex: 0 0 auto; max-width: 230px; display: grid; gap: 4px; text-align: left; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.member-people strong, .member-history strong { overflow-wrap: anywhere; }
+.member-people button[aria-pressed="true"] { border-color: var(--rose); background: var(--rose-soft); color: var(--ink); }
+.member-tabs { display: flex; border-bottom: 1px solid var(--line); gap: 8px; }
+.member-tabs button { padding: 8px 14px; border: 0; border-bottom: 3px solid transparent; background: transparent; }
+.member-tabs button[aria-pressed="true"] { border-bottom-color: var(--rose); color: var(--rose-press); font-weight: 600; }
+.member-workspace button, .member-workspace summary { min-height: 44px; }
+.member-form { display: grid; gap: 12px; }
+.member-form fieldset { min-width: 0; border: 0; padding: 0; margin: 0; display: grid; gap: 12px; }
+.member-form legend { font-weight: 600; padding: 8px 0; font-size: 1.12rem; overflow-wrap: anywhere; }
+.member-form label { display: grid; gap: 6px; min-width: 0; font-size: .88rem; }
+.member-form input, .member-form select, .member-form textarea { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
+.member-form textarea { min-height: 74px; resize: vertical; }
+.member-fields { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.member-group { border-top: 1px solid var(--line); padding: 4px 0; }
+.member-group summary { cursor: pointer; padding: 12px 0; font-weight: 600; line-height: 1.4; }
+.member-group summary small { margin-left: 8px; color: var(--ink-soft); font-weight: 400; }
+.member-group label { margin: 10px 0; }
+.member-form .member-checkbox { display: flex; align-items: center; gap: 10px; }
+.member-form .member-checkbox input { width: 22px; min-height: 22px; flex: 0 0 22px; }
+.member-records { display: grid; gap: 12px; }
+.member-record-editor { padding: 14px; border-radius: 16px; background: var(--surface-soft); scroll-margin-top: 18px; }
+.member-history { list-style: none; margin: 0; padding: 0; }
+.member-history > li { display: grid; gap: 6px; border-top: 1px solid var(--line); padding: 14px 0; }
+.member-history details p, .member-revision p, .member-revision dd { white-space: pre-wrap; overflow-wrap: anywhere; }
+.member-history summary { padding: 12px 0; }
+.member-value { margin: 4px 0; font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.member-value small { font-size: .85rem; font-weight: 400; }
+.member-revision { padding: 4px 0; }
+.member-revision dl { display: grid; gap: 10px; }
+.member-revision dt { color: var(--ink-soft); font-size: .85rem; }
+.member-revision dd { margin: 4px 0; }
+.member-latest { margin: 0; }
+.member-latest > div { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.member-latest dt { font-size: .85rem; }
+.member-latest dd { margin: 0; display: grid; gap: 4px; text-align: right; }
+.member-latest small { font-size: .75rem; color: var(--ink-soft); }
+@media (min-width: 430px) { .member-fields { grid-template-columns: repeat(2,minmax(0,1fr)); } }

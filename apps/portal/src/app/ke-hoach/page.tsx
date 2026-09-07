@@ -1,5 +1,7 @@
 import AppHeader from "../../components/app-header";
 import FamilyPlanner from "../../components/family-planner";
+import BirthRecoveryPlan from "../../components/birth-recovery-plan";
+import { birthRecoveryStep } from "../../lib/birth-recovery-plan";
 import { dateInVietnam, isIsoDate } from "../../lib/family-task-contract";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +18,8 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
         <h1>Một ngày rõ ràng,<br /><em>cả nhà cùng nhẹ lòng</em></h1>
         <p className="intro">Việc cần làm, lịch hẹn và những điều muốn nhớ nằm chung một mạch.</p>
       </section>
-      <FamilyPlanner selectedDate={selectedDate} startOpen={startOpen} />
+      <BirthRecoveryPlan day={selectedDate} />
+      <FamilyPlanner key={`${selectedDate}:${query.template ?? ""}:${startOpen}`} selectedDate={selectedDate} startOpen={startOpen} template={birthRecoveryStep(query.template)} />
     </main>
   );
 }

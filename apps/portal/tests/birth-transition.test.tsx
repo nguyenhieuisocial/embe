@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import BirthTransition from "../src/components/birth-transition";
+import { clearPrivateGetCache } from "../src/lib/private-get-cache";
+import { dateInVietnam } from "../src/lib/family-task-contract";
 
 const emptyRecord = {
   birthOccurredAt: null, birthMethod: null, babySex: null, gestationalWeeks: null, gestationalDays: null,
@@ -13,6 +15,7 @@ const emptyRecord = {
 describe("birth transition", () => {
   beforeEach(() => {
     localStorage.clear();
+    clearPrivateGetCache();
     vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "PATCH") {
         const body = JSON.parse(String(init.body));
@@ -25,7 +28,7 @@ describe("birth transition", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("saves the birth event and announces the postpartum transition", async () => {
-    render(<BirthTransition />);
+    render(<BirthTransition dueDate={dateInVietnam()} />);
     await act(async () => { await Promise.resolve(); });
     fireEvent.click(screen.getByText("Em bé đã chào đời?"));
     fireEvent.change(screen.getByLabelText("Ngày và giờ sinh"), { target: { value: "2026-08-30T15:15" } });
@@ -41,5 +44,38 @@ describe("birth transition", () => {
     expect(localStorage.getItem("embe:family:birth-occurred-at")).toContain("2026-08-30");
     const request = vi.mocked(fetch).mock.calls.at(-1)?.[1];
     expect(JSON.parse(String(request?.body))).toMatchObject({ babySex: "female" });
+  });
+
+  it("does not flash the prompt while loading or without a due date", async () => {
+    const { container } = render(<BirthTransition />);
+    expect(container).toBeEmptyDOMElement();
+    await act(async () => { await Promise.resolve(); });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("hides early pregnancy and updates when the due date changes", async () => {
+    const earlyDue = new Date(); earlyDue.setDate(earlyDue.getDate() + 210);
+    const { rerender } = render(<BirthTransition dueDate={dateInVietnam(earlyDue)} />);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.queryByText("Em bé đã chào đời?")).not.toBeInTheDocument();
+    rerender(<BirthTransition dueDate={dateInVietnam()} />);
+    expect(screen.getByText("Em bé đã chào đời?")).toBeInTheDocument();
+    rerender(<BirthTransition dueDate={dateInVietnam(earlyDue)} />);
+    expect(screen.queryByText("Em bé đã chào đời?")).not.toBeInTheDocument();
+  });
+
+  it("keeps an explicit early-birth entry in settings", async () => {
+    render(<BirthTransition manual />);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.queryByText("Em bé đã chào đời?")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Ghi nhận ngày sinh khi cần"));
+    expect(screen.getByLabelText("Ngày và giờ sinh")).toBeInTheDocument();
+  });
+
+  it("keeps a previously recorded birth available without a due date", async () => {
+    vi.mocked(fetch).mockResolvedValue(Response.json({ ...emptyRecord, hasBirthRecord: true, birthOccurredAt: "2026-08-30T08:00:00Z" }));
+    render(<BirthTransition />);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getByText("Thông tin lúc em bé chào đời")).toBeInTheDocument();
   });
 });

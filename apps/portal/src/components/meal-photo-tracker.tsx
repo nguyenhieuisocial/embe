@@ -9,8 +9,10 @@ import { createMealDraft, createMealNote, waitForMealDraft, waitForMealNutrition
 import { deriveMealSafetyFlags, hasMealSafetyConcern, inferMealFoodGroups } from "../lib/meal-safety";
 import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
-import { currentMealType, suggestCurrentMealMenus, type MealType } from "../lib/pregnancy-menu";
+import { currentMealType, type MealType } from "../lib/pregnancy-menu";
+import PersonalizedMealSuggestions from "./personalized-meal-suggestions";
 import { suggestPopularFoods, VIETNAMESE_POPULAR_FOODS } from "../lib/vietnamese-food-catalog";
+import { Icon } from "./embe-icon";
 
 const labels: Record<string, string> = { breakfast: "Sáng", lunch: "Trưa", dinner: "Tối", snack: "Bữa phụ" };
 const nutrientLabels = [
@@ -150,6 +152,7 @@ function MealHistoryPhoto({ entryId, label }: { entryId: string; label: string }
 }
 
 export default function MealPhotoTracker() {
+  const [view, setView] = useState<"capture" | "history" | "nutrition">("capture");
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -162,6 +165,7 @@ export default function MealPhotoTracker() {
   const [history, setHistory] = useState<MealHistoryEntry[]>([]);
   const [range, setRange] = useState<7 | 28>(7);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyLoadError, setHistoryLoadError] = useState(false);
   const [worker, setWorker] = useState<Worker>({ status: "unknown" });
   const [historyEditor, setHistoryEditor] = useState<{ id: string; note: string; analysis: MealAnalysis } | null>(null);
   const [historySaving, setHistorySaving] = useState(false);
@@ -173,6 +177,16 @@ export default function MealPhotoTracker() {
   const [statusMessage, setStatusMessage] = useState("");
   const [confirmedMedicationText, setConfirmedMedicationText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const libraryRef = useRef<HTMLInputElement>(null);
+  const reviewRef = useRef<HTMLDivElement>(null);
+  const historyRequestRef = useRef(0);
+
+  useEffect(() => {
+    if (status === "review" && view === "capture") {
+      reviewRef.current?.focus({ preventScroll: true });
+      reviewRef.current?.scrollIntoView?.({ block: "start" });
+    }
+  }, [status, view]);
 
   useEffect(() => { setMealType(currentMealType()); }, []);
   useEffect(() => { void loadHistory(range); }, [range]);
@@ -184,17 +198,20 @@ export default function MealPhotoTracker() {
   }, [file]);
 
   async function loadHistory(days = range, fresh = false) {
+    const requestId = ++historyRequestRef.current;
     setHistoryLoading(true);
+    setHistoryLoadError(false);
     try {
       if (fresh) clearPrivateGetCache("/api/meals?");
       const response = await cachedPrivateGet(`/api/meals?days=${days}`);
-      if (!response.ok) return;
+      if (!response.ok) throw new Error("history_unavailable");
       const payload = await response.json() as { history?: MealHistoryEntry[]; suggestions?: string[]; worker?: Worker };
+      if (requestId !== historyRequestRef.current) return;
       setHistory(payload.history ?? []);
       setSuggestions(payload.suggestions ?? []);
       setWorker(payload.worker ?? { status: "unknown" });
-    } catch { /* Chụp ảnh vẫn dùng được khi phần lịch sử tạm gián đoạn. */ }
-    finally { setHistoryLoading(false); }
+    } catch { if (requestId === historyRequestRef.current) setHistoryLoadError(true); }
+    finally { if (requestId === historyRequestRef.current) setHistoryLoading(false); }
   }
 
   const completedHistory = useMemo(
@@ -208,15 +225,16 @@ export default function MealPhotoTracker() {
   const groups = Object.entries(dashboard.groupCounts).sort((a, b) => b[1] - a[1]);
   const maxGroup = Math.max(1, ...groups.map(([, count]) => count));
   const medicationLike = looksLikeMedication(note);
+  const hasMealInput = Boolean(file || note.trim() || manualFoods.length || manualFoodInput.trim());
+  const captureBusy = status === "sending" || status === "analyzing" || status === "saving";
   const medicationRouteOpen = medicationLike && confirmedMedicationText !== note.trim();
   const medicationDestination = medicationCareDestination(note);
   const popularSuggestions = useMemo(() => suggestPopularFoods(note), [note]);
-  const mealNowLabel = mealType === "snack" ? "bữa phụ" : `bữa ${(labels[mealType] ?? "ăn").toLocaleLowerCase("vi")}`;
-  const currentMenus = useMemo(() => suggestCurrentMealMenus(mealType, completedHistory.map((entry) => ({
+  const menuHistory = useMemo(() => completedHistory.map((entry) => ({
     mealType: entry.mealType, eatenAt: entry.eatenAt, note: entry.note,
     foods: entry.analysis.foods.map((food) => ({ nameVi: food.nameVi, foodGroups: food.foodGroups })),
     nutritionTotals: entry.analysis.nutrition?.totals
-  }))), [completedHistory, mealType]);
+  })), [completedHistory]);
 
   function addManualFood() {
     const next = uniqueFoodNames([...manualFoods, manualFoodInput]);
@@ -238,8 +256,18 @@ export default function MealPhotoTracker() {
     setStatusMessage("");
   }
 
+  function chooseSuggestion(value: string) {
+    const next = note.trim() ? `${note.trim()}, ${value}` : value;
+    if (next.length > 300) {
+      setStatusMessage("Ghi chú đã dài. Mẹ rút gọn một chút để thêm món nhé.");
+      return;
+    }
+    setNote(next);
+    setConfirmedMedicationText("");
+  }
+
   async function analyze() {
-    if ((!file && !note.trim()) || status === "sending" || status === "analyzing" || status === "saving") return;
+    if (!hasMealInput || captureBusy) return;
     if (medicationRouteOpen) {
       setStatusMessage("Nội dung này giống thuốc hoặc vitamin. Chọn nơi lưu phù hợp trước khi tiếp tục.");
       return;
@@ -258,10 +286,10 @@ export default function MealPhotoTracker() {
     if (!file) {
       setStatus("analyzing");
       try {
-        const id = await createMealNote({ authorRole: "mother", mealType, note });
+        const id = await createMealNote({ authorRole: "mother", mealType, note: submissionNote });
         setEntryId(id);
         const draft = await waitForMealDraft(id);
-        setAnalysis(draft.analysis);
+        setAnalysis(mergeManualFoods(draft.analysis, additions));
         setStatus("review");
       } catch (error) {
         const code = error instanceof Error ? error.message : "unknown";
@@ -343,6 +371,8 @@ export default function MealPhotoTracker() {
       setFile(null); setAnalysis(null); setEntryId(""); setNote("");
       setManualFoods([]); setManualFoodInput("");
       if (inputRef.current) inputRef.current.value = "";
+      if (libraryRef.current) libraryRef.current.value = "";
+      setView("history");
       await loadHistory(range, true);
       void waitForMealNutrition(savedId).then(() => loadHistory(range, true));
     } catch {
@@ -447,47 +477,73 @@ export default function MealPhotoTracker() {
   return (
     <section className="meal-tracker" id="bua-an" aria-labelledby="meal-title">
       <div className="section-heading-row meal-heading">
-        <div><p className="panel-kicker">Chụp · xác nhận · lưu</p><h2 id="meal-title">Nhật ký bữa ăn</h2></div>
+        <h2 id="meal-title" className="sr-only">Nhật ký bữa ăn</h2>
         <span className={`meal-worker is-${worker.status}`}><i aria-hidden="true" />{workerCopy}</span>
       </div>
+      <div className="meal-view-switch" role="group" aria-label="Xem bữa ăn">
+        <button type="button" aria-pressed={view === "capture"} onClick={() => setView("capture")}><Icon name="meal" />Ghi bữa</button>
+        <button type="button" aria-pressed={view === "history"} onClick={() => setView("history")}><Icon name="calendar" />Đã ăn{history.length ? <span>{history.length}</span> : null}</button>
+        <button type="button" aria-pressed={view === "nutrition"} onClick={() => setView("nutrition")}><Icon name="care" />Dinh dưỡng</button>
+      </div>
+      {view !== "capture" && (statusMessage || captureBusy || analysis) ? <div className={`meal-progress is-${status}`} role="status">
+        <p className="meal-state">{statusMessage || (analysis ? "Đã nhận diện. Mẹ kiểm tra lại trước khi lưu nhé." : "Đang nhận diện bữa ăn…")}</p>
+        {analysis ? <button className="btn btn-quiet" type="button" onClick={() => setView("capture")}>Kiểm tra bữa này</button> : null}
+      </div> : null}
 
-      <div className="meal-capture-card">
+      <div className="meal-workspace" hidden={view !== "capture"}>
+      <fieldset className="meal-capture-card" disabled={captureBusy} hidden={Boolean(analysis)}>
+        <legend className="sr-only">Ghi bữa ăn</legend>
         <div className="meal-type-picker" role="group" aria-label="Chọn bữa ăn">
           {Object.entries(labels).map(([value, label]) => (
             <button key={value} type="button" aria-pressed={mealType === value} onClick={() => setMealType(value as MealType)}>{label}</button>
           ))}
         </div>
-        <section className="meal-now-menu" aria-label={`Gợi ý ${mealNowLabel} bây giờ`}>
-          <div><strong>Gợi ý {mealNowLabel} bây giờ</strong><small>Tự đổi theo giờ và những bữa đã ghi</small></div>
-          <div>{currentMenus.map((menu) => <button key={menu} type="button" onClick={() => { setNote(menu); setConfirmedMedicationText(""); }}>{menu}</button>)}</div>
-          <small>Tham khảo; điều chỉnh theo dị ứng và hướng dẫn riêng của bác sĩ.</small>
-        </section>
-        <label className="meal-camera">
-          <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
-          <span aria-hidden="true">◎</span><strong>{file ? "Đã chọn ảnh — chạm để đổi" : "Chụp bữa ăn"}</strong>
-          <small>Ảnh được thu nhỏ và bỏ vị trí trước khi gửi.</small>
-        </label>
-        {previewUrl ? <img className="meal-photo-preview" src={previewUrl} alt="Ảnh bữa ăn vừa chọn" /> : null}
-        {file ? <div className="meal-photo-additions">
-          <label htmlFor="meal-manual-food">Món thêm cùng ảnh</label>
+        <div className="meal-photo-actions">
+          <label className="meal-camera">
+            <input ref={inputRef} type="file" accept="image/*" capture="environment" aria-label="Chụp bữa ăn"
+              onChange={(event) => { if (event.target.files?.[0]) setFile(event.target.files[0]); }} />
+            <Icon name="meal" /><strong>Chụp bữa ăn</strong>
+          </label>
+          <label className="meal-library">
+            <input ref={libraryRef} type="file" accept="image/*" aria-label="Chọn ảnh bữa ăn"
+              onChange={(event) => { if (event.target.files?.[0]) setFile(event.target.files[0]); }} />
+            <Icon name="memory" /><strong>Chọn ảnh</strong>
+          </label>
+        </div>
+        {previewUrl ? <div className="meal-selected-photo">
+          <img className="meal-photo-preview" src={previewUrl} alt="Ảnh bữa ăn vừa chọn" />
+          <span><strong>Ảnh đã chọn</strong><small>Có thể thêm món bên dưới.</small></span>
+          <button type="button" aria-label="Bỏ ảnh bữa ăn" onClick={() => {
+            setFile(null);
+            if (inputRef.current) inputRef.current.value = "";
+            if (libraryRef.current) libraryRef.current.value = "";
+          }}><Icon name="close" /></button>
+        </div> : null}
+        {file || manualFoods.length || manualFoodInput ? <div className="meal-photo-additions">
+          <label htmlFor="meal-manual-food">{file ? "Món thêm cùng ảnh" : "Món thêm"}</label>
           <div className="meal-photo-add-row">
             <input id="meal-manual-food" list="vietnamese-popular-foods" maxLength={80} value={manualFoodInput}
               onChange={(event) => setManualFoodInput(event.target.value)}
               onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addManualFood(); } }}
               placeholder="Ví dụ: canh bí đỏ" />
-            <button type="button" onClick={addManualFood} disabled={!manualFoodInput.trim()}>Thêm món cùng ảnh</button>
+            <button type="button" aria-label={file ? "Thêm món cùng ảnh" : "Thêm món"} onClick={addManualFood} disabled={!manualFoodInput.trim()}>Thêm</button>
           </div>
           {manualFoods.length ? <div className="meal-added-foods" aria-label="Các món thêm cùng ảnh">
             {manualFoods.map((food, index) => <button key={`${food}-${index}`} type="button"
               aria-label={`Bỏ món thêm ${food}`} onClick={() => removeManualFood(index)}>{food}<span aria-hidden="true">×</span></button>)}
           </div> : <small>Thêm món bị khuất, đồ uống hoặc món ăn kèm trước khi nhận diện.</small>}
         </div> : null}
-        <label className="meal-note">Ghi chú món ăn · có thể lưu không cần ảnh
-          <textarea maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: nửa bát cơm, cá hồi, không có nước chấm" />
+        <label className="meal-note">Món ăn & khẩu phần
+          <textarea aria-label="Ghi chú món ăn · có thể lưu không cần ảnh" maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="150 g cơm, cá hồi, một bát canh…" />
         </label>
+        <small className="meal-input-hint">Không có ảnh? Chỉ cần nhập món.</small>
         {popularSuggestions.length ? <div className="meal-food-suggestions" aria-label="Món Việt gợi ý">
-          {popularSuggestions.map((name) => <button key={name} type="button" onClick={() => setNote(name)}>{name}</button>)}
+          {popularSuggestions.map((name) => <button key={name} type="button" onClick={() => {
+            const next = note.replace(/[^,;\n]*$/, name);
+            if (next.length <= 300) setNote(next);
+          }}>{name}</button>)}
         </div> : null}
+        <PersonalizedMealSuggestions meal={mealType} history={menuHistory} choose={chooseSuggestion} />
         {medicationRouteOpen ? <aside className="meal-medication-route" aria-live="polite">
           <strong>Có vẻ đây là thuốc hoặc vitamin</strong>
           <p>{medicationDestination.description}</p>
@@ -495,39 +551,40 @@ export default function MealPhotoTracker() {
             <Link href={medicationDestination.href}>{medicationDestination.label}</Link>
             <button type="button" onClick={() => setConfirmedMedicationText(note.trim())}>Vẫn ghi là bữa ăn</button>
           </div>
-        </aside> : <Link className="meal-medicine-shortcut" href="/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc">Cần lưu thuốc / vi chất tự mua?</Link>}
-        <button className="health-save" type="button" disabled={(!file && !note.trim()) || medicationRouteOpen || status === "sending" || status === "analyzing" || status === "saving"} onClick={() => void analyze()}>
+        </aside> : null}
+        <button className="health-save" type="button" disabled={!hasMealInput || medicationRouteOpen || captureBusy} onClick={() => void analyze()}>
           {status === "sending" ? "Đang gửi ảnh…" : status === "analyzing" ? "Đang nhận diện…"
             : status === "saving" ? "Đang lưu…" : file ? "Nhận diện bữa ăn" : "Nhận diện từ ghi chú"}
         </button>
-        <p className={`meal-state is-${status}`} aria-live="polite">
+        {view === "capture" && !analysis ? <p className={`meal-state is-${status}`} aria-live="polite">
           {statusMessage || (status === "analyzing" ? "Đang tự nhận diện tên món. Mẹ có thể tiếp tục xem trang."
             : status === "saved" ? "Đã lưu bữa ăn. Dinh dưỡng sẽ được bổ sung ở lượt nền tiếp theo."
               : status === "queued" ? "Ảnh đã gửi và đang chờ nhận diện."
               : "Kết quả là khoảng ước lượng và luôn cần Mẹ xác nhận.")}
-        </p>
-      </div>
+        </p> : null}
+      </fieldset>
 
-      {analysis ? <div className="meal-review" aria-label="Xác nhận kết quả nhận diện">
-        <div><p className="panel-kicker">Cần Mẹ kiểm tra</p><h3>Máy nhìn thấy</h3></div>
+      {analysis ? <div ref={reviewRef} tabIndex={-1} className="meal-review" role="group" aria-label="Xác nhận kết quả nhận diện">
+        <div><h3>Kiểm tra bữa này</h3><p>Sửa tên món hoặc khẩu phần trước khi lưu.</p></div>
         {analysis.foods.length === 0 ? <p className="meal-empty">{analysis.estimateNotice}</p> : null}
         {analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
           <label>Tên món<input list="vietnamese-popular-foods" value={food.nameVi} maxLength={80} onChange={(event) => updateFood(index, "nameVi", event.target.value)} /></label>
           <label>Khẩu phần (g)<input inputMode="decimal" type="number" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateFood(index, "estimatedGrams", event.target.value)} /></label>
-          <small>Độ chắc chắn {Math.round(food.confidence * 100)}%</small>
+          {food.confidence < .65 ? <small>Cần kiểm tra lại tên món.</small> : null}
           {analysis.foods.length > 1 ? <button className="meal-remove-food" type="button" aria-label={`Bỏ ${food.nameVi || `món ${index + 1}`}`} onClick={() => removeFood(index)}>Bỏ món</button> : null}
         </div>)}
         {analysis.foods.length < 8 ? <button className="meal-add-food" type="button" onClick={addFood}>Thêm món còn thiếu</button> : null}
         {analysis.needsUserConfirmation.length ? <ul className="meal-questions">{analysis.needsUserConfirmation.map((question) => <li key={question}>{question}</li>)}</ul> : null}
         {hasMealSafetyConcern(risks) ? <p className="meal-risk">Món này cần kiểm tra độ chín hoặc tiệt trùng, loại cá và thành phần trước khi dùng.</p> : null}
         <button className="health-save" type="button" disabled={status === "saving" || hasInvalidFood(analysis)} onClick={() => void confirm()}>{status === "saving" ? "Đang lưu…" : "Lưu bữa này"}</button>
+        {view === "capture" && statusMessage ? <p className={`meal-state is-${status}`} role="status">{statusMessage}</p> : null}
+        <button className="meal-add-food" type="button" disabled={status === "saving"} onClick={() => { setAnalysis(null); setStatus("idle"); setStatusMessage(""); }}>Chọn lại ảnh hoặc ghi chú</button>
       </div> : null}
+      <Link className="meal-medicine-shortcut" href="/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc">Thuốc & vi chất tự mua<Icon name="arrow" /></Link>
+      </div>
 
-      <details className="meal-dashboard" aria-labelledby="meal-dashboard-title">
-        <summary className="meal-dashboard-summary">
-          <span><p className="panel-kicker">Từ những bữa đã ghi</p><h3 id="meal-dashboard-title">Nhìn lại dinh dưỡng</h3></span>
-          <span><small>{historyLoading ? "Đang tải" : `${history.length} bữa`}</small><i aria-hidden="true">⌄</i></span>
-        </summary>
+      <section className="meal-dashboard meal-workspace" hidden={view === "capture"} aria-labelledby="meal-dashboard-title">
+        <h3 id="meal-dashboard-title">{view === "history" ? "Lịch sử từng bữa" : "Nhìn lại dinh dưỡng"}</h3>
         <div className="meal-dashboard-body">
           <div className="meal-dashboard-head">
             <small>Khoảng thời gian</small>
@@ -536,10 +593,15 @@ export default function MealPhotoTracker() {
           </div>
           </div>
           {historyMessage ? <p className={`meal-state is-${historyMessageKind}`} role="status">{historyMessage}</p> : null}
+          {historyLoadError ? <div className="meal-history-error" role="alert">
+            <span>Chưa tải được lịch sử. Bữa đã lưu vẫn được giữ lại.</span>
+            <button type="button" onClick={() => void loadHistory(range, true)}>Tải lại</button>
+          </div> : null}
 
         {historyLoading ? <p className="meal-empty" aria-live="polite">Đang mở sổ bữa ăn…</p>
-          : history.length === 0 ? <p className="meal-empty">Chưa có bữa nào trong khoảng này. Chụp món đầu tiên để bắt đầu.</p>
+          : history.length === 0 ? !historyLoadError && <div className="meal-empty"><p>Chưa có bữa nào trong khoảng này.</p><button className="btn btn-quiet" type="button" onClick={() => setView("capture")}>Ghi bữa đầu tiên</button></div>
             : <>
+              <div className="meal-workspace meal-insights" hidden={view !== "nutrition"}>
               <div className="meal-summary-row">
                 <span><b>{completedHistory.length}</b><small>bữa đã lưu</small></span>
                 {dashboard.calorieRange ? <span><b>{Math.round(dashboard.calorieRange.low).toLocaleString("vi-VN")}–{Math.round(dashboard.calorieRange.high).toLocaleString("vi-VN")}</b><small>kcal đã ghi</small></span> : null}
@@ -575,9 +637,9 @@ export default function MealPhotoTracker() {
               </div> : null}
 
               <ul className="meal-suggestions">{suggestions.map((suggestion) => <li key={suggestion}>{suggestion}</li>)}</ul>
+              </div>
 
-              <div className="meal-history-list">
-                <h4>Lịch sử từng bữa</h4>
+              <div className="meal-history-list meal-workspace" hidden={view !== "history"}>
                 {history.map((entry) => <details className="meal-history-card" key={entry.id}>
                   <summary>
                     <span><b>{labels[entry.mealType] ?? "Bữa ăn"}</b><small>{mealDate(entry.eatenAt)}</small></span>
@@ -626,7 +688,7 @@ export default function MealPhotoTracker() {
             </>}
           <small className="meal-safety-note">Không tự kết luận thiếu chất hoặc tự đề nghị uống thêm vi chất.</small>
         </div>
-      </details>
+      </section>
       <datalist id="vietnamese-popular-foods">
         {VIETNAMESE_POPULAR_FOODS.map((food) => <option key={food.name} value={food.name} />)}
       </datalist>

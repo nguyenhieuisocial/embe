@@ -9,9 +9,8 @@ export default function PregnancyMealPage() {
       <AppHeader note="Nhật ký ăn uống riêng tư" />
       <header className="pregnancy-tool-intro">
         <Link href="/me-bau">← Mẹ bầu</Link>
-        <p className="eyebrow">Chụp hoặc nhập món</p>
         <h1>Bữa ăn của Mẹ</h1>
-        <p className="intro">Nhận diện trước, Mẹ sửa lại món và khẩu phần rồi mới lưu.</p>
+        <p className="intro">Ghi lại bữa ngon, chăm Mẹ mỗi ngày.</p>
       </header>
       <MealPhotoTracker />
     </main>

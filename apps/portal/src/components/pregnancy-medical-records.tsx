@@ -14,6 +14,7 @@ import {
 import { prepareImageForUpload } from "../lib/image-preparation-client";
 import type { MedicationScanMedicine } from "../lib/medication-scan-contract";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { MEDICAL_MEASUREMENTS, medicalMeasurementSeries } from "../lib/medical-measurements";
 
 const kinds: Record<string, string> = {
   appointment: "Khám thai", ultrasound: "Siêu âm", laboratory: "Xét nghiệm",
@@ -46,11 +47,23 @@ type MedicationScan = {
 
 const emptyMedicine = (): MedicalMedicine => ({ name: "", ingredients: "", dose: "", frequency: "", instructions: "" });
 
-async function uploadDocument(recordId: string, file: File): Promise<{ documentId: string; mimeType: string }> {
+function MeasurementHistory({ records }: { records: MedicalRecord[] }) {
+  const [key, setKey] = useState<string>("");
+  const available = MEDICAL_MEASUREMENTS.filter(metric => medicalMeasurementSeries(records, metric.key).length);
+  const metric = available.find(item => item.key === key) ?? available[0];
+  if (!metric) return null;
+  const series = medicalMeasurementSeries(records, metric.key);
+  return <details className="medical-measurements"><summary>Diễn biến chỉ số đã lưu</summary>
+    <label>Chỉ số<select value={metric.key} onChange={e => setKey(e.target.value)}>{available.map(item => <option key={item.key} value={item.key}>{item.label} ({item.unit})</option>)}</select></label>
+    <p>Chỉ so sánh cùng chỉ số và đơn vị. Khác thời điểm / phương pháp có thể khác kết quả; EmBe không tự đánh giá bình thường hay bất thường.</p>
+    <ol>{series.map(point => <li key={point.id}><strong>{point.value} {metric.unit}</strong> · {displayDate(point.at)}{point.week ? ` · tuần ${point.week}` : ""}{point.provider ? ` · ${point.provider}` : ""}</li>)}</ol>
+  </details>;
+}
+
+async function uploadDocument(recordId: string, file: File, documentId: string): Promise<{ documentId: string; mimeType: string }> {
   const prepared = file.type === "application/pdf" ? file : await prepareImageForUpload(file, {
     filename: "tai-lieu-y-te.jpg", maxBytes: 15_000_000, maxDimension: 2200, quality: 0.86
   });
-  const documentId = crypto.randomUUID();
   const created = await fetch(`/api/pregnancy/records/${recordId}/documents`, {
     method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ documentId, filename: prepared.name || "tai-lieu", mimeType: prepared.type, byteSize: prepared.size })
@@ -60,7 +73,9 @@ async function uploadDocument(recordId: string, file: File): Promise<{ documentI
   if (!session.uploadUrl) throw new Error("create_document_failed");
   const form = new FormData(); form.append("cacheControl", "0"); form.append("", prepared);
   const uploaded = await fetch(session.uploadUrl, { method: "PUT", headers: { "x-upsert": "false" }, body: form });
-  if (!uploaded.ok) throw new Error("upload_failed");
+  // Retrying an already uploaded object may return a conflict. The completion
+  // endpoint verifies the private object's size/type before accepting it.
+  if (!uploaded.ok && uploaded.status !== 409 && uploaded.status !== 400) throw new Error("upload_failed");
   const completed = await fetch(`/api/pregnancy/documents/${documentId}`, {
     method: "POST", headers: { "content-type": "application/json" }, body: "{}"
   });
@@ -78,7 +93,12 @@ export default function PregnancyMedicalRecords() {
   const [formMode, setFormMode] = useState<"new" | "prepare" | "outcome">("new");
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
+  const [measurementsReviewed, setMeasurementsReviewed] = useState(false);
+  const [measurementError, setMeasurementError] = useState("");
   const pollingScans = useRef(new Set<string>());
+  const saveLock = useRef(false);
+  const recordId = useRef<string | null>(null);
+  const documentAttempts = useRef(new Map<File, { id: string; result?: { documentId: string; mimeType: string } }>());
 
   async function load() {
     try {
@@ -104,6 +124,9 @@ export default function PregnancyMedicalRecords() {
   const appointmentWorkspace = decodeAppointmentWorkspace(editingRecord?.notes ?? "");
 
   function openForm(mode: "new" | "prepare" | "outcome", record: MedicalRecord | null = null) {
+    if (saveLock.current) return;
+    recordId.current = record?.id ?? crypto.randomUUID(); documentAttempts.current.clear();
+    setMeasurementsReviewed(false); setMeasurementError("");
     setFormMode(mode); setEditingRecord(record); setKind(record?.kind ?? "appointment");
     setMedicines(record?.kind === "prescription" && record.medicines.length
       ? record.medicines.map((medicine) => ({ ...medicine })) : [emptyMedicine()]);
@@ -230,15 +253,22 @@ export default function PregnancyMedicalRecords() {
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setStatus("saving");
+    event.preventDefault(); if (saveLock.current) return;
+    saveLock.current = true; setStatus("saving");
     const form = event.currentTarget;
     const data = new FormData(form);
     const files = Array.from((form.elements.namedItem("documents") as HTMLInputElement | null)?.files ?? []);
-    const measurements = Object.fromEntries([
-      ["weightKg", optionalNumber(data, "weightKg")], ["systolic", optionalNumber(data, "systolic")],
-      ["diastolic", optionalNumber(data, "diastolic")], ["fetalHeartRate", optionalNumber(data, "fetalHeartRate")]
-    ].filter((entry): entry is [string, number] => entry[1] !== null));
+    const measurements = { ...(editingRecord?.measurements ?? {}) };
+    for (const metric of MEDICAL_MEASUREMENTS) {
+      const value = optionalNumber(data, metric.key);
+      if (value === null) delete measurements[metric.key]; else measurements[metric.key] = value;
+    }
+    if (Object.keys(measurements).length && !measurementsReviewed) {
+      setMeasurementError("Đối chiếu số và đơn vị với bản gốc rồi tích xác nhận trước khi lưu."); setStatus("idle"); saveLock.current = false; return;
+    }
+    setMeasurementError("");
     try {
+      recordId.current ??= editingRecord?.id ?? crypto.randomUUID();
       const notes = kind === "appointment" ? encodeAppointmentWorkspace({
         questions: String(data.get("appointmentQuestions") ?? "").split(/\r?\n/),
         checklist: data.getAll("appointmentChecklist").map(String),
@@ -246,13 +276,13 @@ export default function PregnancyMedicalRecords() {
       }) : String(data.get("notes") ?? "");
       const response = await fetch("/api/pregnancy/records", {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
-          id: editingRecord?.id ?? null, kind,
+          id: recordId.current, kind,
           status: formMode === "outcome" ? "completed" : formMode === "prepare" ? "planned" : data.get("status"),
           occurredAt: new Date(String(data.get("occurredAt"))).toISOString(),
           title: data.get("title"), provider: data.get("provider") ?? "", clinician: data.get("clinician") ?? "",
           notes, gestationalWeek: optionalNumber(data, "gestationalWeek"),
           nextAppointmentAt: data.get("nextAppointmentAt") ? new Date(String(data.get("nextAppointmentAt"))).toISOString() : null,
-          measurements, medicines: kind === "prescription" ? medicines.filter((medicine) => medicine.name.trim()) : []
+          measurements, measurementsConfirmed: measurementsReviewed, medicines: kind === "prescription" ? medicines.filter((medicine) => medicine.name.trim()) : []
         })
       });
       if (!response.ok) throw new Error("save_failed");
@@ -260,15 +290,22 @@ export default function PregnancyMedicalRecords() {
       if (!result.id) throw new Error("save_failed");
       clearPrivateGetCache("/api/pregnancy/records");
       const uploaded: Array<{ documentId: string; mimeType: string }> = [];
-      for (const file of files.slice(0, 6)) uploaded.push(await uploadDocument(result.id, file));
+      for (const file of files.slice(0, 6)) {
+        const attempt = documentAttempts.current.get(file) ?? { id: crypto.randomUUID() };
+        documentAttempts.current.set(file, attempt);
+        attempt.result ??= await uploadDocument(result.id, file, attempt.id);
+        uploaded.push(attempt.result);
+      }
       if (kind === "prescription") {
         for (const document of uploaded.filter((item) => item.mimeType.startsWith("image/"))) {
           void queueMedicationScan(document.documentId);
         }
       }
       form.reset(); setKind("appointment"); setMedicines([emptyMedicine()]);
+      recordId.current = null; documentAttempts.current.clear();
       setEditingRecord(null); setFormMode("new"); setShowForm(false); await load();
     } catch { setStatus("error"); }
+    finally { saveLock.current = false; }
   }
 
   function updateMedicine(index: number, field: keyof MedicalMedicine, value: string) {
@@ -290,7 +327,7 @@ export default function PregnancyMedicalRecords() {
     <section className="medical-records" id="ho-so-kham" aria-labelledby="medical-records-title">
       <div className="section-heading-row medical-records-heading">
         <div><p className="panel-kicker">Lịch hẹn · kết quả · đơn thuốc</p><h2 id="medical-records-title">Hồ sơ khám thai</h2></div>
-        <button className="medical-add" type="button" onClick={() => {
+        <button className="medical-add" type="button" disabled={status === "saving"} onClick={() => {
           if (showForm) { setShowForm(false); setEditingRecord(null); setFormMode("new"); }
           else openForm("new");
         }}>{showForm ? "Đóng" : "+ Thêm hồ sơ"}</button>
@@ -334,11 +371,15 @@ export default function PregnancyMedicalRecords() {
         </div>
         <details className="medical-measurements">
           <summary>Chỉ số được ghi tại nơi khám <span>⌄</span></summary>
-          <div><label>Cân nặng (kg)<input name="weightKg" type="number" inputMode="decimal" min="25" max="300" step="0.1" defaultValue={editingRecord?.measurements.weightKg} /></label>
-            <label>Huyết áp trên<input name="systolic" type="number" inputMode="numeric" min="40" max="300" defaultValue={editingRecord?.measurements.systolic} /></label>
-            <label>Huyết áp dưới<input name="diastolic" type="number" inputMode="numeric" min="30" max="200" defaultValue={editingRecord?.measurements.diastolic} /></label>
-            <label>Nhịp tim thai<input name="fetalHeartRate" type="number" inputMode="numeric" min="30" max="300" defaultValue={editingRecord?.measurements.fetalHeartRate} /></label></div>
+          <p>Chỉ chép chỉ số có trên phiếu. Giữ đúng đơn vị; không suy ra kết quả từ ảnh khi chưa kiểm tra.</p>
+          {["Số đo khi khám", "Siêu âm", "Xét nghiệm"].map(group => <details key={group}><summary>{group}</summary><div>
+            {MEDICAL_MEASUREMENTS.filter(metric => metric.group === group).map(metric => <label key={metric.key}>{metric.label} ({metric.unit})
+              <input name={metric.key} type="number" inputMode="decimal" min="0" max={metric.max} step="any" defaultValue={editingRecord?.measurements[metric.key]} onChange={() => setMeasurementsReviewed(false)} />
+            </label>)}
+          </div></details>)}
+          <label className="check-line"><input type="checkbox" checked={measurementsReviewed} onChange={e => setMeasurementsReviewed(e.target.checked)} />Tôi đã đối chiếu chỉ số và đơn vị với bản gốc</label>
         </details>
+        {measurementError ? <p role="alert">{measurementError}</p> : null}
         {kind === "appointment" ? <fieldset className="appointment-preparation">
           <legend>Câu hỏi và checklist trước khám</legend>
           <label>Câu hỏi muốn hỏi bác sĩ
@@ -400,6 +441,7 @@ export default function PregnancyMedicalRecords() {
         <h3>Hồ sơ đã lưu</h3>
         <small>{records.length ? `${records.length} mục` : "Chưa có"}</small>
       </div>
+      <MeasurementHistory records={records} />
       {records.length ? <>
         <aside className="medical-insights">
           <div><strong>{insights.completedCount}</strong><span>lần đã lưu</span></div>
@@ -421,9 +463,9 @@ export default function PregnancyMedicalRecords() {
             {record.gestationalWeek ? <small>Tuần thai {record.gestationalWeek}</small> : null}
             {record.medicines.length ? <ul className="medical-record-medicines">{record.medicines.map((medicine, index) => <li key={`${medicine.name}-${index}`}><b>{medicine.name}</b>{medicine.ingredients ? <span>Thành phần: {medicine.ingredients}</span> : null}<span>{[medicine.dose, medicine.frequency, medicine.instructions].filter(Boolean).join(" · ")}</span></li>)}</ul> : null}
             {Object.keys(record.measurements).length ? <div className="medical-record-metrics">
-              {record.measurements.weightKg ? <span><b>{record.measurements.weightKg} kg</b>Cân nặng</span> : null}
-              {record.measurements.systolic && record.measurements.diastolic ? <span><b>{record.measurements.systolic}/{record.measurements.diastolic}</b>Huyết áp đã ghi</span> : null}
-              {record.measurements.fetalHeartRate ? <span><b>{record.measurements.fetalHeartRate}</b>Nhịp tim thai đã ghi</span> : null}
+              {Object.entries(record.measurements).map(([key, value]) => { const metric = MEDICAL_MEASUREMENTS.find(item => item.key === key);
+                return <span key={key}><b>{value} {metric?.unit ?? ""}</b>{metric?.label ?? `${key} — xem đơn vị trong bản gốc`}</span>;
+              })}
             </div> : null}
             {record.kind === "appointment" ? (() => {
               const workspace = decodeAppointmentWorkspace(record.notes);

@@ -256,10 +256,9 @@ export default function PregnancyPage() {
 
       <section className="pregnancy-hero">
         <div>
-          <p className="eyebrow">Chăm Mẹ Ngân · từng ngày</p>
           <h1>Mẹ bầu hôm nay</h1>
           <p className="intro">
-            Chỉ những điều cần nhớ hôm nay — nhẹ nhàng, rõ ràng và không tạo áp lực.
+            Chăm Mẹ Ngân, từng chút mỗi ngày.
           </p>
         </div>
         <div className={`week-card is-${stageTone}`}>
@@ -268,7 +267,7 @@ export default function PregnancyPage() {
             <p className="week-number" aria-live="polite">{week ? `Tuần ${week}` : "Chưa có tuần thai"}</p>
             <span className="stage-name">{stage}</span>
           </div>
-          <div className="stage-petals" aria-label={week === null ? "Chưa xác định ba tháng thai kỳ" : `Đang ở giai đoạn ${stage}`}>
+          <div className="stage-petals" role="img" aria-label={week === null ? "Chưa xác định ba tháng thai kỳ" : `Đang ở giai đoạn ${stage}`}>
             {[0, 1, 2].map((index) => (
               <span className={week !== null && index <= trimesterIndex ? "is-reached" : ""} key={index} />
             ))}
@@ -311,7 +310,7 @@ export default function PregnancyPage() {
         </div>
       </section>
 
-      <BirthTransition />
+      <BirthTransition dueDate={dueDate} />
       <Link className="stage-feature-link" href="/me-bau/tuan-nay" prefetch={false}><span><small>Tự đổi theo ngày dự sinh</small><strong>Tuần này của Mẹ và Bé</strong></span><span aria-hidden="true">›</span></Link>
       <Link className="stage-feature-link" href="/chuan-bi-sinh" prefetch={false}><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></Link>
 

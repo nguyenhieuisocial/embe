@@ -38,19 +38,56 @@ export default function QuickActions() {
   const dueDate = usePregnancyDueDate();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
+  const backdropRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef(true);
   const { postpartum } = useFamilyStage();
 
   useEffect(() => {
     if (!open) return;
+    const sheet = sheetRef.current;
+    if (!sheet) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-    return () => { document.body.style.overflow = previousOverflow; };
+    const background: Array<{ element: HTMLElement; inert: string | null }> = [];
+    // Keep the page and navigation out of touch, keyboard and screen-reader
+    // navigation, without making the sheet or its dismiss backdrop inert.
+    let branch: HTMLElement = sheet;
+    while (branch.parentElement) {
+      for (const sibling of branch.parentElement.children) {
+        if (!(sibling instanceof HTMLElement) || sibling === branch || sibling === backdropRef.current) continue;
+        background.push({ element: sibling, inert: sibling.getAttribute("inert") });
+        sibling.setAttribute("inert", "");
+      }
+      branch = branch.parentElement;
+      if (branch === document.body) break;
+    }
+    closeRef.current?.focus({ preventScroll: true });
+    const containFocus = (event: FocusEvent) => {
+      if (event.target instanceof Node && !sheet.contains(event.target)) closeRef.current?.focus({ preventScroll: true });
+    };
+    const closeOnNavigation = () => {
+      restoreFocusRef.current = false;
+      setOpen(false);
+    };
+    document.addEventListener("focusin", containFocus);
+    window.addEventListener("popstate", closeOnNavigation);
+    window.addEventListener("hashchange", closeOnNavigation);
+    return () => {
+      document.removeEventListener("focusin", containFocus);
+      window.removeEventListener("popstate", closeOnNavigation);
+      window.removeEventListener("hashchange", closeOnNavigation);
+      document.body.style.overflow = previousOverflow;
+      for (const { element, inert } of background) {
+        if (inert === null) element.removeAttribute("inert");
+        else element.setAttribute("inert", inert);
+      }
+      if (restoreFocusRef.current && triggerRef.current?.isConnected) triggerRef.current.focus({ preventScroll: true });
+    };
   }, [open]);
 
   function close() {
     setOpen(false);
-    requestAnimationFrame(() => triggerRef.current?.focus());
   }
 
   function keepFocusInside(event: KeyboardEvent<HTMLElement>) {
@@ -83,8 +120,9 @@ export default function QuickActions() {
         type="button"
         aria-label="Mở thao tác nhanh"
         aria-expanded={open}
+        aria-haspopup="dialog"
         aria-controls="quick-actions-sheet"
-        onClick={() => setOpen(true)}
+        onClick={() => { restoreFocusRef.current = true; setOpen(true); }}
       >
         <Icon name="plus" />
         <span>Ghi nhanh</span>
@@ -92,8 +130,9 @@ export default function QuickActions() {
 
       {open ? (
         <>
-          <button className="sheet-backdrop quick-backdrop" type="button" aria-label="Đóng thao tác nhanh" onClick={close} />
+          <button ref={backdropRef} className="sheet-backdrop quick-backdrop" type="button" tabIndex={-1} aria-hidden="true" aria-label="Đóng thao tác nhanh" onClick={close} />
           <section
+            ref={sheetRef}
             className="sheet quick-sheet"
             id="quick-actions-sheet"
             role="dialog"
@@ -104,9 +143,8 @@ export default function QuickActions() {
             <span className="sheet-grip" aria-hidden="true" />
             <header className="sheet-head">
               <div>
-                <p className="panel-kicker">Một chạm đến đúng việc</p>
                 <h2 id="quick-actions-title">Ghi nhanh</h2>
-                <p>Chọn việc đang cần, EmBe mở thẳng đúng chỗ.</p>
+                <p>Một chạm đến việc đang cần.</p>
               </div>
               <button ref={closeRef} className="sheet-close" type="button" aria-label="Đóng" onClick={close}>
                 <Icon name="close" />
@@ -121,7 +159,7 @@ export default function QuickActions() {
                 { href: "/me", icon: "care" as const, title: "Mẹ hồi phục hôm nay", detail: "Ghi thật nhanh các dấu hiệu cần theo dõi" },
                 { href: "/ky-niem#gui-anh", icon: "memory" as const, title: "Chụp một khoảnh khắc", detail: "Gửi vào album gia đình" }
               ] : actionsForStage(dueDate)).map((action) => (
-                <Link className="quick-action" href={action.href} prefetch={false} key={action.href} onClick={() => setOpen(false)}>
+                <Link className="quick-action" href={action.href} prefetch={false} key={action.href} onClick={() => { restoreFocusRef.current = false; setOpen(false); }}>
                   <span className="quick-action-mark" aria-hidden="true"><Icon name={action.icon} /></span>
                   <span>
                     <strong>{action.title}</strong>

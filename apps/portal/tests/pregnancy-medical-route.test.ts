@@ -71,6 +71,16 @@ describe("private pregnancy medical records", () => {
     expect(rpc).toHaveBeenCalledWith("embe_delete_pregnancy_medical_record_with_task", { p_id: recordId });
   });
 
+  it("requires confirmation of structured measurements and rejects invalid units as text", async () => {
+    const url = "https://embe.hieu.asia/api/pregnancy/records";
+    expect((await saveRecord(request(url, "POST", { ...recordInput, measurements: { crlMm: 48 } }))).status).toBe(400);
+    expect((await saveRecord(request(url, "POST", { ...recordInput, measurements: { crlMm: "48 mm" }, measurementsConfirmed: true }))).status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+    rpc.mockResolvedValueOnce({ data: recordId, error: null });
+    expect((await saveRecord(request(url, "POST", { ...recordInput, measurements: { crlMm: 48, glucoseMmoll: 5 }, measurementsConfirmed: true }))).status).toBe(201);
+    expect(rpc).toHaveBeenCalledWith("embe_save_pregnancy_medical_record_with_task", expect.objectContaining({ p_measurements: { crlMm: 48, glucoseMmoll: 5 } }));
+  });
+
   it("classifies records and returns only cautious preparation insights", async () => {
     rpc.mockResolvedValueOnce({ data: [{
       id: recordId, kind: "prescription", status: "completed", occurred_at: "2026-09-01T02:00:00Z",

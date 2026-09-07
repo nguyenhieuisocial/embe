@@ -2,9 +2,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/me-bau" }));
+const navigation = vi.hoisted(() => ({ pathname: "/me-bau", postpartum: false }));
+vi.mock("next/navigation", () => ({ usePathname: () => navigation.pathname }));
+vi.mock("../src/lib/use-family-stage", () => ({ useFamilyStage: () => ({ postpartum: navigation.postpartum }) }));
 
 import FamilyNav from "../src/components/family-nav";
 import GuidePage from "../src/app/huong-dan/page";
@@ -22,6 +24,11 @@ function ruleBody(css: string, selector: string): string {
 }
 
 describe("mobile family shell", () => {
+  beforeEach(() => {
+    navigation.pathname = "/me-bau";
+    navigation.postpartum = false;
+  });
+
   it("keeps four destinations around the central quick action", () => {
     render(<FamilyNav />);
 
@@ -31,6 +38,29 @@ describe("mobile family shell", () => {
     expect(screen.getByRole("link", { name: "Mẹ bầu" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Kỷ niệm" })).toHaveAttribute("href", "/ky-niem");
     expect(screen.getByRole("link", { name: "Nhà mình" })).toHaveAttribute("href", "/nha-minh");
+  });
+
+  it.each([
+    ["/", "Hôm nay", false],
+    ["/me-bau/bua-an", "Mẹ bầu", false],
+    ["/me-bau/ho-so", "Mẹ bầu", false],
+    ["/chuan-bi-sinh", "Mẹ bầu", false],
+    ["/cai-dat", "Nhà mình", false],
+    ["/ke-hoach", "Nhà mình", false],
+    ["/ghi-lai", "Kỷ niệm", false],
+    ["/me", "Mẹ", true],
+    ["/me-bau/ho-so", "Mẹ", true],
+    ["/be/ho-so", "Bé", true],
+    ["/be/phat-trien", "Bé", true],
+    ["/ky-niem", "Nhà mình", true],
+    ["/ghi-lai", "Nhà mình", true],
+    ["/cai-dat", "Nhà mình", true]
+  ] as const)("keeps one active destination on %s (%s, postpartum=%s)", (pathname, label, postpartum) => {
+    navigation.pathname = pathname;
+    navigation.postpartum = postpartum;
+    render(<FamilyNav />);
+    expect(screen.getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
+    expect(screen.getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page")).toHaveLength(1);
   });
 
   it("reserves iPhone safe areas and prevents password-field zoom", () => {
@@ -71,7 +101,7 @@ describe("mobile family shell", () => {
     expect(css).toContain('input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus');
     expect(ruleBody(css, '.journal-form > button[type="submit"]')).toMatch(/position:\s*sticky/);
     expect(css).toMatch(/input\[type="month"\],[\s\S]*textarea\s*\{[^}]*border-radius:\s*var\(--radius-sm\)/s);
-    expect(ruleBody(css, ".meal-camera:has(input:focus-visible)")).toMatch(/outline:\s*3px solid var\(--sun\)/);
+    expect(ruleBody(css, ".meal-camera:has(input:focus-visible), .meal-library:has(input:focus-visible)")).toMatch(/outline:\s*3px solid var\(--rose\)/);
   });
 
   it("stacks dense form rows on phones instead of squeezing two fields together", () => {

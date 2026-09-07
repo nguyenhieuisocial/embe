@@ -1,0 +1,9 @@
+{
+  "starch": ["cơm", "phở", "bún", "mì", "miến", "hủ tiếu", "bánh", "cháo", "xôi", "nui", "khoai", "bắp", "ngũ cốc", "yến mạch"],
+  "protein": ["bò", "gà", "heo", "thịt", "cá", "tôm", "mực", "cua", "nghêu", "ngao", "ốc", "trứng", "đậu hũ", "đậu phụ", "đậu lăng", "đậu đen", "đậu xanh", "đậu nành", "sữa đậu nành", "sườn", "chả", "nem"],
+  "vegetables": ["rau", "cải", "bí", "cà rốt", "bông cải", "súp lơ", "dưa leo", "dưa chuột", "cà chua", "cà tím", "nấm", "mồng tơi", "xà lách", "giá", "mướp", "bầu", "khổ qua", "ớt chuông"],
+  "fruit": ["chuối", "táo", "cam", "bưởi", "ổi", "xoài", "dưa hấu", "thanh long", "nho", "đu đủ", "bơ", "dâu tây", "kiwi", "lê", "quýt", "dứa"],
+  "dairy": ["sữa", "sữa chua", "yaourt", "yogurt", "phô mai"],
+  "fat": ["bơ lạc", "bơ đậu phộng", "bơ lạt", "bơ mặn", "bơ thực vật", "mayonnaise", "dầu ô liu", "dầu ăn", "hạt điều", "hạnh nhân", "óc chó"],
+  "other": ["sữa hạt", "sữa hạnh nhân", "sữa óc chó", "sữa yến mạch", "sữa dừa"]
+}

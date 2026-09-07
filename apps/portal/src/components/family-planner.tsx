@@ -52,7 +52,7 @@ async function responseError(response: Response): Promise<never> {
   throw new Error("request_failed");
 }
 
-export default function FamilyPlanner({ selectedDate, startOpen = false }: { selectedDate: string; startOpen?: boolean }) {
+export default function FamilyPlanner({ selectedDate, startOpen = false, template }: { selectedDate: string; startOpen?: boolean; template?: Pick<Draft, "title" | "note" | "ownerRole" | "category" | "linkTarget"> }) {
   const [tasks, setTasks] = useState<FamilyTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,23 +60,30 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
   const [open, setOpen] = useState(startOpen);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteArmed, setDeleteArmed] = useState(false);
-  const [draft, setDraft] = useState<Draft>(() => newDraft(selectedDate));
+  const [draft, setDraft] = useState<Draft>(() => ({ ...newDraft(selectedDate), ...(startOpen ? template : {}) }));
+  const createKey = useRef<string | null>(null);
+  const createSnapshot = useRef<Draft | null>(null);
+  const createdId = useRef<string | null>(null);
+  const [pendingToggles, setPendingToggles] = useState<string[]>([]);
+  const toggleLocks = useRef(new Set<string>());
+  const loadSequence = useRef(0);
   const titleRef = useRef<HTMLInputElement>(null);
   const days = useMemo(() => nearbyDays(selectedDate), [selectedDate]);
   const completed = tasks.filter((task) => task.completed).length;
 
   async function load() {
+    const sequence = ++loadSequence.current;
     setLoading(true); setError("");
     try {
       const response = await fetch(`/api/tasks?from=${selectedDate}&to=${selectedDate}`, { cache: "no-store" });
       if (!response.ok) await responseError(response);
       const payload = await response.json() as { tasks?: FamilyTask[] };
-      setTasks(Array.isArray(payload.tasks) ? payload.tasks : []);
-    } catch { setError("Chưa mở được kế hoạch. Chạm để thử lại."); }
-    finally { setLoading(false); }
+      if (sequence === loadSequence.current) setTasks(Array.isArray(payload.tasks) ? payload.tasks : []);
+    } catch { if (sequence === loadSequence.current) setError("Chưa mở được kế hoạch. Chạm để thử lại."); }
+    finally { if (sequence === loadSequence.current) setLoading(false); }
   }
 
-  useEffect(() => { void load(); }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void load(); return () => { loadSequence.current++; }; }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return;
     const overflow = document.body.style.overflow;
@@ -86,6 +93,8 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
   }, [open]);
 
   function showCreate() {
+    createKey.current = null;
+    createSnapshot.current = null; createdId.current = null;
     setDraft(newDraft(selectedDate)); setEditingId(null); setDeleteArmed(false); setOpen(true);
   }
 
@@ -98,6 +107,9 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
   }
 
   async function toggle(task: FamilyTask) {
+    const lock = `${task.id}:${task.occurrenceOn}`;
+    if (toggleLocks.current.has(lock)) return;
+    toggleLocks.current.add(lock); setPendingToggles([...toggleLocks.current]);
     const next = !task.completed;
     setTasks((current) => current.map((item) => item.id === task.id && item.occurrenceOn === task.occurrenceOn ? { ...item, completed: next } : item));
     setError("");
@@ -110,22 +122,36 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
     } catch {
       setTasks((current) => current.map((item) => item.id === task.id && item.occurrenceOn === task.occurrenceOn ? { ...item, completed: !next } : item));
       setError("Chưa lưu được. EmBe đã trả việc về trạng thái trước.");
-    }
+    } finally { toggleLocks.current.delete(lock); setPendingToggles([...toggleLocks.current]); }
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!draft.title.trim() || saving) return;
     setSaving(true); setError("");
+    if (!editingId) createKey.current ??= crypto.randomUUID();
     try {
-      const response = await fetch("/api/tasks", {
-        method: editingId ? "PATCH" : "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          ...(editingId ? { action: "update", id: editingId } : { idempotencyKey: crypto.randomUUID() }),
-          ...draft, dueTime: draft.dueTime || null
-        })
-      });
-      if (!response.ok) await responseError(response);
+      if (!editingId && !createdId.current) {
+        // An uncertain create is retried with its original payload and key. If
+        // the draft changed meanwhile, update that same record after recovery.
+        createSnapshot.current ??= { ...draft };
+        const response = await fetch("/api/tasks", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ idempotencyKey: createKey.current, ...createSnapshot.current, dueTime: createSnapshot.current.dueTime || null })
+        });
+        if (!response.ok) await responseError(response);
+        const result = await response.json() as { id?: string };
+        if (typeof result.id !== "string" || !result.id) throw new Error("missing_id");
+        createdId.current = result.id;
+      }
+      if (editingId || JSON.stringify(createSnapshot.current) !== JSON.stringify(draft)) {
+        const response = await fetch("/api/tasks", {
+          method: "PATCH", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "update", id: editingId ?? createdId.current, ...draft, dueTime: draft.dueTime || null })
+        });
+        if (!response.ok) await responseError(response);
+      }
+      createKey.current = null; createSnapshot.current = null; createdId.current = null;
       setOpen(false); await load();
     } catch { setError("Chưa lưu được việc này. Vui lòng thử lại."); }
     finally { setSaving(false); }
@@ -175,7 +201,7 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
             const target = LINK_DETAILS[task.linkTarget];
             return (
               <article className={`planner-task${task.completed ? " is-complete" : ""}`} key={`${task.id}-${task.occurrenceOn}`}>
-                <button className="planner-check" type="button" onClick={() => void toggle(task)} aria-label={task.completed ? `Mở lại ${task.title}` : `Đánh dấu ${task.title} đã xong`}><Icon name="check" /></button>
+                <button className="planner-check" type="button" disabled={pendingToggles.includes(`${task.id}:${task.occurrenceOn}`)} onClick={() => void toggle(task)} aria-label={task.completed ? `Mở lại ${task.title}` : `Đánh dấu ${task.title} đã xong`}><Icon name="check" /></button>
                 <div className="planner-task-body">
                   <div className="planner-task-meta"><span>{task.dueTime ?? "Cả ngày"}</span><span>{ownerLabels[task.ownerRole]}</span>{task.repeatRule !== "none" ? <span>{repeatLabels[task.repeatRule]}</span> : null}</div>
                   <strong>{task.title}</strong>
@@ -205,6 +231,7 @@ export default function FamilyPlanner({ selectedDate, startOpen = false }: { sel
           <span className="sheet-grip" aria-hidden="true" />
           <header className="sheet-head"><div><p className="panel-kicker">Một việc rõ ràng</p><h2 id="planner-form-title">{editingId ? "Sửa việc" : "Thêm việc"}</h2></div><button className="sheet-close" type="button" aria-label="Đóng" onClick={() => setOpen(false)}><Icon name="close" /></button></header>
           <form className="planner-form sheet-body" onSubmit={submit}>
+            {error ? <p role="alert">{error} Nội dung vẫn được giữ trong biểu mẫu.</p> : null}
             <label>Việc cần làm<input ref={titleRef} required maxLength={120} value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
             <div className="planner-form-row"><label>Ngày<input type="date" required value={draft.dueOn} onChange={(event) => setDraft({ ...draft, dueOn: event.target.value })} /></label><label>Giờ (nếu có)<input type="time" value={draft.dueTime} onChange={(event) => setDraft({ ...draft, dueTime: event.target.value })} /></label></div>
             <div className="planner-form-row"><label>Người làm<select value={draft.ownerRole} onChange={(event) => setDraft({ ...draft, ownerRole: event.target.value as OwnerRole })}><option value="family">Cả nhà</option><option value="mother">Mẹ Ngân</option><option value="father">Ba Hiếu</option></select></label><label>Lặp lại<select value={draft.repeatRule} onChange={(event) => setDraft({ ...draft, repeatRule: event.target.value as RepeatRule })}><option value="none">Không lặp</option><option value="daily">Mỗi ngày</option><option value="weekly">Mỗi tuần</option></select></label></div>

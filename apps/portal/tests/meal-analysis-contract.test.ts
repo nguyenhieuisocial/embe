@@ -1,9 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import { normalizeMealAnalysis } from "../src/lib/meal-analysis-contract";
-import { inferMealFoodGroups } from "../src/lib/meal-safety";
+import { deriveMealSafetyFlags, inferMealFoodGroups } from "../src/lib/meal-safety";
+import foodGroupCases from "./fixtures/meal-food-groups.json";
 
 describe("meal analysis contract", () => {
+  it.each(foodGroupCases)("preserves the meaning of Vietnamese food $name", ({ name, groups }) => {
+    expect(inferMealFoodGroups(name)).toEqual(groups);
+    expect(inferMealFoodGroups(name.normalize("NFD"))).toEqual(groups);
+  });
+
+  it("recognizes unaccented cooking warnings without matching inside unrelated words", () => {
+    expect(deriveMealSafetyFlags("trung long dao")).toEqual(["raw_or_undercooked"]);
+    expect(deriveMealSafetyFlags("Colombian coffee")).toEqual([]);
+  });
+
   it("keeps a recognized food when the model cannot estimate its portion", () => {
     const result = normalizeMealAnalysis({
       foods: [{
