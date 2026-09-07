@@ -1214,7 +1214,9 @@ label { font-size: .9375rem; font-weight: 600; }
 
 input:not([type]),
 input[type="date"],
+input[type="datetime-local"],
 input[type="month"],
+input[type="week"],
 input[type="number"],
 input[type="password"],
 input[type="text"],
@@ -1232,6 +1234,44 @@ textarea {
 textarea { line-height: 1.6; resize: vertical; }
 select { appearance: none; background-image: none; }
 input:disabled, select:disabled, textarea:disabled { opacity: .6; }
+
+/* Native iOS date controls must not size a grid track from their intrinsic
+   value width. Keep the system picker, but size its closed control ourselves.
+   WebKit width/padding issue: https://bugs.webkit.org/show_bug.cgi?id=301648 */
+input:is([type="date"], [type="datetime-local"], [type="month"], [type="week"], [type="time"]) {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  inline-size: 100%;
+}
+label:has(> input:is([type="date"], [type="datetime-local"], [type="month"], [type="week"], [type="time"])) {
+  min-width: 0;
+  max-width: 100%;
+}
+input::-webkit-date-and-time-value {
+  min-height: 1.5em;
+  text-align: left;
+}
+input::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
+}
+@media (max-width: 767px) {
+  /* Date + time needs a complete row, including when text size is enlarged. */
+  label:has(> input:is([type="date"], [type="datetime-local"], [type="month"], [type="week"])) {
+    grid-column: 1 / -1;
+  }
+  .family-profile label { grid-template-columns: minmax(0, 1fr); }
+  input:is([type="date"], [type="datetime-local"], [type="month"], [type="week"], [type="time"]) {
+    /* Some compact forms reset font-size later; do not trigger iOS focus zoom. */
+    font-size: max(1rem, 16px) !important;
+  }
+}
 
 /* ── Điều hướng gia đình ─────────────────────────────────────── */
 
@@ -5216,7 +5256,7 @@ h2, h3 { font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Sego
   color: var(--rose);
 }
 
-:where(input:not([type]), input[type="date"], input[type="month"], input[type="number"], input[type="password"], input[type="text"], input[type="time"], select, textarea) {
+:where(input:not([type]), input[type="date"], input[type="datetime-local"], input[type="month"], input[type="week"], input[type="number"], input[type="password"], input[type="text"], input[type="time"], select, textarea) {
   background: #fffdfd;
   border-color: color-mix(in srgb, var(--rose) 18%, var(--line));
   border-radius: 14px;

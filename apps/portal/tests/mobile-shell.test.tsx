@@ -112,6 +112,19 @@ describe("mobile family shell", () => {
     expect(css).toMatch(/@media \(max-width: 480px\)[\s\S]*\.planner-form-row,[\s\S]*\.inventory-form-row\s*\{[^}]*grid-template-columns:\s*1fr/s);
   });
 
+  it("bounds every native date/time control without replacing the system picker", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    const selector = 'input:is([type="date"], [type="datetime-local"], [type="month"], [type="week"], [type="time"])';
+    const rule = ruleBody(css, selector);
+    expect(rule).toMatch(/min-width:\s*0/);
+    expect(rule).toMatch(/max-width:\s*100%/);
+    expect(rule).toMatch(/box-sizing:\s*border-box/);
+    expect(rule).toMatch(/-webkit-appearance:\s*none/);
+    expect(ruleBody(css, 'input::-webkit-date-and-time-value')).toMatch(/min-height:\s*1.5em/);
+    expect(css).toMatch(/label:has\(> input:is\([^{}]+\)\)\s*\{\s*grid-column:\s*1 \/ -1/);
+    expect(css).toContain('font-size: max(1rem, 16px) !important');
+  });
+
   it("reserves the Today priorities height while private data is streaming", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
