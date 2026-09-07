@@ -15,8 +15,8 @@ const page = await context.newPage(); page.setDefaultTimeout(25000);
 const result = { version, browser:'isolated Cent, not physical iPhone/Safari', jobCreationRequests:0, socialPublished:false, viewports:[] };
 let logged=false;
 try {
-  const denied = await context.request.get(origin + '/api/studio/automation');
-  if (denied.status() !== 401) throw new Error('unprotected_status');
+  const denied = await context.request.get(origin + '/api/studio/automation', {maxRedirects:0});
+  if (denied.status() !== 401 && !(denied.status() === 307 && denied.headers().location === '/login?next=%2Fapi%2Fstudio%2Fautomation')) throw new Error('unprotected_status');
   await page.goto(origin + '/studio', {waitUntil:'domcontentloaded'});
   await page.getByLabel('Mật khẩu', {exact:true}).fill(password);
   await page.getByRole('button', {name:'Vào sổ gia đình',exact:true}).click();

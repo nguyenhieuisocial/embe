@@ -10,6 +10,10 @@ Schema private có `automation` và `automation_topic`, cùng advisory lock vớ
 
 **Chưa hoàn tất xuất bản/đăng tự động:** chưa có social publisher, OAuth tài khoản đích hoặc xác nhận chuyên môn. API và UI ghi rõ `not_connected`, không ghi render completed thành published. Không tự phê duyệt nội dung y tế, không đưa video lên feed công khai. Máy nhà cần đang hoạt động để tạo video; nội dung đã dựng được lưu trên cloud riêng của EmBe.
 
+Kết quả vận hành 08/09: đã bật revision 2; worker hiện hữu tự tạo và dựng video đầu, 720×1280, 23,25 giây, còn 6 chủ đề. `scripts/health/studio-daily-live.mjs` chỉ đọc tiến độ, kiểm tra phiên riêng và video thật (Range 206 + metadata), không tạo job. Bố cục 375/393/430/412/768/1280 đạt; Cent không phải iPhone/Safari vật lý. Phiên kiểm tra được thu hồi. Không restart worker, không public post.
+
+Hướng nối xuất bản đã khảo sát, **chưa tích hợp**: [Buffer API](https://support.buffer.com/en-us/articles/what-is-buffers-api-GtIYIQilz5) có gói Free, 3.000 request/30 ngày; [gói Free tối đa 3 kênh](https://buffer.com/pricing). Có thể tái dùng bộ đăng được nền tảng cấp quyền thay vì dựng OAuth app nội bộ riêng. Cần tài khoản Buffer và quyền trên đúng kênh đích. [Giới hạn kênh](https://support.buffer.com/en-us/articles/connecting-your-channels-to-buffer-HvWLgAJvL9): Facebook Page, không phải profile cá nhân; Instagram cá nhân chỉ thông báo để đăng, không phải auto-publish. Không hứa Zalo Video qua Buffer hoặc tự gắn sản phẩm. API cần URL media truy cập được cho đến khi đăng: phải làm riêng cơ chế phát hành nội dung đã được chọn, không mở công khai bucket draft hoặc dữ liệu gia đình.
+
 ## Phạm vi
 
 `/studio/ban-lam-viec` và `/studio/soan`: tạo kịch bản, lấy mẫu từ 11 video, sửa/thêm/bỏ/đổi thứ tự cảnh, lưu lên EmBe, tạo bản riêng, phục hồi bản xóa, yêu cầu dựng MP4 dọc có giọng Việt. Sổ `/studio/kham-pha` chuyển sang cloud với revision check; sổ cũ trong localStorage chỉ nhập khi bấm, không bị xóa. Link từ ý tưởng mở ô soạn, không tự biến nội dung tham khảo thành kiến thức đã kiểm chứng.
