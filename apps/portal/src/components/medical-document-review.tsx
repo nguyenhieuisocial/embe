@@ -4,20 +4,19 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import MedicalDocumentImport from './medical-document-import';
 import MedicalDocumentButton from './medical-document-viewer';
-import { DOCUMENT_TYPES, SCAN_ERROR_TEXT, documentAnalysisText, validDocumentAnalysis, withPrintedUnit,
+import { DOCUMENT_TYPES, DOCUMENT_ROW_LIMITS, DOCUMENT_DETAIL_DEFAULTS, SCAN_ERROR_TEXT, documentAnalysisText, validDocumentAnalysis, withPrintedUnit,
   type DocumentAnalysis, type DocumentPage, type DocumentScan, type ExtractedField, type ExtractedMedicine, type ExtractedCharge } from '../lib/medical-document-scan';
 
 const FIELD_LABELS: Record<string, string> = { label: 'Tên mục / chỉ số', value: 'Nội dung / kết quả', unit: 'Đơn vị trên phiếu', reference: 'Khoảng tham chiếu trên phiếu',
   name: 'Tên thuốc', ingredients: 'Thành phần / hàm lượng', dose: 'Liều ghi trên đơn', frequency: 'Số lần dùng', instructions: 'Cách dùng ghi trên đơn',
-  amount: 'Số tiền nguyên văn', currency: 'Tiền tệ trên phiếu' };
-const MAX: Record<string, number> = { label: 120, value: 1600, unit: 40, reference: 160, name: 100, ingredients: 1200, dose: 80, frequency: 80, instructions: 200, amount: 80, currency: 20 };
+  amount: 'Thành tiền nguyên văn', currency: 'Tiền tệ trên phiếu', context: 'Ngữ cảnh / thời điểm trên phiếu', route: 'Đường dùng ghi trên đơn', duration: 'Thời gian dùng ghi trên đơn', quantity: 'Số lượng trên phiếu', unitPrice: 'Đơn giá nguyên văn' };
+const MAX: Record<string, number> = { label: 120, value: 1600, unit: 40, reference: 160, name: 100, ingredients: 1200, dose: 80, frequency: 80, instructions: 200, amount: 80, currency: 20, context: 160, route: 80, duration: 80, quantity: 80, unitPrice: 80 };
 type Group = 'fields' | 'medicines' | 'charges';
 type Row = ExtractedField | ExtractedMedicine | ExtractedCharge;
 const emptyRow = (group: Group): Row => group === 'fields' ? { label: '', value: '', unit: '', reference: '', evidence: '', unclear: true }
   : group === 'medicines' ? { name: '', ingredients: '', dose: '', frequency: '', instructions: '', evidence: '', unclear: true }
     : { label: '', amount: '', currency: '', evidence: '', unclear: true };
 const GROUPS: Record<Group, string> = { fields: 'Thông tin và chỉ số', medicines: 'Thuốc trên tài liệu', charges: 'Khoản thu và thanh toán' };
-const EMPTY_LIMITS = { fields: 32, medicines: 12, charges: 40 };
 const pageRows = (page: DocumentPage): Row[] => [...page.fields, ...page.medicines, ...page.charges];
 
 function DocumentOriginal({ documentId, scan, pageNumber }: { documentId: string; scan: DocumentScan; pageNumber: number }) {
@@ -184,10 +183,10 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
           <h2>{GROUPS[group]} <span>{page[group].length}</span></h2>
           {page[group].map((row, rowIndex) => <details key={rowIndex} hidden={onlyUnclear && !row.unclear} className={row.unclear ? 'document-row needs-review' : 'document-row'}>
             <summary><span><strong>{'name' in row ? row.name || 'Thuốc chưa ghi tên' : row.label || 'Mục mới'}</strong>
-              <small>{'value' in row ? withPrintedUnit(row.value, row.unit) : 'amount' in row ? withPrintedUnit(row.amount, row.currency) : [row.dose, row.frequency].filter(Boolean).join(' · ')}</small></span>
+              <small>{'value' in row ? [withPrintedUnit(row.value, row.unit), row.context].filter(Boolean).join(' · ') : 'amount' in row ? withPrintedUnit(row.amount, row.currency) : [row.dose, row.frequency].filter(Boolean).join(' · ')}</small></span>
               <span>{row.unclear ? 'Chưa rõ' : 'Sửa'}</span></summary>
             <div className="document-row-form">
-              {Object.entries(row).filter(([key]) => key !== 'evidence' && key !== 'unclear').map(([key, value]) => <label key={key}>{FIELD_LABELS[key] ?? key}
+              {Object.entries({ ...row, ...Object.fromEntries(Object.entries(DOCUMENT_DETAIL_DEFAULTS[group]).filter(([key]) => !(key in row))) }).filter(([key]) => key !== 'evidence' && key !== 'unclear').map(([key, value]) => <label key={key}>{key === 'quantity' && group === 'medicines' ? 'Số lượng cấp phát (không phải liều)' : FIELD_LABELS[key] ?? key}
                 {['value', 'ingredients', 'instructions'].includes(key)
                   ? <textarea rows={2} value={String(value)} maxLength={MAX[key]} onChange={e => changeRow(pageIndex, group, rowIndex, key, e.target.value)} />
                   : <input value={String(value)} maxLength={group === 'charges' && key === 'label' ? 160 : MAX[key]} onChange={e => changeRow(pageIndex, group, rowIndex, key, e.target.value)} />}
@@ -197,7 +196,7 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
               <button type="button" onClick={() => changePage(pageIndex, p => ({ ...p, [group]: p[group].filter((_, i) => i !== rowIndex) }))}>Bỏ dòng này</button>
             </div>
           </details>)}
-          {page[group].length < EMPTY_LIMITS[group] ? <button className="document-add" type="button" onClick={() => changePage(pageIndex, p => ({ ...p, [group]: [...p[group], emptyRow(group)] }))}>
+          {page[group].length < DOCUMENT_ROW_LIMITS[group] ? <button className="document-add" type="button" onClick={() => changePage(pageIndex, p => ({ ...p, [group]: [...p[group], emptyRow(group)] }))}>
             + {group === 'fields' ? 'Thêm thông tin còn thiếu' : group === 'medicines' ? 'Thêm thuốc còn thiếu' : 'Thêm khoản thu'}
           </button> : null}
         </section>)}

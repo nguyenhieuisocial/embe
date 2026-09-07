@@ -7,7 +7,7 @@ import pytest
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from medical_document_worker import MedicalDocumentWorker, ScanFailure, document_pages, image_bytes, validate_page, page_views, check_evidence
+from medical_document_worker import MedicalDocumentWorker, ScanFailure, document_pages, image_bytes, validate_page, page_views, check_evidence, merge_page_readings
 from meal_analysis_worker import Config, HttpResponse
 
 
@@ -199,7 +199,7 @@ def dense_sheet(kind):
         'ultrasound': ['CRL: 45,6 mm', 'NT: 1,2 mm', 'BPD: 18,7 mm', 'HC: 69,3 mm', 'AC: 58,2 mm',
                        'FL: 7,4 mm', 'Nhịp tim thai: 160 lần/phút'],
         'prescription': ['Sản phẩm mẫu A (KHÔNG PHẢI THUỐC THẬT)', 'Thành phần: chất giả A 0,5 mg',
-                         'Liều mỗi lần: 1 viên. Số lần: 2 lần/ngày.', 'Cách dùng: sau ăn. Thời gian dùng: 5 ngày.',
+                         'Liều mỗi lần: 1 viên. Số lần: 2 lần/ngày.', 'Cách dùng: sau ăn. Thời gian dùng: 5 ngày. Đường dùng: uống.',
                          'Số lượng cấp: 10 viên.', 'Sản phẩm mẫu B (KHÔNG PHẢI THUỐC THẬT)',
                          'Thành phần: chất giả B 250 mcg', 'Liều mỗi lần: 2 viên. Số lần: 1 lần/ngày.',
                          'Cách dùng: sáng. Thời gian dùng: 7 ngày. Số lượng cấp: 14 viên.'],
@@ -211,3 +211,120 @@ def dense_sheet(kind):
     draw.text((70, 3170), 'Mã hồ sơ: TEST-2026-0917', font=font, fill='black')
     draw.text((70, 3300), 'BẢN MẪU — KHÔNG PHẢI HỒ SƠ NGƯỜI THẬT', font=font, fill='black')
     return image_bytes(image, (4000, 6000))
+
+
+def test_extended_columns_preserve_original_text_and_reject_unknown_fields():
+    page = sample_page()
+    page['fields'][0]['context'] = 'Thai A'
+    page['medicines'] = [dict(name='MẪU', ingredients='', dose='1 viên', frequency='', instructions='', route='uống', duration='5 ngày', quantity='10 viên', evidence='MẪU 1 viên uống 5 ngày 10 viên', unclear=False)]
+    page['charges'] = [dict(label='Dịch vụ mẫu', amount='250.000', currency='VND', quantity='2', unitPrice='125.000', evidence='Dịch vụ mẫu 2 125.000 250.000 VND', unclear=False)]
+    checked = validate_page(page)
+    assert checked['medicines'][0]['quantity'] == '10 viên'
+    assert checked['charges'][0]['unitPrice'] == '125.000'
+    checked['charges'][0]['guessedTotal'] = '250000'
+    with pytest.raises(ScanFailure):
+        validate_page(checked)
+
+
+def test_receipt_mismatch_is_flagged_but_never_recalculated():
+    page = sample_page()
+    page['charges'] = [dict(label='Dịch vụ mẫu', amount='240.000', currency='VND', quantity='2', unitPrice='125.000', evidence='Dịch vụ mẫu 2 125.000 240.000 VND', unclear=False)]
+    result = validate_page(page)
+    assert result['charges'][0]['amount'] == '240.000'
+    assert result['charges'][0]['unclear']
+    assert any('đơn giá' in text for text in result['warnings'])
+
+
+def test_detail_merge_keeps_conflicts_and_qualifiers_not_just_last_value():
+    first, second = sample_page(), sample_page()
+    second['fields'].append({**first['fields'][0], 'value': '46,1', 'evidence': 'CRL: 46,1 mm', 'context': 'Thai B'})
+    result = merge_page_readings([first, second], incomplete=True)
+    assert len(result['fields']) == 2
+    assert all(row['unclear'] for row in result['fields'])
+    assert result['fields'][1]['context'] == 'Thai B'
+    assert 'Chưa đọc hết' in result['warnings'][0]
+
+
+def test_truncated_generation_recovers_by_bounded_detail_reads_and_refreshes_claim():
+    calls, progress = [], []
+    def transport(method, url, headers, data=None):
+        payload = json.loads(data)
+        calls.append(payload)
+        if len(calls) == 1:
+            return HttpResponse(200, {}, json.dumps({'done_reason': 'length', 'message': {'content': '{'}}).encode())
+        return HttpResponse(200, {}, json.dumps({'message': {'content': json.dumps(sample_page())}}).encode())
+    worker = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport)
+    result = worker.analyze_page(image_bytes(Image.new('RGB', (1800, 3600), 'white'), (4000, 6000)), '', progress=lambda: progress.append(True))
+    assert len(calls) == 3 and len(progress) == 2
+    assert len(result['fields']) == 1
+    assert all(len(call['messages'][1]['images']) == 1 for call in calls[1:])
+
+
+def test_one_failed_detail_region_is_explicit_not_silent_complete():
+    calls = []
+    def transport(method, url, headers, data=None):
+        calls.append(1)
+        if len(calls) == 1:
+            return HttpResponse(200, {}, b'{"done_reason":"length"}')
+        if len(calls) == 2:
+            return HttpResponse(503, {}, b'')
+        return HttpResponse(200, {}, json.dumps({'message': {'content': json.dumps(sample_page())}}).encode())
+    result = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport).analyze_page(image_bytes(Image.new('RGB', (1800, 3600), 'white'), (4000, 6000)), '')
+    assert any('Chưa đọc hết' in w for w in result['warnings'])
+
+
+def test_repairs_only_exact_table_column_mappings_and_preserves_lab_context():
+    page = sample_page()
+    page['fields'] = [dict(label='Tên xét nghiệm', value='TSH', unit='mIU/L', reference='0,4 - 4,0', context='', evidence='TSH < 0,01 mIU/L 0,4 - 4,0', unclear=False),
+                      dict(label='Tên xét nghiệm', value='Glucose (sau 1 giờ)', unit='mmol/L', reference='', context='sau 1 giờ', evidence='Glucose (sau 1 giờ) 7,1 mmol/L', unclear=False)]
+    rows = validate_page(page)['fields']
+    assert rows[0]['label'] == 'TSH' and rows[0]['value'] == '< 0,01' and rows[0]['unclear']
+    assert rows[1]['label'] == 'Glucose (sau 1 giờ)' and rows[1]['value'] == '7,1' and rows[1]['context'] == 'sau 1 giờ'
+
+
+def test_ambiguous_evidence_does_not_repair_or_invent_lab_results():
+    page = sample_page()
+    page['fields'] = [dict(label='Tên xét nghiệm', value='TSH', unit='mIU/L', reference='', evidence='TSH 0,1 0,2 mIU/L', unclear=True)]
+    assert validate_page(page)['fields'][0]['value'] == 'TSH'
+
+
+def test_receipt_totals_and_generic_service_labels_keep_all_printed_money():
+    page = sample_page(); page['kind'] = 'receipt'
+    page['charges'] = [dict(label='Dịch vụ', amount='250.000', currency='VND', quantity='2', unitPrice='125.000', evidence='Khám mẫu A 2 125.000 250.000', unclear=False)]
+    page['fields'] = [dict(label='Phải trả', value='550.000 VND', unit='', reference='', evidence='Phải trả: 550.000 VND', unclear=False)]
+    result = validate_page(page)
+    assert [(r['label'], r['amount']) for r in result['charges']] == [('Khám mẫu A', '250.000'), ('Phải trả', '550.000')]
+    assert result['fields'] == []
+
+
+def test_merge_never_silently_drops_rows_above_page_capacity():
+    readings = []
+    for start in [0, 32, 64]:
+        page = sample_page()
+        page['fields'] = [{**page['fields'][0], 'label': f'Mục mẫu {i}'} for i in range(start, start + 32)]
+        readings.append(page)
+    merged = merge_page_readings(readings)
+    assert len(merged['fields']) == 64
+    assert 'vượt số mục' in merged['warnings'][0]
+
+
+def test_model_explanation_cannot_become_confident_printed_context():
+    page = sample_page()
+    page['fields'][0]['context'] = 'Thai A: phát triển bình thường'
+    result = validate_page(page)
+    assert result['fields'][0]['unclear']
+    assert any('diễn giải thêm' in w for w in result['warnings'])
+
+
+def test_explicit_quoted_quantity_can_be_retained_without_computing_dose():
+    page = sample_page()
+    page['charges'] = [dict(label='Dịch vụ mẫu', amount='250.000', currency='VND', evidence='Dịch vụ mẫu, Số lượng: 2, Đơn giá: 125.000, Thành tiền: 250.000 VND', unclear=False)]
+    row = validate_page(page)['charges'][0]
+    assert row['quantity'] == '2' and row['unitPrice'] == '125.000' and row['unclear']
+
+
+def test_clinical_conclusions_and_text_disagreements_always_require_review():
+    page = sample_page()
+    page['fields'] = [dict(label='Chẩn đoán in trên giấy', value='NỘI DUNG MẪU', unit='', reference='', evidence='Chẩn đoán: NỘI DUNG MẪU', unclear=False),
+                      dict(label='Khoa', value='Sản', unit='', reference='', evidence='Khoa: Sán', unclear=False)]
+    assert all(row['unclear'] for row in validate_page(page)['fields'])

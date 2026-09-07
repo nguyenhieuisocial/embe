@@ -1,5 +1,17 @@
 # Hồ sơ thai kỳ — đọc và đối chiếu giấy tờ
 
+## Chi tiết có cấu trúc — 07/09/2026
+
+- Giữ tương thích bản đọc version 1 cũ. Trường bổ sung tùy chọn: `fields.context`; thuốc có `route`, `duration`, `quantity`; khoản thu có `quantity`, `unitPrice`. Tất cả lưu dạng chữ nguyên văn, có thể sửa, sao chép và mở lại; số lượng cấp phát không thay cho liều.
+- Bảng có nhãn cột bị nhận nhầm được khôi phục chỉ khi câu trích khớp chính xác từng ô; dòng khôi phục vẫn đánh dấu cần đối chiếu. Dòng tổng/giảm giá/phải trả trên phiếu thu được giữ trong nhóm thanh toán. Sai khác số lượng × đơn giá chỉ là cảnh báo đối chiếu, không tự sửa số tiền hay bỏ qua thuế/giảm giá.
+- Khung phóng to chồng mép 20% để giữ các hàng nhiều dòng. Chỉ đọc lại từng vùng khi bản đầu chạm giới hạn, bị cắt giữa chừng hoặc thiếu bảng xét nghiệm; tối đa ba vùng nối tiếp, gia hạn claim giữa các lượt. Giữ kết quả đọc được khi một vùng lỗi, nhưng phải hiện cảnh báo chưa đọc hết. Không coi AI trích dẫn lại chính nó là bằng chứng chính xác.
+- Sức chứa mỗi trang: 64 trường, 24 thuốc, 80 khoản thu, vẫn tối đa 6 trang / 60 KB bản đọc. Chạm giới hạn phải cảnh báo. Hồ sơ có cấu trúc vẫn tối đa 12 thuốc; phần chưa nhập luôn còn trong bản đọc. Không âm thầm cắt lời dặn dài để đưa vào danh sách thuốc.
+- Ngày viết dạng Việt Nam và cùng một ngày viết nhiều kiểu được nhận thống nhất; không lấy ngày sinh hoặc ngày hẹn làm ngày khám. Nhiều ngày khác nhau phải chọn lại. Không gộp các người bệnh, các thai hay kết quả khác thời điểm vào một biểu đồ. Cặp huyết áp rõ đơn vị được đề xuất thành tâm thu/tâm trương; cân nặng chung trên siêu âm không tự coi là cân nặng Mẹ.
+- Thuốc đã đối chiếu mang theo đường dùng, thời gian dùng và số lượng cấp vào lời dặn của hồ sơ. Không tạo đơn mới, chẩn đoán, lịch thuốc hoặc chi tiêu tự động từ OCR. Không thay dữ liệu đã nhập trước đó.
+- Mở rộng riêng envelope của API import lên 96 KB cho bản đọc + dữ liệu chọn nhập; giới hạn cấu trúc, đăng nhập, same-origin và hai revision fences giữ nguyên. Không đổi schema/quyền database, không thêm AI bên ngoài hoặc model mới.
+- Kiểm chứng: `scripts/health/medical-recognition-quality-benchmark.py` dùng sáu loại tài liệu giả lập và AI local thực; `medical-intake-live-smoke.mjs` hỗ trợ mẫu siêu âm và đơn thuốc qua `EMBE_VERIFY_DOCUMENT_KIND`. Báo cáo nằm ngoài Git trong `data/medical-recognition-verification/`. Đây không phải đánh giá lâm sàng hay cam kết nhận đúng mọi ảnh/giấy viết tay.
+- Lượt benchmark cuối: cả 6 loại được phân loại đúng; 15/16 nhóm ô kiểm tra đạt, 14,29–19,96 giây trên máy hiện tại. Một câu giả lập trên giấy ra viện còn sai dấu/chữ (“THEO DÕI” bị đọc thành “THEO ĐỐI”). Không sửa bằng suy đoán; chẩn đoán/kết luận/lời dặn bắt buộc đánh dấu đối chiếu, kể cả khi câu AI trích tự khớp. Kiểm tra phần mềm: 826 tests/155 files portal, 32 tests worker, typecheck và build đạt. Chưa kiểm chứng iPhone thật trong lượt này.
+
 ## Phạm vi
 
 Mở từ Hồ sơ thai kỳ → tài liệu → **Đọc & đối chiếu**. Nhận ảnh JPEG/PNG/WebP (HEIC chuyển bằng luồng iPhone hiện có) và PDF tối đa 6 trang, 15 MB/file. Thêm nhóm phiếu thu, bệnh án và giấy ra viện vào danh sách hồ sơ. Không đọc phim DICOM hoặc chẩn đoán từ ảnh siêu âm.

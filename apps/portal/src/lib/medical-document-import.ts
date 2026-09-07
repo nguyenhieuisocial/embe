@@ -11,6 +11,7 @@ export type DocumentImportContext = {
   recordUpdatedAt: string; intake: boolean; imported: boolean; records: MedicalRecord[];
 };
 const fold = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/\s+/g, ' ').trim();
+const labelKey = (text: string) => fold(text).replace(/\s*[:：]\s*$/, '');
 export const providerKey = (text: string) => fold(text).replace(/\bbenh vien\b/g, 'bv').replace(/\bphong kham\b/g, 'pk').replace(/[^a-z0-9]/g, '');
 const unitKey = (text: string) => fold(text).replace(/\s/g, '').replace(/⁹/g, '9').replace(/\^/g, '');
 const aliases: Record<string, string[]> = {
@@ -23,7 +24,7 @@ const aliases: Record<string, string[]> = {
   tshMiuL: ['tsh'], ft4PmolL: ['ft4'], astUL: ['ast', 'sgot'], altUL: ['alt', 'sgpt'],
 };
 export function printedDate(text: string): string {
-  const clean = text.trim();
+  const clean = text.trim().replace(/^ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})\s+năm\s+(\d{4})$/i, '$1/$2/$3');
   const vn = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:\s.*)?$/.exec(clean);
   const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/.exec(clean);
   if (!vn && !iso) return '';
@@ -42,15 +43,22 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   const fields = analysis.pages.flatMap(page => page.fields);
   const warnings: string[] = [];
   function one(labels: string[], max: number): string {
-    const values = [...new Set(fields.filter(row => labels.map(fold).includes(fold(row.label).replace(/:$/, ''))).map(row => row.value.trim()).filter(Boolean))];
+    const values = [...new Set(fields.filter(row => labels.map(fold).includes(labelKey(row.label))).map(row => row.value.trim()).filter(Boolean))];
     if (values.length > 1) { warnings.push(`Nhiều giá trị cho ${labels[0]}; cần chọn lại.`); return ''; }
     if ((values[0]?.length ?? 0) > max) { warnings.push(`${labels[0]} quá dài; giữ nguyên trong bản đọc.`); return ''; }
     return values[0] ?? '';
   }
   const provider = one(['Cơ sở khám', 'Tên cơ sở', 'Bệnh viện', 'Tên bệnh viện', 'Phòng khám', 'Cơ sở y tế', 'Nơi khám', 'Hospital', 'Clinic', 'Provider'], 120);
-  const occurredOn = printedDate(one(['Ngày khám', 'Ngày khám bệnh', 'Ngày xét nghiệm', 'Ngày siêu âm', 'Ngày lập', 'Ngày thu', 'Ngày ra viện', 'Ngày kê đơn', 'Ngày', 'Visit date', 'Date'], 100));
+  // Multiple representations of one date are equivalent. Birth/appointment/sample
+  // dates are not visit dates; don't silently choose between different visits.
+  const dateLabels = ['Ngày khám', 'Ngày khám bệnh', 'Ngày xét nghiệm', 'Ngày siêu âm', 'Ngày lập', 'Ngày thu', 'Ngày ra viện', 'Ngày kê đơn', 'Ngày', 'Visit date', 'Date'].map(fold);
+  const dates = [...new Set(fields.filter(row => dateLabels.includes(labelKey(row.label))).map(row => printedDate(row.value)).filter(Boolean))];
+  const occurredOn = dates.length === 1 ? dates[0] : '';
+  if (dates.length > 1) warnings.push('Nhiều ngày trên tài liệu; chọn đúng ngày của hồ sơ trước khi liên kết.');
   const clinician = one(['Bác sĩ', 'Bác sĩ khám', 'Bác sĩ điều trị', 'Doctor', 'Clinician'], 100);
-  const patients = [...new Set(fields.filter(row => ['ho ten', 'ho va ten', 'ten benh nhan', 'ho ten benh nhan', 'benh nhan', 'patient name'].includes(fold(row.label))).map(row => row.value).filter(Boolean))];
+  const patientFields = fields.filter(row => ['ho ten', 'ho va ten', 'ten benh nhan', 'ho ten benh nhan', 'ho ten nguoi benh', 'ho va ten nguoi benh', 'nguoi benh', 'benh nhan', 'patient name'].includes(labelKey(row.label)));
+  // Ignore case/spacing differences across pages, not spelling/diacritic differences.
+  const patients = [...new Map(patientFields.map(row => [row.value.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(), row.value.trim()] as const).filter(([key]) => key)).values()];
   const weekText = one(['Tuổi thai', 'Tuần thai', 'Gestational age'], 80);
   const week = /^(\d{1,2})\s*(?:tuần|weeks?|w)(?:\s*\d\s*(?:ngày|days?|d))?$/i.exec(weekText);
   const gestationalWeek = week && Number(week[1]) >= 1 && Number(week[1]) <= 42 ? Number(week[1]) : null;
@@ -58,7 +66,21 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   const conflicted = new Set<string>();
   for (const row of fields) {
     if (row.unclear) continue;
-    const label = fold(row.label).replace(/:$/, '');
+    if (row.context?.trim()) { warnings.push(`${row.label}: có ngữ cảnh riêng (${row.context}); giữ từng kết quả trong bản đọc, chưa gộp vào biểu đồ.`); continue; }
+    const label = labelKey(row.label);
+    if (['huyet ap', 'blood pressure', 'bp'].includes(label) && unitKey(row.unit) === 'mmhg') {
+      const bp = /^(\d{2,3})\s*\/\s*(\d{2,3})(?:\s*mmHg)?$/i.exec(row.value.trim());
+      if (bp && Number(bp[1]) <= 350 && Number(bp[2]) <= 250 && Number(bp[1]) >= Number(bp[2])) {
+        for (const [key, value] of [['systolic', Number(bp[1])], ['diastolic', Number(bp[2])]] as const) {
+          if (key in measurements && measurements[key] !== value) conflicted.add(key);
+          measurements[key] = value;
+        }
+      } else warnings.push('Huyết áp: cần kiểm tra cặp số và đơn vị trên phiếu.');
+      continue;
+    }
+    if (['can nang', 'weight'].includes(label) && analysis.pages.some(page => page.kind === 'ultrasound')) {
+      warnings.push('Cân nặng trên siêu âm chưa rõ của Mẹ hay thai; chưa đưa vào biểu đồ của Mẹ.'); continue;
+    }
     const metric = MEDICAL_MEASUREMENTS.find(item => (aliases[item.key] ?? []).some(alias => fold(alias) === label)
       && (unitKey(item.unit) === unitKey(row.unit) || item.key === 'fetalHeartRate' && ['bpm', 'beats/min'].includes(unitKey(row.unit))));
     if (!metric) continue;
@@ -71,19 +93,26 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
     measurements[metric.key] = value;
   }
   for (const key of conflicted) { delete measurements[key]; warnings.push(`Có nhiều kết quả ${key}; chưa đưa vào biểu đồ.`); }
-  const medicines = analysis.pages.flatMap(page => page.medicines).filter(row => !row.unclear && row.name.trim()).map(({ name, ingredients, dose, frequency, instructions }) => ({ name, ingredients, dose, frequency, instructions }));
+  const medicines = analysis.pages.flatMap(page => page.medicines).filter(row => !row.unclear && row.name.trim()).flatMap(row => {
+    const { name, ingredients, dose, frequency } = row;
+    const instructions = [row.instructions, row.route && `Đường dùng: ${row.route}`, row.duration && `Thời gian: ${row.duration}`, row.quantity && `Số lượng cấp: ${row.quantity}`].filter(Boolean).join(' · ');
+    if (instructions.length > 200) { warnings.push(`${name}: lời dặn dài; giữ đầy đủ trong bản đọc, chưa rút gọn để nhập thuốc.`); return []; }
+    return [{ name, ingredients, dose, frequency, instructions }];
+  });
   const uniqueMedicines = medicines.filter((item, i) => medicines.findIndex(other => JSON.stringify(other) === JSON.stringify(item)) === i);
   const drugConflicts = new Set(uniqueMedicines.filter((item, i) => uniqueMedicines.some((other, j) => i !== j && fold(other.name) === fold(item.name))).map(item => fold(item.name)));
   if (drugConflicts.size) warnings.push('Thuốc cùng tên có cách dùng khác nhau: giữ trong bản đọc để kiểm tra.');
   const sameProvider = records.filter(r => r.id !== recordId && !r.documentIntake && providerKey(provider).length >= 5 && providerKey(r.provider) === providerKey(provider));
   const candidates = sameProvider.filter(r => occurredOn && medicalDay(r.occurredAt) === occurredOn);
   const kinds = [...new Set(analysis.pages.map(page => page.kind))];
+  if (uniqueMedicines.length > 12) warnings.push('Hơn 12 thuốc: hồ sơ chỉ nhận tối đa 12; toàn bộ thuốc còn lại vẫn giữ trong bản đọc.');
+  if (patients.length > 1) warnings.push('Có nhiều người bệnh: chưa đề xuất chỉ số hoặc thuốc vào cùng hồ sơ.');
   return {
     details: {
       kind: kinds.length === 1 ? kinds[0] : 'other', title: (analysis.pages[0]?.title || 'Tài liệu khám thai').slice(0, 100), occurredOn,
       provider: sameProvider[0]?.provider ?? provider, clinician, gestationalWeek,
       linkedRecordId: candidates.length === 1 ? candidates[0].id : null,
-      measurements, medicines: uniqueMedicines.filter(item => !drugConflicts.has(fold(item.name))).slice(0, 12),
+      measurements: patients.length > 1 ? {} : measurements, medicines: patients.length > 1 ? [] : uniqueMedicines.filter(item => !drugConflicts.has(fold(item.name))).slice(0, 12),
     } satisfies DocumentImportDetails,
     patients, warnings, candidates,
     unresolved: fields.filter(row => row.unclear).length + analysis.pages.flatMap(page => page.medicines).filter(row => row.unclear).length,

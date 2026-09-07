@@ -15,9 +15,9 @@ export async function memberAuthorization(request: Request, mutation = false): P
   return state === "active" ? null : privateReply({ error: state === "revoked" ? "unauthorized" : "temporarily_unavailable" }, state === "revoked" ? 401 : 503);
 }
 
-export async function memberBody(request: Request): Promise<unknown> {
+export async function memberBody(request: Request, limit = 64 * 1024): Promise<unknown> {
   if (!request.headers.get("content-type")?.startsWith("application/json")) throw new Error("invalid_request");
-  const limit = 64 * 1024;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 96 * 1024) throw new Error("invalid_limit");
   if (Number(request.headers.get("content-length")) > limit) throw new Error("too_large");
   const reader = request.body?.getReader();
   if (!reader) throw new Error("invalid_request");

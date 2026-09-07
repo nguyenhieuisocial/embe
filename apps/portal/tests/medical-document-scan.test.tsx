@@ -51,9 +51,37 @@ describe('document recognition contract', () => {
     expect(documentAnalysisText(analysis, true)).toContain('người dùng đối chiếu');
     expect(documentAnalysisText(analysis, true)).toContain('[Cần kiểm tra lại với bản gốc]');
   });
+  it('supports old scans and all detailed columns without accepting unexpected model keys', () => {
+    const a = structuredClone(analysis);
+    a.pages[0].fields[0].context = 'Thai A';
+    a.pages[0].medicines = [{ name: 'MẪU', ingredients: '', dose: '1 viên', frequency: '', instructions: '', route: 'uống', duration: '5 ngày', quantity: '10 viên', evidence: '', unclear: true }];
+    a.pages[0].charges = [{ label: 'Dịch vụ', amount: '250.000', currency: 'VND', quantity: '2', unitPrice: '125.000', evidence: '', unclear: true }];
+    expect(validDocumentAnalysis(a)).toBe(true);
+    const text = documentAnalysisText(a);
+    expect(text).toContain('Thai A'); expect(text).toContain('Đường dùng: uống'); expect(text).toContain('Số lượng cấp: 10 viên'); expect(text).toContain('Đơn giá: 125.000');
+    a.pages[0].charges[0].unitPrice = 'x'.repeat(81); expect(validDocumentAnalysis(a)).toBe(false);
+    a.pages[0].charges[0].unitPrice = '125.000';
+    Object.assign(a.pages[0].charges[0], { hiddenUrl: 'https://example.com' }); expect(validDocumentAnalysis(a)).toBe(false);
+  });
 });
 
 describe('document review UX', () => {
+  it('lets older prescription scans add missing structured details and persist them', async () => {
+    const a = structuredClone(analysis);
+    a.pages[0].medicines = [{ name: 'THUỐC MẪU', ingredients: '', dose: '', frequency: '', instructions: '', evidence: 'Chữ gốc', unclear: true }];
+    const fetcher = vi.fn(async (_url: unknown, options?: RequestInit) => Response.json(options?.method === 'PATCH'
+      ? { ...record, status: 'confirmed', revision: 4, analysis: JSON.parse(String(options.body)).analysis } : { ...record, analysis: a }));
+    vi.stubGlobal('fetch', fetcher);
+    render(<MedicalDocumentReview documentId={id} />);
+    fireEvent.click(await screen.findByText('THUỐC MẪU', { selector: 'strong' }));
+    fireEvent.change(screen.getByLabelText('Số lượng cấp phát (không phải liều)'), { target: { value: '10 viên' } });
+    fireEvent.change(screen.getByLabelText('Đường dùng ghi trên đơn'), { target: { value: 'uống' } });
+    fireEvent.click(screen.getByLabelText('Tôi đã đối chiếu các trang với bản gốc'));
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu bản đối chiếu' }));
+    await screen.findByText('Đã lưu bản đối chiếu vào tài liệu này.');
+    const saved = JSON.parse(String(fetcher.mock.calls.find(call => call[1]?.method === 'PATCH')?.[1]?.body));
+    expect(saved.analysis.pages[0].medicines[0]).toMatchObject({ quantity: '10 viên', route: 'uống', dose: '', evidence: 'Chữ gốc' });
+  });
   it('lets user correct, add and confirm without changing printed evidence', async () => {
     const fetcher = vi.fn(async (_url: unknown, options?: RequestInit) => new Response(JSON.stringify(options?.method === 'PATCH'
       ? { ...record, status: 'confirmed', revision: 4, analysis: JSON.parse(String(options.body)).analysis } : record)));

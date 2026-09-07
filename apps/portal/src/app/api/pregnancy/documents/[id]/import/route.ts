@@ -24,7 +24,9 @@ export async function POST(request: Request, context: Context) {
   const denied = await memberAuthorization(request, true); if (denied) return denied;
   const { id } = await context.params; if (!isUuidV4(id)) return privateReply({ error: 'invalid_request' }, 400);
   let input: Record<string, unknown>;
-  try { input = await memberBody(request) as Record<string, unknown>; } catch { return privateReply({ error: 'invalid_request' }, 400); }
+  // A reviewed 60 KB transcription plus the selected structured data can exceed
+  // the default 64 KB. Keep a bounded envelope; field/analysis limits still apply.
+  try { input = await memberBody(request, 96 * 1024) as Record<string, unknown>; } catch { return privateReply({ error: 'invalid_request' }, 400); }
   if (!input || Object.keys(input).sort().join(',') !== 'analysis,confirmed,details,patientConfirmed,recordUpdatedAt,revision'
     || input.confirmed !== true || input.patientConfirmed !== true || !validDocumentAnalysis(input.analysis) || !validImportDetails(input.details)
     || !Number.isSafeInteger(input.revision) || Number(input.revision) < 1 || typeof input.recordUpdatedAt !== 'string'

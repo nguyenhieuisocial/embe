@@ -51,6 +51,32 @@ describe('safe medical import proposal', () => {
     expect(validImportDetails({ ...d, measurements: { guessedDose: 100 } })).toBe(false);
     expect(validImportDetails({ ...d, medicines: [{ name: 'x', dose: 12, frequency: '', instructions: '' }] })).toBe(false);
   });
+  it('normalizes same-date representations and patient labels without guessing a visit', () => {
+    const a = sheet([field('Họ và tên người bệnh:', 'NGƯỜI MẪU'), field('Họ tên', 'người   mẫu'), field('Ngày khám', '7/9/2026'), field('Ngày lập', 'ngày 07 tháng 09 năm 2026'), field('Ngày sinh', '01/02/1990')]);
+    const p = proposeDocumentImport(a, [], id);
+    expect(p.details.occurredOn).toBe('2026-09-07'); expect(p.patients).toHaveLength(1);
+    a.pages[0].fields.push(field('Ngày ra viện', '08/09/2026'));
+    expect(proposeDocumentImport(a, [], id).details.occurredOn).toBe('');
+  });
+  it('retains route, duration and dispensing quantity after a reviewed import without inferring dose', () => {
+    const a = structuredClone(analysis);
+    a.pages[0].medicines = [{ name: 'MẪU', ingredients: '', dose: '', frequency: '', instructions: 'sau ăn', route: 'uống', duration: '5 ngày', quantity: '10 viên', evidence: '', unclear: false }];
+    const m = proposeDocumentImport(a, [], id).details.medicines[0];
+    expect(m.dose).toBe(''); expect(m.instructions).toBe('sau ăn · Đường dùng: uống · Thời gian: 5 ngày · Số lượng cấp: 10 viên');
+    a.pages[0].medicines[0].instructions = 'x'.repeat(200);
+    const long = proposeDocumentImport(a, [], id);
+    expect(long.details.medicines).toEqual([]); expect(long.warnings.some(w => w.includes('lời dặn dài'))).toBe(true);
+  });
+  it('does not collapse timed laboratory results, fetal weight or two patients into mother charts', () => {
+    const a = sheet([field('Huyết áp', '110/70', 'mmHg'), { ...field('Glucose', '4,8', 'mmol/L'), context: 'Lúc đói' }, field('Cân nặng', '2,1', 'kg')]);
+    expect(proposeDocumentImport(a, [], id).details.measurements).toEqual({ systolic: 110, diastolic: 70 });
+    a.pages[0].fields.push(field('Họ tên:', 'MẸ MẪU'), field('Họ và tên người bệnh:', 'NGƯỜI KHÁC'));
+    expect(proposeDocumentImport(a, [], id).details.measurements).toEqual({});
+  });
+  it('keeps conflicting separate and combined blood pressure values out of charts', () => {
+    const a = sheet([field('Huyết áp tâm thu', '120', 'mmHg'), field('Huyết áp', '110/70', 'mmHg')]);
+    expect(proposeDocumentImport(a, [], id).details.measurements).toEqual({ diastolic: 70 });
+  });
 });
 it('requires authenticated explicit patient/review consent and passes both version fences', async () => {
   const details = proposeDocumentImport(analysis, [], id).details;
