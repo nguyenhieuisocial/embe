@@ -41,9 +41,16 @@ Trang 1 / loại giấy tờ
 
 Kiểm tra SQL trong transaction rollback: queue idempotent, claim token cũ bị chặn, xác nhận lưu bền, revision cũ bị chặn, hồ sơ xóa không truy cập được, anon/authenticated không đọc bảng. Không để lại bản ghi thử trong DB.
 
+Kiểm chứng 07/09/2026: 24 kiểm tra Python (worker mới và luồng đơn thuốc cũ), toàn bộ portal 146 files/741 tests, Next build và mobile-shell đạt trước triển khai. Sau bổ sung timeout/API conflict, typecheck và 36 kiểm tra liên quan đạt. CI bản `45ac759` đã thành công.
+
+Lượt web thật đầu tiên (chỉ một phiếu thu dựng): đọc xong sau 22,7 giây, sửa/thêm dòng và tải lại giữ đúng nội dung. Trường hợp stale revision bị timeout khi đi qua HTTP; không coi đây là kiểm chứng hoàn tất. Đã chuyển lỗi xung đột từ SQLSTATE 40001 (HTTP 500) sang PT409, thêm hạn chờ 12 giây cho RPC; giữ nguyên khóa revision và không tự ghi đè. Phiếu thu thử đầu, file lưu và phiên đăng nhập thử đã được dọn; không xóa tài liệu gia đình.
+
+Lượt xác minh cuối trên `https://embe.hieu.asia` phiên bản `61ed55218c04df7fcd598c365d05e2ade6189d64` đã đạt: ảnh phiếu thu mẫu được nhận diện sau 16,5 giây (bao gồm đợi worker); sửa tiêu đề, thêm khoản thu, xác nhận và tải lại giữ nguyên; bản sửa cũ nhận 409; file gốc giống từng byte; không đăng nhập/hồ sơ đã xóa không đọc được; các chiều rộng 375/393/430/412/768/1280 không tràn ngang hoặc target thấp hơn 44px (sai số đo 1px). Đã xem ảnh chụp màn hình iPhone giả lập; đây là Cent Browser chứ không phải iPhone vật lý. Tài liệu mẫu cuối, file lưu và riêng phiên đăng nhập kiểm tra đã được dọn. Chi tiết kết quả nằm trong `data/medical-recognition-verification/live-result.json`, không đưa dữ liệu gia đình lên Git.
+
 ## Nguồn công cụ
 
 - [Ollama structured outputs](https://docs.ollama.com/capabilities/structured-outputs): ràng buộc JSON không bảo đảm đúng nội dung.
 - [pypdfium2 API](https://pypdfium2.readthedocs.io/en/stable/python_api.html): render PDF/text layer cục bộ. Không coi text extraction là phân tích bố cục hoàn chỉnh.
+- [PostgREST custom errors](https://docs.postgrest.org/en/v16/references/errors.html): trả lỗi nghiệp vụ HTTP 409/404 tường minh, không giả làm lỗi máy chủ 500.
 
 Worker: `services/media-ingest/medical_document_worker.py`; cài dependencies bằng `requirements-medical.txt`, đăng ký bằng `scripts/install-medical-document-worker.ps1`. Live health cục bộ: `data/status/medical-document-worker.json`. Bộ mẫu và kết quả ở `data/medical-recognition-verification`; không đưa file gia đình vào Git.

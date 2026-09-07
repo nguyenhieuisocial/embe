@@ -109,15 +109,22 @@ try {
   result.status = 'failed'; result.error = String(error.message).split('\n')[0];
   process.exitCode = 1;
 } finally {
-  if (created) {
-    const deleted = await jsonRequest(`/api/pregnancy/records/${recordId}`, 'DELETE');
-    result.syntheticRecordSoftDeleted = deleted.status() === 200;
-    const gone = await context.request.get(`${origin}/api/pregnancy/documents/${documentId}/scan`);
-    result.deletedRecordBlocked = gone.status() === 404;
-  }
-  if (loggedIn) {
-    const logout = await context.request.post(`${origin}/api/auth/logout`, { headers: { origin }, maxRedirects: 0 });
-    result.ownSessionRevoked = logout.status() === 303;
+  try {
+    if (created) {
+      const deleted = await jsonRequest(`/api/pregnancy/records/${recordId}`, 'DELETE');
+      result.syntheticRecordSoftDeleted = deleted.status() === 200;
+      const gone = await context.request.get(`${origin}/api/pregnancy/documents/${documentId}/scan`);
+      result.deletedRecordBlocked = gone.status() === 404;
+    }
+  } catch { result.syntheticRecordSoftDeleted = false; }
+  try {
+    if (loggedIn) {
+      const logout = await context.request.post(`${origin}/api/auth/logout`, { headers: { origin }, maxRedirects: 0 });
+      result.ownSessionRevoked = logout.status() === 303;
+    }
+  } catch { result.ownSessionRevoked = false; }
+  if ((created && !result.syntheticRecordSoftDeleted) || (loggedIn && !result.ownSessionRevoked)) {
+    result.status = 'cleanup_needed'; process.exitCode = 1;
   }
   await writeFile(resolve(output, 'live-result.json'), JSON.stringify(result, null, 2));
   await browser.close();
