@@ -14,6 +14,13 @@ export const dynamic = "force-dynamic";
 
 const shortcuts = [
   {
+    href: "/studio",
+    icon: "write" as const,
+    kicker: "EmBe Mẹ Bầu",
+    title: "Studio",
+    label: "Xem kịch bản và video trong Studio"
+  },
+  {
     href: "/ky-niem",
     icon: "album" as const,
     kicker: "Ảnh & chuyến đi",

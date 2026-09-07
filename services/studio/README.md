@@ -10,7 +10,21 @@ Tạo **chủ đề → kịch bản → storyboard → phụ đề → video d�
 - Biên dịch thành ảnh dọc, WebVTT, lời đọc dạng văn bản và MP4 H.264 30 fps, 1080×1920 hoặc bản xem thử 360×640.
 - Hàng đợi SQLite riêng: chống gửi trùng, hủy/thử lại, khôi phục sau gián đoạn, checksum, video HTTP Range và xóa bản dựng.
 
-**Chưa có:** giọng đọc/TTS, nhạc, tài khoản mạng xã hội, tự đăng bài, lấy trend trực tiếp, LLM tự nghiên cứu vô hạn hoặc giao diện Studio trong portal. API không được mở ra Internet, không tự khởi động cùng Windows. Toàn bộ đầu ra là bản nháp chưa duyệt chuyên môn; không dùng chữ “đã duyệt y khoa”.
+**Giao diện web:** `/studio`, có lối vào ở Hôm nay và Nhà mình. Xem/tìm/lọc các chủ đề, xem từng video, chép kịch bản/caption, tải video/phụ đề/kịch bản và đọc nguồn ngay sau khi đăng nhập EmBe. 22 ý tưởng được tách riêng và ghi rõ chưa nghiên cứu đủ.
+
+**Chưa có:** giọng đọc/TTS, nhạc, tài khoản mạng xã hội, tự đăng bài, lấy trend trực tiếp, LLM tự nghiên cứu vô hạn hoặc nút tạo/chỉnh sửa bản dựng trong portal. API worker không được mở ra Internet, không tự khởi động cùng Windows. Toàn bộ đầu ra là bản nháp chưa duyệt chuyên môn; không dùng chữ “đã duyệt y khoa”.
+
+## Đưa một bộ đã dựng lên web
+
+Không chép video vào Git hoặc `public/`. Dùng publisher để kiểm tra SHA-256, tải lên bucket private riêng và tạo metadata build không chứa bí mật:
+
+```powershell
+node services/studio/scripts/publish-portal.mjs --campaign data/studio-editorial/campaign-f6622f746066 --catalog services/studio/content/catalog.json --env-file secrets/runtime/portal-sync.env --output apps/portal/src/content/studio-catalog.json
+```
+
+Sau đó đưa metadata và code portal lên main theo quy trình triển khai đang có. Publisher chỉ dùng cấu hình EmBe đã chỉ định, không dùng biến môi trường của dự án khác. Không thay bucket hoặc dữ liệu gia đình. Upload cùng checksum được xác minh lại, không ghi đè object. Frontend chỉ gọi `/api/studio/<slug>/<kind>`; route kiểm tra phiên còn hoạt động trước khi tải từ kho, hỗ trợ Range cho iPhone, không redirect lộ URL nhà cung cấp.
+
+Kho lưu trữ đã lên cloud nhưng **nội dung vẫn chỉ xem sau đăng nhập**, không phải phát hành công khai lên mạng xã hội. Video/poster mới giới hạn 4 MB/file để hợp với proxy của bộ nháp nhỏ; cần đường streaming riêng trước khi đưa video lớn vào. Thông số layout và góp ý Opus 5 ở `docs/design/studio-mobile.md`.
 
 ## Hướng nội dung
 

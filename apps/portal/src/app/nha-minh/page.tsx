@@ -13,6 +13,13 @@ const familyTools: Array<{
   label: string;
 }> = [
   {
+    href: "/studio",
+    icon: "write",
+    title: "Studio EmBe Mẹ Bầu",
+    detail: "Chủ đề, kịch bản và video kiến thức.",
+    label: "Mở Studio EmBe Mẹ Bầu"
+  },
+  {
     href: "/nha-minh/ho-so",
     icon: "care",
     title: "Hồ sơ từng người",

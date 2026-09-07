@@ -32,7 +32,7 @@ export default function FamilyNav() {
           || destination.href === "/me-bau" && pathname === "/chuan-bi-sinh"
           || destination.href === "/me" && (pathname === "/me-bau" || pathname?.startsWith("/me-bau/") || pathname === "/chuan-bi-sinh")
           || destination.href === "/ky-niem" && ["/ghi-lai", "/nhat-ky"].includes(pathname ?? "")
-          || destination.href === "/nha-minh" && (["/cai-dat", "/do-dung", "/tro-ly", "/lich", "/ke-hoach", "/huong-dan", "/so-me-va-be", "/tim-kiem", "/ngan-sach"].includes(pathname ?? "")
+          || destination.href === "/nha-minh" && (["/cai-dat", "/do-dung", "/tro-ly", "/lich", "/ke-hoach", "/huong-dan", "/so-me-va-be", "/tim-kiem", "/ngan-sach"].includes(pathname ?? "") || pathname === '/studio' || pathname?.startsWith('/studio/')
             || postpartum && ["/ky-niem", "/ghi-lai", "/nhat-ky"].includes(pathname ?? ""));
         return (
           <Link

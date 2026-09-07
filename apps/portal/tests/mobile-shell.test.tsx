@@ -46,6 +46,8 @@ describe("mobile family shell", () => {
     ["/me-bau/ho-so", "Mẹ bầu", false],
     ["/chuan-bi-sinh", "Mẹ bầu", false],
     ["/cai-dat", "Nhà mình", false],
+    ["/studio", "Nhà mình", false],
+    ["/studio/ca-phe-tra-sua", "Nhà mình", false],
     ["/ke-hoach", "Nhà mình", false],
     ["/ghi-lai", "Kỷ niệm", false],
     ["/me", "Mẹ", true],
