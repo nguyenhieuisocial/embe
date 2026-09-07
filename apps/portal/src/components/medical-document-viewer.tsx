@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import './medical-document-viewer.css';
 import PhotoViewerImage from './photo-viewer-image';
+import { trapViewerFocus } from './viewer-focus';
 
 type DocumentFile = { id: string; originalFilename: string; mimeType: string };
 const HISTORY_KEY = 'embeMedicalViewer';
@@ -121,7 +122,7 @@ function MedicalDocumentViewer({ documents, initialId, pageNumber, token, onClos
     } finally { setSharing(false); }
   }
 
-  return createPortal(<dialog ref={dialog} className="medical-viewer" aria-label="Xem tài liệu hồ sơ" onCancel={event => { event.preventDefault(); close(); }}>
+  return createPortal(<dialog ref={dialog} className="medical-viewer" aria-label="Xem tài liệu hồ sơ" onKeyDown={trapViewerFocus} onCancel={event => { event.preventDefault(); close(); }}>
     <div className="medical-viewer-layout">
       <header className="medical-viewer-header">
         <button ref={back} type="button" onClick={close} aria-label="Quay lại hồ sơ"><span aria-hidden="true">‹</span> Quay lại</button>

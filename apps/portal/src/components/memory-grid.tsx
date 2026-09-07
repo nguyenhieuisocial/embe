@@ -13,6 +13,7 @@ import PhotoDownloadButton from "./photo-download-button";
 import ViewportImage from "./viewport-image";
 import AutoLoadMore from "./auto-load-more";
 import PhotoViewerImage from "./photo-viewer-image";
+import { trapViewerFocus } from "./viewer-focus";
 
 const PAGE_SIZE = 24;
 const REACTIONS = [
@@ -239,20 +240,7 @@ export function PhotoViewer({ memory, index, total, onClose, onMove, onMetadataS
       onClose();
       return;
     }
-    if (event.key !== "Tab") return;
-    const focusable = Array.from(
-      dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), a[href]") ?? []
-    );
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
+    trapViewerFocus(event);
   }
 
   return (

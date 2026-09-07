@@ -37,6 +37,11 @@ describe('private medical original viewer', () => {
     expect(location.pathname + location.hash).toBe('/me-bau/ho-so#ho-so-kham');
     expect(window.history.state.routeMarker).toBe('preserve');
     expect(window.history.state.embeMedicalViewer).toBeTruthy();
+    screen.getByRole('button', { name: 'Quay lại hồ sơ' }).focus();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab', shiftKey: true });
+    expect(screen.getByRole('button', { name: 'Đóng' })).toHaveFocus();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab' });
+    expect(screen.getByRole('button', { name: 'Quay lại hồ sơ' })).toHaveFocus();
     expect(document.body.style.position).toBe('fixed');
     expect(fetch).toHaveBeenCalledWith(`/api/pregnancy/documents/${image.id}`, expect.objectContaining({ credentials: 'same-origin', cache: 'no-store' }));
     fireEvent.click(screen.getByRole('button', { name: 'Phóng to ảnh' }));
