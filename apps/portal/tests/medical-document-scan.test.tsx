@@ -5,7 +5,7 @@ import MedicalDocumentReview from '../src/components/medical-document-review';
 
 const mock = vi.hoisted(() => ({ denied: false, calls: vi.fn() }));
 vi.mock('../src/lib/family-members-server', () => ({ memberAuthorization: vi.fn(async () => mock.denied ? new Response('', { status: 401 }) : null), memberBody: (request: Request) => request.json() }));
-vi.mock('../src/lib/photo-upload-server', async () => ({ ...(await vi.importActual('../src/lib/photo-upload-server')), photoStore: () => ({ rpc: mock.calls }) }));
+vi.mock('../src/lib/photo-upload-server', async () => ({ ...(await vi.importActual('../src/lib/photo-upload-server')), photoStore: () => ({ rpc: (...args: unknown[]) => ({ abortSignal: () => mock.calls(...args) }) }) }));
 vi.mock('../src/lib/family-view-revalidation', () => ({ revalidateFamilyViews: vi.fn() }));
 import { GET, POST, PATCH } from '../src/app/api/pregnancy/documents/[id]/scan/route';
 
@@ -35,6 +35,10 @@ describe('document recognition contract', () => {
     expect(mock.calls).toHaveBeenCalledWith('embe_confirm_document_scan', { p_document_id: id, p_revision: 3, p_analysis: analysis });
     mock.calls.mockResolvedValue({ error: { code: '40001' } });
     expect((await PATCH(req({ revision: 3, analysis, confirmed: true }), context)).status).toBe(409);
+    mock.calls.mockResolvedValue({ error: { code: 'PT409' } });
+    expect((await PATCH(req({ revision: 3, analysis, confirmed: true }), context)).status).toBe(409);
+    mock.calls.mockResolvedValue({ error: { code: 'PT404' } });
+    expect((await PATCH(req({ revision: 3, analysis, confirmed: true }), context)).status).toBe(404);
   });
   it('never accepts caller-supplied provider URLs or model commands', async () => {
     const request = new Request('https://embe.hieu.asia/api', { method: 'POST', body: JSON.stringify({ url: 'http://example.com' }) });

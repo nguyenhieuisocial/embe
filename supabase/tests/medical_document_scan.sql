@@ -26,7 +26,7 @@ BEGIN
  BEGIN
   PERFORM public.embe_confirm_document_scan(did,(current_scan->>'revision')::integer,a);
   RAISE EXCEPTION 'stale_review_accepted';
- EXCEPTION WHEN serialization_failure THEN NULL; END;
+ EXCEPTION WHEN SQLSTATE 'PT409' THEN NULL; END;
  IF (public.embe_get_document_scan(did))->>'status'<>'confirmed' THEN RAISE EXCEPTION 'not_saved'; END IF;
  IF (SELECT medicines FROM portal_read_model.pregnancy_medical_record WHERE id=rid)<>'[]'::jsonb THEN RAISE EXCEPTION 'clinical_mutation'; END IF;
  UPDATE portal_read_model.pregnancy_medical_record SET deleted_at=now() WHERE id=rid;

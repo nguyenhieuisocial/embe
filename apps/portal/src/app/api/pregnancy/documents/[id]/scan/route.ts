@@ -24,9 +24,9 @@ async function execute(request: Request, context: Context, method: 'GET' | 'POST
   try {
     const name = method === 'GET' ? 'embe_get_document_scan' : method === 'POST' ? 'embe_queue_document_scan' : 'embe_confirm_document_scan';
     const args = { p_document_id: id, ...(method === 'PATCH' ? { p_revision: body.revision, p_analysis: body.analysis } : {}) };
-    const result = await store.rpc(name, args);
+    const result = await store.rpc(name, args).abortSignal(AbortSignal.timeout(12000));
     if (result.error) {
-      const status = result.error.code === '40001' ? 409 : result.error.code === 'P0002' ? 404 : result.error.code === '22023' ? 400 : 503;
+      const status = ['40001', 'PT409'].includes(result.error.code) ? 409 : ['P0002', 'PT404'].includes(result.error.code) ? 404 : result.error.code === '22023' ? 400 : 503;
       return privateReply({ error: status === 409 ? 'revision_conflict' : status === 404 ? 'not_found' : 'temporarily_unavailable' }, status);
     }
     if (!result.data) return privateReply({ error: 'not_found' }, 404);
