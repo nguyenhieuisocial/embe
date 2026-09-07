@@ -40,6 +40,7 @@ jobs:
           cache: pip
           cache-dependency-path: services/storage-poc/pyproject.toml
       - run: pip install -e "services/storage-poc[test]" -e services/mcp-readonly -e services/procurement
+      - run: pip install -r services/media-ingest/requirements-medical.txt
       - run: pytest services/storage-poc/tests -q
       - run: python -m unittest discover -s services/local-bff/tests -v
       - run: PYTHONPATH=services/babybuddy-memos-sync/src python -m unittest discover -s services/babybuddy-memos-sync/tests -v
@@ -50,6 +51,7 @@ jobs:
       - run: cd services/reporting && python -m unittest tests.test_monthly_export -v
       - run: cd services/media-ingest && python -m unittest discover -s tests -v
       - run: pytest services/media-ingest/tests/test_meal_analysis_worker.py -q
+      - run: pytest services/media-ingest/tests/test_medical_document_worker.py -q
       - run: cd services/media-publisher && PYTHONPATH=. python -m unittest discover -s tests -v
       - run: python -m unittest discover -s services/procurement/tests -v
       - run: python -m unittest discover -s services/inventory-worker/tests -v

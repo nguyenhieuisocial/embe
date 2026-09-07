@@ -1,0 +1,3 @@
+# Existing local model; no external inference service.
+Pillow==12.3.0
+pypdfium2==5.13.0

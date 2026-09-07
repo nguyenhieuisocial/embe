@@ -18,7 +18,7 @@ import { MEDICAL_MEASUREMENTS, medicalMeasurementSeries } from "../lib/medical-m
 
 const kinds: Record<string, string> = {
   appointment: "Khám thai", ultrasound: "Siêu âm", laboratory: "Xét nghiệm",
-  prescription: "Đơn thuốc", other: "Tài liệu khác"
+  prescription: "Đơn thuốc", receipt: "Phiếu thu", clinical: "Bệnh án", discharge: "Giấy ra viện", other: "Tài liệu khác"
 };
 
 function localDateTime(date = new Date()): string {
@@ -62,7 +62,7 @@ function MeasurementHistory({ records }: { records: MedicalRecord[] }) {
 
 async function uploadDocument(recordId: string, file: File, documentId: string): Promise<{ documentId: string; mimeType: string }> {
   const prepared = file.type === "application/pdf" ? file : await prepareImageForUpload(file, {
-    filename: "tai-lieu-y-te.jpg", maxBytes: 15_000_000, maxDimension: 2200, quality: 0.86
+    filename: file.name.replace(/\.[^.]+$/, '') + '.jpg', maxBytes: 15_000_000, maxDimension: 3200, quality: 0.94
   });
   const created = await fetch(`/api/pregnancy/records/${recordId}/documents`, {
     method: "POST", headers: { "content-type": "application/json" },
@@ -95,6 +95,7 @@ export default function PregnancyMedicalRecords() {
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
   const [measurementsReviewed, setMeasurementsReviewed] = useState(false);
   const [measurementError, setMeasurementError] = useState("");
+  const [uploadNotice, setUploadNotice] = useState("");
   const pollingScans = useRef(new Set<string>());
   const saveLock = useRef(false);
   const recordId = useRef<string | null>(null);
@@ -258,6 +259,8 @@ export default function PregnancyMedicalRecords() {
     const form = event.currentTarget;
     const data = new FormData(form);
     const files = Array.from((form.elements.namedItem("documents") as HTMLInputElement | null)?.files ?? []);
+    if (files.length > 6) { setUploadNotice('Chọn tối đa 6 file mỗi lần. Chưa file nào bị bỏ qua.'); setStatus('idle'); saveLock.current = false; return; }
+    setUploadNotice('');
     const measurements = { ...(editingRecord?.measurements ?? {}) };
     for (const metric of MEDICAL_MEASUREMENTS) {
       const value = optionalNumber(data, metric.key);
@@ -300,6 +303,16 @@ export default function PregnancyMedicalRecords() {
         for (const document of uploaded.filter((item) => item.mimeType.startsWith("image/"))) {
           void queueMedicationScan(document.documentId);
         }
+      }
+      // The generalized reader is separate from the existing medicine-confirmation flow.
+      // Keep that established flow for image prescriptions; PDFs and other records use page OCR.
+      for (const document of uploaded.filter(item => kind !== 'prescription' || item.mimeType === 'application/pdf')) {
+        try {
+          const queued = await fetch(`/api/pregnancy/documents/${document.documentId}/scan`, {
+            method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+          });
+          if (!queued.ok) throw new Error('queue_failed');
+        } catch { setUploadNotice('Hồ sơ đã lưu. Mở “Đọc & đối chiếu” trên tài liệu để thử đọc lại.'); }
       }
       form.reset(); setKind("appointment"); setMedicines([emptyMedicine()]);
       recordId.current = null; documentAttempts.current.clear();
@@ -362,7 +375,7 @@ export default function PregnancyMedicalRecords() {
         </div> : null}
         <div className="medical-form-grid">
           <label>Tiêu đề<input name="title" required maxLength={100} defaultValue={editingRecord?.title} placeholder={kind === "prescription" ? "Đơn thuốc ngày khám" : "Khám thai định kỳ"} /></label>
-          {formMode === "new" ? <label>Trạng thái<select name="status" defaultValue={editingRecord?.status ?? (kind === "prescription" ? "completed" : "planned")}><option value="planned">Sắp tới</option><option value="completed">Đã hoàn thành</option></select></label> : null}
+          {formMode === "new" ? <label>Trạng thái<select key={`${editingRecord?.id ?? 'new'}-${kind}`} name="status" defaultValue={editingRecord?.status ?? (kind === "appointment" ? "planned" : "completed")}><option value="planned">Sắp tới</option><option value="completed">Đã hoàn thành</option></select></label> : null}
           <label>Ngày và giờ<input name="occurredAt" type="datetime-local" required defaultValue={editingRecord ? localDateTime(new Date(editingRecord.occurredAt)) : localDateTime()} /></label>
           <label>Tuần thai<input name="gestationalWeek" type="number" inputMode="numeric" min="1" max="42" defaultValue={editingRecord?.gestationalWeek ?? undefined} /></label>
           <label>Nơi khám<input name="provider" maxLength={120} defaultValue={editingRecord?.provider} placeholder="Bệnh viện hoặc phòng khám" /></label>
@@ -410,7 +423,7 @@ export default function PregnancyMedicalRecords() {
         {kind !== "appointment" ? <label className="medical-notes">Ghi chú<textarea name="notes" rows={3} maxLength={2000} defaultValue={editingRecord?.notes} placeholder="Điều bác sĩ dặn, câu hỏi cần nhớ…" /></label> : null}
         <label className="medical-files">{formMode === "outcome" ? "Hồ sơ hoặc tài liệu sau khám" : "Hồ sơ hoặc tài liệu mang theo"}
           <input name="documents" type="file" multiple accept="image/*,application/pdf" />
-          <small>{kind === "prescription" ? "Ảnh đơn thuốc sẽ được đọc thử để Mẹ kiểm tra. PDF chỉ được lưu, không tự đọc. " : ""}Tối đa 6 file mỗi lần. Chỉ Hiếu và Ngân xem được.</small>
+          <small>Ảnh và PDF được đọc thử trên máy tại nhà, cần đối chiếu trước khi dùng. Tối đa 6 file, 15 MB/file; PDF tối đa 6 trang. Chụp thẳng trang, rõ chữ và đủ bốn góc. Chỉ Hiếu và Ngân xem được.</small>
         </label>
         <button className="health-save" type="submit" disabled={status === "saving"}>{status === "saving" ? "Đang lưu…" : formMode === "prepare" ? "Lưu chuẩn bị" : formMode === "outcome" ? "Lưu kết quả" : "Lưu hồ sơ"}</button>
       </form> : null}
@@ -474,10 +487,14 @@ export default function PregnancyMedicalRecords() {
                 {workspace.outcome ? <div><b>Kết quả và lời dặn</b><p>{workspace.outcome}</p></div> : null}
               </div>;
             })() : record.notes ? <p className="medical-record-note">{record.notes}</p> : null}
-            {record.documents.length && record.id !== insights.upcoming?.id ? <div className="medical-documents">{record.documents.map((document) => <a key={document.id} href={`/api/pregnancy/documents/${document.id}`} target="_blank" rel="noreferrer">{document.mimeType === "application/pdf" ? "PDF" : "Ảnh"} · {document.originalFilename}</a>)}</div> : null}
+            {record.documents.length ? <div className="medical-documents">{record.documents.map((document) => <div key={document.id}>
+              <a href={`/api/pregnancy/documents/${document.id}`} target="_blank" rel="noreferrer">{document.mimeType === "application/pdf" ? "PDF" : "Ảnh"} · {document.originalFilename}</a>
+              <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>Đọc & đối chiếu</Link>
+            </div>)}</div> : null}
           </article>)}
         </div>
       </> : <div className="medical-empty-short"><strong>Chưa có hồ sơ đã lưu</strong><p>Kết quả khám, đơn thuốc và tài liệu sẽ được xếp theo ngày tại đây.</p></div>}
+      {uploadNotice ? <p role="status">{uploadNotice}</p> : null}
       <p className={`medical-status is-${status}`} aria-live="polite">{status === "error" ? "Chưa lưu hoặc tải hồ sơ được. Hãy kiểm tra mạng và thử lại." : "Hồ sơ y tế được giữ riêng, không xuất hiện trong album gia đình."}</p>
     </section>
   );

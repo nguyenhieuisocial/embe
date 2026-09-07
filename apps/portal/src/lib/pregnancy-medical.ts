@@ -1,4 +1,4 @@
-export const MEDICAL_KINDS = new Set(["appointment", "ultrasound", "laboratory", "prescription", "other"]);
+export const MEDICAL_KINDS = new Set(["appointment", "ultrasound", "laboratory", "prescription", "receipt", "clinical", "discharge", "other"]);
 export const MEDICAL_BUCKET = "embe-medical-records";
 export const MEDICAL_MAX_BYTES = 15_000_000;
 export const MEDICAL_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);

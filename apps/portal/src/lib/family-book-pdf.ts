@@ -81,6 +81,9 @@ function recordKind(kind: MedicalRecord["kind"]): string {
   if (kind === "ultrasound") return "Siêu âm";
   if (kind === "laboratory") return "Xét nghiệm";
   if (kind === "prescription") return "Đơn thuốc";
+  if (kind === "receipt") return "Phiếu thu";
+  if (kind === "clinical") return "Bệnh án";
+  if (kind === "discharge") return "Giấy ra viện";
   if (kind === "appointment") return "Khám thai";
   return "Tài liệu";
 }
