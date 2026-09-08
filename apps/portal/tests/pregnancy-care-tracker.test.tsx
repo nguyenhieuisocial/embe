@@ -218,7 +218,8 @@ describe("iPhone health connection state", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<PregnancyCareTracker pregnancyWeek={8} />);
     await waitFor(() => expect(screen.getByText(/0\/1 đã uống · 0 bỏ qua · 1 hoãn/i)).toBeInTheDocument());
-    expect(screen.getByRole("link", { name: "Chụp đơn thuốc" })).toHaveAttribute("href", "/me-bau/ho-so?quick=prescription#ho-so-kham");
+    expect(screen.getByRole("link", { name: "Thêm đơn mới" })).toHaveAttribute("href", "/me-bau/ho-so?quick=prescription#ho-so-kham");
+    expect(screen.getByRole("button", { name: "Lấy từ hồ sơ đã lưu" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã uống Prenatal theo đơn lần 1" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
       method: "PATCH", body: expect.stringContaining('"status":"taken"')

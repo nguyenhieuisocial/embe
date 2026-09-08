@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import MedicationUseGuide from './medication-use-guide';
+import SavedPrescriptionPicker, { type SavedPrescriptionMedicine } from './saved-prescription-picker';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
@@ -145,6 +146,8 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
   const [careFeedback, setCareFeedback] = useState("");
   const [showPlan, setShowPlan] = useState(false);
+  const [showSavedPrescriptions, setShowSavedPrescriptions] = useState(false);
+  const [savedMedicine, setSavedMedicine] = useState<SavedPrescriptionMedicine | null>(null);
   const [planTimesPerDay, setPlanTimesPerDay] = useState(1);
   const [planSource, setPlanSource] = useState<CareSource>("clinician_plan");
   const [planCategory, setPlanCategory] = useState<CareCategory>("supplement");
@@ -284,6 +287,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
     setPlanName("");
     setSelectedMedication(null);
     setShowPlan(false);
+    setSavedMedicine(null);
   }
 
   async function saveDose(event: FormEvent<HTMLFormElement>, planId: string, slot: number) {
@@ -514,14 +518,25 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
         <button className="care-add-button is-primary" type="button" onClick={() => setShowPlan((value) => !value)}>
           {showPlan ? "Đóng" : "+ Thêm thuốc hoặc vi chất"}
         </button>
-        <Link className="care-prescription-link" href="/me-bau/ho-so?quick=prescription#ho-so-kham">Chụp đơn thuốc</Link>
+        <button className="care-add-button" type="button" aria-expanded={showSavedPrescriptions} onClick={()=>setShowSavedPrescriptions(value=>!value)}>Lấy từ hồ sơ đã lưu</button>
+        <Link className="care-prescription-link" href="/me-bau/ho-so?quick=prescription#ho-so-kham">Thêm đơn mới</Link>
       </div>
 
-      {showPlan && <form className="care-plan-form" onSubmit={(event) => void addPlan(event)}>
+      {showSavedPrescriptions ? <SavedPrescriptionPicker onSelect={medicine=>{
+        setSavedMedicine(medicine); setPlanName(medicine.name); setPlanSource('clinician_plan'); setPlanCategory('medicine');
+        setSelectedMedication(null); setPlanTimesPerDay(0); setShowPlan(true); setShowSavedPrescriptions(false);
+        requestAnimationFrame(()=>document.querySelector('.care-plan-form')?.scrollIntoView({block:'start'}));
+      }} /> : null}
+
+      {showPlan && <form key={savedMedicine ? `${savedMedicine.href}:${savedMedicine.name}` : 'manual'} className="care-plan-form" onSubmit={(event) => void addPlan(event)}>
         <header className="care-plan-form-heading">
           <div><h3>Thêm thuốc hoặc vi chất</h3><p>Chép đúng thông tin trên đơn hoặc vỏ hộp.</p></div>
           <button type="button" aria-label="Đóng form thêm thuốc" onClick={() => setShowPlan(false)}>×</button>
         </header>
+        {savedMedicine ? <aside role="status"><p>Đã lấy thông tin từ <Link href={savedMedicine.href}>{savedMedicine.source}</Link>.</p>
+          <p>{[savedMedicine.dose,savedMedicine.frequency,savedMedicine.instructions].filter(Boolean).join(' · ')}</p>
+          <small>Chọn số lần và giờ nhắc cho thuốc đang dùng. Không tự bật lại đơn cũ.{savedMedicine.uncertain ? ' Bản đọc chưa chắc chắn: kiểm tra trước khi lưu.' : ''}</small>
+        </aside> : null}
         <fieldset className="care-source-picker">
           <legend>Thuốc này từ đâu?</legend>
           <label><input type="radio" name="careSource" value="clinician_plan" checked={planSource === "clinician_plan"} onChange={() => setPlanSource("clinician_plan")} /> Theo đơn / bác sĩ dặn</label>
@@ -558,15 +573,16 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
             {selectedMedication ? <small className="medication-selection">Đã chọn đúng nhóm {selectedMedication.category === "medicine" ? "Thuốc" : "Vitamin / khoáng chất"}</small>
               : planName.trim().length >= 2 ? <small className="medication-custom-name">Không thấy đúng tên? Mẹ vẫn có thể giữ nguyên tên trên nhãn.</small> : null}
           </div>
-          <label className="care-wide">Liều ghi trên nhãn/đơn<input name="doseDisplay" required maxLength={80} placeholder="Ví dụ: 1 viên sau ăn" /></label>
-          <label>Số lần mỗi ngày<select name="timesPerDay" value={planTimesPerDay}
+          <label className="care-wide">Liều ghi trên nhãn/đơn<input name="doseDisplay" defaultValue={savedMedicine?.dose ?? ''} required maxLength={80} placeholder="Ví dụ: 1 viên sau ăn" /></label>
+          <label>Số lần mỗi ngày<select name="timesPerDay" required value={planTimesPerDay || ''}
             onChange={(event) => setPlanTimesPerDay(Number(event.target.value))}>
+            <option value="" disabled>Chọn theo cách dùng trên đơn</option>
             {[1, 2, 3, 4, 5, 6].map((value) => <option key={value}>{value}</option>)}</select></label>
           {Array.from({ length: planTimesPerDay }, (_, index) => <label key={index}>
             Giờ nhắc lần {index + 1}<input name={`reminderTime${index + 1}`} type="time" required
-              defaultValue={index === 0 ? "08:00" : ""} />
+              defaultValue={savedMedicine ? '' : index === 0 ? "08:00" : ""} />
           </label>)}
-          <label className="care-wide">Ghi chú <small>không bắt buộc</small><input name="instructions" maxLength={240} placeholder="Ví dụ: dùng sau ăn" /></label>
+          <label className="care-wide">Ghi chú <small>không bắt buộc</small><input name="instructions" defaultValue={savedMedicine ? [savedMedicine.frequency,savedMedicine.instructions].filter(Boolean).join(' · ') : ''} maxLength={240} placeholder="Ví dụ: dùng sau ăn" /></label>
         </div>
         <label className="clinician-check"><input name="confirmedByClinician" type="checkbox" /> <span>Đã hỏi bác sĩ/dược sĩ về sản phẩm và cách dùng này</span></label>
         <details className="nutrient-entry">

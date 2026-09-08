@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-reuse-prescription', date: '2026-09-08', title: 'Dùng lại đơn thuốc đã lưu', items: [
+    { title: 'Không phải chụp hoặc nhập lại đơn', description: 'Mục Thuốc có Lấy từ hồ sơ đã lưu: chọn thuốc để điền sẵn tên, liều và cách dùng từ hồ sơ hoặc bản đọc. Không nhận diện lại, không tự kích hoạt đơn cũ. Chọn số lần, giờ nhắc và kiểm tra phần bản đọc chưa chắc trước khi lưu lịch.', href: '/me-bau/suc-khoe-iphone?quick=medication#vi-chat-thuoc', action: 'Mở Thuốc' },
+  ] },
   { id: '2026-09-08-semantic-groups', date: '2026-09-08', title: 'Gom thông tin hồ sơ gọn hơn', items: [
     { title: 'Nhận biết nhãn đồng nghĩa', description: 'Gom dòng cùng giá trị và ngữ cảnh trên cùng trang dù nhãn khác nhau, như Họ tên / Tên bệnh nhân hoặc Hb / Hemoglobin. Giữ nguồn đối chiếu; không gộp các lần khám, đơn vị, liều thuốc hay khoản thu khác nhau. Thêm phân nhóm cách dùng thuốc và chỉ số xét nghiệm.', href: '/me-bau/ho-so', action: 'Xem hồ sơ' },
   ] },
