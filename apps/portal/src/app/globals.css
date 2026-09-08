@@ -722,6 +722,7 @@ ol, ul { margin: 0; padding: 0; }
 .family-search-empty { margin-top: 0; }
 
 .device-setup { display: grid; gap: 12px; }
+.device-setup > button { min-height: 44px; min-width: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--rose-soft); color: var(--rose); font: inherit; cursor: pointer; }
 .device-setup > p { color: var(--ink-soft); font-size: .8125rem; }
 .device-role-choice { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
 .device-role-choice button {
