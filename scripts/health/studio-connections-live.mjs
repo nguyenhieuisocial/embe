@@ -12,6 +12,7 @@ try{
   await page.getByLabel('Mật khẩu',{exact:true}).fill(process.env.EMBE_VERIFY_PASSWORD);
   await page.getByRole('button',{name:'Vào sổ gia đình',exact:true}).click();
   await page.waitForURL(origin+'/studio',{timeout:45000});logged=true;
+  await page.goto(origin+'/studio/ban-lam-viec');
   const results=[];
   for(const width of [375,393,430,768,1280]){
     await page.setViewportSize({width,height:852});

@@ -2,7 +2,7 @@
 
 ## Đã triển khai
 
-- Studio → Tài khoản mạng xã hội → Kiểm tra kết nối.
+- Studio → Bàn làm việc → Tài khoản mạng xã hội → Kiểm tra kết nối.
 - `GET /api/studio/connections` yêu cầu phiên gia đình, trả dữ liệu không cache.
 - Bộ đọc API Postiz hosted; chỉ lấy tên, nền tảng và trạng thái disabled. Không đọc nội dung bài hay gửi media.
 - Chưa triển khai OAuth, tạo/lên lịch bài, theo dõi kết quả đăng, analytics hoặc giỏ hàng. Có tài khoản trong danh sách không chứng minh có quyền đăng.
