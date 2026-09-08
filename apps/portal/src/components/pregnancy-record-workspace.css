@@ -42,3 +42,20 @@
 .medical-workspace .medical-documents>div>a.medical-document-summary-link{flex-basis:100%;display:grid;gap:4px;align-items:start;font-size:.9rem;font-weight:600;text-decoration:none;padding:8px 0;overflow-wrap:anywhere}.medical-document-summary-link small{font-size:.76rem;font-weight:400;color:#725d67}
 .medical-workspace .medical-form :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box;font-size:16px}
 @media(min-width:900px){.medical-workspace{max-width:880px;margin-inline:auto}.medical-workspace .medical-timeline{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
+.pregnancy-record-summary { margin-block:16px; padding:16px; border:1px solid #e5ccd4; border-radius:18px; background:#fff9fb; color:#453840; overflow-wrap:anywhere; }
+.pregnancy-record-summary h2 { margin:0 0 4px; font-size:1.15rem; }
+.pregnancy-record-summary small,.pregnancy-record-summary footer { font-size:.8125rem; color:#705e67; }
+.pregnancy-summary-lead { display:grid; gap:12px; margin-block:16px; }
+.pregnancy-summary-lead>div { border-inline-start:3px solid #b96382; padding-inline-start:12px; min-width:0; }
+.pregnancy-summary-lead span,.pregnancy-summary-lead strong { display:block; }
+.pregnancy-summary-lead span { font-size:.8125rem; margin-bottom:4px; }
+.pregnancy-record-summary p { margin-block:6px; }
+.pregnancy-record-summary details { border-top:1px solid #eadde2; }
+.pregnancy-record-summary summary { min-height:44px; padding-block:12px; cursor:pointer; }
+.pregnancy-record-summary summary small { margin-inline-start:6px; }
+.pregnancy-record-summary a { display:inline-flex; align-items:center; min-height:44px; color:#8d3657; text-decoration:underline; }
+.pregnancy-record-summary article,.pregnancy-record-summary dl>div { padding-block:10px; border-bottom:1px solid #eadde2; }
+.pregnancy-record-summary article small,.pregnancy-record-summary dd small { display:block; }
+.pregnancy-record-summary dd { margin:4px 0; }
+.pregnancy-record-summary footer { margin-top:12px; }
+@media(min-width:640px) { .pregnancy-summary-lead { grid-template-columns:1fr 1fr; } }

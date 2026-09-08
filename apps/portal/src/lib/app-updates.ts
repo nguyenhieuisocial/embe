@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-pregnancy-summary', date: '2026-09-08', title: 'Tóm tắt thai kỳ từ hồ sơ', items: [
+    { title: 'Xem tổng hợp ngay đầu Hồ sơ', description: 'Lần khám gần nhất, lịch sắp tới, kết luận và lời dặn trích từ giấy tờ, chỉ số đã lưu cùng lần trước, thuốc trong hồ sơ và tình trạng đồng bộ. Có nguồn cho từng mục; không tự kết luận sức khỏe bình thường hoặc coi đơn cũ là đang dùng.', href: '/me-bau/ho-so', action: 'Xem tóm tắt' },
+  ] },
   { id: '2026-09-08-prescription-frequency', date: '2026-09-08', title: 'Bớt nhập lại cách dùng thuốc', items: [
     { title: 'Điền sẵn số lần từ đơn đã lưu', description: 'Khi chọn thuốc từ hồ sơ, cách dùng ghi rõ như “2 lần/ngày” sẽ điền sẵn số lần. Không suy ra từ số viên, không tự chọn giờ nhắc hoặc biến thuốc dùng khi cần thành lịch uống cố định.', href: '/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc', action: 'Mở Thuốc' },
   ] },

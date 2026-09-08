@@ -1,5 +1,6 @@
 "use client";
 import MedicalDocumentData from './medical-document-data';
+import PregnancyRecordSummary from './pregnancy-record-summary';
 import './pregnancy-record-workspace.css';
 
 import Link from "next/link";
@@ -352,6 +353,7 @@ export default function PregnancyMedicalRecords() {
           else openForm("new");
         }}>{showForm ? "Đóng" : "+ Thêm hồ sơ"}</button>
       </div>
+      {status !== 'loading' && records.length > 0 ? <PregnancyRecordSummary records={records} /> : null}
       <nav className="medical-workspace-nav" aria-label="Đi nhanh trong hồ sơ">
         <a href="#them-giay-to">Thêm giấy tờ</a><a href="#lich-kham-ke-tiep">Lịch khám</a><a href="#ho-so-da-luu">Đã lưu</a>
       </nav>
