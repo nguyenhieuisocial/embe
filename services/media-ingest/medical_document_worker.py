@@ -36,7 +36,7 @@ DETAILS = {
     'charges': {'quantity': 80, 'unitPrice': 80},
 }
 PAGE_COUNTS = {'fields': 64, 'medicines': 24, 'charges': 80}
-ENGINE_REVISION = 'medical-source-v5'
+ENGINE_REVISION = 'medical-source-v5.1'
 SOURCE_LIMITS = {'pdfValue': 1600, 'pdfEvidence': 1800}
 MAX_BYTES = 15_000_000
 MAX_PAGES = 6
@@ -57,6 +57,7 @@ Không thấy thì để chuỗi rỗng hoặc mảng rỗng. Giữ dấu phẩy
 Đọc cả đầu trang, bảng ở giữa và cuối trang. Giữ ngày sinh, mã bệnh nhân/mã phiếu, địa chỉ cơ sở, khoa, ngày giờ lấy mẫu/trả kết quả, số hóa đơn, bảo hiểm, chẩn đoán in sẵn và mã ICD, kết luận, lời dặn, ngày hẹn nếu có chữ. Không bỏ một mục chỉ vì không thuộc ví dụ.
 fields.context: chép ngữ cảnh IN trên phiếu gắn với đúng kết quả (thai A/B, lúc đói/sau ăn, 0 giờ/1 giờ/2 giờ, ngày giờ đo, loại mẫu hoặc ký hiệu H/L). Không gộp các lần đo hay các thai thành một kết quả. Giữ khoảng tham chiếu trong reference, không tự đánh giá bình thường/bất thường.
 medicines.route là đường dùng; duration là số ngày/thời gian dùng; quantity là số lượng CẤP PHÁT kèm đơn vị, không phải liều. Chép riêng từng ô, không tính số ngày từ số viên. instructions giữ các lời dặn khác.
+Với thuốc, đọc evidence TRƯỚC: chép tên thuốc và các dòng chỉ dẫn đi kèm đúng thuốc đó, có thể nhiều dòng. Sau đó tách các ô từ chính đoạn vừa chép. Không dùng chữ cuối trang, chữ ký, tiêu đề hay cảnh báo chung làm evidence hoặc tên thuốc. Vùng cắt không thấy tên thuốc thì để medicines rỗng; không gán phần chỉ dẫn rời cho một tên đoán được.
 charges.quantity là số lượng dịch vụ/sản phẩm; unitPrice là đơn giá nguyên văn; amount là thành tiền. Dòng tổng/giảm giá/bảo hiểm/phải trả giữ đúng nhãn và không coi là một dịch vụ. Không suy ra ô trống bằng phép tính.
 Nếu chỉ có hình siêu âm không đọc được chữ thì KHÔNG suy đoán bệnh, cân nặng hay giới tính. warnings ghi ngắn phần cần người dùng đối chiếu. Chỉ trả JSON; không markdown."""
 
@@ -75,7 +76,13 @@ def page_schema(kind: str = '') -> dict[str, Any]:
     order = ['medicines', 'fields', 'charges'] if kind == 'prescription' else ['fields', 'medicines', 'charges'] if kind in {'laboratory', 'ultrasound', 'clinical', 'discharge'} else ['charges', 'medicines', 'fields']
     for name in order:
         fields = {**LIMITS[name], **DETAILS[name]}
+        if name == 'medicines':
+            # Source-first structured decoding anchors medicine cells to their
+            # own printed block, rather than a footer generated after the values.
+            fields = {'evidence': fields['evidence'], **{k: v for k, v in fields.items() if k != 'evidence'}}
         item = {key: {'type': 'string', 'maxLength': limit} for key, limit in fields.items()}
+        if name == 'medicines':
+            item['evidence']['description'] = 'Chép nguyên tên thuốc VÀ các dòng chỉ dẫn của chính thuốc này trước, không lấy chân trang hoặc cảnh báo chung.'
         if 'label' in item:
             item['label']['description'] = 'Tên mục, dịch vụ hoặc xét nghiệm của CHÍNH HÀNG này. Không dùng tiêu đề cột.'
         if name == 'fields':
@@ -234,9 +241,10 @@ def check_evidence(page: dict[str, Any], printed: str = '') -> None:
                     if value and not re.search(r'(?<!\w)' + re.escape(value) + r'(?!\w)', words(evidence)):
                         row['unclear'] = True
                         problems.add('Tên hoặc cách dùng thuốc chưa khớp câu trích; cần đọc lại đúng dòng, không suy ra theo tên sản phẩm.')
-                for negation in ['không', 'ngừng', 'tránh']:
-                    if re.search(r'\b' + negation + r'\b', words(evidence)) and not re.search(
-                            r'\b' + negation + r'\b', words(' '.join(row.get(k, '') for k in keys))):
+                # Scope to administration warnings. A document disclaimer such
+                # as "không phải ..." is not a missing medication instruction.
+                for warning in re.findall(r'\b(?:không(?: được)?|ngừng|tránh)\s+(?:uống|dùng|nhai|nghiền|bẻ|pha|tiêm|bôi|tự|ánh|kết hợp)\b', words(evidence)):
+                    if warning not in words(' '.join(row.get(k, '') for k in keys)):
                         row['unclear'] = True
                         problems.add('Lời dặn có từ phủ định chưa được giữ trong bản đọc thuốc. Phải đối chiếu nguyên câu trên đơn.')
             if printed.strip() and (not evidence or evidence.casefold() not in normalized(printed).casefold()):

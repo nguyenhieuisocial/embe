@@ -597,6 +597,16 @@ def test_missing_medication_negation_cannot_be_confident_even_if_substring_match
     assert any(w.startswith('Lời dặn có từ phủ định') for w in page['warnings'])
 
 
+def test_general_document_disclaimer_does_not_trigger_medication_retry():
+    from medical_document_worker import page_schema
+    assert next(iter(page_schema('prescription')['properties']['medicines']['items']['properties'])) == 'evidence'
+    page = sample_page()
+    page['medicines'] = [dict(name='Mẫu A', ingredients='', dose='1 viên', frequency='', instructions='sau ăn',
+                              evidence='Mẫu A (không phải thuốc thật) 1 viên sau ăn', unclear=False)]
+    validate_page(page)
+    assert not needs_detail_read(page)
+
+
 def test_deficient_small_scan_gets_bounded_retry_without_upsampling_or_clear_page_penalty():
     calls = []
     def transport(method, url, headers, data=None):

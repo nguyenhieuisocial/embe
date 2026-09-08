@@ -1,12 +1,13 @@
 # Hồ sơ thai kỳ — đọc và đối chiếu giấy tờ
 
-## Bảng thuốc, lời dặn nhiều dòng và ảnh nhỏ — 08/09/2026, `medical-source-v5`
+## Bảng thuốc, lời dặn nhiều dòng và ảnh nhỏ — 08/09/2026, `medical-source-v5.1`
 
 - Đối chiếu thêm bảng thuốc từ lớp chữ PDF khi có tiêu đề cột rõ và các ô phân cách tab/pipe. Giữ riêng tên/hàm lượng, liều mỗi lần, số lần, đường dùng, thời gian và số lượng cấp. Không suy liều từ số viên; không lấy bảng giá thuốc thành đơn uống. Bảng thiếu cột, lệch hàng hoặc tên lặp không được ghép đoán. PDF không có lớp chữ/bảng rõ vẫn dùng ảnh và AI hiện có.
 - Lời dặn/kết luận nhiều dòng được giữ thành một mục khi có nhãn đầu và nhãn kết thúc rõ trên cùng trang; không nối qua trang, khoảng trống hoặc cột không rõ. Nội dung vượt giới hạn vẫn còn trong lớp chữ gốc, không cắt rồi coi là đủ. Nguồn PDF khác AI được giữ riêng, không thay bản người dùng đã sửa.
 - Kiểm tra cả chữ ở tên, thành phần, liều, tần suất, cách dùng; cảnh báo khi câu trích có “không/ngừng/tránh” mà bản đọc bỏ sót. Những dấu này chỉ phát hiện mâu thuẫn, không chứng minh OCR đúng. Chỗ có mâu thuẫn được ưu tiên đọc lại và luôn cần đối chiếu đơn gốc.
+- Với thuốc, cấu trúc sinh bắt buộc chép đoạn nguồn trước các ô liều/thành phần, tránh lấy câu cuối trang làm chứng cứ cho dòng thuốc. Cảnh báo phủ định giới hạn ở cách dùng (“không uống”, “ngừng dùng”…), không nhầm chú thích tài liệu với chỉ dẫn uống thuốc. Lượt web đầu trên ảnh 1000×1800px bắt được dòng trùng/chân trang bị coi là thuốc; chưa coi lần đó là đạt, hai hồ sơ mẫu và phiên kiểm tra đã được dọn.
 - Ảnh chia sẻ nhỏ hơn 2.000px được đọc thêm tối đa 2–3 vùng nếu lượt đầu rỗng, thiếu nội dung hoặc bị cắt. Không phóng đại tạo điểm ảnh; ảnh có cạnh ngắn dưới 600px chỉ báo cần ảnh rõ hơn. Ảnh đọc đủ ở lượt đầu không bị tăng số lượt gọi AI.
-- Không thêm model/dịch vụ trả phí, đổi database/quyền, chạy lại hồ sơ cũ hay tự ghi liều vào lịch thuốc. Bộ kiểm tra Python: 73 đạt; portal: 62 kiểm tra bản đọc/import/mobile-shell đạt. AI local trên sáu mẫu giả lập: đúng 6/6 loại và 16/16 nhóm ô mục tiêu, 12,14–28,25 giây, không tính hàng đợi. Đây không phải độ chính xác đo trên hồ sơ thật hay cam kết 100%.
+- Không thêm model/dịch vụ trả phí, đổi database/quyền, chạy lại hồ sơ cũ hay tự ghi liều vào lịch thuốc. Bộ kiểm tra Python: 74 đạt; portal: 62 kiểm tra bản đọc/import/mobile-shell đạt. AI local bản v5.1 trên sáu mẫu giả lập: đúng 6/6 loại và 16/16 nhóm ô mục tiêu, 10,26–28,64 giây, không tính hàng đợi. Đây không phải độ chính xác đo trên hồ sơ thật hay cam kết 100%.
 - Verifier hiện có `medical-intake-live-smoke.mjs` hỗ trợ `EMBE_VERIFY_DOCUMENT_COMPACT=1` cùng `EMBE_VERIFY_DOCUMENT_KIND=prescription`, kiểm tra ảnh nhỏ qua web, lưu, mở lại, liên kết lần khám và giữ nguyên bản gốc. Kết quả thực tế nằm trong `data/medical-recognition-verification/`; dữ liệu mẫu không đưa vào Git.
 
 ## Đối chiếu chữ gốc và giữ chi tiết ảnh — 07/09/2026, `medical-source-v3`
