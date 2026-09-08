@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { validDocumentAnalysis, documentAnalysisText, editableDocumentAnalysis, type DocumentAnalysis } from '../src/lib/medical-document-scan';
 import MedicalDocumentReview from '../src/components/medical-document-review';
 
@@ -14,7 +14,12 @@ const context = { params: Promise.resolve({ id }) };
 const analysis: DocumentAnalysis = { version: 1, pages: [{ page: 1, kind: 'ultrasound', title: 'Siêu âm mẫu',
   fields: [{ label: 'CRL', value: '45,6', unit: 'mm', reference: '', evidence: 'CRL 45,6 mm', unclear: true }], medicines: [], charges: [], warnings: [] }] };
 const record = { documentId: id, recordId: id, filename: 'mau.pdf', mimeType: 'application/pdf', status: 'review', revision: 3, analysis, completedPages: 1, pageCount: 1 };
-afterEach(() => { mock.denied = false; mock.calls.mockReset(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+const originalScroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView');
+afterEach(() => {
+  mock.denied = false; mock.calls.mockReset(); vi.restoreAllMocks(); vi.unstubAllGlobals();
+  if (originalScroll) Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScroll);
+  else delete (HTMLElement.prototype as Partial<HTMLElement>).scrollIntoView;
+});
 
 describe('document recognition contract', () => {
   it('accepts bounded original PDF text without expanding editable analysis', () => {
@@ -89,6 +94,48 @@ describe('document recognition contract', () => {
 });
 
 describe('document review UX', () => {
+  it('links a multi-page overview to the correct source and keeps unsaved edits', async () => {
+    const a = structuredClone(analysis);
+    a.pages[0].fields.push({ label: 'Họ tên', value: 'Người mẫu A', unit: '', reference: '', evidence: 'Họ tên Người mẫu A', unclear: false });
+    a.pages.push({ ...structuredClone(a.pages[0]), page: 2, title: 'Trang thứ hai', fields: [
+      { label: 'Họ tên', value: 'Người mẫu B', unit: '', reference: '', evidence: 'Họ tên Người mẫu B', unclear: false },
+      { label: 'CRL', value: '46,0', unit: 'mm', reference: '', context: 'Lần khám khác', evidence: 'CRL 46,0 mm', unclear: false }
+    ] });
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ...record, analysis: a, completedPages: 2, pageCount: 2 })));
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: scroll });
+    const { container } = render(<MedicalDocumentReview documentId={id} />);
+    const overview = within(await screen.findByRole('region', { name: 'Tổng quan tài liệu' }));
+    expect(overview.getByText(/Có nhiều tên người bệnh/)).toBeInTheDocument();
+    fireEvent.change(screen.getAllByLabelText('Tiêu đề')[0], { target: { value: 'Bản chưa lưu' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Chỉ xem mục cần kiểm tra' }));
+    expect(container.querySelectorAll('.document-row.needs-review')).toHaveLength(4);
+    fireEvent.click(overview.getByText('2 điểm khác nhau cần đối chiếu'));
+    fireEvent.click(overview.getAllByRole('button', { name: 'Đối chiếu CRL · trang 2' })[0]);
+    await waitFor(() => expect(document.getElementById(`document-${id}-2:fields:1`)).toHaveAttribute('open'));
+    const target = document.getElementById(`document-${id}-2:fields:1`)!;
+    expect(target.querySelector('summary')).toHaveFocus();
+    expect(scroll).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Chỉ xem mục cần kiểm tra' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getAllByLabelText('Tiêu đề')[0]).toHaveValue('Bản chưa lưu');
+    expect(within(target).getByLabelText('Nội dung / kết quả')).toHaveValue('46,0');
+    expect(within(target).getByLabelText('Mục này vẫn cần kiểm tra lại')).not.toBeChecked();
+    // A source jump neither confirms the document nor submits anything.
+    expect(screen.getByRole('button', { name: 'Lưu bản đối chiếu' })).toBeDisabled();
+  });
+  it('updates derived comparisons when edited and escapes the summary content', async () => {
+    const a = structuredClone(analysis);
+    a.pages[0].fields = [{ label: 'Kết luận', value: '<img src=x onerror=alert(1)>', unit: '', reference: '', evidence: 'Mẫu', unclear: false, pdfValue: 'Nguyên văn', pdfEvidence: 'Kết luận: Nguyên văn' }];
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ...record, analysis: a })));
+    render(<MedicalDocumentReview documentId={id} />);
+    const overview = await screen.findByRole('region', { name: 'Tổng quan tài liệu' });
+    expect(overview.querySelector('img')).toBeNull();
+    expect(within(overview).getByText('1 điểm khác nhau cần đối chiếu')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Nội dung / kết quả'), { target: { value: 'Nguyên văn' } });
+    expect(within(overview).queryByText('1 điểm khác nhau cần đối chiếu')).not.toBeInTheDocument();
+    expect(within(overview).getByText('Nguyên văn')).toBeInTheDocument();
+    expect(within(overview).getByText(/vẫn cần đối chiếu bản gốc/)).toBeInTheDocument();
+  });
   it('shows read-only PDF text safely but never resubmits it as editable data', async () => {
     const a = structuredClone(analysis);
     a.pages[0].pdfText = 'Dòng chưa phân loại\n<script>sourceNotCode()</script>';

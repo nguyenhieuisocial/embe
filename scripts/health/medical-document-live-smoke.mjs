@@ -14,9 +14,12 @@ const health = await (await fetch(`${origin}/api/health`)).json();
 if (health.version !== expected) { console.log(JSON.stringify({ pending: true, version: health.version })); process.exit(2); }
 const output = resolve('data/medical-recognition-verification');
 await mkdir(output, { recursive: true });
-const bytes = await readFile(resolve(output, 'receipt_long-dense.jpg'));
+const ruledPdf = process.argv.includes('--ruled-pdf');
+const bytes = await readFile(ruledPdf ? resolve('services/media-ingest/tests/fixtures/synthetic-ruled-medical.pdf') : resolve(output, 'receipt_long-dense.jpg'));
+const filename = ruledPdf ? 'EMBE_SYNTHETIC_RULED_TABLES.pdf' : 'EMBE_SYNTHETIC_RECEIPT.jpg';
+const mimeType = ruledPdf ? 'application/pdf' : 'image/jpeg';
 const recordId = randomUUID(); const documentId = randomUUID();
-const result = { version: expected, recordId, documentId, syntheticOnly: true, browser: 'isolated Cent Browser', widths: [] };
+const result = { version: expected, recordId, documentId, syntheticOnly: true, fixture: filename, browser: 'isolated Cent Browser', widths: [] };
 await writeFile(resolve(output, 'live-result.json'), JSON.stringify(result, null, 2));
 const browser = await chromium.launch({ headless: true, executablePath: 'C:/Users/Admin/AppData/Local/CentBrowser/Application/chrome.exe' });
 const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
@@ -44,12 +47,12 @@ try {
   if (![200, 201].includes(saved.status())) throw new Error(`record_create_${saved.status()}`);
   created = true;
   const upload = await jsonRequest(`/api/pregnancy/records/${recordId}/documents`, 'POST', {
-    documentId, filename: 'EMBE_SYNTHETIC_RECEIPT.jpg', mimeType: 'image/jpeg', byteSize: bytes.length
+    documentId, filename, mimeType, byteSize: bytes.length
   });
   if (upload.status() !== 201) throw new Error(`upload_session_${upload.status()}`);
   const { uploadUrl } = await upload.json();
   if (new URL(uploadUrl).origin !== 'https://tpqqzowhndbkmkckpbgv.supabase.co') throw new Error('unexpected_upload_origin');
-  const form = new FormData(); form.append('cacheControl', '0'); form.append('', new Blob([bytes], { type: 'image/jpeg' }), 'EMBE_SYNTHETIC_RECEIPT.jpg');
+  const form = new FormData(); form.append('cacheControl', '0'); form.append('', new Blob([bytes], { type: mimeType }), filename);
   const uploaded = await fetch(uploadUrl, { method: 'PUT', headers: { 'x-upsert': 'false' }, body: form });
   if (!uploaded.ok) throw new Error(`upload_${uploaded.status}`);
   if ((await jsonRequest(`/api/pregnancy/documents/${documentId}`, 'POST', {})).status() !== 202) throw new Error('upload_complete');
@@ -58,22 +61,48 @@ try {
   const endpoint = `/api/pregnancy/documents/${documentId}/scan`;
   const started = Date.now();
   let scan;
-  while (Date.now() - started < 180000) {
+  while (Date.now() - started < (ruledPdf ? 300000 : 180000)) {
     scan = await (await context.request.get(`${origin}${endpoint}`)).json();
     if (scan.status === 'review') break;
     if (scan.status === 'failed') throw new Error(`scan_failed_${scan.error}`);
     await new Promise(resolve => setTimeout(resolve, 3000));
   }
-  if (scan?.status !== 'review' || scan.analysis?.pages[0]?.kind !== 'receipt') throw new Error('recognition_incomplete');
+  if (scan?.status !== 'review' || scan.analysis?.pages[0]?.kind !== (ruledPdf ? 'laboratory' : 'receipt')) throw new Error('recognition_incomplete');
   result.secondsUntilReview = (Date.now() - started) / 1000;
   result.pageCount = scan.analysis.pages.length;
-  result.charges = scan.analysis.pages[0].charges.length;
-  result.receiptLineAmounts = ['251.000', '254.500', '279.000', '289.500', '3.200.000'].every(amount => scan.analysis.pages[0].charges.some(row => row.amount.includes(amount)));
+  const receipt = scan.analysis.pages[ruledPdf ? 2 : 0];
+  result.charges = receipt.charges.length;
+  result.receiptLineAmounts = (ruledPdf ? ['250.000', '350.000', '50.000', '550.000'] : ['251.000', '254.500', '279.000', '289.500', '3.200.000']).every(amount => receipt.charges.some(row => row.amount.includes(amount)));
   if (!result.receiptLineAmounts) throw new Error('receipt_line_items_missing');
+  if (ruledPdf) {
+    const [lab, prescription] = scan.analysis.pages;
+    result.pdfTables = lab.fields.some(row => row.label === 'HGB' && row.value === '11,2' && row.unit === 'g/dL' && row.pdfEvidence?.includes('|'))
+      && lab.fields.some(row => row.label === 'TSH' && row.value === '< 0,01' && row.unit === 'mIU/L')
+      && prescription.kind === 'prescription' && prescription.medicines.some(row => row.dose === '1 viên' && row.quantity === '10 viên' && row.duration === '5 ngày' && row.instructions.includes('không uống khi đói'))
+      && receipt.kind === 'receipt' && receipt.charges.some(row => row.amount === '250.000' && row.quantity === '2' && row.unitPrice === '125.000');
+    result.allOriginalTextRetained = scan.analysis.pages.every(page => page.pdfText?.includes('KHÔNG DÙNG ĐỂ ĐIỀU TRỊ'));
+    if (!result.pdfTables || !result.allOriginalTextRetained) throw new Error('pdf_layout_or_source_missing');
+  }
   result.noEmptyExtractedFields = scan.analysis.pages[0].fields.every(row => [row.value, row.unit, row.reference].some(value => value.trim()));
   if (!result.noEmptyExtractedFields) throw new Error('empty_model_fields');
-  console.log('Synthetic receipt uploaded and recognized through the live worker.');
+  console.log('Synthetic document uploaded and recognized through the live worker.');
   await page.getByText('Đã đọc · cần đối chiếu', { exact: true }).waitFor();
+  if (ruledPdf) {
+    const overview = page.getByRole('region', { name: 'Tổng quan tài liệu' });
+    await overview.getByText('Thông tin chính trên các trang', { exact: true }).click();
+    await overview.getByRole('button', { name: /Đối chiếu Họ.*trang 2/ }).first().click();
+    const target = page.locator('.document-page:not([hidden]) .document-row[open]').first();
+    if (!(await target.locator('summary').evaluate(node => node === document.activeElement))) throw new Error('source_jump_focus');
+    await page.getByRole('button', { name: /Xem toàn màn hình/ }).click();
+    const viewer = page.getByRole('dialog', { name: 'Xem tài liệu hồ sơ' });
+    const frame = viewer.locator('iframe');
+    await frame.waitFor();
+    if (!(await frame.getAttribute('src')).endsWith('#page=2')) throw new Error('pdf_source_wrong_page');
+    await viewer.getByRole('button', { name: 'Quay lại hồ sơ', exact: true }).click();
+    await viewer.waitFor({ state: 'hidden' });
+    result.sourceJumpAndReturn = true;
+    await page.getByRole('navigation', { name: 'Chọn trang tài liệu' }).getByRole('button', { name: /Trang 3/ }).click();
+  } else {
   await page.getByRole('button', { name: 'Xem bản gốc ngay tại đây' }).click();
   const originalImage = page.getByRole('img', { name: 'Bản gốc tài liệu để đối chiếu' });
   await originalImage.evaluate(node => node.decode());
@@ -85,23 +114,26 @@ try {
   await page.keyboard.press('ArrowDown');
   result.inlineOriginalZoom = true;
   await page.getByRole('button', { name: 'Thu gọn bản gốc' }).click();
+  }
   await page.getByRole('button', { name: 'Chỉ xem mục cần kiểm tra' }).click();
   if (await page.locator('.document-row:not(.needs-review):visible').count()) throw new Error('uncertainty_filter');
   await page.getByRole('button', { name: 'Xem tất cả các mục' }).click();
   result.uncertaintyFilter = true;
-  await page.getByLabel('Tiêu đề', { exact: true }).fill('Phiếu thu mẫu đã đối chiếu');
-  await page.getByRole('button', { name: /Thêm khoản thu/ }).click();
-  const row = page.locator('.document-group').filter({ has: page.getByRole('heading', { name: /Khoản thu và thanh toán/ }) }).locator('details').last();
+  const activePage = page.locator('.document-page:not([hidden])');
+  await activePage.getByLabel('Tiêu đề', { exact: true }).fill('Phiếu thu mẫu đã đối chiếu');
+  await activePage.getByRole('button', { name: /Thêm khoản thu/ }).click();
+  const row = activePage.locator('.document-group').filter({ has: page.getByRole('heading', { name: /Khoản thu và thanh toán/ }) }).locator('details').last();
   await row.locator('summary').click();
   await row.getByLabel('Tên mục / chỉ số', { exact: true }).fill('Khoản mẫu chỉnh tay');
-  await row.getByLabel('Số tiền nguyên văn').fill('0');
+  await row.getByLabel('Thành tiền nguyên văn').fill('0');
   await row.getByLabel('Tiền tệ trên phiếu').fill('VND');
   await page.getByLabel('Tôi đã đối chiếu các trang với bản gốc').check();
   await page.getByRole('button', { name: 'Lưu bản đối chiếu' }).click();
   await page.getByText('Đã lưu bản đối chiếu vào tài liệu này.', { exact: true }).waitFor();
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.getByText('Đã xác nhận', { exact: true }).waitFor();
-  if (await page.getByLabel('Tiêu đề', { exact: true }).inputValue() !== 'Phiếu thu mẫu đã đối chiếu') throw new Error('edit_not_persisted');
+  if (ruledPdf) await page.getByRole('navigation', { name: 'Chọn trang tài liệu' }).getByRole('button', { name: /Trang 3/ }).click();
+  if (await activePage.getByLabel('Tiêu đề', { exact: true }).inputValue() !== 'Phiếu thu mẫu đã đối chiếu') throw new Error('edit_not_persisted');
   if (!(await page.getByText('Khoản mẫu chỉnh tay', { exact: true }).isVisible())) throw new Error('added_row_not_persisted');
   result.editAddConfirmReload = true;
   const stale = await jsonRequest(endpoint, 'PATCH', { revision: scan.revision, analysis: scan.analysis, confirmed: true });
@@ -110,6 +142,12 @@ try {
   const original = await context.request.get(`${origin}/api/pregnancy/documents/${documentId}`);
   if (original.status() !== 200 || !(await original.body()).equals(bytes)) throw new Error('original_changed');
   result.originalUnchanged = true;
+  if (ruledPdf) {
+    const overview = page.getByRole('region', { name: 'Tổng quan tài liệu' });
+    await overview.getByText('Thông tin chính trên các trang', { exact: true }).click();
+    const comparison = overview.locator('.document-overview-differences > summary');
+    if (await comparison.count()) await comparison.click();
+  }
   for (const width of [375, 393, 430, 412, 768, 1280]) {
     await page.setViewportSize({ width, height: 852 });
     const metrics = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth + 1,
@@ -121,7 +159,7 @@ try {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.getByRole('heading', { name: 'Đọc & đối chiếu', exact: true }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({ path: resolve(output, 'live-review-iphone.png'), fullPage: true });
+  await page.screenshot({ path: resolve(output, ruledPdf ? 'live-pdf-overview-iphone.png' : 'live-review-iphone.png'), fullPage: true });
   result.status = 'passed';
 } catch (error) {
   // Playwright request errors can contain cookies; never print their stack or call log.

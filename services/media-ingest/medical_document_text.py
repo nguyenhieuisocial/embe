@@ -12,6 +12,12 @@ def text_key(value: str) -> str:
     return ' '.join(unicodedata.normalize('NFC', value).casefold().strip(' :：').split())
 
 
+def source_value_key(value: str) -> str:
+    # Units and prefixes are case-sensitive (mIU is not MIU). Only normalize
+    # harmless spacing/Unicode, never numbers, punctuation, accents or case.
+    return ' '.join(unicodedata.normalize('NFC', value).split())
+
+
 LABELS = {
     'họ tên', 'họ và tên', 'họ tên người bệnh', 'họ và tên người bệnh',
     'họ tên bệnh nhân', 'tên bệnh nhân', 'người bệnh', 'bệnh nhân', 'ngày sinh',
@@ -145,7 +151,7 @@ MEDICINE_COLUMNS = {'name': 100, 'ingredients': 1200, 'dose': 80, 'frequency': 8
                     'instructions': 200, 'route': 80, 'duration': 80, 'quantity': 80}
 
 
-def pdf_table_candidates(printed: str) -> list[tuple[str, dict]]:
+def pdf_table_candidates(printed: str, *, warnings: list[str] | None = None) -> list[tuple[str, dict]]:
     candidates = []
     header = None
     delimiter = None
@@ -183,6 +189,8 @@ def pdf_table_candidates(printed: str) -> list[tuple[str, dict]]:
                   if group == 'fields' else {'label': 160, 'amount': 80, 'currency': 20, 'quantity': 80, 'unitPrice': 80})
         required = 'name' if group == 'medicines' else 'value' if group == 'fields' else 'amount'
         if not data.get(required) or any(len(v) > limits[k] for k, v in data.items()):
+            if warnings is not None:
+                warnings.append('Một dòng bảng thiếu giá trị hoặc vượt giới hạn; chưa tự đưa vào bản đọc, cần xem trang gốc.')
             continue
         row = {key: data.get(key, '') for key in limits}
         row.update(evidence=line, unclear=True)
@@ -191,18 +199,25 @@ def pdf_table_candidates(printed: str) -> list[tuple[str, dict]]:
         candidates.append((group, row))
     # Repeated labels without a distinguishing printed context are ambiguous.
     identities = [(group, text_key(row.get('name', row.get('label', ''))), text_key(row.get('context', ''))) for group, row in candidates]
+    if warnings is not None and len(set(identities)) != len(identities):
+        warnings.append('Bảng có nhãn lặp nhưng thiếu ngữ cảnh phân biệt; chưa ghép các dòng này vào kết quả, cần xem trang gốc.')
     return [entry for index, entry in enumerate(candidates) if identities.count(identities[index]) == 1]
 
 
 def reconcile_pdf_tables(page: dict, printed: str, limits: dict[str, int]) -> None:
     added = conflicts = 0
-    for group, candidate in pdf_table_candidates(printed):
+    notices = []
+    for group, candidate in pdf_table_candidates(printed, warnings=notices):
         keys = (tuple(MEDICINE_COLUMNS) if group == 'medicines' else
                 ('value', 'unit', 'reference', 'context') if group == 'fields' else ('amount', 'currency', 'quantity', 'unitPrice'))
         identity = 'name' if group == 'medicines' else 'label'
         matches = [row for row in page[group] if text_key(row[identity]) == text_key(candidate[identity])
                    and text_key(row.get('context', '')) == text_key(candidate.get('context', ''))]
-        if any(all(text_key(row.get(k, '')) == text_key(candidate.get(k, '')) for k in keys) for row in matches):
+        identical = [row for row in matches if all(source_value_key(row.get(k, '')) == source_value_key(candidate.get(k, '')) for k in keys)
+                     and (group != 'fields' or 'pdfValue' not in row or source_value_key(row['pdfValue']) == source_value_key(candidate['pdfValue']))]
+        if identical:
+            if group == 'fields' and len(matches) == 1 and not identical[0].get('pdfEvidence'):
+                identical[0].update(pdfValue=candidate['pdfValue'], pdfEvidence=candidate['pdfEvidence'])
             continue
         if len(page[group]) >= limits[group]:
             page['warnings'] = ['Bảng PDF còn dòng chưa đưa vào bản đọc; xem lớp chữ và trang gốc.', *page['warnings']][:8]
@@ -212,7 +227,6 @@ def reconcile_pdf_tables(page: dict, printed: str, limits: dict[str, int]) -> No
         conflicts += bool(matches)
         page[group].append(candidate)
         added += 1
-    notices = []
     if added:
         notices.append(f'Giữ thêm {added} dòng bảng từ chữ PDF; giữ nguyên dấu, đơn vị và các cột. Cần đối chiếu trang gốc.')
     if conflicts:

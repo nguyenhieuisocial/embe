@@ -1,9 +1,11 @@
 "use client";
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MedicalDocumentImport from './medical-document-import';
 import MedicalDocumentButton from './medical-document-viewer';
+import MedicalDocumentOverview, { documentSourceKey } from './medical-document-overview';
+import { buildDocumentOverview, type DocumentOverviewRef } from '../lib/medical-document-overview';
 import { DOCUMENT_TYPES, DOCUMENT_ROW_LIMITS, DOCUMENT_DETAIL_DEFAULTS, SCAN_ERROR_TEXT, documentAnalysisText, editableDocumentAnalysis, validDocumentAnalysis, withPrintedUnit,
   type DocumentAnalysis, type DocumentPage, type DocumentScan, type ExtractedField, type ExtractedMedicine, type ExtractedCharge } from '../lib/medical-document-scan';
 
@@ -17,7 +19,6 @@ const emptyRow = (group: Group): Row => group === 'fields' ? { label: '', value:
   : group === 'medicines' ? { name: '', ingredients: '', dose: '', frequency: '', instructions: '', evidence: '', unclear: true }
     : { label: '', amount: '', currency: '', evidence: '', unclear: true };
 const GROUPS: Record<Group, string> = { fields: 'Thông tin và chỉ số', medicines: 'Thuốc trên tài liệu', charges: 'Khoản thu và thanh toán' };
-const pageRows = (page: DocumentPage): Row[] => [...page.fields, ...page.medicines, ...page.charges];
 
 function DocumentOriginal({ documentId, scan, pageNumber }: { documentId: string; scan: DocumentScan; pageNumber: number }) {
   const [open, setOpen] = useState(false);
@@ -58,7 +59,28 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
   const [conflict, setConflict] = useState(false);
   const [selectedPage, setSelectedPage] = useState(0);
   const [onlyUnclear, setOnlyUnclear] = useState(false);
+  const [sourceTarget, setSourceTarget] = useState<DocumentOverviewRef | null>(null);
+  const overview = useMemo(() => draft ? buildDocumentOverview(draft) : null, [draft]);
+  const reviewKeys = useMemo(() => new Set(overview?.reviewRefs.map(documentSourceKey)), [overview]);
+  const needsReview = (page: number, group: Group, rowIndex: number) => reviewKeys.has(documentSourceKey({ page, group, rowIndex }));
+  const pageReviewCount = (page: number) => overview?.reviewRefs.filter(ref => ref.page === page).length ?? 0;
   const lock = useRef(false);
+
+  function selectSource(ref: DocumentOverviewRef) {
+    const index = draft?.pages.findIndex(page => page.page === ref.page) ?? -1;
+    if (index < 0) return;
+    setOnlyUnclear(false); setSelectedPage(index); setSourceTarget(ref);
+  }
+  useEffect(() => {
+    if (!sourceTarget) return;
+    const row = document.getElementById(`document-${documentId}-${documentSourceKey(sourceTarget)}`) as HTMLDetailsElement | null;
+    if (row) {
+      row.open = true;
+      row.scrollIntoView({ block: 'start', behavior: 'instant' });
+      row.querySelector('summary')?.focus({ preventScroll: true });
+    }
+    setSourceTarget(null);
+  }, [sourceTarget, documentId, selectedPage]);
 
   const load = useCallback(async () => {
     const response = await fetch(endpoint, { cache: 'no-store' });
@@ -160,16 +182,17 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
       }}>Nạp bản đã lưu mới nhất</button> : null}
     </div> : null}
     {draft ? <form onSubmit={event => { event.preventDefault(); void save(); }}>
+      {overview ? <MedicalDocumentOverview overview={overview} onSource={selectSource} /> : null}
       {scan ? <MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}
         onImported={async () => { await load(); setMessage('Đã lưu bản đọc và thêm dữ liệu đã xác nhận vào hồ sơ.'); }} /> : null}
       <p className="document-notice">Đối chiếu họ tên, ngày khám, đơn vị và liều với bản gốc. Đây là bản chép, không phải chẩn đoán hay đơn thuốc mới.</p>
       <div className="document-review-tools">
-        <p>{draft.pages.reduce((count, page) => count + pageRows(page).length, 0)} mục · {draft.pages.reduce((count, page) => count + pageRows(page).filter(row => row.unclear).length, 0)} cần kiểm tra lại</p>
+        <p>{overview?.counts.items} mục · {overview?.counts.needsReview} mục gắn cờ đối chiếu</p>
         <button type="button" aria-pressed={onlyUnclear} onClick={() => setOnlyUnclear(value => !value)}>{onlyUnclear ? 'Xem tất cả các mục' : 'Chỉ xem mục cần kiểm tra'}</button>
       </div>
       {draft.pages.length > 1 ? <nav className="document-page-picker" aria-label="Chọn trang tài liệu">
         {draft.pages.map((page, index) => <button key={page.page} type="button" aria-current={selectedPage === index ? 'page' : undefined} onClick={() => setSelectedPage(index)}>
-          Trang {page.page}<small>{DOCUMENT_TYPES[page.kind]} · {pageRows(page).filter(row => row.unclear).length} cần xem</small>
+          Trang {page.page}<small>{DOCUMENT_TYPES[page.kind]} · {pageReviewCount(page.page)} cần xem</small>
         </button>)}
       </nav> : null}
       {draft.pages.map((page, pageIndex) => <fieldset className="document-page" key={page.page} disabled={busy} hidden={selectedPage !== pageIndex}>
@@ -183,13 +206,14 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
           <pre tabIndex={0} aria-label={`Lớp chữ PDF trang ${page.page}`}>{page.pdfText}</pre>
         </details> : null}
         {page.warnings.length ? <ul className="document-warnings">{page.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul> : null}
-        {onlyUnclear && !pageRows(page).some(row => row.unclear) ? <p className="document-filter-empty" role="status">Trang này không có mục đang đánh dấu cần kiểm tra. Vẫn nên đối chiếu với bản gốc.</p> : null}
+        {onlyUnclear && !pageReviewCount(page.page) ? <p className="document-filter-empty" role="status">Trang này không có mục đang đánh dấu cần kiểm tra. Vẫn nên đối chiếu với bản gốc.</p> : null}
         {(Object.keys(GROUPS) as Group[]).map(group => <section key={group} className="document-group" aria-label={GROUPS[group]}>
           <h2>{GROUPS[group]} <span>{page[group].length}</span></h2>
-          {page[group].map((row, rowIndex) => <details key={rowIndex} hidden={onlyUnclear && !row.unclear} className={row.unclear ? 'document-row needs-review' : 'document-row'}>
+          {page[group].map((row, rowIndex) => <details key={rowIndex} id={`document-${documentId}-${documentSourceKey({ page: page.page, group, rowIndex })}`}
+            hidden={onlyUnclear && !needsReview(page.page, group, rowIndex)} className={needsReview(page.page, group, rowIndex) ? 'document-row needs-review' : 'document-row'}>
             <summary><span><strong>{'name' in row ? row.name || 'Thuốc chưa ghi tên' : row.label || 'Mục mới'}</strong>
               <small>{'value' in row ? [withPrintedUnit(row.value, row.unit), row.context].filter(Boolean).join(' · ') : 'amount' in row ? withPrintedUnit(row.amount, row.currency) : [row.dose, row.frequency].filter(Boolean).join(' · ')}</small></span>
-              <span>{row.unclear ? 'Chưa rõ' : 'Sửa'}</span></summary>
+              <span>{row.unclear ? 'Chưa rõ' : needsReview(page.page, group, rowIndex) ? 'Đối chiếu' : 'Sửa'}</span></summary>
             <div className="document-row-form">
               {Object.entries({ ...row, ...Object.fromEntries(Object.entries(DOCUMENT_DETAIL_DEFAULTS[group]).filter(([key]) => !(key in row))) }).filter(([key]) => !['evidence', 'unclear', 'pdfValue', 'pdfEvidence'].includes(key)).map(([key, value]) => <label key={key}>{key === 'quantity' && group === 'medicines' ? 'Số lượng cấp phát (không phải liều)' : FIELD_LABELS[key] ?? key}
                 {['value', 'ingredients', 'instructions'].includes(key)

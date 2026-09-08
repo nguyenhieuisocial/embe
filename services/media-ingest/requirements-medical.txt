@@ -1,3 +1,4 @@
 # Existing local model; no external inference service.
 Pillow==12.3.0
 pypdfium2==5.13.0
+pdfplumber==0.11.10

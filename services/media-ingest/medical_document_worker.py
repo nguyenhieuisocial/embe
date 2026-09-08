@@ -21,6 +21,7 @@ from PIL import Image, ImageOps
 
 from meal_analysis_worker import Config, MealAnalysisWorker, _load_env, _write_status
 from medical_document_text import reconcile_pdf_fields, reconcile_pdf_tables, text_key
+from medical_document_layout import extract_pdf_layout, LayoutReading
 
 KINDS = ['receipt', 'prescription', 'ultrasound', 'laboratory', 'clinical', 'discharge', 'other']
 LIMITS = {
@@ -36,7 +37,7 @@ DETAILS = {
     'charges': {'quantity': 80, 'unitPrice': 80},
 }
 PAGE_COUNTS = {'fields': 64, 'medicines': 24, 'charges': 80}
-ENGINE_REVISION = 'medical-source-v5.1'
+ENGINE_REVISION = 'medical-source-v5.2'
 SOURCE_LIMITS = {'pdfValue': 1600, 'pdfEvidence': 1800}
 MAX_BYTES = 15_000_000
 MAX_PAGES = 6
@@ -53,6 +54,7 @@ Giữ dạng bào chế và hàm lượng trong tên thuốc nếu được in. 
 charges: từng khoản thu và dòng tổng/giảm giá/phải trả/đã thanh toán ghi đúng label, amount nguyên văn và currency; không tự cộng, không mặc định tiền tệ nếu không in. Với bảng có số lượng/đơn giá/thành tiền, amount là thành tiền của dòng, evidence chép cả dòng để đối chiếu; không lấy nhầm đơn giá làm thành tiền.
 Đọc bảng theo từng hàng, không ghép kết quả/đơn vị/khoảng tham chiếu của hai hàng khác nhau. Với bệnh án/ra viện, chép chẩn đoán đã IN, ngày vào/ra viện, thủ thuật và lời dặn vào fields; không tự đưa ra kết luận mới.
 Mỗi dòng có evidence là cụm chữ đọc được trên trang; unclear=true nếu nhòe, chữ viết tay khó đọc, đơn vị hoặc số không chắc chắn. Không tự cho điểm chính xác.
+Với mọi dòng, chép evidence trước rồi tách nhãn, giá trị và đơn vị từ chính câu trích đó. Không tạo giá trị trước rồi viết câu trích để hợp thức hóa. Câu trích phải giữ từ phủ định, dấu < >, dấu âm và ngữ cảnh thời điểm của hàng.
 Không thấy thì để chuỗi rỗng hoặc mảng rỗng. Giữ dấu phẩy/chấm, < >, khoảng số, đơn vị mg/mcg/mm/cm/ngày/tháng như bản gốc; không đổi đơn vị hay đảo ngày tháng.
 Đọc cả đầu trang, bảng ở giữa và cuối trang. Giữ ngày sinh, mã bệnh nhân/mã phiếu, địa chỉ cơ sở, khoa, ngày giờ lấy mẫu/trả kết quả, số hóa đơn, bảo hiểm, chẩn đoán in sẵn và mã ICD, kết luận, lời dặn, ngày hẹn nếu có chữ. Không bỏ một mục chỉ vì không thuộc ví dụ.
 fields.context: chép ngữ cảnh IN trên phiếu gắn với đúng kết quả (thai A/B, lúc đói/sau ăn, 0 giờ/1 giờ/2 giờ, ngày giờ đo, loại mẫu hoặc ký hiệu H/L). Không gộp các lần đo hay các thai thành một kết quả. Giữ khoảng tham chiếu trong reference, không tự đánh giá bình thường/bất thường.
@@ -76,9 +78,10 @@ def page_schema(kind: str = '') -> dict[str, Any]:
     order = ['medicines', 'fields', 'charges'] if kind == 'prescription' else ['fields', 'medicines', 'charges'] if kind in {'laboratory', 'ultrasound', 'clinical', 'discharge'} else ['charges', 'medicines', 'fields']
     for name in order:
         fields = {**LIMITS[name], **DETAILS[name]}
-        if name == 'medicines':
-            # Source-first structured decoding anchors medicine cells to their
-            # own printed block, rather than a footer generated after the values.
+        # Medical readings benefit from source-first decoding. Receipts keep
+        # their name/column mapping first: otherwise the model may emit only
+        # the service name as evidence and replace its label with a header.
+        if name != 'charges':
             fields = {'evidence': fields['evidence'], **{k: v for k, v in fields.items() if k != 'evidence'}}
         item = {key: {'type': 'string', 'maxLength': limit} for key, limit in fields.items()}
         if name == 'medicines':
@@ -449,9 +452,20 @@ def needs_detail_read(page: dict[str, Any]) -> bool:
     return False
 
 
-def attach_pdf_source(page: dict[str, Any], printed: str) -> dict[str, Any]:
+def attach_pdf_source(page: dict[str, Any], printed: str, table_text: str = '', layout_warnings=()) -> dict[str, Any]:
+    # Keep original coverage/medicine warnings even if several independent
+    # source passes add notices. A successful table read cannot clear them.
+    original_warnings = list(page['warnings'])
     reconcile_pdf_fields(page, printed, PAGE_COUNTS['fields'])
     reconcile_pdf_tables(page, printed, PAGE_COUNTS)
+    if table_text:
+        reconcile_pdf_tables(page, table_text, PAGE_COUNTS)
+    combined = list(dict.fromkeys([*original_warnings, *layout_warnings, *page['warnings']]))
+    critical = ('Chưa đọc hết', 'Trang vượt', 'Đã chạm giới hạn', 'Bản đọc có thể chưa đủ', 'Đã đọc lại vùng chi tiết',
+                'Lời dặn có từ phủ định', 'Tên hoặc cách dùng thuốc chưa khớp', 'Có số hoặc đơn vị chưa khớp')
+    combined.sort(key=lambda warning: not warning.startswith(critical))
+    page['warnings'] = combined if len(combined) <= 8 else [*combined[:7],
+        'Còn cảnh báo về nguồn hoặc phần chưa đọc đủ; không coi bản đọc là đầy đủ. Đối chiếu toàn bộ bảng, lời dặn và từng trang gốc trước khi sử dụng.']
     if printed.strip():
         if len(printed) > 48000 or re.search(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', printed):
             raise ScanFailure('text_layer_too_large')
@@ -468,7 +482,12 @@ class MedicalDocumentWorker:
         self.transport = bridge.transport
         self.rpc = rpc or bridge._rpc
 
-    def analyze_page(self, image: bytes, printed: str, *, detailed: bool = True, progress=None) -> dict[str, Any]:
+    def analyze_page(self, image: bytes, printed: str, *, detailed: bool = True, progress=None, table_text: str = '', layout_warnings=()) -> dict[str, Any]:
+        # Layout is an independent PDF extraction, not another model's opinion.
+        # Full source is preserved below even when the bounded AI prompt is short.
+        model_source = ('Bảng đọc theo ô từ đường kẻ PDF (vẫn có thể sai, không tự tin hơn ảnh):\n' + table_text + '\nChữ toàn trang:\n' + printed) if table_text else printed
+        def finish(page):
+            return attach_pdf_source(page, printed, table_text, layout_warnings)
         views = page_views(image) if detailed else [image]
         with Image.open(io.BytesIO(image)) as source:
             # Ordinary A4/phone scans keep their original detail first. Sending
@@ -477,9 +496,9 @@ class MedicalDocumentWorker:
             initial_views = views if max(source.size) / min(source.size) > 2.2 else [image]
         first = None
         try:
-            first = self._read_views(initial_views, printed)
+            first = self._read_views(initial_views, model_source)
             if not needs_detail_read(first):
-                return attach_pdf_source(first, printed)
+                return finish(first)
         except ScanFailure as error:
             if error.code != 'unreadable_output':
                 raise
@@ -494,7 +513,7 @@ class MedicalDocumentWorker:
                 raise ScanFailure('unreadable_output')
             first['warnings'].insert(0, 'Bản đọc có thể chưa đủ chi tiết; đối chiếu bảng và các dòng cuối trang, bổ sung mục còn thiếu.')
             first['warnings'] = first['warnings'][:8]
-            return attach_pdf_source(first, printed)
+            return finish(first)
         readings = [first] if first else []
         incomplete = False
         for view in views[1:]:
@@ -508,10 +527,10 @@ class MedicalDocumentWorker:
         if not readings:
             raise ScanFailure('unreadable_output')
         result = merge_page_readings(readings, incomplete)
-        check_evidence(result, printed)
+        check_evidence(result, model_source)
         if needs_detail_read(result):
             result['warnings'] = ['Đã đọc lại vùng chi tiết nhưng chưa nhận đủ nội dung chính. Không suy đoán phần thiếu; đối chiếu trang gốc.', *result['warnings']][:8]
-        return attach_pdf_source(result, printed)
+        return finish(result)
 
     def _read_views(self, views: list[bytes], printed: str, crop: bool = False, kind: str = '') -> dict[str, Any]:
         payload = {'model': self.config.ollama_model, 'stream': False, 'think': False, 'format': page_schema(kind),
@@ -567,7 +586,8 @@ class MedicalDocumentWorker:
             pages = []
             for number, (image, printed, count) in enumerate(document_pages(response.body, item['mime_type']), 1):
                 self.rpc('embe_progress_document_scan', {'p_document_id': document_id, 'p_claim_token': token, 'p_completed': number - 1, 'p_total': count})
-                pages.append({'page': number, **self.analyze_page(image, printed, progress=lambda: self.rpc(
+                layout = extract_pdf_layout(response.body, number) if item['mime_type'] == 'application/pdf' else LayoutReading()
+                pages.append({'page': number, **self.analyze_page(image, printed, table_text=layout.table_text, layout_warnings=layout.warnings, progress=lambda: self.rpc(
                     'embe_progress_document_scan', {'p_document_id': document_id, 'p_claim_token': token, 'p_completed': number - 1, 'p_total': count}))})
             analysis = {'version': 1, 'pages': pages}
             structured = {'version': 1, 'pages': [{k: v for k, v in page.items() if k != 'pdfText'} for page in pages]}
