@@ -40,9 +40,16 @@ it('switching voices stops/unmounts the old audio and does not autoplay the new 
   fireEvent.click(screen.getByRole('button',{name:'Nghe mẫu Mỹ Duyên'}));
   const next=document.querySelector('audio');expect(next?.getAttribute('src')).toContain('my-duyen-south-v2');expect(next?.getAttribute('preload')).toBe('none');expect(next?.autoplay).toBe(false);
 });
-it('preview tempo preserves pitch and changing speed requires an explicit play again',()=>{
+it('preview tempo preserves pitch, player and position when changing speed',()=>{
   const {rerender}=render(<SouthernVoiceSample voice="thuc-doan-south-v2" speed={.95}/>);
   fireEvent.click(screen.getByRole('button',{name:'Nghe mẫu Thục Đoan'}));const audio=document.querySelector('audio')!;fireEvent.loadedMetadata(audio);
   expect(audio.playbackRate).toBe(.95);expect(audio.preservesPitch).toBe(true);
-  rerender(<SouthernVoiceSample voice="thuc-doan-south-v2" speed={1.05}/>);expect(document.querySelector('audio')).toBeNull();
+  audio.currentTime=3;
+  const pauses=vi.mocked(audio.pause).mock.calls.length;
+  const loads=vi.mocked(audio.load).mock.calls.length;
+  rerender(<SouthernVoiceSample voice="thuc-doan-south-v2" speed={1.05}/>);
+  expect(document.querySelector('audio')).toBe(audio);
+  expect(audio.currentTime).toBe(3);expect(audio.playbackRate).toBe(1.05);
+  expect(audio.preservesPitch).toBe(true);expect(audio.autoplay).toBe(false);
+  expect(audio.pause).toHaveBeenCalledTimes(pauses);expect(audio.load).toHaveBeenCalledTimes(loads);
 });

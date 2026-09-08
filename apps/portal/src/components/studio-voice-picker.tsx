@@ -8,6 +8,9 @@ function SamplePlayer({voice,speed}:{voice:SampleVoice;speed:StudioVoice['speed'
   const [open,setOpen]=useState(false),[failed,setFailed]=useState(false);
   const audio=useRef<HTMLAudioElement>(null);
   useEffect(()=>{
+    if(audio.current){audio.current.preservesPitch=true;audio.current.playbackRate=speed;}
+  },[speed,open]);
+  useEffect(()=>{
     const current=audio.current;
     return ()=>{if(current){current.pause();current.removeAttribute('src');current.load();}};
   },[open]);
@@ -29,7 +32,7 @@ export function SouthernVoiceSample({voice,speed=1}:{voice?:SampleVoice;speed?:S
       <optgroup label="Nhịp đọc trước"><option value="thuc-doan-south-v2">Thục Đoan</option><option value="my-duyen-south-v2">Mỹ Duyên</option><option value="kim-thanh-south-v2">Kim Thanh</option></optgroup>
       <optgroup label="So sánh bản trước"><option value="thuc-doan-south-v1">Thục Đoan (bản trước)</option><option value="my-duyen-south-v1">Mỹ Duyên (bản trước)</option><option value="ai-han-south">Ái Hân</option></optgroup>
     </select></label>}
-    <SamplePlayer key={`${selected}:${speed}`} voice={selected} speed={speed}/>
+    <SamplePlayer key={selected} voice={selected} speed={speed}/>
     {!voice&&<p className="discovery-help">Cùng một đoạn để so sánh giọng mới và bản trước. Không tự phát âm thanh.</p>}
   </div>;
 }

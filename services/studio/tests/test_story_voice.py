@@ -9,6 +9,16 @@ def test_auto_pacing_slows_numbers_without_rewriting_them():
     assert automatic_speed('Cùng mẹ, thật nhẹ nhàng.')==1
 
 
+def test_auto_pacing_handles_vietnamese_technical_words_without_matching_names():
+    import unicodedata
+    from embe_studio.story_voice import automatic_speed
+    for text in ['Theo dõi huyết áp.', 'Vitamin và canxi.', 'FDA và USDA.', 'dha', 'Liều dùng theo đơn.']:
+        assert automatic_speed(text) == .95
+        assert automatic_speed(unicodedata.normalize('NFD', text)) == .95
+    for text in ['DHALab', 'WHOever', 'Cùng mẹ đi dạo.']:
+        assert automatic_speed(text) == 1
+
+
 def test_invalid_audio_retries_once_with_identical_text():
     from types import SimpleNamespace
     from unittest.mock import Mock

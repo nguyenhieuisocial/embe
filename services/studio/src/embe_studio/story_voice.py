@@ -119,8 +119,10 @@ def finish_audio(pcm, rate=48000, speed=1.0):
 
 
 def automatic_speed(text: str) -> float:
-    """Keep one consistent voice; slow number/acronym-heavy scenes, not random voices."""
-    return .95 if re.search(r'\d|\b(?:DHA|NIPT|PDF|BMI|WHO)\b', text) else 1.0
+    """Give quantities and technical explanations time, without rewriting the script."""
+    normalized = unicodedata.normalize('NFC', text).casefold()
+    technical = r'\b(?:dha|nipt|pdf|bmi|who|nhs|fda|usda|canxi|sắt|axit folic|a xít folic|vitamin|huyết áp|đường huyết|xét nghiệm|liều dùng)\b'
+    return .95 if re.search(r'\d', normalized) or re.search(technical, normalized) else 1.0
 
 
 class StoryVoice:
