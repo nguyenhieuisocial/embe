@@ -14,6 +14,12 @@
 .medical-workspace .medical-intake{margin:0 0 20px;padding:14px;background:#fffafb;border-radius:16px}
 .medical-workspace .medical-subsection-title{margin:20px 0 10px}
 .medical-workspace .medical-subsection-title h3{font-size:1rem}
+.medical-next-visit{margin:12px 0;border-block:1px solid #eadce2}
+.medical-next-visit>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:600}
+.medical-next-visit>summary::after{content:'⌄';color:#73344e}
+.medical-next-visit[open]>summary::after{content:'⌃'}
+.medical-next-visit>summary small{margin-left:auto;font-weight:400}
+.medical-workspace .medical-filters button small{font:inherit;margin-left:3px;opacity:.8}
 .medical-workspace .next-appointment{background:#fffafb;border-color:#eadce2;padding:14px;margin:0;border-radius:16px}
 .medical-workspace .appointment-workspace{gap:6px}
 .medical-workspace .appointment-when{color:#73344e;font-size:.88rem;font-weight:600}

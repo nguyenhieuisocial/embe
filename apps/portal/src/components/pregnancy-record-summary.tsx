@@ -33,7 +33,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
     <header><h2>Tóm tắt thai kỳ</h2><small>Theo hồ sơ đã lưu · không thay kết luận bác sĩ</small></header>
     <div className="pregnancy-summary-lead">
       <div><span>Lần khám gần nhất đã ghi</span>{summary.latest?<><strong>{date(summary.latest.occurredAt)} · {summary.latest.title}</strong><p>{summary.latest.provider || 'Chưa ghi cơ sở khám'}</p><Link href={`#record-${summary.latest.id}`}>Xem lần khám</Link></>:<p>Chưa có lần khám hoàn tất được khớp. Giấy tờ vẫn được giữ bên dưới.</p>}</div>
-      <div><span>Lịch tiếp theo</span>{summary.upcoming?<><strong>{date(summary.upcoming.occurredAt)} · {summary.upcoming.title}</strong><Link href={`#record-${summary.upcoming.id}`}>Xem lịch hẹn</Link></>:<p>Chưa có lịch hẹn sắp tới được lưu.</p>}</div>
+      <div><span>Lịch tiếp theo</span>{summary.upcoming?<><strong>{date(summary.upcoming.occurredAt)} · {summary.upcoming.title}</strong><Link href="#lich-kham-ke-tiep" onClick={()=>document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','')}>Xem lịch hẹn</Link></>:<p>Chưa có lịch hẹn sắp tới được lưu.</p>}</div>
     </div>
     {failed.length?<p role="alert">{failed.length} bản đọc chưa tải được; tổng hợp chưa đầy đủ. {failed.map(document=><Link key={document.id} href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename}</Link>)}</p>:null}
     <details><summary>Kết luận & lời dặn trên giấy <small>{count('findings')} mục</small></summary>
@@ -56,6 +56,11 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       <dl>{summary.metrics.map(({metric,record,value,previous})=><div key={metric.key}><dt>{metric.label}</dt><dd><strong>{value} {metric.unit}</strong> · {date(record.occurredAt)}{previous?<small>Lần trước: {previous.measurements[metric.key]} {metric.unit} · {date(previous.occurredAt)}</small>:null}<Link href={`#record-${record.id}`}>Nguồn số đo</Link></dd></div>)}</dl>
     </details>
     <details><summary>Thuốc trong hồ sơ gần nhất</summary>{summary.prescription?<><p>{date(summary.prescription.occurredAt)} · Không đồng nghĩa đang uống.</p>{summary.prescription.medicines.map((medicine,index)=><p key={index}><strong>{medicine.name}</strong> — {[medicine.dose,medicine.frequency,medicine.instructions].filter(Boolean).join(' · ')}</p>)}</>:<p>Chưa có thuốc được nhập từ đơn vào hồ sơ.</p>}<Link href="/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc">Xem thuốc & lịch uống</Link></details>
-    <footer>{documents.length} giấy tờ · {documents.filter(d=>!['confirmed','review'].includes(d.scanStatus??'')).length} chưa có bản đọc · {documents.filter(d=>!d.imported).length} chưa nhập dữ liệu vào hồ sơ</footer>
+    <details className="medical-document-progress"><summary>Trạng thái giấy tờ <small>{documents.length} tài liệu</small></summary>
+      {documents.map(document=><article key={document.id}>
+        <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename}</Link>
+        <small>{document.imported?'Đã nhập dữ liệu vào hồ sơ':document.scanStatus==='failed'?'Đọc tài liệu bị lỗi · mở để thử lại':document.scanStatus==='processing'?'Đang đọc tài liệu':document.scanStatus==='queued'?'Đang chờ xử lý':['review','confirmed'].includes(document.scanStatus??'')?'Có bản đọc · chưa nhập dữ liệu vào hồ sơ':'Chưa đọc · mở tài liệu để kiểm tra'}</small>
+      </article>)}
+    </details>
   </section>;
 }

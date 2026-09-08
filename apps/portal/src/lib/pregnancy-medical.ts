@@ -22,6 +22,14 @@ export function medicalRecordMatchesKind(record: MedicalRecord, kind: string): b
     || record.documents.some(document => document.detectedKinds?.includes(kind));
 }
 
+export function medicalRecordSearchText(record: MedicalRecord): string {
+  return [record.title, record.provider, record.clinician, record.notes,
+    ...record.medicines.flatMap(medicine=>[medicine.name,medicine.ingredients??'',medicine.dose,medicine.frequency,medicine.instructions]),
+    ...record.documents.flatMap(document=>[document.originalFilename,document.displayName??'',
+      ...Object.values(document.readingSummary??{}).flatMap(rows=>rows.flatMap(row=>[row.label,row.value,...row.details]))])
+  ].join(' ').normalize('NFD').replace(/\p{M}/gu,'').replace(/đ/gi,'d').toLowerCase();
+}
+
 export type AppointmentWorkspace = { questions: string[]; checklist: string[]; outcome: string };
 
 export const APPOINTMENT_CHECKLIST = [

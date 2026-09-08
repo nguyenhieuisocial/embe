@@ -12,6 +12,7 @@ import {
   encodeAppointmentWorkspace,
   medicalInsights,
   medicalRecordMatchesKind,
+  medicalRecordSearchText,
   type MedicalMedicine,
   type MedicalRecord
 } from "../lib/pregnancy-medical";
@@ -131,10 +132,7 @@ export default function PregnancyMedicalRecords() {
   const insights = useMemo(() => medicalInsights(records), [records]);
   const normalizeSearch = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase();
   const query = normalizeSearch(search.trim());
-  const visibleRecords = records.filter(record => medicalRecordMatchesKind(record, filter) && (!query || normalizeSearch([
-    record.title, record.provider, record.clinician, record.notes,
-    ...record.documents.flatMap(d => [d.originalFilename, d.displayName ?? ''])
-  ].join(' ')).includes(query))).sort((a,b) => (recordOrder === 'newest' ? -1 : 1) * (Date.parse(a.occurredAt) - Date.parse(b.occurredAt)));
+  const visibleRecords = records.filter(record => medicalRecordMatchesKind(record, filter) && (!query || medicalRecordSearchText(record).includes(query))).sort((a,b) => (recordOrder === 'newest' ? -1 : 1) * (Date.parse(a.occurredAt) - Date.parse(b.occurredAt)));
   const savedDocuments = records.flatMap(record => record.documents);
   const readDocuments = savedDocuments.filter(document => document.imported || ['review', 'confirmed'].includes(document.scanStatus ?? '')).length;
   const appointmentWorkspace = decodeAppointmentWorkspace(editingRecord?.notes ?? "");
@@ -348,18 +346,18 @@ export default function PregnancyMedicalRecords() {
   return (
     <section className="medical-records medical-workspace" id="ho-so-kham" aria-labelledby="medical-records-title">
       <div className="section-heading-row medical-records-heading">
-        <div><h2 id="medical-records-title">Sổ khám của Mẹ</h2><p>Giấy tờ, kết quả và lịch hẹn ở cùng một nơi.</p></div>
+        <div><h2 id="medical-records-title">Sổ khám của Mẹ</h2></div>
         <button className="medical-add" type="button" disabled={status === "saving"} onClick={() => {
           if (showForm) { setShowForm(false); setEditingRecord(null); setFormMode("new"); }
           else openForm("new");
         }}>{showForm ? "Đóng" : "+ Thêm hồ sơ"}</button>
       </div>
-      {status !== 'loading' && records.length > 0 ? <PregnancyRecordSummary records={records} /> : null}
       <nav className="medical-workspace-nav" aria-label="Đi nhanh trong hồ sơ">
-        <a href="#them-giay-to">Thêm giấy tờ</a><a href="#lich-kham-ke-tiep">Lịch khám</a><a href="#ho-so-da-luu">Đã lưu</a>
+        <a href="#them-giay-to">Thêm giấy tờ</a><a href="#lich-kham-ke-tiep" onClick={()=>document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','')}>Lịch khám</a><a href="#ho-so-da-luu">Đã lưu</a>
       </nav>
+      {status !== 'loading' && records.length > 0 ? <PregnancyRecordSummary records={records} /> : null}
       <MedicalDocumentIntake onSaved={() => void load()} />
-      <div className="medical-subsection-title" id="lich-kham-ke-tiep"><h3>Lịch khám tiếp theo</h3></div>
+      <details className="medical-next-visit" id="lich-kham-ke-tiep"><summary>Lịch khám tiếp theo <small>{insights.upcoming ? new Date(insights.upcoming.occurredAt).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}) : 'Chưa có lịch'}</small></summary>
       {insights.upcoming ? <article className="next-appointment next-appointment-compact" aria-label="Lịch khám tiếp theo">
         <div className="appointment-workspace">
           <time className="appointment-when" dateTime={insights.upcoming.occurredAt}>{displayDate(insights.upcoming.occurredAt)}</time>
@@ -385,6 +383,7 @@ export default function PregnancyMedicalRecords() {
         </div>
       </article> : <div className="medical-empty-short"><strong>Chưa có lịch khám sắp tới</strong><p>Ghi ngày hẹn để chuẩn bị trước buổi khám.</p><button className="medical-add" type="button" disabled={status === "saving"} onClick={() => openForm("new")}>Thêm lịch khám</button></div>}
 
+      </details>
       {showForm ? <form className="medical-form" id="medical-record-form" key={`${formMode}-${editingRecord?.id ?? "new"}`} onSubmit={(event) => void save(event)}>
         <h3>{formMode === "prepare" ? "Chuẩn bị buổi khám" : formMode === "outcome" ? "Ghi kết quả sau khám" : editingRecord ? `Sửa ${kinds[editingRecord.kind]?.toLocaleLowerCase("vi") ?? "hồ sơ"}` : kind === "prescription" ? "Thêm đơn thuốc" : "Thêm hồ sơ khám"}</h3>
         {formMode === "new" ? <div className="medical-kind-picker" role="group" aria-label="Phân loại hồ sơ">
@@ -476,20 +475,14 @@ export default function PregnancyMedicalRecords() {
       {records.length ? <>
         {savedDocuments.length ? <p role="status">{savedDocuments.length} giấy tờ đã lưu · {readDocuments} bản đọc sẵn sàng.
           {savedDocuments.length > readDocuments ? ` Còn ${savedDocuments.length - readDocuments} giấy tờ chưa đọc xong.` : ''}</p> : null}
-        <details className="medical-workspace-overview"><summary>Tổng quan & điều cần bổ sung</summary><aside className="medical-insights">
-          <p>Bản đọc và chỉ số đã đối chiếu là hai phần riêng; chưa có chỉ số không có nghĩa là mất giấy tờ.</p>
-          <div><strong>{insights.completedCount}</strong><span>lần đã lưu</span></div>
-          <div><strong>{insights.activeMedicines.length}</strong><span>thuốc trong đơn</span></div>
-          {insights.questions.length ? <ul>{insights.questions.map((question) => <li key={question}>{question}</li>)}</ul> : <p>Xem giấy tờ và bản đọc bên dưới. Chưa thể kết luận hồ sơ đã đầy đủ chỉ từ các mốc đã nhập.</p>}
-          <small>EmBe chỉ phát hiện phần chưa ghi và gom dữ liệu; không kết luận kết quả khám.</small>
-        </aside></details>
+        {insights.questions.length ? <details className="medical-workspace-overview"><summary>Thông tin cần bổ sung <small>{insights.questions.length} mục</small></summary><ul>{insights.questions.map(question=><li key={question}>{question}</li>)}</ul></details> : null}
         <div className="medical-search"><label htmlFor="medical-record-search">Tìm hồ sơ</label>
-          <input id="medical-record-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Tên hồ sơ, nơi khám, giấy tờ…" />
+          <input id="medical-record-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Thuốc, chỉ số, nơi khám, giấy tờ…" />
           {search ? <button type="button" onClick={() => setSearch('')}>Xóa tìm kiếm</button> : null}
         </div>
         <div className="medical-filters" role="group" aria-label="Lọc hồ sơ">
           <button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>Tất cả</button>
-          {Object.entries(kinds).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}
+          {Object.entries(kinds).filter(([value])=>value===filter||records.some(record=>medicalRecordMatchesKind(record,value))).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label} <small>{records.filter(record=>medicalRecordMatchesKind(record,value)).length}</small></button>)}
         </div>
         <div className="medical-saved-toolbar"><span>{visibleRecords.length}/{records.length} hồ sơ</span><label>Sắp xếp<select value={recordOrder} onChange={event=>setRecordOrder(event.target.value)}><option value="newest">Mới nhất trước</option><option value="oldest">Cũ nhất trước</option></select></label></div>
         <div className="medical-timeline">

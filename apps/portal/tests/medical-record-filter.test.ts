@@ -1,6 +1,11 @@
 import {expect,it} from 'vitest';
-import {medicalRecordMatchesKind, type MedicalRecord} from '../src/lib/pregnancy-medical';
+import {medicalRecordMatchesKind, medicalRecordSearchText, type MedicalRecord} from '../src/lib/pregnancy-medical';
 const record:MedicalRecord={id:'r',occurredAt:'2026-09-08',title:'Lần khám',kind:'appointment',status:'completed',provider:'',clinician:'',notes:'',gestationalWeek:null,nextAppointmentAt:null,measurements:{},medicines:[],documents:[{id:'d',originalFilename:'image.jpg',mimeType:'image/jpeg',byteSize:1,createdAt:'2026-09-08',scanStatus:'review',detectedKinds:['prescription','receipt']}]};
+it('searches medicine and extracted readings without requiring clinical import',()=>{
+ const data={...record,medicines:[{name:'Sắt',dose:'1 viên',frequency:'',instructions:''}],documents:[{...record.documents[0],readingSummary:{findings:[],medicines:[],results:[{page:1,label:'Huyết sắc tố',value:'120 g/L',details:['Sau ăn'],unclear:true}]}}]};
+ expect(medicalRecordSearchText(data)).toContain('sat');
+ expect(medicalRecordSearchText(data)).toContain('huyet sac to 120 g/l sau an');
+});
 it('includes a read prescription inside an appointment before clinical import',()=>{
  expect(medicalRecordMatchesKind(record,'prescription')).toBe(true);
  expect(medicalRecordMatchesKind(record,'appointment')).toBe(true);
