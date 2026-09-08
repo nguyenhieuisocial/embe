@@ -149,6 +149,18 @@ it('shows the proposed link and imports only after confirmation, then shows a pe
   await screen.findByText('Đã thêm dữ liệu vào hồ sơ');
   expect(fetcher.mock.calls.filter(([, o]) => o?.method === 'POST')).toHaveLength(1);
 });
+it('cancels a pending record lookup when leaving the document', () => {
+  let signal: AbortSignal | undefined;
+  vi.stubGlobal('fetch', vi.fn((_url: string, options?: RequestInit) => {
+    signal = options?.signal as AbortSignal;
+    return new Promise(() => {});
+  }));
+  const { unmount } = render(<MedicalDocumentImport documentId={id} recordId={id} revision={3}
+    analysis={analysis} disabled={false} onImported={async () => {}} />);
+  expect(signal?.aborted).toBe(false);
+  unmount();
+  expect(signal?.aborted).toBe(true);
+});
 it('offers camera and multi-file upload without a manual record form, retrying with the same identifiers', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({ id })));
   mock.upload.mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce({ documentId: linked, mimeType: 'image/jpeg' });

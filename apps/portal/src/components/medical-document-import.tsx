@@ -19,13 +19,17 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
   const [conflict, setConflict] = useState(false);
   useEffect(() => {
     let ignore = false;
-    void fetch(`/api/pregnancy/documents/${documentId}/import`, { cache: 'no-store' }).then(async response => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    setContext(null); setError('');
+    void fetch(`/api/pregnancy/documents/${documentId}/import`, { cache: 'no-store', signal: controller.signal }).then(async response => {
       if (!response.ok) throw new Error('Chưa tải được hồ sơ để khớp. Bản đọc vẫn còn nguyên.');
       const result = await response.json();
       if (!Array.isArray(result?.records) || typeof result.recordUpdatedAt !== 'string' || typeof result.intake !== 'boolean' || typeof result.imported !== 'boolean') throw new Error('Chưa tải được thông tin khớp hồ sơ. Có thể lưu riêng bản đọc rồi thử lại.');
       if (!ignore) { setContext(result); setError(''); }
-    }).catch(e => { if (!ignore) setError(e.message); });
-    return () => { ignore = true; };
+    }).catch(() => { if (!ignore) setError('Chưa tải được hồ sơ để khớp. Bản đọc vẫn còn nguyên; thử lại khi có mạng.'); })
+      .finally(() => clearTimeout(timeout));
+    return () => { ignore = true; clearTimeout(timeout); controller.abort(); };
   }, [documentId, revision, retry]);
   const proposal = useMemo(() => proposeDocumentImport(analysis, context?.records ?? [], recordId), [analysis, context, recordId]);
   const grouped = useMemo(() => groupDocumentData(analysis), [analysis]);
