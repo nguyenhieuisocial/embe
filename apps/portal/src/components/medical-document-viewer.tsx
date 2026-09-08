@@ -6,7 +6,7 @@ import './medical-document-viewer.css';
 import PhotoViewerImage from './photo-viewer-image';
 import { trapViewerFocus } from './viewer-focus';
 
-type DocumentFile = { id: string; originalFilename: string; mimeType: string };
+type DocumentFile = { id: string; originalFilename: string; displayName?: string; mimeType: string };
 type FamilyScope = { memberId: string; recordId: string };
 const HISTORY_KEY = 'embeMedicalViewer';
 
@@ -24,7 +24,7 @@ export default function MedicalDocumentButton({ document: item, documents = [ite
       // Do this in the gesture, not an effect (which is replayed by React StrictMode).
       window.history.pushState({ ...window.history.state, [HISTORY_KEY]: token }, '', window.location.href);
       setOpen(token);
-    }}>{children ?? `${item.mimeType === 'application/pdf' ? 'PDF' : 'Ảnh'} · ${item.originalFilename}`}</button>
+    }}>{children ?? item.displayName ?? `${item.mimeType === 'application/pdf' ? 'PDF' : 'Ảnh'} · ${item.originalFilename}`}</button>
     {open ? <MedicalDocumentViewer documents={documents.length ? documents : [item]} initialId={item.id} pageNumber={pageNumber} familyScope={familyScope}
       token={open} onClose={() => { setOpen(null); trigger.current?.focus({ preventScroll: true }); }} /> : null}
   </>;

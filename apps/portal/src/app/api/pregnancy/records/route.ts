@@ -51,7 +51,7 @@ export async function GET(request: Request): Promise<Response> {
     const records = result.data.flatMap((value: unknown) => { const record = normalizeMedicalRecord(value); return record ? [record] : []; });
     // Derive names from persisted readings without overwriting user titles or clinical dates.
     const pendingNames = records.filter(r => r.documentIntake && r.title.startsWith('Chờ đọc ·'));
-    const ids = pendingNames.flatMap(r => r.documents.map(d => d.id));
+    const ids = records.flatMap(r => r.documents.map(d => d.id));
     if (ids.length) {
       try {
         const scans = await store.schema('portal_read_model').from('medical_document_scan')
@@ -62,6 +62,10 @@ export async function GET(request: Request): Promise<Response> {
           for (const scan of scans.data) {
             const analysis = scan.status === 'confirmed' ? scan.confirmed_analysis : scan.analysis;
             if (['review', 'confirmed'].includes(scan.status) && validDocumentAnalysis(analysis)) names.set(scan.document_id, analysis);
+          }
+          for (const record of records) for (const document of record.documents) {
+            const analysis = names.get(document.id);
+            if (analysis) document.displayName = medicalDocumentName([analysis]);
           }
           for (const record of pendingNames) {
             const analyses = record.documents.flatMap(d => names.has(d.id) ? [names.get(d.id)!] : []);
