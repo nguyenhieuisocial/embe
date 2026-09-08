@@ -1,4 +1,5 @@
 'use client';
+import StudioConnectionsPanel from './studio-connections';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { documentScript, readyToRender, renderErrors, renderLabels, studioDocument, templateDocument, type StudioDocument, type StudioProject, type StudioRender } from '../lib/studio-project';
@@ -33,7 +34,7 @@ export default function StudioWorkspace({templates}:{templates:StudioTopic[]}) {
     {loaded&&!projects.some(p=>p.deleted===trash)&&<p className="studio-empty">{trash?'Chưa có bản đã xóa.':'Chưa có bản riêng. Chọn một kịch bản có sẵn hoặc viết ý tưởng đầu tiên.'}</p>}
     <ul className="studio-ideas">{projects.filter(p=>p.deleted===trash).map(p=><li key={p.id}><Link className="studio-back" href={`/studio/soan?du-an=${p.id}`}>{p.payload.title}</Link><p className="discovery-help">{p.payload.scenes.length} cảnh · sửa {new Date(p.updated_at).toLocaleString('vi-VN')}</p>{trash&&<button className="discovery-button" disabled={busy} onClick={()=>void restore(p)}>Khôi phục</button>}</li>)}</ul>
     <button className="discovery-button" disabled={!loaded} onClick={()=>download('embe-studio-ban-nhap.json',JSON.stringify({version:1,projects},null,2),'application/json')}>Xuất bản sao kịch bản</button>
-    <details className="studio-disclosure"><summary>Đăng lên mạng xã hội</summary><p>Tải video hoặc nhấn Chia sẻ file để gửi sang ứng dụng trên điện thoại. Bạn chọn nơi đăng và gắn sản phẩm trong ứng dụng đích.</p><p>TikTok, Instagram, Facebook, YouTube và Zalo Video chưa được kết nối để tự đăng. EmBe không tự chọn tài khoản hay giả báo đăng thành công.</p></details>
+    <StudioConnectionsPanel/>
   </section>;
 }
 

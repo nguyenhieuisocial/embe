@@ -19,6 +19,9 @@ export const editorialSeries = [
 ];
 
 export const researchTools = [
+  { name: 'Postiz', url: 'https://github.com/gitroomhq/postiz-app', status: 'Đã thêm bộ đọc kết nối · chưa cấu hình', license: 'AGPL-3.0; điều kiện nền tảng riêng', note: 'Rà soát 08/09/2026. Chọn API để tái sử dụng quản lý kênh và lịch đăng. EmBe đã có kiểm tra danh sách tài khoản; cần khóa API máy chủ. Chưa có luồng gửi bài, lịch đăng hay xác minh quyền đăng. Không tự đăng hồ sơ sức khỏe.' },
+  { name: 'Mixpost', url: 'https://github.com/inovector/mixpost', status: 'Phương án thay thế · chưa cài', license: 'Theo phiên bản và LICENSE của repo', note: 'Rà soát 08/09/2026. Công cụ tự host cho lịch và nội dung mạng xã hội. Không cài song song Postiz để tránh hai nơi quản lý tài khoản và hàng chờ; cần đối chiếu tính năng từng bản trước khi chọn.' },
+  { name: 'Windmill', url: 'https://github.com/windmill-labs/windmill', status: 'Chưa cần bổ sung', license: 'Theo thành phần và LICENSE của repo', note: 'Rà soát 08/09/2026. Có thể điều phối script và workflow khi Studio mở rộng. Hiện đã có worker và hàng chờ bền vững; chưa thêm hệ thống vận hành trùng chức năng.' },
   { name: 'Google Trends RSS Việt Nam', url: 'https://support.google.com/trends/answer/3076011?hl=en', status: 'Đã tích hợp', license: 'Nguồn RSS của Google; điều kiện nội dung riêng', note: 'Lấy tín hiệu khi mở Khám phá, cache 15 phút, lọc từ khóa mẹ bầu. Không phải số liệu video, không chạy khi đóng app.' },
   { name: 'RSSHub', url: 'https://github.com/DIYgod/RSSHub', status: 'Ứng viên có điều kiện', license: 'AGPL-3.0 ở bản kiểm tra', note: 'Route Xiaohongshu/Bilibili phụ thuộc quyền truy cập, cache và nền tảng. RSS không tự thành webhook tức thì. Chưa cài hoặc chuyển cookie.' },
   { name: 'TrendRadar', url: 'https://github.com/sansan0/TrendRadar', status: 'Tham khảo cách tổ chức', license: 'GPL-3.0', note: 'Repo đúng sansan0/TrendRadar. Học cách gom nguồn và lọc từ khóa; chưa vận hành cả bộ AI/notification.' },
