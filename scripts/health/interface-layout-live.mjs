@@ -11,7 +11,7 @@ const baseline = process.argv.includes('--baseline');
 const output = resolve('data/interface-verification');
 const version = process.env.EMBE_VERIFY_VERSION;
 const password = process.env.EMBE_VERIFY_PASSWORD;
-const routes = ['/', '/me-bau', '/nha-minh', '/ky-niem', '/me-bau/bua-an', '/me-bau/ho-so', '/me-bau/suc-khoe-iphone', '/ke-hoach', '/nhat-ky', '/cai-dat', '/studio', '/studio/nghien-cuu'];
+const routes = process.argv.includes('--care-only') ? ['/me-bau/suc-khoe-iphone'] : ['/', '/me-bau', '/nha-minh', '/ky-niem', '/me-bau/bua-an', '/me-bau/ho-so', '/me-bau/suc-khoe-iphone', '/ke-hoach', '/nhat-ky', '/cai-dat', '/studio', '/studio/nghien-cuu'];
 const viewports = [[375, 667], [393, 852], [430, 932], [412, 915], [768, 1024], [1280, 900]];
 const hubs = new Map([['/', 'home'], ['/me-bau', 'mother'], ['/nha-minh', 'family'], ['/ky-niem', 'memories']]);
 const selectors = {
@@ -59,6 +59,12 @@ async function layoutAt(page, path, width, height) {
       const rect = node.getBoundingClientRect();
       return rect.width < 43.5 || rect.height < 43.5;
     });
+    const chapter = document.querySelector('.today-main .pregnancy-chapter');
+    const chapterTitle = chapter?.querySelector('h2');
+    const chapterLayout = chapter && chapterTitle ? {
+      titleWidthRatio: chapterTitle.getBoundingClientRect().width / chapter.getBoundingClientRect().width,
+      maxButtonHeight: Math.max(0, ...[...chapter.querySelectorAll('.chapter-actions a')].map(node => node.getBoundingClientRect().height)),
+    } : null;
     return {
       overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) > innerWidth + 1,
       navVisible: Boolean(nav && visible(nav)),
@@ -66,12 +72,14 @@ async function layoutAt(page, path, width, height) {
       activeNav: links.filter(node => node.getAttribute('aria-current') === 'page').length,
       touchTargets: targets.length,
       smallTouchTargets: small.length,
+      chapterLayout,
     };
   }, selector);
   result.cases.push({ route: path, width, height, ...measurement });
   if (measurement.overflow) fail(`overflow:${path}:${width}`);
   if (!measurement.navVisible || measurement.navLinks !== 4 || measurement.activeNav !== 1) fail(`navigation:${path}:${width}`);
   if (selector && (!measurement.touchTargets || measurement.smallTouchTargets)) fail(`touch_targets:${path}:${width}`);
+  if (!baseline && measurement.chapterLayout && (measurement.chapterLayout.titleWidthRatio < .6 || measurement.chapterLayout.maxButtonHeight > 96)) fail(`chapter_layout:${width}`);
 }
 
 async function captureHub(page, path) {
@@ -182,9 +190,11 @@ async function run() {
     for (const path of routes) {
       phase = `page:${path}`;
       if (path !== '/') {
+        phase = `navigation:${path}`;
         const response = await page.goto(`${origin}${path}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
         if (!response?.ok() || new URL(page.url()).pathname !== path) throw new Error('route_unavailable');
       }
+      phase = `ready:${path}`;
       await ready(page);
       if (!baseline) {
         if (path === '/') {
@@ -201,16 +211,24 @@ async function run() {
         }
         if (path.startsWith('/studio') && await page.locator('.quick-trigger').count()) fail(`studio_family_quick_action:${path}`);
         if (path === '/me-bau/suc-khoe-iphone') {
+          phase = 'care:medication_click';
           await page.getByRole('button', { name: 'Thuốc & vi chất', exact: true }).click();
+          phase = 'care:medication_visible';
           await page.locator('#vi-chat-thuoc').waitFor({ state: 'visible' });
           if (await page.locator('#suc-khoe-iphone').isVisible()) fail('iphone_panel_not_hidden');
+          phase = 'care:iphone_click';
           await page.getByRole('button', { name: 'Sức khỏe iPhone', exact: true }).click();
+          phase = 'care:iphone_visible';
           await page.locator('#suc-khoe-iphone').waitFor({ state: 'visible' });
           if (await page.locator('#vi-chat-thuoc').isVisible()) fail('medication_panel_not_hidden');
           result.carePanels = true;
         }
-        if (!hubs.has(path)) await page.locator('.context-back').waitFor({ state: 'visible' });
+        if (!hubs.has(path)) {
+          phase = `back_link:${path}`;
+          await page.locator('.context-back').waitFor({ state: 'visible' });
+        }
       }
+      phase = `layout:${path}`;
       for (const [width, height] of viewports) await layoutAt(page, path, width, height);
       await captureHub(page, path);
       if (path === '/') await verifyQuickActions(page);
@@ -236,6 +254,8 @@ try {
 } catch (error) {
   result.status = 'failed';
   result.error = /^[a-z_]+$/.test(error.message ?? '') ? error.message : 'verification_failed';
+  result.errorKind = String(error.message ?? '').match(/strict mode violation|Timeout \d+ms exceeded|net::[A-Z_]+|interrupted by another navigation/)?.[0] ?? error.name;
+  result.errorStep = String(error.message ?? '').split('\n')[0].slice(0, 200);
   result.phase = phase;
   process.exitCode = 1;
 } finally {
@@ -248,5 +268,5 @@ console.log(JSON.stringify({
   cases: result.cases.length, failures: result.failures, screenshots: result.screenshots,
   blockedApiWriteAttempts: result.blockedApiWriteAttempts, apiWritesDeliveredOtherThanOwnAuth: result.apiWritesDeliveredOtherThanOwnAuth,
   search: result.search, quickActions: result.quickActions, ownSessionRevoked: result.ownSessionRevoked,
-  error: result.error, phase: result.phase,
+  error: result.error, errorKind: result.errorKind, errorStep: result.errorStep, phase: result.phase,
 }));

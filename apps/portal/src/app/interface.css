@@ -43,10 +43,11 @@
   .today-main .today-priority-copy strong { font-size: .9375rem; }
   .today-main .today-priority-copy small { font-size: .8125rem; }
   .today-main .today-priority-plan-link { font-size: .8125rem; }
-  .today-main .pregnancy-chapter { padding: 14px 0; border: 0; border-block: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
+  .today-main .pregnancy-chapter { grid-template-columns: minmax(0,1fr); padding: 14px 0; border: 0; border-block: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
   .today-main .pregnancy-chapter h2 { font-size: 1.125rem; line-height: 1.45; }
   .today-main .pregnancy-chapter p { font-size: .8125rem; }
   .today-main .pregnancy-chapter .chapter-thread { display: none; }
+  .today-main .chapter-actions { grid-column: 1; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .today-main .chapter-actions a { min-height: 44px; font-size: .8125rem; }
   .today-main .timeline-panel { border: 0; background: transparent; padding: 0; box-shadow: none; }
   .today-main .timeline-panel .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
