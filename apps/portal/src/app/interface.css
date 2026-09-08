@@ -1,5 +1,24 @@
 /* Shared interface hierarchy. Feature-specific forms, image viewers and print
    layouts keep their existing behavior. Smaller surfaces, not smaller text. */
+@media screen {
+  .meal-page .meal-capture-card { padding: 14px; gap: 12px; }
+  .meal-page .meal-camera, .meal-page .meal-library {
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+    min-height: 60px; padding: 10px; border-radius: 16px;
+  }
+  .meal-page .meal-camera { color: var(--rose-press); }
+  .meal-page .meal-library { color: var(--ink); }
+  .meal-page .meal-type-picker { flex-wrap: wrap; }
+  .meal-page .meal-type-picker button { min-height: 44px; }
+  .meal-page .meal-note textarea { font-size: 16px; line-height: 1.5; border-radius: 12px; }
+  .meal-page .meal-input-hint { font-size: .8125rem; line-height: 1.5; }
+  .meal-page .meal-view-switch button { min-height: 46px; }
+  .meal-page .meal-state { margin-block: 0; font-size: .8125rem; line-height: 1.5; }
+  .meal-page .meal-food-row { border-radius: 14px; gap: 10px; }
+  .meal-page .meal-food-row input { min-width: 0; font-size: 16px; min-height: 44px; }
+  .meal-page .meal-review > div:first-child p { font-size: .875rem; margin-top: 4px; }
+  .meal-page .meal-capture-card > .care-inline { border-top: 1px solid var(--line); padding-top: 8px; }
+}
 @media screen and (max-width: 767px) {
   /* One measured correction keeps the navigation and quick action together.
      Individual translate preserves the quick button's existing horizontal transform. */

@@ -5,7 +5,7 @@ import MealPhotoTracker from "../../../components/meal-photo-tracker";
 
 export default function PregnancyMealPage() {
   return (
-    <main className="pregnancy-main pregnancy-tool-page">
+    <main className="pregnancy-main pregnancy-tool-page meal-page">
       <AppHeader note="Nhật ký ăn uống riêng tư" />
       <header className="pregnancy-tool-intro">
         <Link href="/me-bau">← Mẹ bầu</Link>

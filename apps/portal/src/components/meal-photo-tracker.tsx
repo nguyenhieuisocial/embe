@@ -540,17 +540,16 @@ export default function MealPhotoTracker() {
               aria-label={`Bỏ món thêm ${food}`} onClick={() => removeManualFood(index)}>{food}<span aria-hidden="true">×</span></button>)}
           </div> : <small>Thêm món bị khuất, đồ uống hoặc món ăn kèm trước khi nhận diện.</small>}
         </div> : null}
-        <label className="meal-note">Món ăn & khẩu phần
-          <textarea aria-label="Ghi chú món ăn · có thể lưu không cần ảnh" maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="150 g cơm, cá hồi, một bát canh…" />
+        <label className="meal-note">{file ? "Bổ sung món & khẩu phần" : "Mẹ vừa ăn gì?"}
+          <textarea aria-label="Ghi chú món ăn · có thể lưu không cần ảnh" aria-describedby="meal-note-help" maxLength={300} rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="150 g cơm, cá hồi, một bát canh…" />
         </label>
-        <small className="meal-input-hint">Không có ảnh? Chỉ cần nhập món.</small>
+        <small className="meal-input-hint" id="meal-note-help">{file ? "Ghi thêm món bị khuất hoặc lượng đã ăn." : "Không cần ảnh. Ghi tên món và lượng ăn nếu biết."}</small>
         {popularSuggestions.length ? <div className="meal-food-suggestions" aria-label="Món Việt gợi ý">
           {popularSuggestions.map((name) => <button key={name} type="button" onClick={() => {
             const next = note.replace(/[^,;\n]*$/, name);
             if (next.length <= 300) setNote(next);
           }}>{name}</button>)}
         </div> : null}
-        <PersonalizedMealSuggestions meal={mealType} history={menuHistory} choose={chooseSuggestion} />
         {medicationRouteOpen ? <aside className="meal-medication-route" aria-live="polite">
           <strong>Có vẻ đây là thuốc hoặc vitamin</strong>
           <p>{medicationDestination.description}</p>
@@ -569,6 +568,7 @@ export default function MealPhotoTracker() {
               : status === "queued" ? "Ảnh đã gửi và đang chờ nhận diện."
               : "Kết quả là khoảng ước lượng và luôn cần Mẹ xác nhận.")}
         </p> : null}
+        <PersonalizedMealSuggestions meal={mealType} history={menuHistory} choose={chooseSuggestion} />
       </fieldset>
 
       {analysis ? <div ref={reviewRef} tabIndex={-1} className="meal-review" role="group" aria-label="Xác nhận kết quả nhận diện">
