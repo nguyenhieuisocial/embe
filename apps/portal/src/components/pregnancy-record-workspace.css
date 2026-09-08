@@ -72,3 +72,11 @@
 .pregnancy-record-summary dd { margin:4px 0; }
 .pregnancy-record-summary footer { margin-top:12px; }
 @media(min-width:640px) { .pregnancy-summary-lead { grid-template-columns:1fr 1fr; } }
+.medical-encounter-chain { margin-block: 1rem; min-width: 0; }
+.medical-encounter-chain > h3 { font-size: 1rem; margin-block: 0 .5rem; }
+.medical-encounter-chain > details { border-block-start: 1px solid #eadde2; padding-block: .35rem; }
+.medical-encounter-chain summary { min-height: 44px; padding-block: .65rem; overflow-wrap: anywhere; }
+.medical-encounter-chain a { display: inline-flex; flex-direction: column; justify-content: center; min-height: 44px; max-width: 100%; overflow-wrap: anywhere; }
+.medical-encounter-chain ul { list-style: none; margin: .5rem 0; padding-inline-start: .85rem; border-inline-start: 2px solid #e7cbd6; }
+.medical-encounter-chain li { padding-block: .25rem; }
+.medical-encounter-chain small { color: #6f6067; }

@@ -5,6 +5,7 @@ import {MEDICAL_MEASUREMENTS} from '../lib/medical-measurements';
 import type {MedicalReadingSummary} from '../lib/medical-reading-summary';
 import {medicalFindingGroups,medicalFindingTopics} from '../lib/medical-finding-groups';
 import {medicineDisplayGroups,medicineSourceGroups} from '../lib/medicine-display-groups';
+import MedicalEncounterChain from './medical-encounter-chain';
 
 const date = (value:string) => new Date(value).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
 export function summarizeRecords(records:MedicalRecord[],now=Date.now()) {
@@ -39,6 +40,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       <div><span>Lần khám gần nhất đã ghi</span>{summary.latest?<><strong>{date(summary.latest.occurredAt)} · {summary.latest.title}</strong><p>{summary.latest.provider || 'Chưa ghi cơ sở khám'}</p><Link href={`#record-${summary.latest.id}`}>Xem lần khám</Link></>:<p>Chưa có lần khám hoàn tất được khớp. Giấy tờ vẫn được giữ bên dưới.</p>}</div>
       <div><span>Lịch tiếp theo</span>{summary.upcoming?<><strong>{date(summary.upcoming.occurredAt)} · {summary.upcoming.title}</strong><Link href="#lich-kham-ke-tiep" onClick={()=>document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','')}>Xem lịch hẹn</Link></>:<p>Chưa có lịch hẹn sắp tới được lưu.</p>}</div>
     </div>
+    <MedicalEncounterChain records={records}/>
     {failed.length?<p role="alert">{failed.length} bản đọc chưa tải được; tổng hợp chưa đầy đủ. {failed.map(document=><Link key={document.id} href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename}</Link>)}</p>:null}
     <details><summary>Kết luận & lời dặn trên giấy <small>{findings.length} nội dung</small></summary>
       {!count('findings')?<p>Chưa lấy được kết luận từ bản đọc. Không có nghĩa kết quả khám bình thường.</p>:null}
