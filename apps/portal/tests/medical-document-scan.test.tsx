@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { validDocumentAnalysis, documentAnalysisText, editableDocumentAnalysis, type DocumentAnalysis } from '../src/lib/medical-document-scan';
+import { validDocumentAnalysis, documentAnalysisText, editableDocumentAnalysis, withPrintedUnit, type DocumentAnalysis } from '../src/lib/medical-document-scan';
 import MedicalDocumentReview from '../src/components/medical-document-review';
 
 const mock = vi.hoisted(() => ({ denied: false, calls: vi.fn() }));
@@ -10,6 +10,14 @@ vi.mock('../src/lib/family-view-revalidation', () => ({ revalidateFamilyViews: v
 import { GET, POST, PATCH } from '../src/app/api/pregnancy/documents/[id]/scan/route';
 
 const id = '11111111-1111-4111-8111-111111111111';
+it.each([
+  ['5 mg', 'g', '5 mg [Đơn vị ghi riêng: g; cần đối chiếu]'], ['45 mm', 'm', '45 mm [Đơn vị ghi riêng: m; cần đối chiếu]'],
+  ['5mg', 'mg', '5mg'], ['45,6 mm', 'mm', '45,6 mm'],
+  ['3', 'mmol/L', '3 mmol/L'], ['5 mL', 'ml', '5 mL [Đơn vị ghi riêng: ml; cần đối chiếu]'],
+  ['âm tính', ' ', 'âm tính'], ['20 µg', 'g', '20 µg [Đơn vị ghi riêng: g; cần đối chiếu]']
+])('preserves printed unit boundaries: %s / %s', (value, unit, expected) => {
+  expect(withPrintedUnit(value, unit)).toBe(expected);
+});
 const context = { params: Promise.resolve({ id }) };
 const analysis: DocumentAnalysis = { version: 1, pages: [{ page: 1, kind: 'ultrasound', title: 'Siêu âm mẫu',
   fields: [{ label: 'CRL', value: '45,6', unit: 'mm', reference: '', evidence: 'CRL 45,6 mm', unclear: true }], medicines: [], charges: [], warnings: [] }] };

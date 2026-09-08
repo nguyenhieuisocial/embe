@@ -73,7 +73,19 @@ export const SCAN_ERROR_TEXT: Record<string, string> = {
 };
 
 export function withPrintedUnit(value: string, unit: string): string {
-  return !unit || value.trim().toLocaleLowerCase('vi').endsWith(unit.trim().toLocaleLowerCase('vi')) ? value : `${value} ${unit}`.trim();
+  const printedUnit = unit.trim();
+  if (!printedUnit) return value;
+  const printedValue = value.trim();
+  // Units are case-sensitive (mL, mmol/L). A suffix is not a whole unit:
+  // 5 mg does not already contain g, and 45 mm does not contain m.
+  const prefix = printedValue.endsWith(printedUnit)
+    ? printedValue.slice(0, -printedUnit.length) : null;
+  const sameUnit = prefix !== null && (!prefix || /[\s\d.,)]$/u.test(prefix));
+  if (sameUnit) return value;
+  if (/\d[^\n]*[\p{L}%µμ]$/u.test(printedValue)) {
+    return `${value} [Đơn vị ghi riêng: ${printedUnit}; cần đối chiếu]`;
+  }
+  return `${value} ${printedUnit}`.trim();
 }
 
 export function documentAnalysisText(value: DocumentAnalysis, confirmed = false): string {
