@@ -11,6 +11,7 @@ import {
   decodeAppointmentWorkspace,
   encodeAppointmentWorkspace,
   medicalInsights,
+  medicalRecordMatchesKind,
   type MedicalMedicine,
   type MedicalRecord
 } from "../lib/pregnancy-medical";
@@ -130,7 +131,7 @@ export default function PregnancyMedicalRecords() {
   const insights = useMemo(() => medicalInsights(records), [records]);
   const normalizeSearch = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase();
   const query = normalizeSearch(search.trim());
-  const visibleRecords = records.filter(record => (filter === 'all' || record.kind === filter) && (!query || normalizeSearch([
+  const visibleRecords = records.filter(record => medicalRecordMatchesKind(record, filter) && (!query || normalizeSearch([
     record.title, record.provider, record.clinician, record.notes,
     ...record.documents.flatMap(d => [d.originalFilename, d.displayName ?? ''])
   ].join(' ')).includes(query))).sort((a,b) => (recordOrder === 'newest' ? -1 : 1) * (Date.parse(a.occurredAt) - Date.parse(b.occurredAt)));

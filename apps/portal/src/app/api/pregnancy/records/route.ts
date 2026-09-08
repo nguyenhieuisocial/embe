@@ -71,7 +71,10 @@ export async function GET(request: Request): Promise<Response> {
           }
           for (const record of records) for (const document of record.documents) {
             const analysis = names.get(document.id);
-            if (analysis) document.displayName = medicalDocumentName([analysis]);
+            if (analysis) {
+              document.displayName = medicalDocumentName([analysis]);
+              document.detectedKinds = [...new Set(analysis.pages.map(page => page.kind))];
+            }
           }
           for (const record of pendingNames) {
             const analyses = record.documents.flatMap(d => names.has(d.id) ? [names.get(d.id)!] : []);
