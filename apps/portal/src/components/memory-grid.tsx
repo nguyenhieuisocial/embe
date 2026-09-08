@@ -98,9 +98,22 @@ function MemoryPhoto({ memory, featured = false, onOpen }: { memory: MediaMemory
 }
 
 function AlbumOverview({ albums }: { albums: MediaAlbum[] }) {
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("original");
+  const fold = (value: string) => value.normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/gi, "d").toLocaleLowerCase("vi");
+  const visible = albums.filter(item => fold(item.title).includes(fold(query.trim())));
+  if (sort === "name") visible.sort((a, b) => a.title.localeCompare(b.title, "vi"));
+  if (sort === "count") visible.sort((a, b) => b.count - a.count);
   return (
+    <>
+    <div className="album-browser-tools">
+      <label>Tìm album<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Tên album, chuyến đi…" /></label>
+      <label>Sắp xếp<select value={sort} onChange={event => setSort(event.target.value)}><option value="original">Thứ tự gia đình</option><option value="name">Tên A–Z</option><option value="count">Nhiều ảnh nhất</option></select></label>
+    </div>
+    <p className="album-browser-count" role="status">{visible.length} album{query.trim() ? ` phù hợp / ${albums.length}` : ""}</p>
+    {!visible.length ? <div className="album-search-empty"><p>Không tìm thấy album phù hợp.</p>{query ? <button type="button" onClick={() => setQuery("")}>Xóa tìm kiếm</button> : null}</div> : null}
     <section className="memory-albums" aria-label="Các album theo folder gia đình">
-      {albums.map((album, albumIndex) => (
+      {visible.map((album, albumIndex) => (
         <Link className="memory-album" href={`/ky-niem?view=album&album=${encodeURIComponent(album.key)}`} key={album.key}>
           <span className="memory-album-covers" aria-hidden="true">
             {album.covers.slice(0, 3).map((cover, coverIndex) => (
@@ -113,6 +126,7 @@ function AlbumOverview({ albums }: { albums: MediaAlbum[] }) {
         </Link>
       ))}
     </section>
+    </>
   );
 }
 
@@ -282,6 +296,7 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
   initialView?: MemoryView;
 }) {
   const [memories, setMemories] = useState(initial);
+  const [photoLayout, setPhotoLayout] = useState<"grid" | "full">("grid");
   const [view, setView] = useState<MemoryView>(initialView);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(initial.length === PAGE_SIZE);
@@ -350,8 +365,9 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
 
       {view === "album" && album ? (
         <section className="memory-album-detail" aria-label={initial[0]?.albumTitle ?? "Album gia đình"}>
-          <header><Link href="/ky-niem?view=album">‹ Tất cả album</Link><div><h2>{initial[0]?.albumTitle ?? "Album gia đình"}</h2><p>{(selectedAlbumCount ?? memories.length).toLocaleString("vi-VN")} ảnh đã chọn</p></div></header>
-          <div className="memory-album-grid">
+          <header><Link href="/ky-niem?view=album">‹ Tất cả album</Link><div><h2>{albums.find(item => item.key === album)?.title ?? initial[0]?.albumTitle ?? "Album gia đình"}</h2><p>{(selectedAlbumCount ?? memories.length).toLocaleString("vi-VN")} ảnh</p></div></header>
+          <div className="album-layout-switch" role="group" aria-label="Bố cục ảnh"><button type="button" aria-pressed={photoLayout === "grid"} onClick={() => setPhotoLayout("grid")}>Lưới ảnh</button><button type="button" aria-pressed={photoLayout === "full"} onClick={() => setPhotoLayout("full")}>Nguyên khung</button></div>
+          <div className="memory-album-grid" data-layout={photoLayout}>
             {memories.map((memory, index) => (
               <button aria-label={`Mở ảnh ${memory.title}`} key={memory.id} onClick={() => setActiveIndex(index)} type="button">
                 <ViewportImage alt={memory.title} eager={index === 0} height={memory.height ?? 900}

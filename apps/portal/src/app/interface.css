@@ -168,3 +168,21 @@
 .appointment-preparation-preview > summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-size: .8rem; font-weight: 600; }
 .appointment-preparation-preview > summary small { display: inline-block; margin-left: 8px; font-weight: 400; }
 .next-appointment-compact :is(button,a,summary):focus-visible { outline: 2px solid #91435c; outline-offset: 3px; }
+/* Family albums: compact controls, photos retain their own proportions on demand. */
+.album-browser-tools { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 10px; margin-top: 14px; }
+.album-browser-tools label { display: grid; gap: 5px; min-width: 0; font-size: .75rem; color: var(--ink-soft); }
+.album-browser-tools :is(input,select) { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; padding: 8px; font-size: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); }
+.album-browser-count { font-size: .75rem; color: var(--ink-soft); margin: 10px 0; }
+.album-layout-switch { display: flex; gap: 6px; }
+.album-layout-switch button, .album-search-empty button { min-height: 44px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 12px; padding: 8px 14px; font: inherit; font-size: .8rem; }
+.album-layout-switch button[aria-pressed="true"] { background: #f8e6ee; border-color: #a54a6a; color: #833c57; }
+.memory-album-grid[data-layout="full"] { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.memory-album-grid[data-layout="full"] button { grid-column: auto; grid-row: auto; min-height: 0; border-radius: 12px; }
+.memory-album-grid[data-layout="full"] img { aspect-ratio: auto; height: auto; object-fit: contain; }
+.album-browser-tools :is(input,select):focus-visible, .album-layout-switch button:focus-visible { outline: 2px solid #a54a6a; outline-offset: 3px; }
+@media (max-width: 767px) {
+  .memories-main .memory-album-detail > header { align-items: start; flex-direction: column; gap: 4px; }
+  .memories-main .memory-album-detail > header > div { text-align: left; min-width: 0; }
+  .memories-main .memory-album-detail h2 { overflow-wrap: anywhere; }
+  .memories-main .memory-albums { margin-top: 8px; gap: 12px; }
+}

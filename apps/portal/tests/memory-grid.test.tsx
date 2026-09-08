@@ -40,6 +40,25 @@ function memory(index: number): MediaMemory {
 }
 
 describe("mobile memory grid", () => {
+  it("finds Vietnamese album names without accents and clears an empty search", () => {
+    render(<MemoryGrid initial={[memory(1)]} initialView="album" albums={[
+      { key: 'da-lat', title: 'Đà Lạt', count: 5, covers: [memory(1)] },
+      { key: 'le-cuoi', title: 'Lễ cưới', count: 10, covers: [memory(2)] }
+    ]} />);
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Tìm album' }), { target: { value: 'da lat' } });
+    expect(screen.getByText('Đà Lạt')).toBeVisible();
+    expect(screen.queryByText('Lễ cưới')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'khong co' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Xóa tìm kiếm' }));
+    expect(screen.getByText('Lễ cưới')).toBeVisible();
+  });
+  it("switches to uncropped photos without changing photo order or opening the viewer", () => {
+    render(<MemoryGrid initial={[memory(1), memory(2)]} initialView="album" album="da-lat-2025" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Nguyên khung' }));
+    expect(document.querySelector('.memory-album-grid')).toHaveAttribute('data-layout', 'full');
+    expect(screen.getAllByRole('button', { name: /^Mở ảnh/ }).map(button => button.getAttribute('aria-label'))).toEqual(['Mở ảnh Kỷ niệm 1', 'Mở ảnh Kỷ niệm 2']);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
