@@ -1,0 +1,30 @@
+.studio-home { --home-line:#e9dce2; }
+.studio-home .studio-home-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:12px 0 22px; }
+.studio-home-heading h1 { margin:0 0 6px; font-size:clamp(1.6rem,4vw,2.1rem); letter-spacing:-.025em; }
+.studio-home-heading p { margin:0; color:var(--ink-soft); font-size:.875rem; line-height:1.6; max-width:42ch; }
+.studio-home .studio-create { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:48px; padding:10px 18px; border-radius:16px; color:white; background:#96405f; text-decoration:none; font-weight:600; font-size:.9375rem; }
+.studio-home-layout { display:grid; gap:24px; }
+.studio-home-tools { min-width:0; padding:0 14px; background:#f8edf2; border-radius:18px; }
+.studio-home .studio-resume { display:grid; gap:4px; padding:16px 0; min-height:64px; text-decoration:none; color:#392d35; }
+.studio-resume strong { font-size:.9375rem; }
+.studio-resume span,.studio-home-privacy { font-size:.8125rem; line-height:1.6; color:var(--ink-soft); }
+.studio-home-privacy { border-top:1px solid var(--home-line); padding-top:12px; margin:4px 0 14px; }
+.studio-home-library { min-width:0; }
+.studio-home-library>h2 { font-size:1.15rem; margin:0 0 14px; }
+.studio-home .studio-library { margin:0; }
+.studio-home .studio-topic { padding:12px 0; min-height:96px; }
+.studio-home .studio-topic img { width:52px; height:76px; border-radius:8px; }
+.studio-home .studio-topic-copy strong { font-size:.9375rem; }
+.studio-home .studio-topic-copy small { font-size:.8125rem; }
+.studio-home .studio-count { font-size:.8125rem; }
+.studio-home .studio-disclosure summary { font-size:.875rem; gap:12px; }
+.studio-home .studio-disclosure .studio-automation { padding:12px 0; border:0; background:transparent; }
+.studio-home :is(input,select) { max-width:100%; }
+.studio-home :is(a,button,summary) { touch-action:manipulation; }
+@media(min-width:900px) {
+  .studio-main.studio-home { max-width:1040px; }
+  .studio-home-layout { grid-template-columns:minmax(0,1fr) 300px; align-items:start; gap:36px; }
+  .studio-home-tools { grid-column:2; grid-row:1; }
+  .studio-home-library { grid-column:1; grid-row:1; }
+}
+@media(max-width:480px) { .studio-home .studio-create { width:100%; } }
