@@ -58,6 +58,7 @@ tools/bin/
 tools/downloads/
 tools/staging/
 .agents/skills/archify/
+.agents/skills/ui-ux-pro-max/
 docs/architecture/diagrams/*.visual-check.*
 .vercel/
 .supabase/
