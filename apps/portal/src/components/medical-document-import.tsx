@@ -6,6 +6,7 @@ import { proposeDocumentImport, validImportDetails, type DocumentImportContext, 
 import { MEDICAL_MEASUREMENTS } from '../lib/medical-measurements';
 import { clearPrivateGetCache } from '../lib/private-get-cache';
 import { DOCUMENT_DATA_GROUPS, groupDocumentData } from '../lib/medical-document-data';
+import { documentDateEvidence } from '../lib/medical-document-name';
 
 export default function MedicalDocumentImport({ documentId, recordId, revision, analysis, disabled, automatic = false, onImported, onBusy, onDirty }: {
   documentId: string; recordId: string; revision: number; analysis: DocumentAnalysis; disabled: boolean; onImported: () => Promise<void>;
@@ -54,6 +55,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
   }, [documentId, revision, retry]);
   const proposal = useMemo(() => proposeDocumentImport(analysis, context?.records ?? [], recordId), [analysis, context, recordId]);
   const grouped = useMemo(() => groupDocumentData(analysis), [analysis]);
+  const readDate = documentDateEvidence([analysis]);
   const details: DocumentImportDetails = { ...proposal.details, ...overrides,
     measurements: Object.fromEntries(Object.entries(proposal.details.measurements).filter(([key]) => !excluded.includes(key))),
     medicines: proposal.details.medicines.filter((_, i) => !excluded.includes(`medicine-${i}`)),
@@ -84,7 +86,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
     {!context ? <p role="status">{error || 'Đang tìm hồ sơ và cơ sở khám…'}{error ? <button type="button" onClick={() => setRetry(n => n + 1)}>Thử lại</button> : null}</p> : <>
       <p className="document-patient">Tên trên giấy: <strong>{proposal.patients.join(' · ') || 'Chưa đọc được — cần xem bản gốc'}</strong></p>
       <p>{context.intake ? 'Thông tin được điền từ bản đọc; Mẹ có thể sửa trước khi lưu.' : 'Bổ sung vào hồ sơ đang chứa tài liệu. Giữ ngày, tên, ghi chú và dữ liệu đã có; không ghi đè.'}</p>
-      <p><strong>{DOCUMENT_TYPES[details.kind]}</strong> · {details.occurredOn ? details.occurredOn.split('-').reverse().join('/') : 'Chưa rõ ngày'}<br />{details.provider || 'Chưa rõ cơ sở khám'}</p>
+      <p><strong>{DOCUMENT_TYPES[details.kind]}</strong> · {details.occurredOn ? details.occurredOn.split('-').reverse().join('/') : readDate.conflicting ? 'Ngày trên các nguồn khác nhau' : readDate.dates.length === 1 ? `${readDate.dates[0].split('-').reverse().join('/')} · ngày từ bản đọc, chưa xác minh` : 'Chưa đọc được ngày'}<br />{details.provider || 'Chưa rõ cơ sở khám'}</p>
       <details className="document-import-values"><summary>Kiểm tra ngày, cơ sở và lần khám</summary>
       <label>Loại hồ sơ<select value={details.kind} disabled={!context.intake} onChange={e => change({ kind: e.target.value })}>{Object.entries(DOCUMENT_TYPES).map(([k, label]) => <option key={k} value={k}>{label}</option>)}</select></label>
       <label>Tên hồ sơ<input value={details.title} maxLength={100} disabled={!context.intake} onChange={e => change({ title: e.target.value })} /></label>
