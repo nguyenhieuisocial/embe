@@ -14,6 +14,12 @@ try{
   await page.getByRole('button',{name:'Vào sổ gia đình',exact:true}).click();
   await page.waitForURL(origin+'/me-bau/bua-an',{timeout:45000});logged=true;
   await page.getByText('Mẹ vừa ăn gì?',{exact:true}).waitFor();
+  const today=page.getByLabel('Dinh dưỡng hôm nay',{exact:true});
+  await today.waitFor({timeout:45000});
+  if(await today.getAttribute('open')!==null)throw new Error('today_should_start_collapsed');
+  await today.locator('summary').click();
+  if(!await today.locator('p').first().isVisible())throw new Error('today_summary_missing');
+  await today.locator('summary').click();
   const results=[];
   for(const [width,height] of [[375,812],[393,852],[430,932],[852,393],[768,1024],[1280,900]]){
     await page.setViewportSize({width,height});

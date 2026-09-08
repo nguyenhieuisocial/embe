@@ -15,6 +15,14 @@ const entry: MealHistoryEntry = {
 };
 
 describe("meal dashboard", () => {
+  it("distinguishes measured zero from missing or invalid nutrient values", () => {
+    const result = buildMealDashboard([{ ...entry, analysis: { ...entry.analysis,
+      nutrition: { ...entry.analysis.nutrition!, totals: { fiber_g: 0, iron_mg: -1, protein_g: NaN } }
+    } }, { ...entry, analysis: { ...entry.analysis, nutrition: undefined } }], 1, new Date("2026-09-01T15:00:00Z"));
+    expect(result.daily[0].meals).toBe(2);
+    expect(result.nutrientCoverage).toEqual({ fiber_g: 1 });
+    expect(result.nutrientTotals).toEqual({ fiber_g: 0 });
+  });
   it("excludes invalid, future and out-of-window dates from every aggregate", () => {
     const rows = [entry, ...["invalid", "2026-08-01T05:00:00Z", "2026-09-01T16:00:00Z"]
       .map(eatenAt => ({ ...entry, eatenAt }))];

@@ -33,6 +33,7 @@ export function buildMealDashboard(history: MealHistoryEntry[], days: number, no
   const byDay = new Map(daily.map((day) => [day.key, day]));
   const groupCounts: Record<string, number> = {};
   const nutrientTotals: Record<string, number> = {};
+  const nutrientCoverage: Record<string, number> = {};
   let calorieLow = 0;
   let calorieHigh = 0;
   let mealsWithCalories = 0;
@@ -53,14 +54,16 @@ export function buildMealDashboard(history: MealHistoryEntry[], days: number, no
       day.calories += range.mid;
     }
     for (const [key, value] of Object.entries(entry.analysis.nutrition?.totals ?? {})) {
+      if (!Number.isFinite(value) || value < 0) continue;
       nutrientTotals[key] = (nutrientTotals[key] ?? 0) + value;
+      nutrientCoverage[key] = (nutrientCoverage[key] ?? 0) + 1;
     }
     const groups = new Set(entry.analysis.foods.flatMap((food) => food.foodGroups));
     for (const group of groups) groupCounts[group] = (groupCounts[group] ?? 0) + 1;
   }
 
   return {
-    daily, groupCounts, nutrientTotals,
+    daily, groupCounts, nutrientTotals, nutrientCoverage,
     calorieRange: mealsWithCalories ? { low: calorieLow, high: calorieHigh } : null,
     maxDailyCalories: Math.max(1, ...daily.map((day) => day.calories))
   };

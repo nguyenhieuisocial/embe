@@ -220,6 +220,9 @@ export default function MealPhotoTracker() {
     [history]
   );
   const dashboard = useMemo(() => buildMealDashboard(completedHistory, range), [completedHistory, range]);
+  // Recompute on renders as well as history changes, so refresh after midnight
+  // cannot retain yesterday's totals. Missing nutrients are not zero intake.
+  const todayDashboard = buildMealDashboard(completedHistory, 1);
   const risks = useMemo(() => new Set(analysis?.foods.flatMap((food) => [
     ...food.safetyFlags, ...deriveMealSafetyFlags(food.nameVi)
   ]) ?? []), [analysis]);
@@ -589,6 +592,20 @@ export default function MealPhotoTracker() {
       </div> : null}
       <Link className="meal-medicine-shortcut" href="/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc">Thuốc & vi chất tự mua<Icon name="arrow" /></Link>
       </div>
+
+      {!historyLoading && !historyLoadError ? <details className="care-inline" aria-label="Dinh dưỡng hôm nay">
+        <summary>Hôm nay · {todayDashboard.daily[0].meals} bữa đã ghi</summary>
+        {todayDashboard.daily[0].meals ? <>
+          <p>Ước lượng từ bữa đã lưu; tự cập nhật sau khi lưu, sửa hoặc xóa. Chưa gồm thuốc và viên bổ sung.</p>
+          <div className="meal-nutrients">
+            {nutrientLabels.map(([key, label, unit]) => <span key={key}>
+              <b>{todayDashboard.nutrientCoverage[key] ? `${Math.round(todayDashboard.nutrientTotals[key] * 10) / 10} ${unit}` : "Chưa có dữ liệu"}</b>
+              <small>{label}{todayDashboard.nutrientCoverage[key] ? ` · ${todayDashboard.nutrientCoverage[key]}/${todayDashboard.daily[0].meals} bữa` : ""}</small>
+            </span>)}
+          </div>
+          <p>Chưa có mục tiêu dinh dưỡng cá nhân đã đối chiếu, nên chưa kết luận thiếu chất hoặc cần ăn thêm bao nhiêu.</p>
+        </> : <p>Chưa có bữa đã lưu hôm nay. Chụp ảnh hoặc nhập món để bắt đầu.</p>}
+      </details> : null}
 
       <section className="meal-dashboard meal-workspace" hidden={view === "capture"} aria-labelledby="meal-dashboard-title">
         <h3 id="meal-dashboard-title">{view === "history" ? "Lịch sử từng bữa" : "Nhìn lại dinh dưỡng"}</h3>
