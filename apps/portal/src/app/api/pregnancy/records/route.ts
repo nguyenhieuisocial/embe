@@ -54,13 +54,19 @@ export async function GET(request: Request): Promise<Response> {
     const ids = records.flatMap(r => r.documents.map(d => d.id));
     if (ids.length) {
       try {
-        const scans = await store.schema('portal_read_model').from('medical_document_scan')
-          .select('document_id,status,analysis,confirmed_analysis').in('document_id', ids)
-          .abortSignal(AbortSignal.timeout(4000));
-        if (!scans.error && scans.data) {
+        // Use the existing private RPC: this schema is not directly exposed by PostgREST.
+        const scans: { document_id: string; status: string; analysis: unknown }[] = [];
+        const readableIds = records.flatMap(r => r.documents.filter(d => ['review', 'confirmed'].includes(d.scanStatus ?? '')).map(d => d.id));
+        for (let offset = 0; offset < readableIds.length; offset += 4) {
+          await Promise.all(readableIds.slice(offset, offset + 4).map(async id => {
+            const result = await store.rpc('embe_get_document_scan', { p_document_id: id }).abortSignal(AbortSignal.timeout(4000));
+            if (!result.error && result.data?.documentId === id) scans.push({ document_id: id, status: result.data.status, analysis: result.data.analysis });
+          }));
+        }
+        if (scans.length) {
           const names = new Map<string, DocumentAnalysis>();
-          for (const scan of scans.data) {
-            const analysis = scan.status === 'confirmed' ? scan.confirmed_analysis : scan.analysis;
+          for (const scan of scans) {
+            const analysis = scan.analysis;
             if (['review', 'confirmed'].includes(scan.status) && validDocumentAnalysis(analysis)) names.set(scan.document_id, analysis);
           }
           for (const record of records) for (const document of record.documents) {
