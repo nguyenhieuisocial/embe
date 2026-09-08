@@ -35,12 +35,12 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
   const count=(group:keyof MedicalReadingSummary)=>documents.reduce((total,document)=>total+(document.readingSummary?.[group].length??0),0);
   const failed=documents.filter(document=>['review','confirmed'].includes(document.scanStatus??'')&&!document.readingSummary);
   return <section className="pregnancy-record-summary" aria-label="Tóm tắt thai kỳ">
-    <header><h2>Tóm tắt thai kỳ</h2><small>Theo hồ sơ đã lưu · không thay kết luận bác sĩ</small></header>
+    <header><h2>Tóm tắt thai kỳ</h2><small>{documents.length} giấy tờ đã lưu</small></header>
     <div className="pregnancy-summary-lead">
-      <div><span>Lần khám gần nhất đã ghi</span>{summary.latest?<><strong>{date(summary.latest.occurredAt)} · {summary.latest.title}</strong><p>{summary.latest.provider || 'Chưa ghi cơ sở khám'}</p><Link href={`#record-${summary.latest.id}`}>Xem lần khám</Link></>:<p>Chưa có lần khám hoàn tất được khớp. Giấy tờ vẫn được giữ bên dưới.</p>}</div>
-      <div><span>Lịch tiếp theo</span>{summary.upcoming?<><strong>{date(summary.upcoming.occurredAt)} · {summary.upcoming.title}</strong><Link href="#lich-kham-ke-tiep" onClick={()=>document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','')}>Xem lịch hẹn</Link></>:<p>Chưa có lịch hẹn sắp tới được lưu.</p>}</div>
+      <div><span>Lần khám gần nhất</span>{summary.latest?<><strong className="medical-overview-date">{date(summary.latest.occurredAt)}</strong><p>{summary.latest.title}</p><small>{summary.latest.provider || 'Chưa ghi cơ sở khám'}</small><Link href={`#record-${summary.latest.id}`}>Xem lần khám <span aria-hidden="true">→</span></Link></>:<p>Chưa khớp lần khám. Xem giấy tờ đã lưu bên dưới.</p>}</div>
+      <div className="medical-next-highlight"><span>Lịch tiếp theo</span>{summary.upcoming?<><strong className="medical-overview-date">{date(summary.upcoming.occurredAt)}</strong><p>{summary.upcoming.title}</p><small>{new Date(summary.upcoming.occurredAt).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'})}{summary.upcoming.provider?` · ${summary.upcoming.provider}`:''}</small><Link href="#lich-kham-ke-tiep" onClick={()=>document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','')}>Xem lịch hẹn <span aria-hidden="true">→</span></Link></>:<><p>Chưa có lịch sắp tới.</p><Link href="#lich-kham-ke-tiep">Mở lịch khám</Link></>}</div>
     </div>
-    <MedicalEncounterChain records={records}/>
+    <p className="medical-reading-context">Thông tin từ giấy tờ, không thay kết luận bác sĩ.</p>
     {failed.length?<p role="alert">{failed.length} bản đọc chưa tải được; tổng hợp chưa đầy đủ. {failed.map(document=><Link key={document.id} href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename}</Link>)}</p>:null}
     <details><summary>Kết luận & lời dặn trên giấy <small>{findings.length} nội dung</small></summary>
       {!count('findings')?<p>Chưa lấy được kết luận từ bản đọc. Không có nghĩa kết quả khám bình thường.</p>:null}
@@ -54,7 +54,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       </article>)}
     </details>
     <details><summary>Kết quả & chỉ số trên giấy <small>{results.length} mục</small></summary>
-      <p>Giữ số, đơn vị và thời điểm theo từng tài liệu; chưa dùng bản đọc chưa xác minh để kết luận sức khỏe.</p>
+      <p>Giữ nguyên số và đơn vị trên giấy; bản đọc chưa xác minh không dùng để kết luận sức khỏe.</p>
       {!count('results')?<p>Chưa có kết quả trong bản đọc đã tải.</p>:null}
       {results.map(({row,sources},index)=><article key={index}>
         <strong>{row.label}</strong><p>{row.value}</p>{row.details.map((detail,i)=><small key={i}>{detail}</small>)}
@@ -77,6 +77,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
           </div>)}
         </article>)}
       </details>)}
+      {summary.prescription?<details><summary>Thuốc đã nhập vào hồ sơ</summary><p>{date(summary.prescription.occurredAt)} · Không đồng nghĩa đang uống.</p>{summary.prescription.medicines.map((medicine,index)=><p key={index}><strong>{medicine.name}</strong> — {[medicine.dose,medicine.frequency,medicine.instructions].filter(Boolean).join(' · ')}</p>)}</details>:null}
       <Link href="/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc">Thuốc & lịch uống</Link>
     </details>
     {receiptRows.length?<details><summary>Phiếu thu · dịch vụ & số lượng <small>{receiptRows.length} mục</small></summary>
@@ -87,7 +88,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       {!summary.metrics.length?<p>Chưa có chỉ số được nhập vào hồ sơ; số trên ảnh có thể chưa đồng bộ.</p>:null}
       <dl>{summary.metrics.map(({metric,record,value,previous})=><div key={metric.key}><dt>{metric.label}</dt><dd><strong>{value} {metric.unit}</strong> · {date(record.occurredAt)}{previous?<small>Lần trước: {previous.measurements[metric.key]} {metric.unit} · {date(previous.occurredAt)}</small>:null}<Link href={`#record-${record.id}`}>Nguồn số đo</Link></dd></div>)}</dl>
     </details>
-    <details><summary>Thuốc trong hồ sơ gần nhất</summary>{summary.prescription?<><p>{date(summary.prescription.occurredAt)} · Không đồng nghĩa đang uống.</p>{summary.prescription.medicines.map((medicine,index)=><p key={index}><strong>{medicine.name}</strong> — {[medicine.dose,medicine.frequency,medicine.instructions].filter(Boolean).join(' · ')}</p>)}</>:<p>Chưa có thuốc được nhập từ đơn vào hồ sơ.</p>}<Link href="/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc">Xem thuốc & lịch uống</Link></details>
+    <MedicalEncounterChain records={records}/>
     <details className="medical-document-progress"><summary>Trạng thái giấy tờ <small>{documents.length} tài liệu</small></summary>
       {documents.map(document=><article key={document.id}>
         <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename}</Link>

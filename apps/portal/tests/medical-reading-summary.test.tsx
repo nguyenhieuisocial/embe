@@ -42,3 +42,14 @@ it('renders two OCR variants from the same prescription as one source card',()=>
  expect(screen.getByText('1 viên · 2 lần/ngày')).toBeInTheDocument();
  expect(screen.getByText('1 viên · 2 lần')).toBeInTheDocument();
 });
+
+it('keeps the overview collapsed and places saved medicines inside the same medicine section',()=>{
+ const record:MedicalRecord={id:'r',kind:'clinical',status:'completed',occurredAt:'2026-09-07',title:'Khám',provider:'Cơ sở A',clinician:'',notes:'',gestationalWeek:null,nextAppointmentAt:null,measurements:{},medicines:[{name:'Thuốc đã ghi',dose:'Theo đơn',frequency:'',instructions:''}],documents:[]};
+ const before=JSON.stringify(record);
+ const {container}=render(<PregnancyRecordSummary records={[record]}/>);
+ expect(container.querySelector('details[open]')).toBeNull();
+ const stored=screen.getByText('Thuốc đã nhập vào hồ sơ').closest('details')!;
+ expect(stored.parentElement?.closest('details')?.querySelector('summary')?.textContent).toContain('Thuốc đã đọc từ giấy tờ');
+ expect(screen.queryByText('Thuốc trong hồ sơ gần nhất')).not.toBeInTheDocument();
+ expect(JSON.stringify(record)).toBe(before);
+});

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import PregnancyMedicalRecords from "../src/components/pregnancy-medical-records";
 import {
@@ -17,6 +17,7 @@ const record: MedicalRecord = {
 };
 
 describe("pregnancy medical record book", () => {
+  beforeEach(() => window.history.replaceState({}, '', '/me-bau/ho-so#them-giay-to'));
   it('searches without accents and lets the user recover from no matches', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ records: [record] })));
     render(<PregnancyMedicalRecords />);
@@ -28,7 +29,7 @@ describe("pregnancy medical record book", () => {
     fireEvent.click(screen.getByRole('button', { name: 'Xem tất cả hồ sơ' }));
     expect(search).toHaveValue('');
     expect(document.getElementById(`record-${record.id}`)).not.toBeNull();
-    expect(screen.getByText('Tổng quan & điều cần bổ sung').closest('details')).not.toHaveAttribute('open');
+    expect(document.querySelector('.medical-workspace-overview[open]')).toBeNull();
   });
   it("never calls a failed load empty and lets the user retry without uploading again", async () => {
     vi.stubGlobal('fetch', vi.fn()
@@ -79,13 +80,13 @@ describe("pregnancy medical record book", () => {
   it("opens a compact classified form and shows the private timeline", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ records: [record] }), { status: 200 })));
     render(<PregnancyMedicalRecords />);
-    expect((await screen.findAllByText("Khám thai định kỳ")).length).toBe(2);
-    fireEvent.click(screen.getByRole("button", { name: "+ Thêm hồ sơ" }));
+    await waitFor(()=>expect(document.getElementById(`record-${record.id}`)).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Tự nhập" }));
     const classifier = screen.getByRole("group", { name: "Phân loại hồ sơ" });
     expect(classifier).toBeInTheDocument();
     fireEvent.click(within(classifier).getByRole("button", { name: "Đơn thuốc" }));
     await waitFor(() => expect(screen.getByText("Thuốc ghi trên đơn")).toBeInTheDocument());
-    expect(screen.getByText(/Chỉ Hiếu và Ngân xem được/)).toBeInTheDocument();
+    expect(screen.getByText(/Hồ sơ y tế được giữ riêng/)).toBeInTheDocument();
   });
 
   it("opens the prescription form directly from a quick link", async () => {
@@ -119,10 +120,9 @@ describe("pregnancy medical record book", () => {
   it("separates the next appointment from saved records when empty", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ records: [] }), { status: 200 })));
     render(<PregnancyMedicalRecords />);
-    expect(await screen.findByRole("heading", { name: "Lịch khám tiếp theo" })).toBeInTheDocument();
-    expect(screen.getByText("Chưa có lịch khám sắp tới")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Hồ sơ đã lưu" })).toBeInTheDocument();
-    expect(screen.getByText("Chưa có hồ sơ đã lưu")).toBeInTheDocument();
+    expect(await screen.findByText("Chưa có hồ sơ đã lưu")).toBeInTheDocument();
+    expect(document.getElementById('lich-kham-ke-tiep')).toHaveAttribute('hidden');
   });
 
   it("round-trips a bounded appointment preparation workspace without a new schema", () => {
@@ -142,6 +142,7 @@ describe("pregnancy medical record book", () => {
   });
 
   it("shows the next appointment as a one-hand preparation workspace with linked documents", async () => {
+    window.history.replaceState({}, '', '/me-bau/ho-so#lich-kham-ke-tiep');
     const prepared: MedicalRecord = {
       ...record,
       notes: 'EMBE_APPOINTMENT_V1\n{"questions":["Cần làm xét nghiệm nào?"],"checklist":["papers","results"],"outcome":""}',
@@ -171,6 +172,7 @@ describe("pregnancy medical record book", () => {
   });
 
   it("links a follow-up date from a completed visit to the family calendar", async () => {
+    window.history.replaceState({}, '', '/me-bau/ho-so#lich-kham-ke-tiep');
     const followUp: MedicalRecord = {
       ...record,
       status: "completed",
@@ -187,6 +189,7 @@ describe("pregnancy medical record book", () => {
   });
 
   it("turns a planned appointment into a completed visit while preserving preparation", async () => {
+    window.history.replaceState({}, '', '/me-bau/ho-so#lich-kham-ke-tiep');
     let saved: MedicalRecord = {
       ...record,
       notes: 'EMBE_APPOINTMENT_V1\n{"questions":["Có cần hẹn lại sớm?"],"checklist":["papers"],"outcome":""}'

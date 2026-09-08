@@ -9,7 +9,7 @@ export default function PregnancyProfilePage() {
       <AppHeader note="Hồ sơ riêng của Mẹ Ngân" />
       <header className="pregnancy-profile-intro">
         <h1>Hồ sơ thai kỳ</h1>
-        <p className="intro">Chụp giấy tờ, xem kết quả và chuẩn bị lần khám tiếp theo.</p>
+        <p className="intro">Kết quả, lời dặn và lịch khám — ở cùng một nơi.</p>
       </header>
       <PregnancyMedicalRecords />
       <Link className="btn btn-quiet btn-block" href="/nha-minh/ho-so?role=mother">Tiền sử sản khoa & hồ sơ sức khỏe Mẹ</Link>

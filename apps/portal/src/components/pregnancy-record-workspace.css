@@ -55,15 +55,30 @@
 .medical-workspace .medical-documents>div>a.medical-document-summary-link{flex-basis:100%;display:grid;gap:4px;align-items:start;font-size:.9rem;font-weight:600;text-decoration:none;padding:8px 0;overflow-wrap:anywhere}.medical-document-summary-link small{font-size:.76rem;font-weight:400;color:#725d67}
 .medical-workspace .medical-form :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box;font-size:16px}
 @media(min-width:900px){.medical-workspace{max-width:880px;margin-inline:auto}.medical-workspace .medical-timeline{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
-.pregnancy-record-summary { margin-block:16px; padding:16px; border:1px solid #e5ccd4; border-radius:18px; background:#fff9fb; color:#453840; overflow-wrap:anywhere; }
+.medical-records-heading .medical-capture-action { display:flex; align-items:center; justify-content:center; flex:1; min-width:0; min-height:48px; padding:10px 12px; background:var(--rose); color:var(--on-rose, #fff); border-radius:14px; font-size:.9rem; font-weight:600; text-decoration:none; }
+.medical-workspace .medical-records-heading { gap:12px; margin-bottom:12px; }
+.medical-workspace .medical-records-heading .medical-add { min-height:48px; flex-shrink:0; }
+.pregnancy-record-summary { margin-block:16px; padding:0; color:var(--ink); overflow-wrap:anywhere; }
+.pregnancy-record-summary > header { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px 12px; margin-bottom:12px; }
 .pregnancy-record-summary h2 { margin:0 0 4px; font-size:1.15rem; }
 .pregnancy-record-summary small,.pregnancy-record-summary footer { font-size:.8125rem; color:#705e67; }
-.pregnancy-summary-lead { display:grid; gap:12px; margin-block:16px; }
-.pregnancy-summary-lead>div { border-inline-start:3px solid #b96382; padding-inline-start:12px; min-width:0; }
+.pregnancy-summary-lead { display:grid; gap:10px; margin-block:12px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pregnancy-summary-lead>div { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:16px; padding:12px; min-width:0; background:var(--surface); }
+.pregnancy-summary-lead>div.medical-next-highlight { background:var(--rose-soft); border-color:var(--rose-mist); }
+.pregnancy-summary-lead .medical-overview-date { font-size:1.2rem; font-variant-numeric:tabular-nums; color:var(--rose-press); }
+.pregnancy-summary-lead>div>p { font-size:.875rem; line-height:1.5; }
+.pregnancy-summary-lead>div>a { margin-top:auto; justify-content:space-between; gap:8px; text-decoration:none; font-size:.875rem; font-weight:600; }
+.pregnancy-summary-lead>div>a>span { margin:0; }
+.pregnancy-record-summary .medical-reading-context { font-size:.8125rem; color:var(--ink-soft); margin:16px 0 8px; }
+.pregnancy-record-summary > details { padding:0 12px; margin-block:8px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.pregnancy-record-summary > details > summary { font-weight:600; font-size:.9rem; padding-block:14px; }
+.pregnancy-record-summary > details > summary small { display:inline-block; font-size:.75rem; font-weight:400; }
+.pregnancy-record-summary > details[open] { border-color:var(--rose-mist); padding-bottom:12px; }
+.pregnancy-record-summary :is(summary,a,button):active { background-color:var(--rose-soft); }
 .pregnancy-summary-lead span,.pregnancy-summary-lead strong { display:block; }
 .pregnancy-summary-lead span { font-size:.8125rem; margin-bottom:4px; }
 .pregnancy-record-summary p { margin-block:6px; }
-.pregnancy-record-summary details { border-top:1px solid #eadde2; }
+.pregnancy-record-summary details details { border-top:1px solid var(--line); }
 .pregnancy-record-summary summary { min-height:44px; padding-block:12px; cursor:pointer; }
 .pregnancy-record-summary summary small { margin-inline-start:6px; }
 .pregnancy-record-summary a { display:inline-flex; align-items:center; min-height:44px; color:#8d3657; text-decoration:underline; }
@@ -71,10 +86,16 @@
 .pregnancy-record-summary article small,.pregnancy-record-summary dd small { display:block; }
 .pregnancy-record-summary dd { margin:4px 0; }
 .pregnancy-record-summary footer { margin-top:12px; }
-@media(min-width:640px) { .pregnancy-summary-lead { grid-template-columns:1fr 1fr; } }
+@media(max-width:350px) { .pregnancy-summary-lead { grid-template-columns:1fr; } }
+@media(min-width:640px) { .pregnancy-summary-lead>div { padding:16px; } }
 .medical-encounter-chain { margin-block: 1rem; min-width: 0; }
 .medical-encounter-chain > h3 { font-size: 1rem; margin-block: 0 .5rem; }
-.medical-encounter-chain > details { border-block-start: 1px solid #eadde2; padding-block: .35rem; }
+.medical-encounter-chain > details { border:1px solid var(--line); border-radius:14px; background:var(--surface); margin-block:8px; padding:0 12px; }
+.medical-encounter-chain > details > summary { display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:600; }
+.medical-encounter-chain > details > summary > span { min-width:0; }
+.medical-encounter-chain > details > summary > span > small { display:block; margin:4px 0 0; font-weight:400; }
+.medical-encounter-chain > details > summary::after { content:'+'; color:var(--rose); }
+.medical-encounter-chain > details[open] > summary::after { content:'−'; }
 .medical-encounter-chain summary { min-height: 44px; padding-block: .65rem; overflow-wrap: anywhere; }
 .medical-encounter-chain a { display: inline-flex; flex-direction: column; justify-content: center; min-height: 44px; max-width: 100%; overflow-wrap: anywhere; }
 .medical-encounter-chain ul { list-style: none; margin: .5rem 0; padding-inline-start: .85rem; border-inline-start: 2px solid #e7cbd6; }

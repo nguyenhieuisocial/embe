@@ -351,11 +351,12 @@ export default function PregnancyMedicalRecords() {
   return (
     <section className="medical-records medical-workspace" id="ho-so-kham" aria-labelledby="medical-records-title">
       <div className="section-heading-row medical-records-heading">
-        <div><h2 id="medical-records-title">Sổ khám của Mẹ</h2></div>
+        <h2 id="medical-records-title" className="sr-only">Sổ khám của Mẹ</h2>
+        <a className="medical-capture-action" href="#them-giay-to">+ Chụp / thêm giấy tờ</a>
         <button className="medical-add" type="button" disabled={status === "saving"} onClick={() => {
           if (showForm) { setShowForm(false); setEditingRecord(null); setFormMode("new"); }
           else openForm("new");
-        }}>{showForm ? "Đóng" : "+ Thêm hồ sơ"}</button>
+        }}>{showForm ? "Đóng" : "Tự nhập"}</button>
       </div>
       <nav className="medical-workspace-nav medical-workspace-switch" aria-label="Đi nhanh trong hồ sơ">
         <a href="#ho-so-tong-quan" aria-current={workspaceView==='overview'?'page':undefined}>Tổng quan</a>
@@ -364,7 +365,6 @@ export default function PregnancyMedicalRecords() {
       </nav>
       <div id="ho-so-tong-quan" hidden={workspaceView!=='overview'}>
         {status !== 'loading' && records.length > 0 ? <PregnancyRecordSummary records={records} /> : <div className="medical-empty-short"><h3>{status==='loading'?'Đang tải hồ sơ…':status==='error'?'Chưa tải được hồ sơ':'Bắt đầu từ giấy tờ lần khám'}</h3><p>{status==='error'?'Thông tin chưa tải được, không phải hồ sơ trống.':'Chụp hoặc chọn giấy tờ để xem thông tin tổng hợp tại đây.'}</p><a className="btn btn-primary" href="#them-giay-to">Mở giấy tờ</a></div>}
-        <a className="medical-overview-add" href="#them-giay-to">+ Chụp / thêm giấy tờ</a>
       </div>
       <div hidden={workspaceView!=='documents'}><MedicalDocumentIntake onSaved={() => void load()} /></div>
       <details hidden={workspaceView!=='visits'} className="medical-next-visit" id="lich-kham-ke-tiep"><summary>Lịch khám tiếp theo <small>{insights.upcoming ? new Date(insights.upcoming.occurredAt).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}) : 'Chưa có lịch'}</small></summary>

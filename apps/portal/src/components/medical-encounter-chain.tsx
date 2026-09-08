@@ -9,8 +9,8 @@ export default function MedicalEncounterChain({records}:{records:MedicalRecord[]
  return <section aria-label="Chuỗi khám & tái khám" className="medical-encounter-chain">
   <h3>Chuỗi khám & tái khám</h3>
   {encounters.map(encounter=><details key={encounter.id}>
-   <summary>{encounter.root.documentIntake?'Giấy tờ chưa khớp lần khám':day(encounter.root.occurredAt)} · {encounter.documents.length} giấy tờ</summary>
-   <p><strong>{encounter.root.title}</strong><br/>{encounter.root.provider||'Chưa ghi cơ sở khám'}</p>
+   <summary><span>{encounter.root.documentIntake?'Giấy tờ chưa khớp lần khám':day(encounter.root.occurredAt)}<small>{encounter.root.provider||encounter.root.title}</small></span><small>{encounter.documents.length} giấy tờ</small></summary>
+   <p><strong>{encounter.root.title}</strong></p>
    <Link href={`#record-${encounter.root.id}`}>Xem lần khám này</Link>
    <ul aria-label="Giấy tờ trong lần khám">
     {encounter.documents.map(document=><li key={document.id}>
