@@ -319,6 +319,10 @@ export default function MealPhotoTracker() {
           ? "iPhone chưa đọc được ảnh này. Hãy chụp lại hoặc chọn một ảnh khác."
           : code === "image_too_large"
             ? "Ảnh quá lớn để xử lý. Hãy chụp lại ở chế độ thường."
+            : code === "analysis_failed"
+              ? "Ảnh đã gửi, nhưng chưa đọc được kết quả nhận diện. Xem trạng thái trong lịch sử bữa ăn; không cần tải lại ảnh ngay."
+            : code === "complete_failed"
+              ? "Chưa xác minh được ảnh đã tải xong. Giữ ảnh đang chọn và thử lại khi mạng ổn định."
             : code === "upload_failed"
               ? "Mạng bị ngắt khi gửi ảnh. Ảnh chưa được lưu; hãy thử lại."
               : "Chưa gửi được ảnh. Hãy kiểm tra mạng rồi thử lại.");

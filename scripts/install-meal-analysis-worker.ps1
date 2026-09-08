@@ -24,10 +24,11 @@ $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 $arguments = "`"$worker`" --env `"$envFile`" --status `"$status`" --watch"
 $action = New-ScheduledTaskAction -Execute $pythonw -Argument $arguments -WorkingDirectory $ProjectRoot
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $identity
+$recoveryTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
 $settings = New-ScheduledTaskSettingsSet -Hidden -StartWhenAvailable -MultipleInstances IgnoreNew `
     -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($trigger, $recoveryTrigger) -Settings $settings -Principal $principal `
     -Description "Creates review-only food-photo drafts with local Ollama and USDA data; never diagnoses or auto-confirms." -Force | Out-Null
 
 if ($VerifyNow) {
