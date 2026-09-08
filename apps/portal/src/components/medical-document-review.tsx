@@ -164,11 +164,10 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
     <Link className="document-back" href="/me-bau/ho-so#ho-so-kham" onClick={event => {
       if (dirty && !window.confirm('Thay đổi chưa lưu. Rời trang và bỏ phần đang sửa?')) event.preventDefault();
     }}>‹ Hồ sơ thai kỳ</Link>
-    <h1>Đọc & đối chiếu</h1>
-    <p className="document-intro">Chép đúng giấy tờ, giữ nguyên bản gốc.</p>
+    <h1>Thông tin & tổng hợp</h1>
+    <p className="document-intro">Nội dung từ giấy tờ. Chỉ tải ảnh hoặc PDF gốc khi bạn chọn xem.</p>
     {!scan && !error ? <p role="status">Đang mở tài liệu…</p> : null}
     {scan ? <>
-      <DocumentOriginal documentId={documentId} scan={scan} pageNumber={selectedPage + 1} />
       <p className="document-state" role="status">{scan.status === 'confirmed' ? 'Đã xác nhận' : scan.status === 'review' ? (draft?.pages.some(page => page.warnings.some(warning => warning.startsWith('Chưa phân loại đầy đủ:'))) ? 'Đã lấy chữ · chưa phân loại đầy đủ' : 'Đã đọc · cần đối chiếu') : scan.status === 'processing'
         ? `Đang đọc trang ${scan.completedPages + 1}${scan.pageCount ? `/${scan.pageCount}` : ''} trên máy tại nhà` : scan.status === 'queued' ? 'Đã xếp hàng · chờ máy tại nhà' : scan.status === 'failed' ? 'Chưa đọc xong' : 'Chưa đọc tự động'}</p>
       {scan.status === 'idle' || scan.status === 'failed' ? <div className="document-start">
@@ -183,8 +182,10 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
         if (!dirty || window.confirm('Nạp bản mới sẽ thay phần đang sửa. Anh/chị đã chép lại phần cần giữ chưa?')) void load().then(() => setError('')).catch(e => setError(e.message));
       }}>Nạp bản đã lưu mới nhất</button> : null}
     </div> : null}
+    {scan && !draft ? <DocumentOriginal documentId={documentId} scan={scan} pageNumber={1} /> : null}
     {draft ? <form onSubmit={event => { event.preventDefault(); void save(); }}>
       {overview ? <MedicalDocumentOverview overview={overview} onSource={selectSource} /> : null}
+      {scan ? <DocumentOriginal documentId={documentId} scan={scan} pageNumber={selectedPage + 1} /> : null}
       <p className="document-notice">Bản đọc đã được tự lưu cùng tài liệu. Các thông tin được phân nhóm trong hồ sơ, không cần xác nhận để lưu bản đọc. Thay đổi tự nhập trên trang này vẫn cần lưu.</p>
       {scan ? <details><summary>Đưa vào số đo, thuốc hoặc lịch hẹn chính thức</summary><MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}
         onImported={async () => { await load(); setMessage('Đã lưu bản đọc và thêm dữ liệu đã xác nhận vào hồ sơ.'); }} /></details> : null}

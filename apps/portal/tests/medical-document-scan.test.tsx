@@ -279,6 +279,8 @@ describe('document review UX', () => {
     render(<MedicalDocumentReview documentId={id} />);
     await screen.findByText('CRL', { selector: 'strong' });
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Thông tin & tổng hợp' })).toBeVisible();
+    expect(vi.mocked(fetch).mock.calls.every(([url]) => String(url).endsWith('/scan'))).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Xem bản gốc ngay tại đây' }));
     const image = screen.getByRole('img', { name: 'Bản gốc tài liệu để đối chiếu' });
     expect(image).toHaveAttribute('src', `/api/pregnancy/documents/${id}`);

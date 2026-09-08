@@ -34,5 +34,6 @@
 .medical-workspace .medical-documents .medical-document-trigger{max-width:100%;white-space:normal;overflow-wrap:anywhere;min-height:44px;background:#fffafb;border-color:#eadce2;text-align:left;font-size:.82rem}
 .medical-workspace .medical-documents>div>a{min-height:44px;display:flex;align-items:center;font-size:.78rem;color:#73344e}
 .medical-workspace .medical-data{flex-basis:100%;min-width:0}
+.medical-workspace .medical-documents>div>a.medical-document-summary-link{flex-basis:100%;display:grid;gap:4px;align-items:start;font-size:.9rem;font-weight:600;text-decoration:none;padding:8px 0;overflow-wrap:anywhere}.medical-document-summary-link small{font-size:.76rem;font-weight:400;color:#725d67}
 .medical-workspace .medical-form :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box;font-size:16px}
 @media(min-width:900px){.medical-workspace{max-width:880px;margin-inline:auto}.medical-workspace .medical-timeline{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
