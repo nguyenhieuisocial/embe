@@ -8,6 +8,11 @@ it('reads printed Vietnamese dates with and without a city, rejects impossible d
  expect(printedDate('07 tháng 09 năm 2026')).toBe('2026-09-07');
  expect(printedDate('ngày 31 tháng 02 năm 2026')).toBe('');
  expect(printedDate('07 tháng 09 năm 2026 và 08 tháng 09 năm 2026')).toBe('');
+ expect(printedDate('07/09/2026 và 08/09/2026')).toBe('');
+ expect(printedDate('2026-09-07 đến 2026-09-08')).toBe('');
+ expect(printedDate('07/09/2026 17:30')).toBe('2026-09-07');
+ expect(printedDate('2026-09-07T17:30:00.000+07:00')).toBe('2026-09-07');
+ expect(printedDate('07/09/2026 25:70')).toBe('');
 });
 it('uses document date labels without interpreting a follow-up date as visit date',()=>{
  const source=analysis('Ngày thực hiện','TP. HCM, ngày 07 tháng 09 năm 2026');

@@ -34,8 +34,10 @@ const aliases: Record<string, string[]> = {
 export function printedDate(text: string): string {
   // Permit a printed location prefix only before an explicit Vietnamese date.
   const clean = text.trim().replace(/^(?:[\p{L} .\-]+,\s*)?(?:ngày\s+)?(\d{1,2})\s+tháng\s+(\d{1,2})\s+năm\s+(\d{4})$/iu, '$1/$2/$3');
-  const vn = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:\s.*)?$/.exec(clean);
-  const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/.exec(clean);
+  // A field containing two dates is not a single visit date. Accept only an
+  // optional explicit time, never arbitrary trailing prose or another date.
+  const vn = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:[T\s]+(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)?)?$/.exec(clean);
+  const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s]+(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,3})?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)?)?$/.exec(clean);
   if (!vn && !iso) return '';
   const [y, m, d] = vn ? [Number(vn[3]), Number(vn[2]), Number(vn[1])] : [Number(iso![1]), Number(iso![2]), Number(iso![3])];
   if (y < 1900 || y > 2100) return '';

@@ -21,3 +21,28 @@ it('holds unclear dates and conflicting visits', () => {
   source.analysis!.pages[0].fields.push({...source.analysis!.pages[0].fields[1], value: '08/09/2026'});
   expect(automaticDocumentImport(source, [], 'Nguyễn Thị Ngân')).toBeNull();
 });
+it('allows only exact policy notices after every medical row has been reviewed', () => {
+  const source = scan();
+  const page = source.analysis!.pages[0];
+  page.kind = 'prescription';
+  page.warnings = [
+    'Tên thuốc, hàm lượng và cách dùng cần đối chiếu từng dòng; bản đọc không thay thế đơn gốc.',
+    'Chẩn đoán, kết luận và lời dặn chỉ là chữ chép từ giấy; cần đối chiếu nguyên văn, không phải ý kiến y tế của EmBe.',
+  ];
+  page.medicines = [{ name: 'Thuốc theo đơn', ingredients: '', dose: '1 viên', frequency: '1 lần/ngày', instructions: 'Sau ăn', evidence: 'Thuốc theo đơn 1 viên 1 lần/ngày sau ăn', unclear: false }];
+  const before = JSON.stringify(source);
+  expect(automaticDocumentImport(source, [], 'Nguyễn Thị Ngân')?.medicines).toHaveLength(1);
+  expect(JSON.stringify(source)).toBe(before);
+  page.medicines[0].unclear = true;
+  expect(automaticDocumentImport(source, [], 'Nguyễn Thị Ngân')).toBeNull();
+  page.medicines[0].unclear = false;
+  source.status = 'review';
+  expect(automaticDocumentImport(source, [], 'Nguyễn Thị Ngân')).toBeNull();
+  source.status = 'confirmed';
+  expect(automaticDocumentImport(source, [], 'Người khác')).toBeNull();
+  for (const warning of ['Thiếu trang cuối.', 'Tên hoặc cách dùng thuốc chưa khớp câu trích.', 'Cảnh báo mới chưa được phân loại.']) {
+    page.warnings.push(warning);
+    expect(automaticDocumentImport(source, [], 'Nguyễn Thị Ngân')).toBeNull();
+    page.warnings.pop();
+  }
+});
