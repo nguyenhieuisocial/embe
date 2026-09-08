@@ -23,6 +23,7 @@ import type { MedicationScanMedicine } from "../lib/medication-scan-contract";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import { MEDICAL_MEASUREMENTS, medicalMeasurementSeries } from "../lib/medical-measurements";
+import {medicalWorkspaceView, type MedicalWorkspaceView} from '../lib/medical-workspace-view';
 
 const kinds: Record<string, string> = {
   appointment: "Khám thai", ultrasound: "Siêu âm", laboratory: "Xét nghiệm",
@@ -70,6 +71,7 @@ function MeasurementHistory({ records }: { records: MedicalRecord[] }) {
 
 export default function PregnancyMedicalRecords() {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
+  const [workspaceView,setWorkspaceView]=useState<MedicalWorkspaceView>('overview');
   const [showForm, setShowForm] = useState(false);
   const [kind, setKind] = useState("appointment");
   const [medicines, setMedicines] = useState<MedicalMedicine[]>([emptyMedicine()]);
@@ -93,6 +95,8 @@ export default function PregnancyMedicalRecords() {
   useEffect(() => {
     const openLinkedRecord = () => {
       const hash = window.location.hash;
+      setWorkspaceView(medicalWorkspaceView(hash));
+      if(hash==='#lich-kham-ke-tiep')document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','');
       if (!/^#record-[0-9a-f-]{36}$/i.test(hash) || openedRecordHash.current === hash) return;
       if (!records.some(record => `#record-${record.id}` === hash)) return;
       setFilter("all");
@@ -352,12 +356,17 @@ export default function PregnancyMedicalRecords() {
           else openForm("new");
         }}>{showForm ? "Đóng" : "+ Thêm hồ sơ"}</button>
       </div>
-      <nav className="medical-workspace-nav" aria-label="Đi nhanh trong hồ sơ">
-        <a href="#them-giay-to">Thêm giấy tờ</a><a href="#lich-kham-ke-tiep" onClick={()=>document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','')}>Lịch khám</a><a href="#ho-so-da-luu">Đã lưu</a>
+      <nav className="medical-workspace-nav medical-workspace-switch" aria-label="Đi nhanh trong hồ sơ">
+        <a href="#ho-so-tong-quan" aria-current={workspaceView==='overview'?'page':undefined}>Tổng quan</a>
+        <a href="#them-giay-to" aria-current={workspaceView==='documents'?'page':undefined}>Giấy tờ</a>
+        <a href="#lich-kham-ke-tiep" aria-current={workspaceView==='visits'?'page':undefined}>Lịch khám</a>
       </nav>
-      {status !== 'loading' && records.length > 0 ? <PregnancyRecordSummary records={records} /> : null}
-      <MedicalDocumentIntake onSaved={() => void load()} />
-      <details className="medical-next-visit" id="lich-kham-ke-tiep"><summary>Lịch khám tiếp theo <small>{insights.upcoming ? new Date(insights.upcoming.occurredAt).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}) : 'Chưa có lịch'}</small></summary>
+      <div id="ho-so-tong-quan" hidden={workspaceView!=='overview'}>
+        {status !== 'loading' && records.length > 0 ? <PregnancyRecordSummary records={records} /> : <div className="medical-empty-short"><h3>{status==='loading'?'Đang tải hồ sơ…':status==='error'?'Chưa tải được hồ sơ':'Bắt đầu từ giấy tờ lần khám'}</h3><p>{status==='error'?'Thông tin chưa tải được, không phải hồ sơ trống.':'Chụp hoặc chọn giấy tờ để xem thông tin tổng hợp tại đây.'}</p><a className="btn btn-primary" href="#them-giay-to">Mở giấy tờ</a></div>}
+        <a className="medical-overview-add" href="#them-giay-to">+ Chụp / thêm giấy tờ</a>
+      </div>
+      <div hidden={workspaceView!=='documents'}><MedicalDocumentIntake onSaved={() => void load()} /></div>
+      <details hidden={workspaceView!=='visits'} className="medical-next-visit" id="lich-kham-ke-tiep"><summary>Lịch khám tiếp theo <small>{insights.upcoming ? new Date(insights.upcoming.occurredAt).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}) : 'Chưa có lịch'}</small></summary>
       {insights.upcoming ? <article className="next-appointment next-appointment-compact" aria-label="Lịch khám tiếp theo">
         <div className="appointment-workspace">
           <time className="appointment-when" dateTime={insights.upcoming.occurredAt}>{displayDate(insights.upcoming.occurredAt)}</time>
@@ -467,6 +476,7 @@ export default function PregnancyMedicalRecords() {
         </div> : null}
       </article>)}
 
+      <div hidden={workspaceView!=='documents'}>
       <div className="medical-subsection-title" id="ho-so-da-luu">
         <h3>Hồ sơ đã lưu</h3>
         <small>{records.length ? `${records.length} mục` : status === 'loading' ? 'Đang tải…' : status === 'error' ? 'Chưa tải được' : 'Chưa có'}</small>
@@ -523,6 +533,7 @@ export default function PregnancyMedicalRecords() {
       </> : status === 'loading' ? <p role="status">Đang tải hồ sơ và giấy tờ đã lưu…</p>
         : status === 'error' ? <div className="medical-empty-short" role="alert"><strong>Chưa tải được hồ sơ</strong><p>Không thể xác định hồ sơ trống khi mất kết nối. Đừng tải lại giấy tờ; hãy thử tải danh sách trước.</p><button type="button" onClick={() => { clearPrivateGetCache('/api/pregnancy/records'); setStatus('loading'); void load(); }}>Tải lại hồ sơ</button></div>
         : <div className="medical-empty-short"><strong>Chưa có hồ sơ đã lưu</strong><p>Kết quả khám, đơn thuốc và tài liệu sẽ được xếp theo ngày tại đây.</p></div>}
+      </div>
       {uploadNotice ? <p role="status">{uploadNotice}</p> : null}
       <p className={`medical-status is-${status}`} aria-live="polite">{status === "error" ? "Chưa lưu hoặc tải hồ sơ được. Hãy kiểm tra mạng và thử lại." : "Hồ sơ y tế được giữ riêng, không xuất hiện trong album gia đình."}</p>
     </section>

@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-health-workspace', date: '2026-09-08', title: 'Hồ sơ gọn theo việc cần làm', items: [
+    { title: 'Tổng quan, giấy tờ và lịch khám tách riêng', description: 'Chuyển nhanh giữa ba mục, giữ nội dung đang nhập và mở đúng mục từ liên kết hồ sơ. Đồng nhất thêm tiêu đề ở Nhật ký, Mẹ, Bé; bỏ nút quay lại trùng và bổ sung đường về Cài đặt từ trang Cập nhật.', href: '/me-bau/ho-so', action: 'Mở hồ sơ' },
+  ] },
   { id: '2026-09-08-reading-summary', date: '2026-09-08', title: 'Hồ sơ hiện đủ thông tin đã đọc', items: [
     { title: 'Thuốc, kết quả và lời dặn có ngay trong tổng quan', description: 'Tổng quan lấy cùng dữ liệu với danh sách hồ sơ, không tải lại từng bản đọc. Có thuốc, liều, cách dùng, kết quả và nguồn từng trang kể cả trước khi nhập chỉ số theo dõi. Tách rõ bản đọc chưa xác minh; không tự kích hoạt thuốc hay đánh dấu đã uống.', href: '/me-bau/ho-so', action: 'Xem hồ sơ' },
   ] },

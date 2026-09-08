@@ -91,6 +91,8 @@ export function getPageContext(pathname: string, postpartum: boolean): PageConte
     || belongsTo(path, "/login") || belongsTo(path, "/offline")
     || belongsTo(path, "/in-anh") || belongsTo(path, "/chia-se")) return null;
 
+  if (path === '/cap-nhat') return {parentHref:'/cai-dat',parentLabel:'Cài đặt',title:'Cập nhật EmBe'};
+
   if (path.startsWith("/me-bau/ho-so/tai-lieu/")) {
     return { parentHref: "/me-bau/ho-so", parentLabel: "Hồ sơ thai kỳ", title: "Giấy tờ khám" };
   }

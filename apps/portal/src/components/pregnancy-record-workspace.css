@@ -1,4 +1,11 @@
 .medical-workspace{color:#392d34;min-width:0}
+.medical-workspace [hidden]{display:none!important}
+.medical-workspace-switch{margin:12px 0 18px;background:#f6e7ed;border:1px solid #eadce2}
+.medical-workspace-switch a{min-height:48px;font-weight:600;transition:background-color .15s,color .15s}
+.medical-workspace-switch a[aria-current="page"]{background:#fff;color:#81314f;box-shadow:0 1px 4px #73344e14}
+.medical-workspace .medical-overview-add{min-height:48px;display:flex;align-items:center;justify-content:center;background:#a84669;color:#fff;border-radius:12px;text-decoration:none;font-size:.9rem;font-weight:600;margin:12px 0}
+.medical-workspace #ho-so-tong-quan{scroll-margin-top:90px}
+@media(prefers-reduced-motion:reduce){.medical-workspace-switch a{transition:none}}
 .medical-saved-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px;font-size:.8125rem;color:var(--ink-soft)}
 .medical-saved-toolbar label{display:flex;align-items:center;gap:8px}
 .medical-saved-toolbar select{min-height:44px;min-width:0;max-width:100%;font:inherit;font-size:16px;padding:8px;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);color:var(--ink)}
