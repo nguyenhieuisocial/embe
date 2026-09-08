@@ -187,7 +187,7 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
       {overview ? <MedicalDocumentOverview overview={overview} analysis={draft} onSource={selectSource} /> : null}
       {scan ? <DocumentOriginal documentId={documentId} scan={scan} pageNumber={selectedPage + 1} /> : null}
       <p className="document-notice">Bản đọc đã được tự lưu cùng tài liệu. Các thông tin được phân nhóm trong hồ sơ, không cần xác nhận để lưu bản đọc. Thay đổi tự nhập trên trang này vẫn cần lưu.</p>
-      {scan ? <details><summary>Đưa vào số đo, thuốc hoặc lịch hẹn chính thức</summary><MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}
+      {scan ? <details><summary>Đồng bộ số đo, thuốc & lịch hẹn</summary><MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} automatic={scan.status === 'confirmed' && !dirty} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}
         onImported={async () => { await load(); setMessage('Đã lưu bản đọc và thêm dữ liệu đã xác nhận vào hồ sơ.'); }} /></details> : null}
       <p className="document-notice">Đối chiếu họ tên, ngày khám, đơn vị và liều với bản gốc. Đây là bản chép, không phải chẩn đoán hay đơn thuốc mới.</p>
       <div className="document-review-tools">

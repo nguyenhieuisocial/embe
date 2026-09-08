@@ -1,15 +1,15 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DOCUMENT_TYPES, editableDocumentAnalysis, type DocumentAnalysis } from '../lib/medical-document-scan';
 import { proposeDocumentImport, validImportDetails, type DocumentImportContext, type DocumentImportDetails } from '../lib/medical-document-import';
 import { MEDICAL_MEASUREMENTS } from '../lib/medical-measurements';
 import { clearPrivateGetCache } from '../lib/private-get-cache';
 import { DOCUMENT_DATA_GROUPS, groupDocumentData } from '../lib/medical-document-data';
 
-export default function MedicalDocumentImport({ documentId, recordId, revision, analysis, disabled, onImported, onBusy, onDirty }: {
+export default function MedicalDocumentImport({ documentId, recordId, revision, analysis, disabled, automatic = false, onImported, onBusy, onDirty }: {
   documentId: string; recordId: string; revision: number; analysis: DocumentAnalysis; disabled: boolean; onImported: () => Promise<void>;
-  onBusy?: (busy: boolean) => void; onDirty?: () => void;
+  automatic?: boolean; onBusy?: (busy: boolean) => void; onDirty?: () => void;
 }) {
   const [context, setContext] = useState<DocumentImportContext | null>(null);
   const [overrides, setOverrides] = useState<Partial<DocumentImportDetails>>({});
@@ -17,6 +17,27 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
   const [ack, setAck] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   const [retry, setRetry] = useState(0); const [done, setDone] = useState(false);
   const [conflict, setConflict] = useState(false);
+  const attempted = useRef('');
+  useEffect(() => {
+    const key = `${documentId}:${revision}:${retry}`;
+    if (!automatic || disabled || busy || !context || context.imported || done || conflict || attempted.current === key
+      || Object.keys(overrides).length || excluded.length) return;
+    attempted.current = key;
+    setBusy(true); onBusy?.(true); setError('');
+    void (async () => {
+      try {
+        const response = await fetch(`/api/pregnancy/documents/${documentId}/import`, { method: 'POST',
+          headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mode: 'automatic', revision }), signal: AbortSignal.timeout(20000) });
+        if (response.status === 409) { setConflict(true); throw new Error('Dữ liệu đã thay đổi. Chưa tự thêm để tránh ghi đè hồ sơ.'); }
+        if (!response.ok) throw new Error('Chưa tự thêm được. Bản đọc vẫn được giữ; có thể thử lại.');
+        const result = await response.json();
+        if (result.imported && result.recordId === recordId) {
+          clearPrivateGetCache('/api/pregnancy/records'); setDone(true); await onImported();
+        }
+      } catch (error) { setError((error as Error).message); }
+      finally { setBusy(false); onBusy?.(false); }
+    })();
+  }, [automatic, disabled, busy, context, done, conflict, documentId, revision, retry, overrides, excluded, recordId, onBusy, onImported]);
   useEffect(() => {
     let ignore = false;
     const controller = new AbortController();
@@ -58,7 +79,8 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
     <small>Sửa bản đọc sau này không tự đổi dữ liệu đã nhập. Sửa chỉ số hoặc thuốc tại hồ sơ.</small>
   </aside>;
   return <fieldset className="document-import" disabled={disabled || busy}>
-    <legend>Khớp & thêm vào hồ sơ</legend>
+    <legend>Đồng bộ vào hồ sơ</legend>
+    {busy ? <p role="status">Đang khớp và thêm dữ liệu…</p> : automatic ? <p>Bản đã đối chiếu sẽ tự thêm khi khớp đúng người, ngày và dữ liệu không mâu thuẫn.</p> : null}
     {!context ? <p role="status">{error || 'Đang tìm hồ sơ và cơ sở khám…'}{error ? <button type="button" onClick={() => setRetry(n => n + 1)}>Thử lại</button> : null}</p> : <>
       <p className="document-patient">Tên trên giấy: <strong>{proposal.patients.join(' · ') || 'Chưa đọc được — cần xem bản gốc'}</strong></p>
       <p>{context.intake ? 'Thông tin được điền từ bản đọc; Mẹ có thể sửa trước khi lưu.' : 'Bổ sung vào hồ sơ đang chứa tài liệu. Giữ ngày, tên, ghi chú và dữ liệu đã có; không ghi đè.'}</p>
@@ -104,7 +126,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
       {proposal.identityConflict ? <p role="alert">Có nhiều tên hoặc mã người bệnh. Tách giấy tờ theo từng người; chưa thể nhập chung vào hồ sơ Mẹ.</p> : null}
       {proposal.multipleVisits ? <p role="alert">Có nhiều ngày khám. Giữ riêng các kết quả trong thông tin tài liệu; không gộp chỉ số, thuốc hoặc lịch hẹn.</p> : null}
       <button className="document-import-confirm" type="button" disabled={!ack || busy || conflict || proposal.identityConflict || proposal.ambiguousScope && (Boolean(details.nextAppointmentAt) || details.gestationalWeek !== null) || !validImportDetails(details)} onClick={() => void importRecord()}>{busy ? 'Đang thêm vào hồ sơ…' : 'Xác nhận & thêm vào hồ sơ'}</button>
-      {error ? <p role="alert">{error}</p> : null}
+      {error ? <p role="alert">{error}{!conflict ? <button type="button" onClick={() => setRetry(value => value + 1)}>Thử lại</button> : null}</p> : null}
       {conflict ? <Link href={`/me-bau/ho-so#record-${recordId}`}>Mở hồ sơ đang có</Link> : null}
     </>}
   </fieldset>;

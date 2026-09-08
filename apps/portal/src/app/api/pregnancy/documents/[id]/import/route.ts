@@ -1,4 +1,6 @@
-import { memberAuthorization, memberBody } from '../../../../../../lib/family-members-server';
+import { memberAuthorization, memberBody, memberRpc } from '../../../../../../lib/family-members-server';
+import { validFamilyMember } from '../../../../../../lib/family-members';
+import { automaticDocumentImport } from '../../../../../../lib/medical-auto-import';
 import { isUuidV4, photoStore, privateReply } from '../../../../../../lib/photo-upload-server';
 import { editableDocumentAnalysis, validDocumentAnalysis } from '../../../../../../lib/medical-document-scan';
 import { proposeDocumentImport, validImportDetails } from '../../../../../../lib/medical-document-import';
@@ -34,6 +36,29 @@ export async function POST(request: Request, context: Context) {
   // A reviewed 60 KB transcription plus the selected structured data can exceed
   // the default 64 KB. Keep a bounded envelope; field/analysis limits still apply.
   try { input = await memberBody(request, 96 * 1024) as Record<string, unknown>; } catch { return privateReply({ error: 'invalid_request' }, 400); }
+  if (input && Object.keys(input).sort().join(',') === 'mode,revision' && input.mode === 'automatic') {
+    const store = photoStore(); if (!store) return privateReply({ error: 'temporarily_unavailable' }, 503);
+    try {
+      const [source, info, list, members] = await Promise.all([
+        store.rpc('embe_get_document_scan', { p_document_id: id }).abortSignal(AbortSignal.timeout(12000)),
+        store.rpc('embe_document_import_context', { p_document_id: id }).abortSignal(AbortSignal.timeout(12000)),
+        store.rpc('embe_list_pregnancy_medical_records').abortSignal(AbortSignal.timeout(12000)),
+        memberRpc('embe_list_family_members'),
+      ]);
+      if (source.error || info.error || list.error || members.status !== 200 || !Array.isArray(list.data)
+        || !Array.isArray(members.data) || !members.data.every(validFamilyMember)) return privateReply({ error: 'temporarily_unavailable' }, 503);
+      if (!source.data || !info.data || source.data.documentId !== id) return privateReply({ error: 'not_found' }, 404);
+      if (info.data.imported) return privateReply({ imported: true, recordId: source.data.recordId }, 200);
+      if (!Number.isSafeInteger(input.revision) || source.data.revision !== input.revision) return privateReply({ error: 'import_conflict' }, 409);
+      const mothers = members.data.filter(member => member.role === 'mother' && !member.archived);
+      const records = list.data.flatMap((value: unknown) => { const record = normalizeMedicalRecord(value); return record ? [record] : []; });
+      const details = mothers.length === 1 ? automaticDocumentImport(source.data, records, mothers[0].fullName) : null;
+      if (!details) return privateReply({ imported: false, reason: 'review_needed' }, 200);
+      // Derive everything from stored sources, never from a client's claim of confirmation.
+      input = { analysis: source.data.analysis, details, revision: source.data.revision,
+        recordUpdatedAt: info.data.recordUpdatedAt, confirmed: true, patientConfirmed: true };
+    } catch { return privateReply({ error: 'temporarily_unavailable' }, 503); }
+  }
   if (!input || Object.keys(input).sort().join(',') !== 'analysis,confirmed,details,patientConfirmed,recordUpdatedAt,revision'
     || input.confirmed !== true || input.patientConfirmed !== true || !validDocumentAnalysis(input.analysis) || !validImportDetails(input.details)
     || !Number.isSafeInteger(input.revision) || Number(input.revision) < 1 || typeof input.recordUpdatedAt !== 'string'

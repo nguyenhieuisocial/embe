@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-auto-import', date: '2026-09-08', title: 'Bớt xác nhận lặp khi nhập hồ sơ', items: [
+    { title: 'Tự khớp bản đã đối chiếu', description: 'Khi mở bản đọc đã xác nhận, EmBe tự thêm dữ liệu nếu khớp đúng Mẹ, rõ ngày và không mâu thuẫn. Không cần xác nhận thêm lần nữa. Bản chưa đối chiếu hoặc chưa rõ vẫn được giữ riêng, không tự ghi đè số đo hay thuốc.', href: '/me-bau/ho-so', action: 'Mở hồ sơ' },
+  ] },
   { id: '2026-09-08-medical-fields', date: '2026-09-08', title: 'Bổ sung chỉ số và khớp dữ liệu hồ sơ', items: [
     { title: 'Thêm 12 chỉ số khám và xét nghiệm', description: 'Bổ sung chiều cao Mẹ, mạch, nhiệt độ, SpO₂, nhịp thở, WBC, RBC, HCT, MCV, MCH, creatinine và urê. Có ô nhập, lịch sử và quy tắc khớp từ bản đọc đúng đơn vị. Dữ liệu chưa rõ hoặc mâu thuẫn không được tự đưa vào biểu đồ.', href: '/me-bau/ho-so', action: 'Mở hồ sơ y tế' },
     { title: 'Đọc được thêm định dạng ngày trên giấy tờ', description: 'Nhận ngày viết bằng chữ, có tiền tố địa điểm như “TP. HCM, ngày … tháng … năm …”, và nhãn ngày lập phiếu / ngày thực hiện. Không lấy ngày sinh hay ngày tái khám làm ngày của lần khám.', href: '/me-bau/ho-so', action: 'Xem giấy tờ' },
