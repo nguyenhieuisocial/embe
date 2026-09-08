@@ -22,8 +22,8 @@ export default function MaternalDocumentSummary() {
       if (!active) return;
       const note = result.added.length ? `Đã bổ sung ${result.added.length} mục từ giấy tờ vào hồ sơ Mẹ.`
         : result.conflicts.length ? 'Có giá trị khác nhau giữa hồ sơ và giấy tờ; đã giữ nguyên thông tin đang lưu.'
-        : 'Chưa có mục mới đủ điều kiện tự điền. Chỉ tự thêm mục trống từ bản đọc đã đối chiếu và đúng họ tên Mẹ.';
-      setSyncNote(`${note}${result.skipped ? ` ${result.skipped} nguồn / trang chưa đủ điều kiện khớp; vẫn xem được nội dung đã đọc bên dưới.` : ''}`);
+        : '';
+      setSyncNote(`${note}${result.skipped ? ` ${result.skipped} nguồn / trang chưa đủ điều kiện tự khớp.` : ''}`.trim());
       if (result.added.length) refreshFamilyData();
     }).catch(() => { if (active) setSyncNote('Chưa tự khớp được dữ liệu; hồ sơ đang lưu vẫn được giữ. Lần mở sau sẽ thử lại.'); });
     return () => { active = false; };

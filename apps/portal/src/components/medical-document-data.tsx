@@ -43,7 +43,7 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
     </button>
     {open ? <div id={`medical-data-${document.id}`}>
       {!data ? error ? <p role="alert">{error}<button type="button" onClick={() => { setError(''); setRetry(n => n + 1); }}>Thử lại</button></p> : <p role="status">Đang tải thông tin tài liệu…</p> : <>
-        <p>{data.automaticallyExtracted ? 'Đã tự lưu và phân nhóm từ tài liệu, không cần xác nhận để xem hoặc tìm kiếm. Đây là dữ liệu trích xuất, không phải kết quả đã được bác sĩ kiểm chứng.' : 'Bản lưu lúc thêm vào hồ sơ. Không phải kết luận mới; mục chưa rõ vẫn cần đối chiếu. Sửa bản đọc về sau không tự đổi bản lưu này.'}</p>
+        <p>{data.automaticallyExtracted ? 'Bản đọc tự động · chưa xác minh chuyên môn.' : 'Bản dữ liệu lúc nhập hồ sơ · không tự đổi khi sửa bản đọc.'}</p>
         {data.analysis.pages.some(page => page.warnings.length) ? <details className="medical-data-warning">
           <summary>Phần bộ đọc chưa chắc chắn</summary>
           {data.analysis.pages.flatMap(page => page.warnings.map((warning, i) => <p key={`${page.page}:${i}`}>Trang {page.page}: {warning}</p>))}
@@ -51,11 +51,11 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
         <label className="medical-data-search">Tìm trong tài liệu<input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Chỉ số, thuốc, lời dặn…" /></label>
         {visible.map(([key, rows]) => <details key={key} open={search ? true : undefined}>
           <summary>{DOCUMENT_DATA_GROUPS[key as keyof typeof DOCUMENT_DATA_GROUPS]} <span>{rows.length}</span></summary>
-          {key === 'charges' ? <p>Nguyên văn trên phiếu; chưa cộng thành chi tiêu để tránh tính trùng tổng tiền và khoản chi tiết.</p> : null}
+          {key === 'charges' ? <p>Khoản thu trên phiếu · chưa cộng vào chi tiêu.</p> : null}
           {rows.map(row => <div className="medical-data-row" key={`${row.page}:${row.sourceGroup}:${row.index}`}>
             <div><b>{row.label || 'Mục chưa có tên'}</b><p>{row.value || 'Chưa đọc rõ'}</p>
               {row.details.map((text, i) => <small key={i}>{text}</small>)}
-              {row.duplicateCount ? <small>Gộp hiển thị {row.duplicateCount} dòng giống nhau trên trang {row.page}; toàn văn giữ nguyên.</small> : null}
+              {row.duplicateCount ? <small>{row.duplicateCount} dòng trùng đã gộp</small> : null}
               {row.unclear ? <small className="medical-data-warning">Cần đối chiếu bản gốc</small> : null}
               {row.evidence ? <details className="medical-data-evidence"><summary>Chữ đối chiếu</summary><blockquote>{row.evidence}</blockquote></details> : null}
             </div>
@@ -63,7 +63,6 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
           </div>)}
         </details>)}
         {sourceMatches.length ? <details open><summary>Khớp trong toàn văn <span>{sourceMatches.length}</span></summary>
-          <p>Kể cả chữ chưa thành trường dữ liệu. Kết quả PDF và OCR có thể trùng nhau hoặc đọc khác nhau.</p>
           {sourceMatches.map(match => <div className="medical-data-row" key={`${match.page}:${match.kind}:${match.index}`}>
             <div><small>{match.kind === 'pdf' ? 'Chữ PDF' : 'OCR từ ảnh'} · Trang {match.page}</small><p>{match.line}</p></div>
             <MedicalDocumentButton document={document} pageNumber={match.page}>Trang {match.page}</MedicalDocumentButton>
@@ -71,7 +70,7 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
         </details> : null}
         {!visible.length && !sourceMatches.length ? <p>Không có mục phù hợp{search ? ' với từ khóa này' : ' trong bản đã lưu'}. Kiểm tra toàn văn và bản gốc bên dưới.</p> : null}
         <details className="medical-data-fulltext"><summary>Toàn văn từng trang · kể cả phần chưa phân loại</summary>
-          <p>{data.automaticallyExtracted ? 'Toàn văn đã tự lưu cùng kết quả đọc từng trang.' : data.sourceSnapshot ? 'Giữ cùng bản dữ liệu lúc nhập hồ sơ.' : 'Toàn văn hiện có từ bộ đọc; có thể mới hơn các trường đã nhập trước đây.'} Không cắt chỉ lấy vùng y tế. Chữ mờ, chữ viết tay hoặc ký hiệu vẫn có thể đọc sai; bản gốc luôn được giữ để xem lại.</p>
+          <p>{data.automaticallyExtracted ? 'Chữ tự đọc từ tài liệu; có thể có sai sót.' : data.sourceSnapshot ? 'Chữ lưu cùng lần nhập hồ sơ.' : 'Chữ hiện có; có thể mới hơn bản đã nhập.'}</p>
           {data.analysis.pages.map(page => <div key={page.page}>
             {page.pdfText ? <MedicalDocumentSourceText text={page.pdfText} page={page.page} kind="pdf" /> : null}
             {page.ocrText ? <MedicalDocumentSourceText text={page.ocrText} page={page.page} kind="ocr" /> : null}

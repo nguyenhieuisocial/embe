@@ -32,15 +32,14 @@ export default function MedicalDocumentOverview({ overview, onSource, analysis }
       {overview.hiddenDifferenceCount > 0 ? <p>Còn {overview.hiddenDifferenceCount} điểm khác nhau. Dùng “Chỉ xem mục cần kiểm tra” bên dưới để xem các dòng liên quan.</p> : null}
     </details> : null}
     {groups ? <div className="document-overview-complete">
-      <p>Toàn bộ trường đã đọc, chia theo nhóm. “Chưa có dữ liệu trích xuất” không có nghĩa giấy tờ không chứa thông tin.</p>
       {Object.entries(DOCUMENT_DATA_GROUPS).map(([key, label]) => {
         const rows = groups[key as keyof typeof groups];
         return <details key={key}><summary>{label} · {rows.length} mục</summary>
-          {!rows.length ? <p>Chưa có dữ liệu trích xuất trong nhóm này. Có thể xem toàn văn hoặc bản gốc.</p> : rows.map(row => <div className="document-overview-entry" key={`${row.page}:${row.sourceGroup}:${row.index}`}>
+          {!rows.length ? <p>Chưa đọc được dữ liệu nhóm này.</p> : rows.map(row => <div className="document-overview-entry" key={`${row.page}:${row.sourceGroup}:${row.index}`}>
             <div><span>{row.label || 'Mục chưa có tên'}</span><p>{row.value || 'Chưa đọc rõ nội dung'}</p>
               {row.details.map((detail, index) => <small key={index}>{detail}<br /></small>)}
-              {row.unclear ? <small>Bộ đọc chưa chắc chắn · giữ nguyên để đối chiếu</small> : null}
-              {row.duplicateCount ? <small>Gộp {row.duplicateCount} dòng trùng; bản gốc không thay đổi.</small> : null}
+              {row.unclear ? <small>Chưa rõ · kiểm tra bản gốc</small> : null}
+              {row.duplicateCount ? <small>{row.duplicateCount} dòng trùng đã gộp</small> : null}
             </div>
             <button type="button" aria-label={`Xem nguồn ${row.label} · trang ${row.page}`} onClick={() => onSource({ page: row.page, group: row.sourceGroup, rowIndex: row.index })}>Trang {row.page} ↗</button>
           </div>)}
@@ -52,6 +51,6 @@ export default function MedicalDocumentOverview({ overview, onSource, analysis }
       {overview.highlights.map(entry => source(entry))}
       {overview.hiddenHighlightCount > 0 ? <p>Còn {overview.hiddenHighlightCount} thông tin chính trong các trang bên dưới.</p> : null}
     </details> : null}
-    <small className="document-overview-note">Số liệu, tên thuốc và kết luận vẫn cần đối chiếu bản gốc, kể cả khi chưa có cảnh báo.</small>
+    <small className="document-overview-note">Bản đọc không thay thế bản gốc hoặc chỉ định bác sĩ.</small>
   </section>;
 }

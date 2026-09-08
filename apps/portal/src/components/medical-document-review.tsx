@@ -186,10 +186,9 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
     {draft ? <form onSubmit={event => { event.preventDefault(); void save(); }}>
       {overview ? <MedicalDocumentOverview overview={overview} analysis={draft} onSource={selectSource} /> : null}
       {scan ? <DocumentOriginal documentId={documentId} scan={scan} pageNumber={selectedPage + 1} /> : null}
-      <p className="document-notice">Bản đọc đã được tự lưu cùng tài liệu. Các thông tin được phân nhóm trong hồ sơ, không cần xác nhận để lưu bản đọc. Thay đổi tự nhập trên trang này vẫn cần lưu.</p>
+      <p className="document-notice">Bản đọc đã tự lưu. Nếu sửa, cần lưu thay đổi.</p>
       {scan ? <details><summary>Đồng bộ số đo, thuốc & lịch hẹn</summary><MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} automatic={scan.status === 'confirmed' && !dirty} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}
         onImported={async () => { await load(); setMessage('Đã lưu bản đọc và thêm dữ liệu đã xác nhận vào hồ sơ.'); }} /></details> : null}
-      <p className="document-notice">Đối chiếu họ tên, ngày khám, đơn vị và liều với bản gốc. Đây là bản chép, không phải chẩn đoán hay đơn thuốc mới.</p>
       <div className="document-review-tools">
         <p>{overview?.counts.items} mục · {overview?.counts.needsReview} mục gắn cờ đối chiếu</p>
         <button type="button" aria-pressed={onlyUnclear} onClick={() => setOnlyUnclear(value => !value)}>{onlyUnclear ? 'Xem tất cả các mục' : 'Chỉ xem mục cần kiểm tra'}</button>

@@ -51,7 +51,7 @@ it('exposes automatically saved scan groups and full text without confirming or 
   await screen.findByRole('searchbox');
   expect(fetcher).toHaveBeenCalledWith(`/api/pregnancy/documents/${id}/scan`, expect.objectContaining({ cache: 'no-store' }));
   expect(fetcher).toHaveBeenCalledTimes(1);
-  expect(screen.getByText(/không cần xác nhận để xem/)).toBeVisible();
+  expect(screen.getByText('Bản đọc tự động · chưa xác minh chuyên môn.')).toBeVisible();
   fireEvent.click(screen.getByText('Phần bộ đọc chưa chắc chắn'));
   expect(screen.getByText('Trang 1: Chưa đọc rõ chữ cuối trang')).toBeVisible();
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: '000123' } });
