@@ -11,9 +11,12 @@ const labels: Record<DeviceRole, string> = { mother: "Mẹ Ngân", father: "Ba H
 export default function DeviceSetup() {
   const [role, setRole] = useState<DeviceRole | null>(null);
   const [standalone, setStandalone] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     setRole(readDeviceRole(localStorage));
+    setReady(true);
     const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
     setStandalone(Boolean(navigatorWithStandalone.standalone || window.matchMedia?.("(display-mode: standalone)").matches));
   }, []);
@@ -21,10 +24,14 @@ export default function DeviceSetup() {
   function choose(next: DeviceRole) {
     saveDeviceRole(localStorage, next);
     setRole(next);
+    setEditing(false);
   }
 
+  if (!ready) return null;
+
   return (
-    <section className="section device-setup" id="thiet-lap-dien-thoai" aria-labelledby="device-setup-title">
+    <section className="section device-setup" id="thiet-lap-dien-thoai" aria-label="Thiết lập điện thoại này">
+      {role && !editing ? <button type="button" onClick={() => setEditing(true)}>Đổi người dùng · {labels[role]}</button> : <>
       <div className="section-head">
         <p className="panel-kicker">Thiết lập điện thoại này</p>
         <h2 id="device-setup-title">EmBe nhớ người đang dùng</h2>
@@ -34,7 +41,8 @@ export default function DeviceSetup() {
         <button aria-pressed={role === "mother"} onClick={() => choose("mother")} type="button">Điện thoại của Mẹ Ngân</button>
         <button aria-pressed={role === "father"} onClick={() => choose("father")} type="button">Điện thoại của Ba Hiếu</button>
       </div>
-      {role ? <p className="device-setup-state" role="status"><span aria-hidden="true">✓</span> Đã nhớ đây là điện thoại của {labels[role]}.</p> : <p className="device-setup-state is-wait">Chưa chọn người dùng cho điện thoại này.</p>}
+      {role ? <button type="button" onClick={() => setEditing(false)}>Hủy</button> : null}
+      </>}
       <NotificationSetup role={role} />
       <div className="device-setup-links">
         <Link href="/me-bau#cai-dat-giai-doan">Kiểm tra ngày dự sinh</Link>

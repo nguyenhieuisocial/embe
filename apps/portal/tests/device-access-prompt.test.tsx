@@ -6,6 +6,13 @@ import DeviceAccessPrompt from "../src/components/device-access-prompt";
 const originalPermissions = Object.getOwnPropertyDescriptor(navigator, "permissions");
 
 describe("iPhone access guide", () => {
+  it("does not reopen setup on an identified device, even after an old dismissal", () => {
+    localStorage.setItem("embe:device-role", "mother");
+    localStorage.setItem("embe:access-guide-dismissed-at", "1");
+    render(<DeviceAccessPrompt />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(navigator.geolocation.getCurrentPosition).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     localStorage.clear();
     Object.defineProperty(navigator, "geolocation", {

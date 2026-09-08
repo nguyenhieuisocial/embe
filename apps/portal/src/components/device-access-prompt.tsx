@@ -33,7 +33,7 @@ export default function DeviceAccessPrompt() {
   useEffect(() => {
     try {
       setRole(readDeviceRole(window.localStorage));
-      setOpen(shouldOpen(window.localStorage));
+      setOpen(!readDeviceRole(window.localStorage) && shouldOpen(window.localStorage));
     } catch {
       // If Safari cannot remember dismissal, keep the optional guide closed.
       // The same permission controls remain available in the phone settings page.
