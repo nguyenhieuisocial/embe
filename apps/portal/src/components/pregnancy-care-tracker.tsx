@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MedicationUseGuide from './medication-use-guide';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
@@ -589,6 +590,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
           <div className="dose-copy">
             <span className="dose-source">{plan.category === "medicine" ? "Thuốc" : "Vi chất"} · {plan.entry_source === "self_purchased" ? "tự mua" : "bác sĩ dặn"}{plan.confirmed_by_clinician ? " · đã hỏi chuyên môn" : ""}</span>
             <strong>{plan.name}</strong><small>{plan.dose_display}{plan.instructions ? ` · ${plan.instructions}` : ""}</small>
+            <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times ?? []} />
           </div>
           {plan.confirmed_by_clinician || plan.entry_source === "self_purchased" ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
             {Array.from({ length: plan.times_per_day }, (_, index) => index + 1).map((slot) => {
