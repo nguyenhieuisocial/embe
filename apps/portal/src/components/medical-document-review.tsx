@@ -184,7 +184,7 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
     </div> : null}
     {scan && !draft ? <DocumentOriginal documentId={documentId} scan={scan} pageNumber={1} /> : null}
     {draft ? <form onSubmit={event => { event.preventDefault(); void save(); }}>
-      {overview ? <MedicalDocumentOverview overview={overview} onSource={selectSource} /> : null}
+      {overview ? <MedicalDocumentOverview overview={overview} analysis={draft} onSource={selectSource} /> : null}
       {scan ? <DocumentOriginal documentId={documentId} scan={scan} pageNumber={selectedPage + 1} /> : null}
       <p className="document-notice">Bản đọc đã được tự lưu cùng tài liệu. Các thông tin được phân nhóm trong hồ sơ, không cần xác nhận để lưu bản đọc. Thay đổi tự nhập trên trang này vẫn cần lưu.</p>
       {scan ? <details><summary>Đưa vào số đo, thuốc hoặc lịch hẹn chính thức</summary><MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}

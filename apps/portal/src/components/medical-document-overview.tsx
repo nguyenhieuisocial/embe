@@ -1,13 +1,16 @@
-import { withPrintedUnit } from '../lib/medical-document-scan';
+import { withPrintedUnit, type DocumentAnalysis } from '../lib/medical-document-scan';
+import { DOCUMENT_DATA_GROUPS, groupDocumentData } from '../lib/medical-document-data';
 import type { DocumentOverview, DocumentOverviewRef, DocumentOverviewField } from '../lib/medical-document-overview';
 
 export const documentSourceKey = (ref: DocumentOverviewRef) => `${ref.page}:${ref.group}:${ref.rowIndex}`;
 
 /** Read-only navigation into the current draft. No clinical inference or automatic import. */
-export default function MedicalDocumentOverview({ overview, onSource }: {
+export default function MedicalDocumentOverview({ overview, onSource, analysis }: {
   overview: DocumentOverview;
+  analysis?: DocumentAnalysis;
   onSource: (ref: DocumentOverviewRef) => void;
 }) {
+  const groups = analysis ? groupDocumentData(analysis) : null;
   const source = (entry: DocumentOverviewField, showPdf = false) => <div className="document-overview-entry" key={documentSourceKey(entry.ref)}>
     <div><span>{entry.label}</span><p>{withPrintedUnit(entry.value, entry.unit) || 'Chưa đọc rõ'}</p>
       {entry.context ? <small>{entry.context}</small> : null}
@@ -28,7 +31,22 @@ export default function MedicalDocumentOverview({ overview, onSource }: {
       </div>)}
       {overview.hiddenDifferenceCount > 0 ? <p>Còn {overview.hiddenDifferenceCount} điểm khác nhau. Dùng “Chỉ xem mục cần kiểm tra” bên dưới để xem các dòng liên quan.</p> : null}
     </details> : null}
-    {overview.highlightCount > 0 ? <details>
+    {groups ? <div className="document-overview-complete">
+      <p>Toàn bộ trường đã đọc, chia theo nhóm. “Chưa có dữ liệu trích xuất” không có nghĩa giấy tờ không chứa thông tin.</p>
+      {Object.entries(DOCUMENT_DATA_GROUPS).map(([key, label]) => {
+        const rows = groups[key as keyof typeof groups];
+        return <details key={key}><summary>{label} · {rows.length} mục</summary>
+          {!rows.length ? <p>Chưa có dữ liệu trích xuất trong nhóm này. Có thể xem toàn văn hoặc bản gốc.</p> : rows.map(row => <div className="document-overview-entry" key={`${row.page}:${row.sourceGroup}:${row.index}`}>
+            <div><span>{row.label || 'Mục chưa có tên'}</span><p>{row.value || 'Chưa đọc rõ nội dung'}</p>
+              {row.details.map((detail, index) => <small key={index}>{detail}<br /></small>)}
+              {row.unclear ? <small>Bộ đọc chưa chắc chắn · giữ nguyên để đối chiếu</small> : null}
+              {row.duplicateCount ? <small>Gộp {row.duplicateCount} dòng trùng; bản gốc không thay đổi.</small> : null}
+            </div>
+            <button type="button" aria-label={`Xem nguồn ${row.label} · trang ${row.page}`} onClick={() => onSource({ page: row.page, group: row.sourceGroup, rowIndex: row.index })}>Trang {row.page} ↗</button>
+          </div>)}
+        </details>;
+      })}
+    </div> : overview.highlightCount > 0 ? <details>
       <summary>Thông tin chính trên các trang</summary>
       <p>Trích từ bản đọc đang xem, không phải kết luận mới. Chạm số trang để xem và sửa tại nguồn.</p>
       {overview.highlights.map(entry => source(entry))}
