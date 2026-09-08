@@ -7,7 +7,7 @@ export function medicalFindingGroups(records:MedicalRecord[]):FindingGroup[]{
  const groups=new Map<string,FindingGroup>();
  for(const record of records)for(const document of record.documents)for(const row of document.readingSummary?.findings??[]){
   // Unknown dates stay inside their own document/page; never use upload dates.
-  const scope=row.sourceDay?`${record.id}:${row.sourceDay}`:`${record.id}:${document.id}:${row.page}`;
+  const scope=row.sourceDay&&row.sourceIdentity?`${record.id}:${row.sourceDay}:${row.sourceIdentity}`:`${record.id}:${document.id}:${row.page}`;
   const key=JSON.stringify([scope,literal(row.value),row.details.map(literal),row.value.trim()?null:row.label]);
   const source={documentId:document.id,page:row.page,title:document.displayName||document.originalFilename};
   const existing=groups.get(key);
