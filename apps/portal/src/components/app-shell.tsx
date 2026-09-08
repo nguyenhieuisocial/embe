@@ -1,6 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { observeMobileDock } from "../lib/mobile-dock-position";
 
 import FamilyNav from "./family-nav";
 import DeviceAccessPrompt from "./device-access-prompt";
@@ -13,9 +15,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const showNav = !BARE_ROUTES.has(pathname ?? "") && !pathname?.startsWith("/in-anh/") && !pathname?.startsWith("/chia-se/");
   const isStudio = pathname === "/studio" || pathname?.startsWith("/studio/");
+  const shell = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (showNav && shell.current) return observeMobileDock(shell.current);
+  }, [showNav, pathname]);
 
   return (
-    <div className={showNav ? `app-shell has-nav${isStudio ? " is-studio" : ""}` : "app-shell is-bare"}>
+    <div ref={shell} className={showNav ? `app-shell has-nav${isStudio ? " is-studio" : ""}` : "app-shell is-bare"}>
       <a className="skip-link" href="#main-content">Bỏ qua đến nội dung chính</a>
       <div className="app-canvas" id="main-content" tabIndex={-1}>{children}</div>
       {showNav ? <>{!isStudio && <><DeviceAccessPrompt /><QuickActions key={pathname} /></>}<FamilyNav /></> : null}

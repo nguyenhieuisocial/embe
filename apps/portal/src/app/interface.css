@@ -1,5 +1,10 @@
 /* Shared interface hierarchy. Feature-specific forms, image viewers and print
    layouts keep their existing behavior. Smaller surfaces, not smaller text. */
+@media screen and (max-width: 767px) {
+  /* One measured correction keeps the navigation and quick action together.
+     Individual translate preserves the quick button's existing horizontal transform. */
+  .has-nav :is(.family-nav, .quick-trigger) { translate: 0 var(--embe-dock-offset, 0px); }
+}
 @media screen {
   .app-shell { background: var(--paper); min-height: 100dvh; }
   .app-header { gap: 10px; }
