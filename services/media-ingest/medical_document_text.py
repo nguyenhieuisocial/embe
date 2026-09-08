@@ -32,6 +32,30 @@ NARRATIVE = {'chẩn đoán', 'chẩn đoán in trên giấy', 'chẩn đoán ra
              'phương pháp điều trị', 'tình trạng ra viện', 'lời dặn'}
 
 
+def narrative_cell(lines: list[str], index: int, value: str) -> tuple[str, str] | None:
+    """Keep a wrapped block only up to an explicit next labelled field.
+
+    A blank, footer, table, ambiguous label or page end is not proof that a
+    paragraph belongs to this field. Never join across pages or silently clip it.
+    """
+    parts = [value]
+    source = [lines[index].strip()]
+    for following in lines[index + 1:index + 17]:
+        line = following.strip()
+        boundary = re.fullmatch(r'([^:：]{1,120})[:：]\s*(\S.*)', line)
+        if boundary:
+            if (text_key(boundary[1]) not in LABELS
+                    or re.search(r'(?<!\d)[:：]|[:：](?!\d)|[\t|]', boundary[2])):
+                return None
+            joined, evidence = '\n'.join(parts), '\n'.join(source)
+            return (joined, evidence) if len(joined) <= 1600 and len(evidence) <= 1800 else None
+        if not line or len(line) > 500 or re.search(r'[:：\t|\x00-\x1f\ufffd]', line):
+            return None
+        parts.append(line)
+        source.append(line)
+    return None
+
+
 def pdf_field_candidates(printed: str) -> list[dict[str, str]]:
     lines = unicodedata.normalize('NFC', printed).splitlines()
     candidates = []
@@ -47,11 +71,15 @@ def pdf_field_candidates(printed: str) -> list[dict[str, str]]:
         # Colons in a clock time are permitted; pipe/tab cells are not.
         if re.search(r'(?<!\d)[:：]|[:：](?!\d)|[\t|]', value):
             continue
+        evidence = line
         if text_key(label) in NARRATIVE and index + 1 < len(lines):
             following = lines[index + 1].strip()
             if following and not re.match(r'[^:：]{1,120}[:：]\s*\S', following):
-                continue
-        candidates.append({'label': label, 'value': value, 'evidence': line})
+                block = narrative_cell(lines, index, value)
+                if not block:
+                    continue
+                value, evidence = block
+        candidates.append({'label': label, 'value': value, 'evidence': evidence})
     # Repeated headings (even identical) can belong to different visits/people.
     # Do not infer their association from one value alone.
     counts = {}
@@ -72,7 +100,7 @@ def reconcile_pdf_fields(page: dict, printed: str, capacity: int) -> None:
             if len(page['fields']) >= capacity:
                 page['warnings'] = ['Còn mục có chữ trong PDF nhưng bản đọc đã hết chỗ; đối chiếu bản gốc.', *page['warnings']][:8]
                 break
-            page['fields'].append({**cell, 'unit': '', 'reference': '', 'context': '',
+            page['fields'].append({**cell, 'evidence': cell['evidence'][:500], 'unit': '', 'reference': '', 'context': '',
                                    'unclear': True, 'pdfValue': cell['value'], 'pdfEvidence': cell['evidence']})
             added += 1
         elif len(matches) == 1:
@@ -105,7 +133,16 @@ TABLE_HEADERS = {
     'thời điểm': 'context', 'mẫu': 'context',
     'số lượng': 'quantity', 'sl': 'quantity', 'đơn giá': 'unitPrice',
     'thành tiền': 'amount', 'tiền tệ': 'currency',
+    'tên thuốc': 'name', 'thuốc': 'name', 'tên thuốc / hàm lượng': 'name',
+    'thành phần': 'ingredients', 'thành phần / hàm lượng': 'ingredients', 'hàm lượng': 'ingredients',
+    'liều mỗi lần': 'dose', 'liều dùng mỗi lần': 'dose',
+    'số lần dùng': 'frequency', 'tần suất': 'frequency',
+    'cách dùng': 'instructions', 'đường dùng': 'route',
+    'thời gian dùng': 'duration', 'số ngày dùng': 'duration',
+    'số lượng cấp': 'quantity', 'số lượng cấp phát': 'quantity',
 }
+MEDICINE_COLUMNS = {'name': 100, 'ingredients': 1200, 'dose': 80, 'frequency': 80,
+                    'instructions': 200, 'route': 80, 'duration': 80, 'quantity': 80}
 
 
 def pdf_table_candidates(printed: str) -> list[tuple[str, dict]]:
@@ -121,9 +158,12 @@ def pdf_table_candidates(printed: str) -> list[tuple[str, dict]]:
         content = line[1:-1] if line.startswith('|') and line.endswith('|') else line
         cells = [cell.strip() for cell in content.split(separator)]
         keys = [TABLE_HEADERS.get(text_key(cell)) for cell in cells]
-        if (all(keys) and len(set(keys)) == len(keys) and 'label' in keys
-                and (('value' in keys) != ('amount' in keys))):
-            allowed = {'index', 'label', 'value', 'unit', 'reference', 'context'} if 'value' in keys else {'index', 'label', 'amount', 'currency', 'quantity', 'unitPrice'}
+        if (all(keys) and len(set(keys)) == len(keys)
+                and (('label' in keys and (('value' in keys) != ('amount' in keys)))
+                     or ('name' in keys and len(keys) >= 3))):
+            allowed = ({'index', *MEDICINE_COLUMNS} if 'name' in keys else
+                       {'index', 'label', 'value', 'unit', 'reference', 'context'} if 'value' in keys else
+                       {'index', 'label', 'amount', 'currency', 'quantity', 'unitPrice'})
             header = keys if set(keys) <= allowed else None
             delimiter = separator
             continue
@@ -134,12 +174,15 @@ def pdf_table_candidates(printed: str) -> list[tuple[str, dict]]:
         if 'index' in data and not re.fullmatch(r'\d{1,3}', data.pop('index')):
             header = None
             continue
-        if not data['label'] or text_key(data['label']) in TABLE_HEADERS:
+        identity = 'name' if 'name' in data else 'label'
+        if not data[identity] or text_key(data[identity]) in TABLE_HEADERS:
             continue
-        group = 'fields' if 'value' in data else 'charges'
-        limits = ({'label': 120, 'value': 1600, 'unit': 40, 'reference': 160, 'context': 160}
+        group = 'medicines' if identity == 'name' else 'fields' if 'value' in data else 'charges'
+        limits = (MEDICINE_COLUMNS if group == 'medicines' else
+                  {'label': 120, 'value': 1600, 'unit': 40, 'reference': 160, 'context': 160}
                   if group == 'fields' else {'label': 160, 'amount': 80, 'currency': 20, 'quantity': 80, 'unitPrice': 80})
-        if not data.get('value' if group == 'fields' else 'amount') or any(len(v) > limits[k] for k, v in data.items()):
+        required = 'name' if group == 'medicines' else 'value' if group == 'fields' else 'amount'
+        if not data.get(required) or any(len(v) > limits[k] for k, v in data.items()):
             continue
         row = {key: data.get(key, '') for key in limits}
         row.update(evidence=line, unclear=True)
@@ -147,15 +190,17 @@ def pdf_table_candidates(printed: str) -> list[tuple[str, dict]]:
             row.update(pdfValue=row['value'], pdfEvidence=line)
         candidates.append((group, row))
     # Repeated labels without a distinguishing printed context are ambiguous.
-    identities = [(group, text_key(row['label']), text_key(row.get('context', ''))) for group, row in candidates]
+    identities = [(group, text_key(row.get('name', row.get('label', ''))), text_key(row.get('context', ''))) for group, row in candidates]
     return [entry for index, entry in enumerate(candidates) if identities.count(identities[index]) == 1]
 
 
 def reconcile_pdf_tables(page: dict, printed: str, limits: dict[str, int]) -> None:
     added = conflicts = 0
     for group, candidate in pdf_table_candidates(printed):
-        keys = ('value', 'unit', 'reference', 'context') if group == 'fields' else ('amount', 'currency', 'quantity', 'unitPrice')
-        matches = [row for row in page[group] if text_key(row['label']) == text_key(candidate['label'])
+        keys = (tuple(MEDICINE_COLUMNS) if group == 'medicines' else
+                ('value', 'unit', 'reference', 'context') if group == 'fields' else ('amount', 'currency', 'quantity', 'unitPrice'))
+        identity = 'name' if group == 'medicines' else 'label'
+        matches = [row for row in page[group] if text_key(row[identity]) == text_key(candidate[identity])
                    and text_key(row.get('context', '')) == text_key(candidate.get('context', ''))]
         if any(all(text_key(row.get(k, '')) == text_key(candidate.get(k, '')) for k in keys) for row in matches):
             continue

@@ -36,7 +36,7 @@ DETAILS = {
     'charges': {'quantity': 80, 'unitPrice': 80},
 }
 PAGE_COUNTS = {'fields': 64, 'medicines': 24, 'charges': 80}
-ENGINE_REVISION = 'medical-source-v4'
+ENGINE_REVISION = 'medical-source-v5'
 SOURCE_LIMITS = {'pdfValue': 1600, 'pdfEvidence': 1800}
 MAX_BYTES = 15_000_000
 MAX_PAGES = 6
@@ -225,6 +225,20 @@ def check_evidence(page: dict[str, Any], printed: str = '') -> None:
             if group == 'fields' and row['value'].strip() and words(row['value']) not in words(evidence):
                 row['unclear'] = True
                 problems.add('Có nội dung chữ chưa khớp câu trích; kiểm tra tên, dấu tiếng Việt và câu trên phiếu.')
+            if group == 'medicines':
+                # Matching digits alone misses a different brand/ingredient or
+                # omitted negation ("không uống..."). Keep the reading for review,
+                # but request a bounded second look at the original image.
+                for key in ['name', 'ingredients', 'dose', 'frequency', 'instructions']:
+                    value = words(row.get(key, ''))
+                    if value and not re.search(r'(?<!\w)' + re.escape(value) + r'(?!\w)', words(evidence)):
+                        row['unclear'] = True
+                        problems.add('Tên hoặc cách dùng thuốc chưa khớp câu trích; cần đọc lại đúng dòng, không suy ra theo tên sản phẩm.')
+                for negation in ['không', 'ngừng', 'tránh']:
+                    if re.search(r'\b' + negation + r'\b', words(evidence)) and not re.search(
+                            r'\b' + negation + r'\b', words(' '.join(row.get(k, '') for k in keys))):
+                        row['unclear'] = True
+                        problems.add('Lời dặn có từ phủ định chưa được giữ trong bản đọc thuốc. Phải đối chiếu nguyên câu trên đơn.')
             if printed.strip() and (not evidence or evidence.casefold() not in normalized(printed).casefold()):
                 row['unclear'] = True
                 problems.add('Một số dòng chưa khớp lớp chữ của PDF; cần xem trực tiếp trang gốc.')
@@ -265,7 +279,9 @@ def check_evidence(page: dict[str, Any], printed: str = '') -> None:
         problems.add('Chưa đọc được thông tin trên trang này. Bản gốc vẫn được giữ; cần chụp rõ hơn hoặc bổ sung thủ công.')
     if any(len(page[group]) >= maximum for group, maximum in COUNTS.items()):
         problems.add('Đã chạm giới hạn số mục trên một trang; có thể còn dòng chưa đọc. Soát toàn bộ bản gốc trước khi lưu.')
-    page['warnings'] = list(dict.fromkeys([*sorted(problems), *page['warnings']]))[:8]
+    prioritized = sorted(problems, key=lambda warning: (
+        not warning.startswith(('Lời dặn có từ phủ định', 'Tên hoặc cách dùng thuốc chưa khớp', 'Có số hoặc đơn vị chưa khớp')), warning))
+    page['warnings'] = list(dict.fromkeys([*prioritized, *page['warnings']]))[:8]
 
 
 def merge_page_readings(readings: list[dict[str, Any]], incomplete: bool = False) -> dict[str, Any]:
@@ -310,7 +326,7 @@ def image_bytes(source: Image.Image, maximum=(2400, 3200)) -> bytes:
     return out.getvalue()
 
 
-def page_views(image: bytes) -> list[bytes]:
+def page_views(image: bytes, *, retry_small: bool = False) -> list[bytes]:
     """One overview plus 2-3 overlapping detail strips for dense/long pages.
 
     Bounded, sequential page processing. All views are the SAME page, not extra
@@ -318,7 +334,7 @@ def page_views(image: bytes) -> list[bytes]:
     """
     with Image.open(io.BytesIO(image)) as source:
         long_side, short_side = max(source.size), min(source.size)
-        if long_side < 2000 or short_side < 600:
+        if short_side < 600 or (long_side < 2000 and not retry_small):
             return [image]
         count = min(3, max(2, math.ceil(long_side / short_side)))
         views = [image_bytes(source, (1400, 1800))]
@@ -402,7 +418,8 @@ def needs_detail_read(page: dict[str, Any]) -> bool:
         return True
     # A self-contradictory reading deserves a second look, unlike identity/medicine
     # review flags which are mandatory even when every printed cell is legible.
-    if any(warning.startswith(('Có số hoặc đơn vị chưa khớp', 'Có nội dung chữ chưa khớp', 'Có chi tiết chưa khớp')) for warning in page['warnings']):
+    if any(warning.startswith(('Có số hoặc đơn vị chưa khớp', 'Có nội dung chữ chưa khớp', 'Có chi tiết chưa khớp',
+                               'Tên hoặc cách dùng thuốc chưa khớp', 'Lời dặn có từ phủ định')) for warning in page['warnings']):
         return True
     if any(len(page[group]) >= limit for group, limit in COUNTS.items()):
         return True
@@ -456,11 +473,17 @@ class MedicalDocumentWorker:
             if not needs_detail_read(first):
                 return attach_pdf_source(first, printed)
         except ScanFailure as error:
-            if error.code != 'unreadable_output' or len(views) == 1:
+            if error.code != 'unreadable_output':
                 raise
+        if detailed and len(views) == 1:
+            # iPhone shared/compressed scans can be below 2000 px. Only crop
+            # AFTER a deficient first reading; never invent pixels by upscaling.
+            views = page_views(image, retry_small=True)
         # Retry only a truncated/dense page, not every upload. Smaller independent
         # readings avoid throwing away an entire report at the model token limit.
         if len(views) == 1:
+            if first is None:
+                raise ScanFailure('unreadable_output')
             first['warnings'].insert(0, 'Bản đọc có thể chưa đủ chi tiết; đối chiếu bảng và các dòng cuối trang, bổ sung mục còn thiếu.')
             first['warnings'] = first['warnings'][:8]
             return attach_pdf_source(first, printed)

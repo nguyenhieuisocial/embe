@@ -510,3 +510,121 @@ def test_pdf_source_preserves_unknown_wrapped_text_but_never_imports_it_as_medic
         attach_pdf_source(sample_page(), 'x' * 48001)
     with pytest.raises(ScanFailure, match='text_layer_too_large'):
         attach_pdf_source(sample_page(), 'abc\x01def')
+
+
+def test_pdf_prescription_table_retains_separate_cells_and_never_infers_dose():
+    printed = ('STT | Tên thuốc | Hàm lượng | Liều mỗi lần | Số lần dùng | Đường dùng | Thời gian dùng | Số lượng cấp | Cách dùng\n'
+               '1 | Sản phẩm mẫu A | 0,5 mg | 1 viên | 2 lần/ngày | uống | 5 ngày | 10 viên | Không uống khi đói\n'
+               '2 | Sản phẩm mẫu B | 250 mcg | | | | | 14 viên | Theo đơn gốc')
+    page = attach_pdf_source(sample_page(), printed)
+    assert len(page['medicines']) == 2
+    first, second = page['medicines']
+    assert first['dose'] == '1 viên' and first['quantity'] == '10 viên'
+    assert first['ingredients'] == '0,5 mg' and first['instructions'] == 'Không uống khi đói'
+    assert second['quantity'] == '14 viên' and second['dose'] == second['duration'] == ''
+    assert all(row['unclear'] for row in page['medicines'])
+    assert page['pdfText'] == printed
+    del page['pdfText']
+    assert validate_page(page)
+
+
+def test_pdf_medicine_conflict_retains_both_readings_without_filling_blank_cells():
+    page = sample_page()
+    page['medicines'] = [dict(name='Mẫu A', ingredients='', dose='2 viên', frequency='', instructions='',
+                              evidence='Mẫu A 2 viên', unclear=False)]
+    printed = 'Tên thuốc | Liều mỗi lần | Số lượng cấp\nMẫu A | 1 viên | 10 viên'
+    reconcile_pdf_tables(page, printed, dict(fields=64, charges=80, medicines=24))
+    assert [row['dose'] for row in page['medicines']] == ['2 viên', '1 viên']
+    assert 'quantity' not in page['medicines'][0]  # No silent merge.
+    reconcile_pdf_tables(page, printed, dict(fields=64, charges=80, medicines=24))
+    assert len(page['medicines']) == 2 and all(row['unclear'] for row in page['medicines'])
+    assert any('giữ hai bản' in warning for warning in page['warnings'])
+
+
+@pytest.mark.parametrize('printed', [
+    'Tên thuốc | Liều | Số lượng\nMẫu A | 1 | 10',  # Ambiguous dose header.
+    'Tên thuốc | Liều mỗi lần | Số lượng cấp\nMẫu A | 1 viên | 10 viên | extra',
+    'Tên thuốc | Liều mỗi lần | Số lượng cấp\nMẫu A | 1 viên | 10 viên\nMẫu A | 2 viên | 20 viên',
+    'Tên thuốc | Liều mỗi lần | Số lượng cấp\nMẫu A | ' + 'x' * 81 + ' | 10 viên',
+    'Tên thuốc | Thành tiền | Số lượng\nMẫu A | 200.000 | 10',
+])
+def test_ambiguous_medicine_pdf_table_is_not_imported(printed):
+    assert not pdf_table_candidates(printed)
+
+
+def test_wrapped_narrative_keeps_full_text_only_between_known_boundaries():
+    printed = 'Lời dặn: Mang theo giấy tờ\nkhi tái khám.\nKhông tự thay đổi nội dung mẫu.\nNgày hẹn: 14/09/2026'
+    page = attach_pdf_source(sample_page(), printed)
+    row = next(row for row in page['fields'] if row['label'] == 'Lời dặn')
+    assert row['value'] == 'Mang theo giấy tờ\nkhi tái khám.\nKhông tự thay đổi nội dung mẫu.'
+    assert row['pdfEvidence'] == printed.split('\nNgày hẹn')[0] and row['unclear']
+    for uncertain in ['Lời dặn: phần đầu\nphần sau', 'Lời dặn: phần đầu\nphần sau\nNgười khác: giá trị',
+                      'Lời dặn: phần đầu\nA | B\nBác sĩ: BS Mẫu']:
+        assert not any(c['label'] == 'Lời dặn' for c in pdf_field_candidates(uncertain))
+
+
+def test_wrapped_narrative_bounds_preserve_full_source_without_schema_overflow():
+    printed = 'Lời dặn: ' + 'a' * 490 + '\n' + 'b' * 480 + '\nBác sĩ: BS Mẫu'
+    page = attach_pdf_source(sample_page(), printed)
+    row = next(row for row in page['fields'] if row['label'] == 'Lời dặn')
+    assert len(row['evidence']) == 500 and len(row['pdfEvidence']) > 500
+    assert len(row['value']) > 900 and page['pdfText'] == printed
+    del page['pdfText']
+    assert validate_page(page)
+    too_long = 'Lời dặn: ' + 'a' * 480 + '\n' + ('b' * 480 + '\n') * 3 + 'Bác sĩ: BS Mẫu'
+    assert not any(c['label'] == 'Lời dặn' for c in pdf_field_candidates(too_long))
+
+
+@pytest.mark.parametrize('key,value', [('name', 'Mẫu B'), ('ingredients', '0,5 mcg'),
+                                       ('dose', '1 ống'), ('instructions', 'trước ăn')])
+def test_medicine_text_mismatch_gets_second_look_not_just_digit_check(key, value):
+    page = sample_page()
+    row = dict(name='Mẫu A', ingredients='0,5 mg', dose='1 viên', frequency='', instructions='sau ăn',
+               evidence='Mẫu A 0,5 mg 1 viên sau ăn', unclear=False)
+    row[key] = value
+    page['medicines'] = [row]
+    validate_page(page)
+    assert needs_detail_read(page) and row[key] == value and row['unclear']
+    assert any(warning.startswith('Tên hoặc cách dùng thuốc') for warning in page['warnings'])
+
+
+def test_missing_medication_negation_cannot_be_confident_even_if_substring_matches():
+    page = sample_page()
+    page['medicines'] = [dict(name='Mẫu A', ingredients='', dose='', frequency='', instructions='uống khi đói',
+                              evidence='Mẫu A: không uống khi đói', unclear=False)]
+    validate_page(page)
+    assert needs_detail_read(page)
+    assert any(w.startswith('Lời dặn có từ phủ định') for w in page['warnings'])
+
+
+def test_deficient_small_scan_gets_bounded_retry_without_upsampling_or_clear_page_penalty():
+    calls = []
+    def transport(method, url, headers, data=None):
+        calls.append(json.loads(data))
+        result = sample_page()
+        if len(calls) == 1:
+            result['fields'] = []
+        return HttpResponse(200, {}, json.dumps({'message': {'content': json.dumps(result)}}).encode())
+    body = image_bytes(Image.new('RGB', (1000, 1600), 'white'))
+    views = page_views(body, retry_small=True)
+    assert len(views) == 3 and max(Image.open(io.BytesIO(views[1])).size) <= 1000
+    worker = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport)
+    assert worker.analyze_page(body, '')['fields']
+    assert len(calls) == 3
+    worker.analyze_page(body, '')  # Clear reading does not need detail requests.
+    assert len(calls) == 4
+    assert len(page_views(image_bytes(Image.new('RGB', (400, 700))), retry_small=True)) == 1
+
+
+def test_small_truncated_scan_recovers_and_single_view_mode_does_not_crash():
+    calls = []
+    def transport(method, url, headers, data=None):
+        calls.append(1)
+        return HttpResponse(200, {}, json.dumps({'done_reason': 'length'} if len(calls) == 1 else
+                            {'message': {'content': json.dumps(sample_page())}}).encode())
+    body = image_bytes(Image.new('RGB', (1000, 1600), 'white'))
+    worker = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport)
+    assert worker.analyze_page(body, '')['fields'] and len(calls) == 3
+    calls.clear()
+    with pytest.raises(ScanFailure, match='unreadable_output'):
+        worker.analyze_page(body, '', detailed=False)
