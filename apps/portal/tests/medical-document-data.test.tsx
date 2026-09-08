@@ -13,6 +13,33 @@ const analysis: DocumentAnalysis = { version: 1, pages: [{ page: 1, kind: 'labor
 ], medicines: [{ name: 'THUỐC MẪU', ingredients: '200 mg', dose: '', frequency: '', instructions: 'Nguyên văn', quantity: '30 viên', evidence: '', unclear: true }],
 charges: [{ label: 'Chưa thu', amount: '300.000', currency: 'VND', quantity: '2', unitPrice: '150.000', evidence: '', unclear: true }], warnings: [] }] };
 afterEach(() => vi.unstubAllGlobals());
+it('groups synonymous fields without losing source evidence or changing saved data', () => {
+  const a = structuredClone(analysis);
+  a.pages[0].fields.push({...field('Tên bệnh nhân:', 'NGƯỜI MẪU'), evidence: 'Tên bệnh nhân: NGƯỜI MẪU'});
+  const before = structuredClone(a);
+  const rows = groupDocumentData(a).identity;
+  const patient = rows.find(row => row.label === 'Họ tên')!;
+  expect(patient.duplicateCount).toBe(2);
+  expect(patient.sourceIndexes).toEqual([0, 9]);
+  expect(patient.evidence).toContain('Tên bệnh nhân: NGƯỜI MẪU');
+  expect(rows.filter(row => row.value === 'NGƯỜI MẪU')).toHaveLength(1);
+  expect(a).toEqual(before);
+});
+it('automatically routes medication instructions and named lab values into their groups', () => {
+  const a = structuredClone(analysis);
+  a.pages[0].fields.push(field('Cách uống thuốc', 'Sau ăn'), field('Hemoglobin', '12'), field('HGB', '12'));
+  const groups = groupDocumentData(a);
+  expect(groups.medicines.some(row => row.label === 'Cách uống thuốc')).toBe(true);
+  expect(groups.results.find(row => row.label === 'Hemoglobin')?.duplicateCount).toBe(2);
+  expect(groups.other.some(row => row.label === 'Hemoglobin')).toBe(false);
+});
+it('never merges different dates, identities, units or clinician roles', () => {
+  const a = structuredClone(analysis);
+  a.pages[0].fields = [field('Ngày sinh', '07/09/2026'), field('Ngày khám', '07/09/2026'),
+    field('Họ tên', 'Đỗ'), field('Tên bệnh nhân', 'Do'), field('Hb','12','g/dL'), field('Hemoglobin','12','g/L'),
+    field('Bác sĩ khám', 'A'), field('Bác sĩ điều trị', 'A')];
+  expect(Object.values(groupDocumentData(a)).flat().filter(row => row.sourceGroup === 'fields')).toHaveLength(8);
+});
 it('exposes automatically saved scan groups and full text without confirming or importing', async () => {
   const a = structuredClone(analysis);
   a.pages[0].pdfText = 'Mã tài liệu ngoài biểu mẫu 000123';

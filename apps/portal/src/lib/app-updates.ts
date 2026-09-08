@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-semantic-groups', date: '2026-09-08', title: 'Gom thông tin hồ sơ gọn hơn', items: [
+    { title: 'Nhận biết nhãn đồng nghĩa', description: 'Gom dòng cùng giá trị và ngữ cảnh trên cùng trang dù nhãn khác nhau, như Họ tên / Tên bệnh nhân hoặc Hb / Hemoglobin. Giữ nguồn đối chiếu; không gộp các lần khám, đơn vị, liều thuốc hay khoản thu khác nhau. Thêm phân nhóm cách dùng thuốc và chỉ số xét nghiệm.', href: '/me-bau/ho-so', action: 'Xem hồ sơ' },
+  ] },
   { id: '2026-09-08-auto-import', date: '2026-09-08', title: 'Bớt xác nhận lặp khi nhập hồ sơ', items: [
     { title: 'Tự khớp bản đã đối chiếu', description: 'Khi mở bản đọc đã xác nhận, EmBe tự thêm dữ liệu nếu khớp đúng Mẹ, rõ ngày và không mâu thuẫn. Không cần xác nhận thêm lần nữa. Bản chưa đối chiếu hoặc chưa rõ vẫn được giữ riêng, không tự ghi đè số đo hay thuốc.', href: '/me-bau/ho-so', action: 'Mở hồ sơ' },
   ] },

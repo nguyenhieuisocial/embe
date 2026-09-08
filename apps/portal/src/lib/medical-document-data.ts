@@ -10,7 +10,22 @@ export type DocumentDataRow = {
   page: number; sourceGroup: 'fields' | 'medicines' | 'charges'; index: number;
   label: string; value: string; details: string[]; evidence: string; unclear: boolean;
   duplicateCount?: number;
+  sourceIndexes?: number[];
 };
+const labelKey = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+// Explicit aliases only: a diagnosis is not a conclusion, and a birth date is not a visit date.
+const synonymousLabels = [
+  ['ho ten', 'ho va ten', 'ten benh nhan', 'ho ten benh nhan', 'ho va ten benh nhan', 'ho ten nguoi benh', 'ten nguoi benh', 'patient name', 'patient full name'],
+  ['ma benh nhan', 'ma nguoi benh', 'patient id', 'patient identifier'],
+  ['ngay sinh', 'date of birth'], ['ngay kham', 'ngay kham benh', 'visit date'],
+  ['ngay tai kham', 'ngay hen tai kham'], ['ngay du sinh', 'expected due date'],
+  ['hgb', 'hb', 'hemoglobin'], ['wbc', 'bach cau'], ['rbc', 'hong cau'],
+  ['plt', 'tieu cau'], ['hct', 'hematocrit'], ['creatinine', 'creatinin'],
+];
+function canonicalLabel(value: string) {
+  const key = labelKey(value);
+  return synonymousLabels.find(labels => labels.includes(key))?.[0] ?? key;
+}
 export type ImportedDocumentData = {
   documentId: string; recordId: string; importedAt: string; analysis: DocumentAnalysis;
   sourceSnapshot?: boolean;
@@ -29,9 +44,11 @@ export function groupDocumentData(analysis: DocumentAnalysis) {
       const financial = ['tong tien', 'tong cong', 'thanh tien', 'da thanh toan', 'so tien da thu', 'con no', 'con lai', 'tam ung', 'mien giam', 'bao hiem thanh toan', 'so phieu thu', 'so hoa don', 'invoice total', 'amount paid', 'balance due'].includes(label)
         || /^(?:VND|VNĐ|đ|USD|EUR)$/i.test(row.unit.trim());
       const metric = /^(?:crl|nt|bpd|hc|ac|fl|efw|afi|fhr|hgb|hb|hct|plt|rbc|wbc|glucose|hba1c|tsh|ft4|ast|alt|ferritin|bmi|can nang|chieu cao|huyet ap|nhip tim|tim thai|tuoi thai|tuan thai)(?:\s|$)/.test(label);
+      const medication = /^(?:ten thuoc|hoat chat|thanh phan thuoc|ham luong thuoc|lieu dung|lieu uong|cach uong thuoc|cach dung thuoc|duong dung|tan suat dung thuoc|thoi gian dung thuoc)(?:\s|$)/.test(label);
+      const clinicalMetric = metric || ['hemoglobin', 'hematocrit', 'bach cau', 'hong cau', 'tieu cau', 'creatinine', 'creatinin', 'ure', 'urea', 'spo2', 'nhiet do', 'nhip tho', 'mach'].includes(label);
       const key = freeText ? 'other' : financial ? 'charges' : administrative || category === 'patient' || category === 'patient-id' || category === 'facility' ? 'identity'
         : category === 'date' ? 'visits' : category === 'conclusion' || category === 'instructions' ? 'findings'
-          : row.unit || row.reference || metric ? 'results' : 'other';
+          : medication ? 'medicines' : row.unit || row.reference || clinicalMetric ? 'results' : 'other';
       groups[key].push({ page: page.page, sourceGroup: 'fields', index, label: row.label, value: withPrintedUnit(row.value, row.unit),
         details: [row.context && `Thời điểm / ngữ cảnh: ${row.context}`, row.reference && `Tham chiếu in trên phiếu: ${row.reference}`,
           row.pdfValue && row.pdfValue !== row.value && `Chữ PDF khác bản đã lưu: ${row.pdfValue}`].filter(Boolean) as string[], evidence: row.evidence, unclear: row.unclear });
@@ -49,10 +66,18 @@ export function groupDocumentData(analysis: DocumentAnalysis) {
   for (const [group, rows] of Object.entries(groups)) {
     const seen = new Map<string, DocumentDataRow>();
     groups[group as keyof typeof groups] = rows.filter(row => {
-      if (row.sourceGroup !== 'fields' || group === 'charges') return true;
-      const signature = JSON.stringify([row.page, row.label, row.value, row.details, row.evidence, row.unclear]);
+      if (row.sourceGroup !== 'fields' || group === 'charges' || group === 'medicines') return true;
+      // Values remain accent-, case-, unit- and context-sensitive. Never collapse
+      // medicines/charges or separate pages, even when they look identical.
+      const literal = (value: string) => value.normalize('NFC').trim().replace(/\s+/g, ' ');
+      const signature = JSON.stringify([row.page, canonicalLabel(row.label), literal(row.value), row.details.map(literal), row.unclear]);
       const prior = seen.get(signature);
-      if (prior) { prior.duplicateCount = (prior.duplicateCount ?? 1) + 1; return false; }
+      if (prior) {
+        prior.duplicateCount = (prior.duplicateCount ?? 1) + 1;
+        prior.sourceIndexes = [...(prior.sourceIndexes ?? [prior.index]), row.index];
+        if (row.evidence && !prior.evidence.split('\n').includes(row.evidence)) prior.evidence = [prior.evidence, row.evidence].filter(Boolean).join('\n');
+        return false;
+      }
       seen.set(signature, row); return true;
     });
   }
