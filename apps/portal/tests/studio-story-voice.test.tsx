@@ -18,7 +18,7 @@ it('saves pronunciation separately, exports it for review, and clears empty over
   expect(()=>studioDocument({...doc,scenes:[{...doc.scenes[0],speechText:'x'.repeat(241)}]})).toThrow();
 });
 it('persists both new voices and preserves the old explicit voice and speed',()=>{
-  for(const id of ['thuc-doan-south-v2','my-duyen-south-v2','kim-thanh-south-v2','thuc-doan-south-v1','my-duyen-south-v1','ai-han-south','piper'])for(const speed of [.95,1,1.05])
+  for(const id of ['thuc-doan-south-v3','thuy-dung-south-v3','thuc-doan-south-v2','my-duyen-south-v2','kim-thanh-south-v2','thuc-doan-south-v1','my-duyen-south-v1','ai-han-south','piper'])for(const speed of [.95,1,1.05])
     expect(studioDocument({...templateDocument(),voice:{id,speed}}).voice).toEqual({id,speed});
 });
 it('serves only fixed authenticated samples and keeps the old default URL',async()=>{
@@ -27,14 +27,14 @@ it('serves only fixed authenticated samples and keeps the old default URL',async
   for(const voice of ['__proto__','constructor','https://evil.test','../../secret','piper'])
     expect((await GET(new Request(`https://embe.hieu.asia/api/studio/voice-preview?voice=${encodeURIComponent(voice)}`))).status).toBe(400);
   expect(media.serve).not.toHaveBeenCalled();
-  for(const voice of ['','thuc-doan-south-v2','my-duyen-south-v2'])expect((await GET(new Request(`https://embe.hieu.asia/api/studio/voice-preview${voice?'?voice='+voice:''}`))).status).toBe(200);
+  for(const voice of ['','thuc-doan-south-v2','my-duyen-south-v2','thuc-doan-south-v3','thuy-dung-south-v3'])expect((await GET(new Request(`https://embe.hieu.asia/api/studio/voice-preview${voice?'?voice='+voice:''}`))).status).toBe(200);
   const assets=media.serve.mock.calls.map(call=>(call as unknown[])[1] as {size:number;path:string});
-  expect(assets.map(a=>a.size)).toEqual([87273,137561,165894]);expect(assets.every(a=>/^editorial\/[a-f\d]{64}\.mp4$/.test(a.path))).toBe(true);
+  expect(assets.map(a=>a.size)).toEqual([87273,137561,165894,132484,116901]);expect(assets.every(a=>/^editorial\/[a-f\d]{64}\.mp4$/.test(a.path))).toBe(true);
 });
 it('switching voices stops/unmounts the old audio and does not autoplay the new sample',()=>{
   render(<SouthernVoiceSample/>);
   fireEvent.click(screen.getByRole('button',{name:'Nghe mẫu Thục Đoan'}));
-  const old=document.querySelector('audio');expect(old?.getAttribute('src')).toContain('thuc-doan-south-v2');
+  const old=document.querySelector('audio');expect(old?.getAttribute('src')).toContain('thuc-doan-south-v3');
   fireEvent.change(screen.getByLabelText('Giọng nghe thử'),{target:{value:'my-duyen-south-v2'}});
   expect(old?.isConnected).toBe(false);expect(old?.pause).toHaveBeenCalled();expect(old?.getAttribute('src')).toBeNull();expect(document.querySelector('audio')).toBeNull();
   fireEvent.click(screen.getByRole('button',{name:'Nghe mẫu Mỹ Duyên'}));

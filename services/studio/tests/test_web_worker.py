@@ -14,7 +14,7 @@ def test_redirects_are_never_followed():
 
 def test_pinned_voice_and_speed_only_backward_compatible():
     assert 'voice' not in validate_document(document())
-    for voice in ('auto-south','ai-han-south','piper','thuc-doan-south-v1','my-duyen-south-v1','thuc-doan-south-v2','my-duyen-south-v2','kim-thanh-south-v2'):
+    for voice in ('auto-south','ai-han-south','piper','thuc-doan-south-v1','my-duyen-south-v1','thuc-doan-south-v2','my-duyen-south-v2','kim-thanh-south-v2','thuc-doan-south-v3','thuy-dung-south-v3'):
         for speed in (.95,1,1.05):
             assert validate_document({**document(),'voice':{'id':voice,'speed':speed}})['voice']=={'id':voice,'speed':speed}
     for v in [None,{}, {'id':'remote-url','speed':1}, {'id':'ai-han-south','speed':True}, {'id':'piper','speed':0}, {'id':'piper','speed':1,'path':'C:/Anh'}]:

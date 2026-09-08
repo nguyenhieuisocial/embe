@@ -69,15 +69,16 @@ def render_document(document, directory: Path, progress):
     doc=validate_document(document)
     chosen=doc.get('voice',{'id':'piper','speed':1})
     automatic=chosen['id']=='auto-south'
-    if automatic: chosen={'id':'thuc-doan-south-v2','speed':1}
+    if automatic: chosen={'id':'thuc-doan-south-v3','speed':1}
     southern=chosen['id']=='ai-han-south'
     story=chosen['id'] in VOICES
-    improved=chosen['id'].endswith('-v2')
+    editorial=chosen['id'].endswith('-v3')
+    improved=chosen['id'].endswith(('-v2','-v3'))
     rate=48000 if story else RATE
     if story:
         from .story_voice import StoryVoice
         voice=StoryVoice(chosen['id']);credit=voice.credit
-        if automatic: credit={**credit,'automatic':True,'policyVersion':1}
+        if automatic: credit={**credit,'automatic':True,'policyVersion':2}
     elif southern:
         from .southern_voice import SouthernVoice,CREDIT
         voice=SouthernVoice();credit=CREDIT
@@ -108,7 +109,7 @@ def render_document(document, directory: Path, progress):
             if np.max(np.abs(pcm))<.01:raise ValueError('worker_unavailable')
             if improved:
                 from .voice_timing import paced_scene
-                padded,duration=paced_scene(pcm,rate)
+                padded,duration=paced_scene(pcm,rate,editorial=editorial)
             else:
                 duration=math.ceil(len(pcm)/rate+.45)
                 padded=np.zeros(duration*rate,dtype=np.float32);start=round(rate*.15);padded[start:start+len(pcm)]=pcm
@@ -138,7 +139,12 @@ def render_document(document, directory: Path, progress):
                 poster.save(directory/'poster.png',optimize=True);poster.close()
             beats.append({'heading':scene['heading'],'text':scene['text'],'start':elapsed,'end':elapsed+duration});elapsed+=duration
         progress(45)
-        result=render_video(directory/'video.mp4',visuals,durations,np.concatenate(sounds),on_progress=progress,
+        soundtrack=np.concatenate(sounds)
+        if editorial:
+            from .voice_mastering import master_narration
+            soundtrack,mastering=master_narration(soundtrack)
+            credit={**credit,'mastering':mastering}
+        result=render_video(directory/'video.mp4',visuals,durations,soundtrack,on_progress=progress,
             audio_rate=rate,audio_bitrate=128000 if story else 48000)
         return {'duration':elapsed,'beats':beats,'voiceCredit':credit,'verification':result}
     finally:

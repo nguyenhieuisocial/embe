@@ -28,7 +28,8 @@ CODEC_FILES = {
 }
 VOICES = {'thuc-doan-south-v1': 'Thục Đoan', 'my-duyen-south-v1': 'Mỹ Duyên',
           'thuc-doan-south-v2': 'Thục Đoan', 'my-duyen-south-v2': 'Mỹ Duyên',
-          'kim-thanh-south-v2': 'Kim Thanh'}
+          'kim-thanh-south-v2': 'Kim Thanh',
+          'thuc-doan-south-v3': 'Thục Đoan', 'thuy-dung-south-v3': 'Thùy Dung'}
 
 
 def provision():
@@ -50,7 +51,7 @@ def provision():
             print(json.dumps({'verified': name}), flush=True)
 
 
-def spoken_text(text: str, *, improved=False) -> str:
+def spoken_text(text: str, *, improved=False, editorial=False) -> str:
     """Speech-only typography/brand cleanup; numbers and medical doses untouched.
 
     The upstream sea-g2p normalizer handles Vietnamese numbers and punctuation.
@@ -58,6 +59,16 @@ def spoken_text(text: str, *, improved=False) -> str:
     """
     text = unicodedata.normalize('NFC', text)
     text = re.sub(r'\bEmBe\b', 'Em Bé', text)
+    if editorial:
+        # Display text stays intact. Avoid the bilingual normalizer reading these
+        # familiar initialisms in inconsistent languages; never expand drug names.
+        for token, pronunciation in {'BMI': 'bi em ai', 'WHO': 'tổ chức y tế thế giới',
+                                      'NHS': 'en hát ét', 'FDA': 'ép đi ây',
+                                      'USDA': 'iu ét đi ây'}.items():
+            text = re.sub(r'\b'+token+r'\b', pronunciation, text)
+        # Bullets delimit thoughts, not words to pronounce. Keep numeric ranges,
+        # decimal points, medicine units and explicit sentence punctuation intact.
+        text = re.sub(r'(?m)^\s*[-•]\s+', '', text)
     if improved:
         # Keep intentional paragraph pauses. Spell only unambiguous acronyms;
         # do not infer a medicine name, dose, unit conversion or clinical meaning.
@@ -150,19 +161,20 @@ class StoryVoice:
 
         self.engine = LocalTurbo()
         self.name = VOICES[voice_id]
-        self.improved = voice_id.endswith('-v2')
+        self.editorial = voice_id.endswith('-v3')
+        self.improved = voice_id.endswith(('-v2', '-v3'))
         self.credit = {
             'name': f'{self.name} · nữ miền Nam · VieNeu Turbo 48 kHz',
-            'attribution': f'Giọng AI {self.name}, nữ miền Nam kể chuyện. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.',
+            'attribution': f'Giọng AI {self.name}, nữ miền Nam. VieNeu-TTS v3 Turbo / pnnbao97, preset Apache 2.0; không phải giọng Mẹ Ngân. Nghe lại trước khi đăng.',
             'url': 'https://huggingface.co/pnnbao-ump/VieNeu-TTS-v3-Turbo',
             'license': 'https://www.apache.org/licenses/LICENSE-2.0',
             'modelRevision': REVISION, 'codecRevision': CODEC_REVISION,
-            'presetChecksum': PRESET_SHA, 'processingVersion': 2 if self.improved else 1,
+            'presetChecksum': PRESET_SHA, 'processingVersion': 3 if self.editorial else 2 if self.improved else 1,
         }
 
     def speak(self, text, speed=1.0):
         if speed not in (.95, 1, 1.05): raise ValueError('invalid_voice_speed')
-        normalized=spoken_text(text, improved=self.improved)
+        normalized=spoken_text(text, improved=self.improved, editorial=getattr(self, 'editorial', False))
         for attempt in range(2 if self.improved else 1):
             pcm = self.engine.infer(normalized, voice=self.name,
                 temperature=.8, max_chars=256 if self.improved else 130, batch_size=1)

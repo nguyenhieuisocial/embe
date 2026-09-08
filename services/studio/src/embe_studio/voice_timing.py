@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 
-def paced_scene(pcm, rate=48000, fps=24):
+def paced_scene(pcm, rate=48000, fps=24, *, editorial=False):
     import numpy as np
     if rate != 48000 or fps != 24:
         raise ValueError('invalid_audio_format')
@@ -25,7 +25,9 @@ def paced_scene(pcm, rate=48000, fps=24):
     clip[:fade] *= np.linspace(0, 1, fade)
     clip[-fade:] *= np.linspace(1, 0, fade)
     lead = round(.06 * rate)
-    frames = math.ceil((lead + len(clip) + round(.18 * rate)) * fps / rate)
+    # Give the listener one short breath when the subject/card changes. Do not
+    # synthesize a fake breath or edit pauses inside a spoken sentence.
+    frames = math.ceil((lead + len(clip) + round((.34 if editorial else .18) * rate)) * fps / rate)
     padded = np.zeros(frames * (rate // fps), dtype=np.float32)
     padded[lead:lead + len(clip)] = clip
     return padded, frames / fps

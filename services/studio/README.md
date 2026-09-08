@@ -6,6 +6,14 @@ Trang `/studio` theo dõi lịch 1 video/ngày lúc 08:00 giờ Việt Nam, vớ
 
 ## Bàn làm việc trên web (07/09/2026)
 
+### Phát âm và cân mức âm v3 (08/09/2026)
+
+- `auto-south` dùng Thục Đoan v3. Thêm lựa chọn Thùy Dung (preset nữ miền Nam, phong cách tin tức/thuyết minh); không giả mạo giọng người thật, không thay model fp32 đã pin. Giữ toàn bộ preset và file v1/v2 để so sánh.
+- Mở rộng cách đọc BMI/WHO/NHS/FDA/USDA chỉ ở lời đọc; chữ video, số, liều, đơn vị vẫn nguyên. SDK sea-g2p tiếp tục xử lý số, khoảng, ngày tháng; không tự viết lại bộ đọc số.
+- Tăng nghỉ giữa các cảnh 160 ms, không cắt nghỉ trong câu. Dùng FFmpeg `loudnorm` có sẵn trong PyAV để đo rồi cân toàn bản đọc: mục tiêu −18 LUFS, true peak −2 dBTP, giới hạn khuếch đại 6 dB, không đổi cao độ. Đo lại và dừng nếu mức âm/độ dài không đạt; đây là kiểm tra tín hiệu, **không phải đánh giá độ tự nhiên hoặc xác nhận đọc đúng từng chữ**. Tham chiếu: https://ffmpeg.org/ffmpeg-filters.html#loudnorm
+- Hai mẫu tự viết tại `data/studio-voice/comparison-v3/result.json`: trước khoảng −20,5 LUFS, sau −18,36/−18,34 LUFS; peak −2 dBTP trước AAC. Inference đã chặn socket; upload private có đối chiếu checksum. Không dùng hồ sơ gia đình, không thêm API trả phí hoặc tải thêm model.
+- Mẫu mới xuất hiện trong `/studio` và nút nghe ngay ngoài phần tùy chỉnh ở `/studio/soan`. Video lịch sử không thay; bản dựng mới lưu `processingVersion:3` và kết quả mastering. Verifier `scripts/health/studio-voice-mastering-live.mjs` chỉ đọc/phát mẫu, kiểm tra Range/auth/mobile; không tạo job hay sửa dữ liệu.
+
 ### Nhịp đọc và phát âm v2 (08/09/2026)
 
 - Bản mới mặc định Thục Đoan v2; thêm Mỹ Duyên v2 và Kim Thanh (preset nữ miền Nam Apache 2.0 cùng model đã pin). Giữ nguyên lựa chọn v1 và file video trước đây, không âm thầm gắn nhãn lại lịch sử.

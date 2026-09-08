@@ -13,11 +13,14 @@ TEXT = 'Chào bạn, mình là giọng đọc của EmBe. Mỗi ngày một đi�
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--upload',action='store_true');parser.add_argument('--quality-v2',action='store_true');args=parser.parse_args()
-    root=ROOT/('data/studio-voice/comparison-v2' if args.quality_v2 else 'data/studio-voice/comparison-v1');root.mkdir(exist_ok=True)
+    parser=argparse.ArgumentParser();parser.add_argument('--upload',action='store_true')
+    versions=parser.add_mutually_exclusive_group()
+    versions.add_argument('--quality-v2',action='store_true');versions.add_argument('--quality-v3',action='store_true');args=parser.parse_args()
+    version=3 if args.quality_v3 else 2 if args.quality_v2 else 1
+    root=ROOT/f'data/studio-voice/comparison-v{version}';root.mkdir(exist_ok=True)
     result={}
     for voice in VOICES:
-        if voice.endswith('-v2') != args.quality_v2: continue
+        if not voice.endswith(f'-v{version}'): continue
         out=root/voice;out.mkdir(exist_ok=True)
         started=time.monotonic()
         doc=dict(title='Nghe giọng kể chuyện',stage='EmBe',caption='Mẫu giọng AI, không phải dữ liệu sức khỏe.',
