@@ -487,8 +487,8 @@ export default function PregnancyMedicalRecords() {
             })() : record.notes ? <p className="medical-record-note">{record.notes}</p> : null}
             {record.documents.length ? <div className="medical-documents">{record.documents.map((document) => <div key={document.id}>
               <MedicalDocumentButton document={document} documents={record.documents} />
-              <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>{document.imported ? 'Đã thêm vào hồ sơ · xem bản đọc' : document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? 'Đã đọc · xác nhận vào hồ sơ' : document.scanStatus === 'queued' || document.scanStatus === 'processing' ? 'Đang đọc · xem tiến độ' : 'Đọc & đối chiếu'}</Link>
-              {document.imported ? <MedicalDocumentData document={document} recordId={record.id} /> : null}
+              <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>{document.imported ? 'Đã thêm vào hồ sơ · xem bản đọc' : document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? 'Đã tự lưu bản đọc · xem hoặc sửa' : document.scanStatus === 'queued' || document.scanStatus === 'processing' ? 'Đang đọc · xem tiến độ' : 'Đọc & đối chiếu'}</Link>
+              {document.imported || document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? <MedicalDocumentData key={`${document.id}:${document.scanStatus}:${Boolean(document.imported)}`} document={document} recordId={record.id} /> : null}
             </div>)}</div> : null}
           </article>)}
         </div>

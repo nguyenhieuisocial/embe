@@ -18,15 +18,17 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
   useEffect(() => {
     if (!open || data) return;
     const controller = new AbortController();
-    void fetch(`/api/pregnancy/documents/${document.id}/import?view=imported`, { cache: 'no-store', signal: controller.signal })
+    const automatic = !document.imported && (document.scanStatus === 'review' || document.scanStatus === 'confirmed');
+    void fetch(`/api/pregnancy/documents/${document.id}/${automatic ? 'scan' : 'import?view=imported'}`, { cache: 'no-store', signal: controller.signal })
       .then(async response => {
         if (!response.ok) throw new Error('Chưa tải được dữ liệu. Thử lại hoặc mở bản đọc.');
         const value = await response.json();
         if (value.documentId !== document.id || value.recordId !== recordId || !validDocumentAnalysis(value.analysis)) throw new Error('Chưa xác minh được dữ liệu của hồ sơ này.');
-        if (!controller.signal.aborted) { setData(value); setError(''); }
+        if (automatic && !['review', 'confirmed'].includes(value.status)) throw new Error('Tài liệu đang được đọc lại. Mở bản đọc để xem tiến độ.');
+        if (!controller.signal.aborted) { setData({ ...value, automaticallyExtracted: automatic }); setError(''); }
       }).catch(e => { if (!controller.signal.aborted) setError(e.message); });
     return () => controller.abort();
-  }, [open, data, retry, document.id, recordId]);
+  }, [open, data, retry, document.id, document.imported, document.scanStatus, recordId]);
   const groups = useMemo(() => data ? groupDocumentData(data.analysis) : null, [data]);
   const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase();
   const search = useDeferredValue(fold(query.trim()));
@@ -41,7 +43,11 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
     </button>
     {open ? <div id={`medical-data-${document.id}`}>
       {!data ? error ? <p role="alert">{error}<button type="button" onClick={() => { setError(''); setRetry(n => n + 1); }}>Thử lại</button></p> : <p role="status">Đang tải thông tin tài liệu…</p> : <>
-        <p>Bản lưu lúc thêm vào hồ sơ. Không phải kết luận mới; mục chưa rõ vẫn cần đối chiếu. Sửa bản đọc về sau không tự đổi bản lưu này.</p>
+        <p>{data.automaticallyExtracted ? 'Đã tự lưu và phân nhóm từ tài liệu, không cần xác nhận để xem hoặc tìm kiếm. Đây là dữ liệu trích xuất, không phải kết quả đã được bác sĩ kiểm chứng.' : 'Bản lưu lúc thêm vào hồ sơ. Không phải kết luận mới; mục chưa rõ vẫn cần đối chiếu. Sửa bản đọc về sau không tự đổi bản lưu này.'}</p>
+        {data.analysis.pages.some(page => page.warnings.length) ? <details className="medical-data-warning">
+          <summary>Phần bộ đọc chưa chắc chắn</summary>
+          {data.analysis.pages.flatMap(page => page.warnings.map((warning, i) => <p key={`${page.page}:${i}`}>Trang {page.page}: {warning}</p>))}
+        </details> : null}
         <label className="medical-data-search">Tìm trong tài liệu<input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Chỉ số, thuốc, lời dặn…" /></label>
         {visible.map(([key, rows]) => <details key={key} open={search ? true : undefined}>
           <summary>{DOCUMENT_DATA_GROUPS[key as keyof typeof DOCUMENT_DATA_GROUPS]} <span>{rows.length}</span></summary>
@@ -64,7 +70,7 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
         </details> : null}
         {!visible.length && !sourceMatches.length ? <p>Không có mục phù hợp{search ? ' với từ khóa này' : ' trong bản đã lưu'}. Kiểm tra toàn văn và bản gốc bên dưới.</p> : null}
         <details className="medical-data-fulltext"><summary>Toàn văn từng trang · kể cả phần chưa phân loại</summary>
-          <p>{data.sourceSnapshot ? 'Giữ cùng bản dữ liệu lúc nhập hồ sơ.' : 'Toàn văn hiện có từ bộ đọc; có thể mới hơn các trường đã nhập trước đây.'} Không cắt chỉ lấy vùng y tế. Chữ mờ, chữ viết tay hoặc ký hiệu vẫn có thể đọc sai; bản gốc luôn được giữ để xem lại.</p>
+          <p>{data.automaticallyExtracted ? 'Toàn văn đã tự lưu cùng kết quả đọc từng trang.' : data.sourceSnapshot ? 'Giữ cùng bản dữ liệu lúc nhập hồ sơ.' : 'Toàn văn hiện có từ bộ đọc; có thể mới hơn các trường đã nhập trước đây.'} Không cắt chỉ lấy vùng y tế. Chữ mờ, chữ viết tay hoặc ký hiệu vẫn có thể đọc sai; bản gốc luôn được giữ để xem lại.</p>
           {data.analysis.pages.map(page => <div key={page.page}>
             {page.pdfText ? <MedicalDocumentSourceText text={page.pdfText} page={page.page} kind="pdf" /> : null}
             {page.ocrText ? <MedicalDocumentSourceText text={page.ocrText} page={page.page} kind="ocr" /> : null}

@@ -13,6 +13,7 @@ export type DocumentDataRow = {
 export type ImportedDocumentData = {
   documentId: string; recordId: string; importedAt: string; analysis: DocumentAnalysis;
   sourceSnapshot?: boolean;
+  automaticallyExtracted?: boolean;
 };
 // A lossless view over the immutable import snapshot, not another clinical database.
 // Unknown fields stay visible. Currency, comparison signs and context are never coerced.

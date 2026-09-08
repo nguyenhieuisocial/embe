@@ -184,8 +184,9 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
     </div> : null}
     {draft ? <form onSubmit={event => { event.preventDefault(); void save(); }}>
       {overview ? <MedicalDocumentOverview overview={overview} onSource={selectSource} /> : null}
-      {scan ? <MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}
-        onImported={async () => { await load(); setMessage('Đã lưu bản đọc và thêm dữ liệu đã xác nhận vào hồ sơ.'); }} /> : null}
+      <p className="document-notice">Bản đọc đã được tự lưu cùng tài liệu. Các thông tin được phân nhóm trong hồ sơ, không cần xác nhận để lưu bản đọc. Thay đổi tự nhập trên trang này vẫn cần lưu.</p>
+      {scan ? <details><summary>Đưa vào số đo, thuốc hoặc lịch hẹn chính thức</summary><MedicalDocumentImport documentId={documentId} recordId={scan.recordId} revision={scan.revision} analysis={draft} disabled={busy} onBusy={setBusy} onDirty={() => setDirty(true)}
+        onImported={async () => { await load(); setMessage('Đã lưu bản đọc và thêm dữ liệu đã xác nhận vào hồ sơ.'); }} /></details> : null}
       <p className="document-notice">Đối chiếu họ tên, ngày khám, đơn vị và liều với bản gốc. Đây là bản chép, không phải chẩn đoán hay đơn thuốc mới.</p>
       <div className="document-review-tools">
         <p>{overview?.counts.items} mục · {overview?.counts.needsReview} mục gắn cờ đối chiếu</p>

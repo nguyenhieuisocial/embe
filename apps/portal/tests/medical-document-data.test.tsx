@@ -13,6 +13,24 @@ const analysis: DocumentAnalysis = { version: 1, pages: [{ page: 1, kind: 'labor
 ], medicines: [{ name: 'THUỐC MẪU', ingredients: '200 mg', dose: '', frequency: '', instructions: 'Nguyên văn', quantity: '30 viên', evidence: '', unclear: true }],
 charges: [{ label: 'Chưa thu', amount: '300.000', currency: 'VND', quantity: '2', unitPrice: '150.000', evidence: '', unclear: true }], warnings: [] }] };
 afterEach(() => vi.unstubAllGlobals());
+it('exposes automatically saved scan groups and full text without confirming or importing', async () => {
+  const a = structuredClone(analysis);
+  a.pages[0].pdfText = 'Mã tài liệu ngoài biểu mẫu 000123';
+  a.pages[0].warnings = ['Chưa đọc rõ chữ cuối trang'];
+  const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => Response.json({ documentId: id, recordId: id, status: 'review', analysis: a }));
+  vi.stubGlobal('fetch', fetcher);
+  render(<MedicalDocumentData document={{ id, originalFilename: 'sample.pdf', mimeType: 'application/pdf', byteSize: 100, createdAt: '', scanStatus: 'review', imported: false }} recordId={id} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Xem thông tin đã phân loại' }));
+  await screen.findByRole('searchbox');
+  expect(fetcher).toHaveBeenCalledWith(`/api/pregnancy/documents/${id}/scan`, expect.objectContaining({ cache: 'no-store' }));
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(screen.getByText(/không cần xác nhận để xem/)).toBeVisible();
+  fireEvent.click(screen.getByText('Phần bộ đọc chưa chắc chắn'));
+  expect(screen.getByText('Trang 1: Chưa đọc rõ chữ cuối trang')).toBeVisible();
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: '000123' } });
+  expect(screen.getByText('Mã tài liệu ngoài biểu mẫu 000123')).toBeVisible();
+  expect(fetcher.mock.calls.every(([, init]) => !init?.method)).toBe(true);
+});
 it('keeps every row exactly once, every source page, contextual values and receipt amounts verbatim', () => {
   const before = structuredClone(analysis); const groups = groupDocumentData(analysis);
   expect(Object.values(groups).flat()).toHaveLength(11);
