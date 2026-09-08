@@ -23,6 +23,12 @@ it('keeps every row exactly once, every source page, contextual values and recei
   expect(groups.identity.map(row => row.label)).toEqual(['Họ tên', 'Bác sĩ']); expect(groups.findings).toHaveLength(2);
   expect(analysis).toEqual(before);
 });
+it('does not mislabel headers and footer text as laboratory measurements', () => {
+  const a = structuredClone(analysis);
+  a.pages[0].fields.push(field('Chân trang', 'Không dùng để điều trị'), field('Tiêu đề cột', 'Tên xét nghiệm | Kết quả'));
+  const groups = groupDocumentData(a);
+  expect(groups.other.map(row => row.label)).toEqual(['Chân trang', 'Tiêu đề cột']);
+});
 it('fetches on demand, searches without accents, preserves uncertainty and never renders source HTML', async () => {
   const fetcher = vi.fn(async () => Response.json({ documentId: id, recordId: id, importedAt: '2026-09-08T00:00:00Z', analysis }));
   vi.stubGlobal('fetch', fetcher);

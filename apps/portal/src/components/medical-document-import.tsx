@@ -68,7 +68,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
       <datalist id="medical-provider-history">{[...new Set(context.records.map(r => r.provider).filter(Boolean))].map(p => <option key={p} value={p} />)}</datalist>
       <label>Bác sĩ<input value={details.clinician} maxLength={100} onChange={e => change({ clinician: e.target.value })} /></label>
       <label>Tuần thai ghi trên giấy<input type="number" inputMode="numeric" min={1} max={42} disabled={proposal.ambiguousScope} value={details.gestationalWeek ?? ''} onChange={e => change({ gestationalWeek: e.target.value ? Number(e.target.value) : null })} /></label>
-      <label>Liên kết lần khám<select value={details.linkedRecordId ?? ''} onChange={e => change({ linkedRecordId: e.target.value || null })}>
+      <label>Liên kết lần khám<select aria-label="Liên kết lần khám" value={details.linkedRecordId ?? ''} onChange={e => change({ linkedRecordId: e.target.value || null })}>
         <option value="">Lưu riêng, chưa liên kết</option>
         {context.records.filter(r => r.id !== recordId && !r.documentIntake).map(r => <option key={r.id} value={r.id}>{r.title} · {new Date(r.occurredAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} · {r.provider}</option>)}
       </select></label>

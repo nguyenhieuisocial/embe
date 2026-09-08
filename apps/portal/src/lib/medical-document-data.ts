@@ -22,10 +22,11 @@ export function groupDocumentData(analysis: DocumentAnalysis) {
     page.fields.forEach((row, index) => {
       const category = documentFieldCategory(row.label);
       const label = row.label.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase().replace(/\s*[:：]\s*$/, '').trim();
+      const freeText = /^(?:tieu de|doan van|chan trang|chu thich|chu tren dau|chu ky|ten bang|tieu de cot|dieu khoan|ghi chu ben le|ma bieu mau|phien ban)(?:\s|$)/.test(label);
       const administrative = ['bac si', 'bac si kham', 'bac si dieu tri', 'doctor', 'clinician', 'gioi tinh', 'dia chi', 'so dien thoai', 'ma ho so', 'so benh an', 'so the bhyt', 'so can cuoc'].includes(label);
       const financial = ['tong tien', 'tong cong', 'thanh tien', 'da thanh toan', 'so tien da thu', 'con no', 'con lai', 'tam ung', 'mien giam', 'bao hiem thanh toan', 'so phieu thu', 'so hoa don', 'invoice total', 'amount paid', 'balance due'].includes(label)
         || /^(?:VND|VNĐ|đ|USD|EUR)$/i.test(row.unit.trim());
-      const key = financial ? 'charges' : administrative || category === 'patient' || category === 'patient-id' || category === 'facility' ? 'identity'
+      const key = freeText ? 'other' : financial ? 'charges' : administrative || category === 'patient' || category === 'patient-id' || category === 'facility' ? 'identity'
         : category === 'date' ? 'visits' : category === 'conclusion' || category === 'instructions' ? 'findings'
           : row.unit || row.reference || row.context || ['laboratory', 'ultrasound'].includes(page.kind) ? 'results' : 'other';
       groups[key].push({ page: page.page, sourceGroup: 'fields', index, label: row.label, value: withPrintedUnit(row.value, row.unit),
