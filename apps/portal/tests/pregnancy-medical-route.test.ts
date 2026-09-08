@@ -47,7 +47,7 @@ describe("private pregnancy medical records", () => {
     rpc.mockReset(); createSignedUploadUrl.mockReset(); info.mockReset(); download.mockReset();
     revalidateFamilyViews.mockClear();
   });
-  afterEach(() => { process.env = { ...originalEnvironment }; });
+  afterEach(() => { process.env = { ...originalEnvironment }; vi.unstubAllGlobals(); });
 
   it("requires the family session and stores a planned appointment atomically", async () => {
     expect((await listRecords(request("https://embe.hieu.asia/api/pregnancy/records", "GET", undefined, false))).status).toBe(401);
@@ -111,11 +111,26 @@ describe("private pregnancy medical records", () => {
     expect(completed.status).toBe(202);
 
     rpc.mockResolvedValueOnce({ data: { storage_path: path, mime_type: "application/pdf", original_filename: "don-thuoc.pdf", status: "ready" }, error: null });
-    download.mockResolvedValueOnce({ data: await new Response("private-pdf").blob(), error: null });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('private-pdf', { headers: { 'content-type': 'application/pdf' } })));
     const viewed = await viewDocument(request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}`), { params: Promise.resolve({ id: documentId }) });
     expect(viewed.status).toBe(200);
     expect(viewed.headers.get("cache-control")).toBe("private, no-store");
     expect(viewed.headers.get("content-type")).toBe("application/pdf");
+    expect(await viewed.text()).toBe('private-pdf');
+    expect(download).not.toHaveBeenCalled();
+  });
+
+  it('returns a stream before the original finishes and rejects a wrong content type', async () => {
+    rpc.mockResolvedValue({ data: { storage_path: 'safe/file.jpg', mime_type: 'image/jpeg', status: 'ready' }, error: null });
+    let streamController!: ReadableStreamDefaultController<Uint8Array>;
+    const stream = new ReadableStream<Uint8Array>({ start(controller) { streamController = controller; } });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(stream, { headers: { 'content-type': 'image/jpeg' } })));
+    const response = await viewDocument(request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}`), { params: Promise.resolve({ id: documentId }) });
+    expect(response.status).toBe(200);
+    streamController.enqueue(new Uint8Array([1, 2])); streamController.close();
+    expect((await response.arrayBuffer()).byteLength).toBe(2);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('login', { headers: { 'content-type': 'text/html' } })));
+    expect((await viewDocument(request(`https://embe.hieu.asia/api/pregnancy/documents/${documentId}`), { params: Promise.resolve({ id: documentId }) })).status).toBe(503);
   });
 
   it("queues and returns a private medication transcription without storage details", async () => {

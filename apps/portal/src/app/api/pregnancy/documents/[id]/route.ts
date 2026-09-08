@@ -38,9 +38,20 @@ export async function GET(request: Request, context: Context): Promise<Response>
     const query = await store.rpc("embe_get_pregnancy_medical_document", { p_id: id });
     const item = query.data as Record<string, unknown> | null;
     if (query.error || !item || item.status !== "ready" || typeof item.storage_path !== "string" || typeof item.mime_type !== "string") return privateReply({ error: "not_found" }, 404);
-    const downloaded = await store.storage.from(MEDICAL_BUCKET).download(item.storage_path);
-    if (downloaded.error || !downloaded.data) throw new Error("download unavailable");
-    return new Response(downloaded.data, { status: 200, headers: {
+    // Stream privately instead of buffering the entire original on the server first.
+    const base = process.env.SUPABASE_URL;
+    const secret = process.env.SUPABASE_SECRET_KEY;
+    if (!base || !secret || !MEDICAL_MIME_TYPES.has(item.mime_type)) throw new Error('storage unavailable');
+    const path = item.storage_path.split('/').map(encodeURIComponent).join('/');
+    const downloaded = await fetch(`${new URL(base).origin}/storage/v1/object/authenticated/${MEDICAL_BUCKET}/${path}`, {
+      cache: 'no-store', redirect: 'manual', signal: AbortSignal.any([request.signal, AbortSignal.timeout(25000)]),
+      headers: { apikey: secret, Authorization: `Bearer ${secret}` }
+    });
+    const mime = downloaded.headers.get('content-type')?.split(';')[0].toLowerCase();
+    if (!downloaded.ok || !downloaded.body || mime !== item.mime_type || Number(downloaded.headers.get('content-length') ?? 0) > 15000000) {
+      await downloaded.body?.cancel(); throw new Error('download unavailable');
+    }
+    return new Response(downloaded.body, { status: 200, headers: {
       "content-type": item.mime_type, "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(String(item.original_filename ?? "tai-lieu"))}`,
       "cache-control": "private, no-store", "x-content-type-options": "nosniff"
     } });
