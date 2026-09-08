@@ -10,6 +10,7 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
   const [entries, setEntries] = useState<Entry[]>([]);
   const [notice, setNotice] = useState('');
   const lock = useRef(false);
+  const queue = useRef<Entry[]>([]);
   const camera = useRef<HTMLInputElement>(null); const picker = useRef<HTMLInputElement>(null);
   const busy = entries.some(e => e.status === 'uploading' || e.status === 'waiting');
   useEffect(() => {
@@ -18,9 +19,11 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
     window.addEventListener('beforeunload', warn); return () => window.removeEventListener('beforeunload', warn);
   }, [busy]);
   async function run(batch: Entry[]) {
+    queue.current.push(...batch);
     if (lock.current) return;
     lock.current = true;
-    for (const entry of batch) {
+    while (queue.current.length) {
+      const entry = queue.current.shift()!;
       const mark = (status: Entry['status']) => setEntries(current => current.map(e => e.id === entry.id ? { ...e, status } : e));
       mark('uploading');
       try {
@@ -34,8 +37,11 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
     lock.current = false;
   }
   function select(files: FileList | null) {
-    if (!files?.length || lock.current) return;
+    if (!files?.length) return;
     if (files.length > 6) { setNotice('Chọn tối đa 6 file mỗi lượt; chưa tải file nào.'); return; }
+    if (files.length + queue.current.length + (lock.current ? 1 : 0) > 6) {
+      setNotice('Đang có nhiều giấy tờ chờ tải. Đợi bớt file hoàn tất rồi chụp hoặc chọn thêm; lượt chọn này chưa được thêm.'); return;
+    }
     if (Array.from(files).some(file => !file.size || file.type === 'application/pdf' && file.size > 15_000_000 || !file.type.startsWith('image/') && file.type !== 'application/pdf')) {
       setNotice('Chọn ảnh hoặc PDF; PDF tối đa 15 MB và 6 trang.'); return;
     }
@@ -47,12 +53,12 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
     <h3>Thêm giấy tờ khám</h3>
     <p>Tự đọc phiếu thu, đơn thuốc, siêu âm, xét nghiệm và bệnh án.</p>
     <div className="medical-intake-actions">
-      <button type="button" disabled={busy} onClick={() => camera.current?.click()}>Chụp giấy tờ</button>
-      <button type="button" disabled={busy} onClick={() => picker.current?.click()}>Chọn ảnh / PDF</button>
+      <button type="button" onClick={() => camera.current?.click()}>{entries.length ? 'Chụp thêm trang' : 'Chụp giấy tờ'}</button>
+      <button type="button" onClick={() => picker.current?.click()}>Chọn ảnh / PDF</button>
     </div>
     <input ref={camera} hidden type="file" accept="image/*" capture="environment" aria-label="Chụp giấy tờ khám" onChange={e => { select(e.target.files); e.target.value = ''; }} />
     <input ref={picker} hidden type="file" accept="image/*,application/pdf" multiple aria-label="Chọn giấy tờ khám" onChange={e => { select(e.target.files); e.target.value = ''; }} />
-    <small>Chụp rõ bốn góc. Tối đa 6 file/lượt, 15 MB/file; PDF tối đa 6 trang. Xác nhận bản đọc trước khi thêm chỉ số và thuốc.</small>
+    <small>Chọn nhiều ảnh/PDF cùng lúc, hoặc chụp từng trang rồi bấm Chụp thêm trang; có thể thêm khi file trước đang tải. Tối đa 6 file đang tải/chờ, 15 MB/file; PDF tối đa 6 trang. Mỗi file được lưu riêng, không tự ghép thành một PDF.</small>
     {notice ? <p role="alert">{notice}</p> : null}
     {entries.length ? <ul aria-live="polite">{entries.map((entry, i) => <li key={entry.id}>
       <span><b>{i + 1}. {entry.file.name || 'Ảnh chụp'}</b><small>{entry.status === 'saved' ? 'Đã lưu riêng tư · tự đọc trên máy tại nhà' : entry.status === 'failed' ? 'Tải chưa xong · giữ trang này để thử lại' : entry.status === 'uploading' ? 'Đang tải và lưu bản gốc…' : 'Chờ tải…'}</small></span>

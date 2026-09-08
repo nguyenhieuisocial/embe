@@ -20,6 +20,29 @@ vi.mock('../src/lib/family-view-revalidation', () => ({ revalidateFamilyViews: v
 import { GET, POST } from '../src/app/api/pregnancy/documents/[id]/import/route';
 afterEach(() => { mock.denied = false; mock.calls.mockReset(); mock.upload.mockReset(); vi.unstubAllGlobals(); });
 
+it('queues multiple files and additional camera shots while the first upload is pending', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })));
+  let finish!: () => void;
+  mock.upload.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; })).mockResolvedValue(undefined);
+  const saved = vi.fn();
+  render(<MedicalDocumentIntake onSaved={saved} />);
+  const first = new File(['one'], 'one.jpg', { type: 'image/jpeg' });
+  const second = new File(['two'], 'two.pdf', { type: 'application/pdf' });
+  const third = new File(['three'], 'three.jpg', { type: 'image/jpeg' });
+  expect(screen.getByLabelText('Chọn giấy tờ khám')).toHaveAttribute('multiple');
+  fireEvent.change(screen.getByLabelText('Chọn giấy tờ khám'), { target: { files: [first, second] } });
+  await waitFor(() => expect(mock.upload).toHaveBeenCalledTimes(1));
+  expect(screen.getByRole('button', { name: 'Chụp thêm trang' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Chọn ảnh / PDF' })).toBeEnabled();
+  fireEvent.change(screen.getByLabelText('Chụp giấy tờ khám'), { target: { files: [third] } });
+  expect(mock.upload).toHaveBeenCalledTimes(1);
+  expect(screen.getAllByText('Chờ tải…')).toHaveLength(2);
+  finish();
+  await waitFor(() => expect(saved).toHaveBeenCalledTimes(3));
+  expect(mock.upload.mock.calls.map(call => call[1])).toEqual([first, second, third]);
+  expect(screen.getAllByRole('link', { name: 'Xem bản đọc' })).toHaveLength(3);
+});
+
 describe('safe medical import proposal', () => {
   it('only proposes an exact unambiguous Vietnamese appointment time', () => {
     expect(printedAppointment('09/09/2026 08:30')).toBe('2026-09-09T01:30:00.000Z');
