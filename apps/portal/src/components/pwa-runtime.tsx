@@ -26,6 +26,7 @@ function localDeviceId(storage: Storage): string {
 export default function PwaRuntime({ version = "development" }: { version?: string }) {
   const [connection, setConnection] = useState<Connection>("online");
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateSummary, setUpdateSummary] = useState('Xem các tính năng vừa được thêm, sửa và cách sử dụng.');
   const [familyActivity, setFamilyActivity] = useState<{ id: string | null; title: string; body: string; url: string; createdAt?: string } | null>(null);
 
   useEffect(() => {
@@ -73,9 +74,12 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
           headers: { accept: "application/json" }
         });
         if (!response.ok) return;
-        const value = await response.json() as { version?: unknown };
+        const value = await response.json() as { version?: unknown; update?: { summary?: unknown } };
         if (active && typeof value.version === "string" && value.version !== version) {
           setUpdateAvailable(true);
+          if (typeof value.update?.summary === 'string') setUpdateSummary(value.update.summary.slice(0, 300));
+        } else if (active && value.version === version) {
+          setUpdateAvailable(false);
         }
       } catch {
         // Mất mạng đã có banner riêng; kiểm tra lại khi app trở về foreground.
@@ -191,7 +195,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
 
   return (
     <div className="app-update-banner" role="status" aria-live="polite">
-      <span><strong>Có phiên bản EmBe mới</strong><small>Cập nhật mất vài giây, dữ liệu vẫn được giữ nguyên.</small></span>
+      <span><strong>Có phiên bản EmBe mới</strong><small>{updateSummary}</small><Link href="/cap-nhat">Xem chi tiết thay đổi</Link></span>
       <button type="button" onClick={() => {
         setUpdateAvailable(false);
         window.history.go(0);

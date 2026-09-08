@@ -22,6 +22,7 @@ export default function SettingsPage() {
       </section>
 
       <DeviceSetup />
+      <Link className="btn btn-quiet btn-block" href="/cap-nhat">Có gì mới · Chi tiết các bản cập nhật</Link>
       <FamilyProfile />
       <PasskeySettings />
       <details className="settings-group">
