@@ -342,26 +342,30 @@ export default function PregnancyMedicalRecords() {
       </div>
       <MedicalDocumentIntake onSaved={() => void load()} />
       <div className="medical-subsection-title"><h3>Lịch khám tiếp theo</h3></div>
-      {insights.upcoming ? <article className="next-appointment">
-        <span aria-hidden="true">○</span><div className="appointment-workspace">
-          <small>{insights.upcoming.followUpFromCompleted ? "Ngày tái khám đã ghi" : "Lịch gần nhất"}</small><h4>Buổi khám sắp tới</h4><strong>{insights.upcoming.title}</strong>
-          <p>{displayDate(insights.upcoming.occurredAt)}{insights.upcoming.provider ? ` · ${insights.upcoming.provider}` : ""}</p>
-          {(() => {
-            const workspace = decodeAppointmentWorkspace(insights.upcoming.notes);
-            return <>
-              {workspace.questions.length ? <div className="appointment-prepared-block"><b>Câu hỏi đã chuẩn bị</b><ul>{workspace.questions.map((question) => <li key={question}>{question}</li>)}</ul></div> : <p>Chưa có câu hỏi. Ghi trước để vào phòng khám không quên.</p>}
-              <div className="appointment-check-summary"><b>Trước khi đi</b>{APPOINTMENT_CHECKLIST.map((item) => <span key={item.id} className={workspace.checklist.includes(item.id) ? "is-done" : ""}>{workspace.checklist.includes(item.id) ? "✓" : "○"} {item.label}</span>)}</div>
-              {insights.upcoming.documents.length ? <div className="medical-documents">{insights.upcoming.documents.map((document) => <MedicalDocumentButton key={document.id} document={document} documents={insights.upcoming!.documents} />)}</div> : null}
-            </>;
-          })()}
+      {insights.upcoming ? <article className="next-appointment next-appointment-compact" aria-label="Lịch khám tiếp theo">
+        <div className="appointment-workspace">
+          <time className="appointment-when" dateTime={insights.upcoming.occurredAt}>{displayDate(insights.upcoming.occurredAt)}</time>
+          <h4>{insights.upcoming.title}</h4>
+          <p>{insights.upcoming.provider || "Chưa ghi nơi khám"}</p>
+          {insights.upcoming.clinician ? <p>Bác sĩ: {insights.upcoming.clinician}</p> : null}
+          {insights.upcoming.followUpFromCompleted ? <small>Ngày tái khám từ hồ sơ trước</small> : null}
           {insights.upcoming.followUpFromCompleted
             ? <div className="appointment-actions"><Link href="/lich" prefetch={false}>Mở trong lịch gia đình</Link></div>
             : <div className="appointment-actions">
               <button type="button" onClick={() => openForm("prepare", insights.upcoming)}>Chuẩn bị buổi khám</button>
               <button type="button" onClick={() => openForm("outcome", insights.upcoming)}>Ghi kết quả sau khám</button>
             </div>}
+          {(() => {
+            const workspace = decodeAppointmentWorkspace(insights.upcoming.notes);
+            return <details className="appointment-preparation-preview">
+              <summary>Trước khi đi <small>{workspace.checklist.length}/{APPOINTMENT_CHECKLIST.length} việc · {workspace.questions.length} câu hỏi</small></summary>
+              {workspace.questions.length ? <div className="appointment-prepared-block"><b>Câu hỏi đã chuẩn bị</b><ul>{workspace.questions.map((question) => <li key={question}>{question}</li>)}</ul></div> : <p>Chưa có câu hỏi. Ghi trước để vào phòng khám không quên.</p>}
+              <div className="appointment-check-summary"><b>Trước khi đi</b>{APPOINTMENT_CHECKLIST.map((item) => <span key={item.id} className={workspace.checklist.includes(item.id) ? "is-done" : ""}>{workspace.checklist.includes(item.id) ? "✓" : "○"} {item.label}</span>)}</div>
+              {insights.upcoming.documents.length ? <div className="medical-documents">{insights.upcoming.documents.map((document) => <MedicalDocumentButton key={document.id} document={document} documents={insights.upcoming!.documents} />)}</div> : null}
+            </details>;
+          })()}
         </div>
-      </article> : <div className="medical-empty-short"><strong>Chưa có lịch khám sắp tới</strong><p>Thêm lịch để EmBe đặt đúng ngày trong dòng thời gian.</p></div>}
+      </article> : <div className="medical-empty-short"><strong>Chưa có lịch khám sắp tới</strong><p>Ghi ngày hẹn để chuẩn bị trước buổi khám.</p><button className="medical-add" type="button" disabled={status === "saving"} onClick={() => openForm("new")}>Thêm lịch khám</button></div>}
 
       {showForm ? <form className="medical-form" id="medical-record-form" key={`${formMode}-${editingRecord?.id ?? "new"}`} onSubmit={(event) => void save(event)}>
         <h3>{formMode === "prepare" ? "Chuẩn bị buổi khám" : formMode === "outcome" ? "Ghi kết quả sau khám" : editingRecord ? `Sửa ${kinds[editingRecord.kind]?.toLocaleLowerCase("vi") ?? "hồ sơ"}` : kind === "prescription" ? "Thêm đơn thuốc" : "Thêm hồ sơ khám"}</h3>

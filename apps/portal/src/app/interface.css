@@ -156,3 +156,15 @@
 @media (prefers-reduced-motion: reduce) {
   .tool-group summary > .icon, .hub-disclosure summary > .icon { transition: none; }
 }
+/* Next visit: date and next action first; preparation stays available on demand. */
+.next-appointment.next-appointment-compact { grid-template-columns: minmax(0, 1fr); background: #fffafb; border-color: #ecd4de; padding: 14px; }
+.next-appointment-compact .appointment-workspace { min-width: 0; gap: 6px; }
+.next-appointment-compact .appointment-when { color: #91435c; font-size: .85rem; font-weight: 650; overflow-wrap: anywhere; }
+.next-appointment-compact h4 { font-size: 1.05rem; overflow-wrap: anywhere; }
+.next-appointment-compact p { overflow-wrap: anywhere; }
+.next-appointment-compact .appointment-actions { margin-top: 6px; }
+.next-appointment-compact .appointment-actions :is(button,a):first-child { background: #a54a6a; color: #fff; border-color: #a54a6a; }
+.appointment-preparation-preview { min-width: 0; border-top: 1px solid #ecd4de; margin-top: 6px; }
+.appointment-preparation-preview > summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-size: .8rem; font-weight: 600; }
+.appointment-preparation-preview > summary small { display: inline-block; margin-left: 8px; font-weight: 400; }
+.next-appointment-compact :is(button,a,summary):focus-visible { outline: 2px solid #91435c; outline-offset: 3px; }

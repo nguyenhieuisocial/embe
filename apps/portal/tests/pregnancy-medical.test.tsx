@@ -125,8 +125,11 @@ describe("pregnancy medical record book", () => {
 
     render(<PregnancyMedicalRecords />);
 
-    const appointment = (await screen.findByRole("heading", { name: "Buổi khám sắp tới" })).closest("article");
+    const appointment = await screen.findByRole("article", { name: "Lịch khám tiếp theo" });
     expect(appointment).not.toBeNull();
+    const preparation = appointment.querySelector('details')!;
+    expect(preparation.open).toBe(false);
+    fireEvent.click(preparation.querySelector('summary')!);
     expect(within(appointment!).getByText("Cần làm xét nghiệm nào?")).toBeInTheDocument();
     expect(within(appointment!).getByText(/Mang giấy tờ và sổ khám/)).toBeInTheDocument();
     expect(within(appointment!).getByRole("button", { name: /phieu-hen\.pdf/i })).toHaveAttribute("aria-haspopup", "dialog");
@@ -149,7 +152,7 @@ describe("pregnancy medical record book", () => {
 
     render(<PregnancyMedicalRecords />);
 
-    expect(await screen.findByText("Ngày tái khám đã ghi")).toBeInTheDocument();
+    expect(await screen.findByText("Ngày tái khám từ hồ sơ trước")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mở trong lịch gia đình" })).toHaveAttribute("href", "/lich");
     expect(screen.queryByRole("button", { name: "Ghi kết quả sau khám" })).not.toBeInTheDocument();
   });
@@ -174,7 +177,7 @@ describe("pregnancy medical record book", () => {
     }));
 
     render(<PregnancyMedicalRecords />);
-    await screen.findByRole("heading", { name: "Buổi khám sắp tới" });
+    await screen.findByRole("article", { name: "Lịch khám tiếp theo" });
     fireEvent.click(screen.getByRole("button", { name: "Ghi kết quả sau khám" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Kết quả và lời dặn sau khám" }), {
       target: { value: "Bác sĩ dặn theo dõi và tái khám đúng hẹn." }
