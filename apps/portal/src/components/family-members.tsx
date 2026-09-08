@@ -6,6 +6,7 @@ import { dateKey } from "../lib/calendar";
 import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import { ClinicalRecordDetails, ClinicalRecordFields } from './family-clinical-record';
 import FamilyRecordDocuments from './family-record-documents';
+import MaternalDocumentSummary from './maternal-document-summary';
 import { MEMBER_ROLES, PROFILE_GROUPS, PROFILE_HISTORY_FIELDS, FAMILY_METRICS, RECORD_KINDS, MEASUREMENT_CONTEXTS, memberAge, validFamilyMember,
   validMemberRecord, type FamilyMember, type MemberRecord, type RecordKind } from "../lib/family-members";
 
@@ -109,6 +110,7 @@ export default function FamilyMembers({ initialRole, initialTab = "profile" }: {
         <button aria-pressed={tab === "records"} onClick={() => setTab("records")} disabled={!member.revision}>Sức khỏe & bệnh án</button>
       </div>
       <div hidden={tab !== "profile"}>
+        {member.role === "mother" && tab === "profile" ? <MaternalDocumentSummary /> : null}
         <form className="member-form" onSubmit={save}>
           <fieldset disabled={saving}>
             <legend>{member.preferredName || member.fullName || "Thêm thành viên"}</legend>
