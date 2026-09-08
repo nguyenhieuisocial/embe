@@ -21,7 +21,7 @@ export default function StudioResearchPage() {
       <a href={researchProfile} target="_blank" rel="noopener noreferrer">Mở kênh tham khảo trên Rednote</a>
       <p>Phần quảng cáo, lịch bổ sung vi chất và các khẳng định “tương khắc” phải tách khỏi kiến thức. Không dùng số lượt thích để kết luận nội dung đúng hoặc sẽ viral.</p>
     </section>
-    <details className="studio-disclosure" open>
+    <details className="studio-disclosure">
       <summary>12 tuyến nội dung nên phát triển</summary>
       <p>Đây là đề cương biên tập, không phải 12 video đã làm xong hoặc lời khuyên đã duyệt chuyên môn.</p>
       <ul>{editorialSeries.map(series => <li key={series.title}><h3>{series.title}</h3><p><strong>{series.format}.</strong> {series.brief}</p></li>)}</ul>

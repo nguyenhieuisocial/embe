@@ -279,7 +279,7 @@ export default function PregnancyPage() {
             ))}
           </div>
           <p className="stage-nudge">{stageNudge(week)}</p>
-          <details className="stage-settings" id="cai-dat-giai-doan" open={!dueDate}>
+          <details className="stage-settings" id="cai-dat-giai-doan" >
             <summary>
               <span>
                 <strong>Cài đặt giai đoạn</strong>
@@ -347,7 +347,7 @@ export default function PregnancyPage() {
             const groupTasks = dailyChecklist.filter((task) => task.group === group);
             const completedInGroup = groupTasks.filter((task) => completed.includes(task.id)).length;
             return (
-              <details className="checklist-group" key={group} open={group === "Ăn uống"}>
+              <details className="checklist-group" key={group} >
                 <summary>
                   <h3>{group}</h3>
                   <span>{completedInGroup}/{groupTasks.length}</span>

@@ -226,7 +226,7 @@ function MemberRecords({ member, onEditing }: { member: FamilyMember; onEditing:
       <button className="btn btn-quiet" onClick={() => begin()} disabled={member.archived || saving || documentBusy || !!draft}>Ghi số đo / sự kiện</button>
       <button className="btn btn-quiet" disabled={saving || documentBusy || !!draft} onClick={() => { setRecords([]); setDeleted(v => !v); }}>{deleted ? "Đang lưu" : "Đã xóa"}</button></div>
     <p className="state-note">Hồ sơ sức khỏe của {member.preferredName || member.fullName}, gồm mọi chuyên khoa, không chỉ thai kỳ. Mỗi lần khám hoặc đo được lưu riêng theo giờ.</p>
-    {latest.length ? <details className="member-group" open><summary>Số đo gần nhất</summary><dl className="member-latest">{latest.map(r => <div key={r.id}>
+    {latest.length ? <details className="member-group"><summary>Số đo gần nhất</summary><dl className="member-latest">{latest.map(r => <div key={r.id}>
       <dt>{r.title}</dt><dd><strong>{r.value}{r.secondaryValue !== null ? ` / ${r.secondaryValue}` : ""} {r.unit}</strong><small>{displayTime(r.occurredAt)}{r.measurementContext && r.measurementContext !== "unspecified" ? ` · ${MEASUREMENT_CONTEXTS[r.measurementContext]}` : ""}</small></dd>
     </div>)}</dl></details> : null}
     {error ? <p role="alert" className="state-note is-wait">{error} <button className="btn btn-quiet" disabled={saving} onClick={() => void load()}>Tải lại lịch sử</button></p> : null}

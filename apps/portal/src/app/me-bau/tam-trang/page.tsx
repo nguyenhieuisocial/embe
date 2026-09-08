@@ -205,7 +205,7 @@ export default function PregnancyMentalHealthPage() {
         <p>Xu hướng chỉ giúp Mẹ nhận ra thay đổi để trao đổi, không tự kết luận sức khỏe.</p>
       </section>
 
-      <details className="section mental-history" open={history.length > 0}>
+      <details className="section mental-history" >
         <summary><span><strong>Lịch sử đã lưu</strong><small>{history.length ? `${history.length} lần gần đây` : "Chưa có lần ghi nào"}</small></span><i aria-hidden="true">⌄</i></summary>
         <div>{history.map((entry) => {
           const phq = entry.phq2Interest !== null && entry.phq2Depressed !== null ? entry.phq2Interest + entry.phq2Depressed : null;

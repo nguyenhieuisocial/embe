@@ -125,7 +125,7 @@ export default function MotherPostpartumPage() {
           </div>
         </details>
 
-        <details className="postpartum-detail" open>
+        <details className="postpartum-detail">
           <summary>Cho bé ăn & nghỉ ngơi <span>⌄</span></summary>
           <div className="compact-form-grid">
             <label>Căng/đau ngực hoặc núm vú (0–10)<input name="breastDiscomfort" type="number" inputMode="numeric" min="0" max="10" defaultValue={String(current?.breastDiscomfort ?? "")} /></label>

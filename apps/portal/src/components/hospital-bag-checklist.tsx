@@ -48,7 +48,7 @@ export default function HospitalBagChecklist() {
       <span>{completed.length}/{HOSPITAL_BAG_IDS.length}</span>
     </div>
     <div className="care-progress" role="progressbar" aria-label="Tiến độ giỏ đi sinh" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><i style={{ width: `${progress}%` }} /></div>
-    {HOSPITAL_BAG_GROUPS.map((group, index) => <details className="hospital-bag-group" key={group.id} open={index === 0}>
+    {HOSPITAL_BAG_GROUPS.map((group) => <details className="hospital-bag-group" key={group.id} >
       <summary><strong>{group.label}</strong><small>{group.items.filter(([id]) => completed.includes(id)).length}/{group.items.length}</small><i aria-hidden="true">⌄</i></summary>
       <div>{group.items.map(([id, label]) => <label key={id} className={completed.includes(id) ? "is-done" : ""}>
         <input type="checkbox" checked={completed.includes(id)} disabled={state === "loading" || state === "saving"} onChange={() => void toggle(id)} />

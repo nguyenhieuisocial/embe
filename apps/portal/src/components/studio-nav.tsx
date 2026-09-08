@@ -22,7 +22,7 @@ export default function StudioNav() {
     <nav className="studio-nav" aria-label="Điều hướng Studio">
       {primary.map(([url, label]) => <Link key={url} href={url} aria-current={current === url ? "page" : undefined}>{label}</Link>)}
     </nav>
-    <details className="studio-sources-nav" key={String(sourcePage)} open={sourcePage ? true : undefined}>
+    <details className="studio-sources-nav" key={String(sourcePage)} >
       <summary>Nguồn ý tưởng <span aria-hidden="true">⌄</span></summary>
       <nav aria-label="Nguồn nội dung Studio">
         {sources.map(([url, label]) => <Link key={url} href={url} aria-current={path === url ? "page" : undefined}>{label}</Link>)}

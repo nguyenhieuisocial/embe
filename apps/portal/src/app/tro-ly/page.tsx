@@ -300,7 +300,7 @@ export default function AssistantPage() {
           </a>
         ))}
       </section>
-      <details className="future-assistant" open={postpartum || undefined}>
+      <details className="future-assistant" >
         <summary><span><small>{postpartum ? "Dữ liệu 7–30 ngày" : "Dành cho giai đoạn sau"}</small><strong>{postpartum ? "Phân tích chăm Bé" : "Sau khi em bé chào đời"}</strong></span><span aria-hidden="true">⌄</span></summary>
         <p>Phần này phân tích số liệu bú, ngủ và môi trường khi gia đình bắt đầu ghi nhận sau sinh.</p>
         <div className="assistant-period" role="group" aria-label="Khoảng thời gian">

@@ -182,7 +182,12 @@ describe("pregnancy daily page", () => {
     render(<PregnancyPage />);
 
     expect(screen.getByRole("progressbar", { name: "Tiến độ việc hôm nay" })).toHaveAttribute("aria-valuenow", "0");
-    expect(screen.getByRole("heading", { level: 3, name: "Ăn uống" }).closest("details")).toHaveAttribute("open");
+    const foodGroup = screen.getByRole("heading", { level: 3, name: "Ăn uống" }).closest("details")!;
+    expect(foodGroup).not.toHaveAttribute("open");
+    fireEvent.click(foodGroup.querySelector("summary")!);
+    expect(foodGroup).toHaveAttribute("open");
+    fireEvent.click(foodGroup.querySelector("summary")!);
+    expect(foodGroup).not.toHaveAttribute("open");
     expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" }).closest("details")).not.toHaveAttribute("open");
     expect(screen.getByRole("heading", { name: "Nên ăn gì, hạn chế gì, kiêng gì?" }).closest("details")).not.toHaveAttribute("open");
     expect(document.querySelector(".nutrition-disclosure")).not.toHaveAttribute("open");
