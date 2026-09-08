@@ -4,7 +4,7 @@ import {documentDateEvidence} from './medical-document-name';
 import {documentFieldCategory} from './medical-document-overview';
 import {providerKey} from './medical-document-import';
 
-export type ReadingRow = {page:number;label:string;value:string;details:string[];unclear:boolean;sourceDay?:string;sourceIdentity?:string;displayEncounter?:string|null};
+export type ReadingRow = {page:number;label:string;value:string;details:string[];unclear:boolean;sourceDay?:string;sourceIdentity?:string;displayEncounter?:string|null;printedDay?:string;sourceKind?:string};
 export type MedicalReadingSummary = {findings:ReadingRow[];results:ReadingRow[];medicines:ReadingRow[]};
 /** A compact projection of the reading, never a confirmed medical record or care plan. */
 export function medicalReadingSummary(analysis:DocumentAnalysis, confirmed:boolean):MedicalReadingSummary {
@@ -25,7 +25,10 @@ export function medicalReadingSummary(analysis:DocumentAnalysis, confirmed:boole
       &&!identity.some(field=>field.details.some(detail=>detail.startsWith('Chữ PDF khác')))
       &&!evidence.conflicting&&!evidence.invalid&&evidence.dates.length===1
       ? JSON.stringify([names[0],patientIds[0]??'',evidence.dates[0],facilities[0]]) : null;
-    return {page:row.page,label:row.label,value:row.value,details:row.details,sourceIdentity,displayEncounter,sourceDay:!evidence.conflicting&&!evidence.tentative&&evidence.dates.length===1?evidence.dates[0]:undefined,unclear:row.unclear||!confirmed||evidence.tentative||patients.some(field=>field.unclear)||analysis.pages.some(page=>page.page===row.page&&page.warnings.length>0)};
+    return {page:row.page,label:row.label,value:row.value,details:row.details,sourceIdentity,displayEncounter,
+      printedDay:!evidence.conflicting&&!evidence.invalid&&evidence.dates.length===1?evidence.dates[0]:undefined,
+      sourceKind:analysis.pages.find(page=>page.page===row.page)?.kind,
+      sourceDay:!evidence.conflicting&&!evidence.tentative&&evidence.dates.length===1?evidence.dates[0]:undefined,unclear:row.unclear||!confirmed||evidence.tentative||patients.some(field=>field.unclear)||analysis.pages.some(page=>page.page===row.page&&page.warnings.length>0)};
   });
   return {findings:rows('findings'),results:rows('results'),medicines:rows('medicines')};
 }

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {medicalInsights, type MedicalRecord} from '../lib/pregnancy-medical';
 import {MEDICAL_MEASUREMENTS} from '../lib/medical-measurements';
 import type {MedicalReadingSummary} from '../lib/medical-reading-summary';
-import {medicalFindingGroups} from '../lib/medical-finding-groups';
+import {medicalFindingGroups,medicalFindingTopics} from '../lib/medical-finding-groups';
 import {medicineDisplayGroups} from '../lib/medicine-display-groups';
 
 const date = (value:string) => new Date(value).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
@@ -19,12 +19,18 @@ export function summarizeRecords(records:MedicalRecord[],now=Date.now()) {
 function ReadingSources({sources}:{sources:ReturnType<typeof medicalFindingGroups>[number]['sources']}) {
   return <details><summary>Nguồn đối chiếu <small>{sources.length} trang</small></summary>{sources.map(source=><Link key={`${source.documentId}:${source.page}`} href={`/me-bau/ho-so/tai-lieu/${source.documentId}`}>{source.title} · trang {source.page}</Link>)}</details>;
 }
+function FindingBody({finding}:{finding:ReturnType<typeof medicalFindingGroups>[number]}) {
+  return <><p>{finding.row.value}</p>{finding.row.details.map((detail,i)=><small key={i}>{detail}</small>)}
+    {finding.row.unclear?<small>Bản đọc chưa xác minh</small>:null}<ReadingSources sources={finding.sources}/></>;
+}
 export default function PregnancyRecordSummary({records}:{records:MedicalRecord[]}) {
   const summary=summarizeRecords(records);
   const documents=records.flatMap(record=>record.documents);
-  const findings=medicalFindingGroups(records);
-  const results=medicalFindingGroups(records,'results');
-  const medicines=medicineDisplayGroups(medicalFindingGroups(records,'medicines'),entry=>entry.row.label);
+  const findings=medicalFindingTopics(records);
+  const allResults=medicalFindingGroups(records,'results');
+  const results=allResults.filter(entry=>entry.row.sourceKind!=='receipt');
+  const receiptRows=allResults.filter(entry=>entry.row.sourceKind==='receipt');
+  const medicines=medicineDisplayGroups(medicalFindingGroups(records,'medicines').filter(entry=>entry.row.sourceKind!=='receipt'),entry=>entry.row.label);
   const count=(group:keyof MedicalReadingSummary)=>documents.reduce((total,document)=>total+(document.readingSummary?.[group].length??0),0);
   const failed=documents.filter(document=>['review','confirmed'].includes(document.scanStatus??'')&&!document.readingSummary);
   return <section className="pregnancy-record-summary" aria-label="Tóm tắt thai kỳ">
@@ -37,10 +43,12 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
     <details><summary>Kết luận & lời dặn trên giấy <small>{findings.length} nội dung</small></summary>
       {!count('findings')?<p>Chưa lấy được kết luận từ bản đọc. Không có nghĩa kết quả khám bình thường.</p>:null}
       {findings.map((finding,index)=><article key={index}>
-        <strong>{finding.labels.join(' / ')}</strong>{finding.row.sourceDay?<small>{finding.row.sourceDay.split('-').reverse().join('/')}</small>:null}
-        <p>{finding.row.value}</p>{finding.row.details.map((detail,i)=><small key={i}>{detail}</small>)}
-        {finding.row.unclear?<small>Bản đọc chưa xác minh</small>:null}
-        <ReadingSources sources={finding.sources}/>
+        <strong>{finding.label}</strong>{finding.day?<small>{finding.day.split('-').reverse().join('/')}</small>:null}
+        {finding.variants.length===1?<FindingBody finding={finding.variants[0]}/>:<details>
+          <summary>{finding.variants.length} bản đọc khác nhau</summary>
+          <small>Chưa chọn một bản làm kết luận chung.</small>
+          {finding.variants.map((variant,i)=><div key={i}><FindingBody finding={variant}/></div>)}
+        </details>}
       </article>)}
     </details>
     <details><summary>Kết quả & chỉ số trên giấy <small>{results.length} mục</small></summary>
@@ -66,6 +74,10 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       </details>)}
       <Link href="/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc">Thuốc & lịch uống</Link>
     </details>
+    {receiptRows.length?<details><summary>Phiếu thu · dịch vụ & số lượng <small>{receiptRows.length} mục</small></summary>
+      <p>Số lượng mua/cấp phát không phải liều uống.</p>
+      {receiptRows.map((entry,index)=><article key={index}><strong>{entry.row.label}</strong><FindingBody finding={entry}/></article>)}
+    </details>:null}
     <details><summary>Chỉ số mới nhất đã lưu <small>{summary.metrics.length} chỉ số</small></summary>
       {!summary.metrics.length?<p>Chưa có chỉ số được nhập vào hồ sơ; số trên ảnh có thể chưa đồng bộ.</p>:null}
       <dl>{summary.metrics.map(({metric,record,value,previous})=><div key={metric.key}><dt>{metric.label}</dt><dd><strong>{value} {metric.unit}</strong> · {date(record.occurredAt)}{previous?<small>Lần trước: {previous.measurements[metric.key]} {metric.unit} · {date(previous.occurredAt)}</small>:null}<Link href={`#record-${record.id}`}>Nguồn số đo</Link></dd></div>)}</dl>

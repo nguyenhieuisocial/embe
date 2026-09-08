@@ -127,7 +127,8 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
     measurements[metric.key] = value;
   }
   for (const key of conflicted) { delete measurements[key]; warnings.push(`Có nhiều kết quả ${key}; chưa đưa vào biểu đồ.`); }
-  const medicines = analysis.pages.flatMap(page => page.medicines).filter(row => !row.unclear && row.name.trim()).flatMap(row => {
+  // A receipt proves purchase/dispensing, not a prescribed dose or treatment.
+  const medicines = analysis.pages.flatMap(page => page.kind === 'receipt' ? [] : page.medicines).filter(row => !row.unclear && row.name.trim()).flatMap(row => {
     const { name, ingredients, dose, frequency } = row;
     const instructions = [row.instructions, row.route && `Đường dùng: ${row.route}`, row.duration && `Thời gian: ${row.duration}`, row.quantity && `Số lượng cấp: ${row.quantity}`].filter(Boolean).join(' · ');
     if (instructions.length > 200) { warnings.push(`${name}: lời dặn dài; giữ đầy đủ trong bản đọc, chưa rút gọn để nhập thuốc.`); return []; }
