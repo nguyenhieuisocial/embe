@@ -37,8 +37,11 @@ describe("pregnancy symptom journal page", () => {
   });
 
   it("is reachable from one small link on the pregnancy page", async () => {
-    const source = await import("node:fs/promises").then(({ readFile }) => readFile("src/app/me-bau/page.tsx", "utf8"));
-    expect(source.match(/href="\/me-bau\/trieu-chung"/g)).toHaveLength(1);
+    const { readFile } = await import("node:fs/promises");
+    const page = await readFile("src/app/me-bau/page.tsx", "utf8");
+    const tools = await readFile("src/components/maternal-tools.tsx", "utf8");
+    expect(page.match(/<MaternalTools\b/g)).toHaveLength(1);
+    expect(tools.match(/href="\/me-bau\/trieu-chung"/g)).toHaveLength(1);
   });
 
   it("reveals immediate call actions when an existing urgent sign is selected", async () => {

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { Icon, type IconName } from "./embe-icon";
 import { useFamilyStage } from "../lib/use-family-stage";
+import { getFamilyDestination } from "../lib/app-navigation";
 
 const pregnancyDestinations: Array<{ href: string; icon: IconName; label: string }> = [
   { href: "/", icon: "home", label: "Hôm nay" },
@@ -27,13 +28,7 @@ export default function FamilyNav() {
   return (
     <nav className="family-nav" aria-label="Điều hướng gia đình">
       {destinations.map((destination) => {
-        const active = pathname === destination.href
-          || destination.href !== "/" && pathname?.startsWith(`${destination.href}/`)
-          || destination.href === "/me-bau" && pathname === "/chuan-bi-sinh"
-          || destination.href === "/me" && (pathname === "/me-bau" || pathname?.startsWith("/me-bau/") || pathname === "/chuan-bi-sinh")
-          || destination.href === "/ky-niem" && ["/ghi-lai", "/nhat-ky"].includes(pathname ?? "")
-          || destination.href === "/nha-minh" && (["/cai-dat", "/do-dung", "/tro-ly", "/lich", "/ke-hoach", "/huong-dan", "/so-me-va-be", "/tim-kiem", "/ngan-sach"].includes(pathname ?? "") || pathname === '/studio' || pathname?.startsWith('/studio/')
-            || postpartum && ["/ky-niem", "/ghi-lai", "/nhat-ky"].includes(pathname ?? ""));
+        const active = getFamilyDestination(pathname ?? "/", postpartum) === destination.href;
         return (
           <Link
             href={destination.href}

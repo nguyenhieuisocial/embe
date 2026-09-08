@@ -1,0 +1,152 @@
+/* Shared interface hierarchy. Feature-specific forms, image viewers and print
+   layouts keep their existing behavior. Smaller surfaces, not smaller text. */
+@media screen {
+  .app-shell { background: var(--paper); min-height: 100dvh; }
+  .app-header { gap: 10px; }
+  .context-back { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; max-width: 65%; color: var(--rose-press); font-size: .875rem; font-weight: 600; text-decoration: none; }
+  .context-back .icon { width: 18px; height: 18px; flex: none; transform: rotate(180deg); }
+  .context-back span { overflow-wrap: anywhere; }
+  .app-header:has(.context-back) + .pregnancy-tool-intro > a:first-child { display: none; }
+  .app-header:has(.context-back) + .pregnancy-tool-intro > .eyebrow { display: none; }
+  .pregnancy-tool-intro { padding-block: 4px 12px; }
+  .pregnancy-tool-intro h1 { margin: 0; }
+  .pregnancy-tool-intro .intro { margin-top: 6px; font-size: .875rem; line-height: 1.55; }
+  .family-nav a { font-size: .75rem; gap: 3px; font-weight: 500; }
+  .family-nav a[aria-current="page"] { font-weight: 700; }
+  .family-nav a[aria-current="page"] .nav-icon { box-shadow: none; }
+  .quick-trigger { border-radius: 19px; box-shadow: 0 3px 12px #84355122; }
+  .quick-sheet { background: var(--surface); }
+  .quick-sheet .sheet-head p { display: none; }
+  .quick-action { border-radius: 0; padding-block: 11px; }
+  .quick-action strong { font-size: .9375rem; line-height: 1.45; }
+  .quick-action small { font-size: .8125rem; line-height: 1.45; margin-top: 2px; }
+  .quick-action-mark { border-radius: 12px; background: var(--rose-soft); }
+  .sheet-head h2 { font-size: 1.25rem; }
+
+  /* Hubs: one title, useful actions, then secondary content. */
+  .today-main .today-hero,
+  .family-home-main .family-home-hero,
+  .pregnancy-main > .pregnancy-hero,
+  .memories-main > .memories-hero { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 10px 0 16px; margin: 0; }
+  .today-main .today-hero h1,
+  .family-home-main h1,
+  .pregnancy-main > .pregnancy-hero h1,
+  .memories-hero h1 { font-size: clamp(1.5rem, 6vw, 1.9rem); letter-spacing: -.025em; line-height: 1.3; }
+  .today-main .today-meta { margin-bottom: 7px; }
+  .today-main .today-meta time { font-size: .8125rem; color: var(--ink-soft); }
+  .today-main .intro, .family-home-main .intro { margin-top: 5px; font-size: .875rem; }
+  .today-main .section { margin-top: 18px; }
+  .today-main .today-priorities { margin-top: 0; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 16px; box-shadow: none; }
+  .today-main .today-priorities .panel-kicker { display: none; }
+  .today-main .today-priorities h2 { font-family: var(--font-body), sans-serif; font-size: 1rem; font-weight: 600; }
+  .today-main .today-priority-list { margin-top: 4px; }
+  .today-main .today-priority-copy strong { font-size: .9375rem; }
+  .today-main .today-priority-copy small { font-size: .8125rem; }
+  .today-main .today-priority-plan-link { font-size: .8125rem; }
+  .today-main .pregnancy-chapter { padding: 14px 0; border: 0; border-block: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
+  .today-main .pregnancy-chapter h2 { font-size: 1.125rem; line-height: 1.45; }
+  .today-main .pregnancy-chapter p { font-size: .8125rem; }
+  .today-main .pregnancy-chapter .chapter-thread { display: none; }
+  .today-main .chapter-actions a { min-height: 44px; font-size: .8125rem; }
+  .today-main .timeline-panel { border: 0; background: transparent; padding: 0; box-shadow: none; }
+  .today-main .timeline-panel .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .today-main .timeline-panel h2 { font-family: var(--font-body), sans-serif; font-size: 1rem; font-weight: 600; }
+  .today-main .thread-body > p:not(.timeline-date) { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .875rem; }
+  .today-main .thread-body strong { font-size: .9375rem; }
+  .today-main .timeline-date, .today-main .freshness { font-size: .8125rem; }
+
+  .daily-shortcuts, .family-essentials, .maternal-shortcuts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-block: 16px; }
+  .daily-shortcuts > a, .family-essentials > a, .maternal-shortcuts > a { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 60px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); font-size: .875rem; font-weight: 600; line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
+  .daily-shortcuts > a .icon, .family-essentials > a .icon, .maternal-shortcuts > a .icon { width: 21px; height: 21px; flex: none; color: var(--rose); }
+  .daily-shortcuts > a:active, .family-essentials > a:active, .maternal-shortcuts > a:active { background: var(--rose-soft); }
+  .maternal-shortcuts { margin-top: 4px; }
+  .maternal-shortcuts > a > span { display: grid; gap: 3px; min-width: 0; }
+  .maternal-shortcuts strong { font-size: .875rem; font-weight: 600; }
+  .maternal-shortcuts small { font-size: .8125rem; font-weight: 400; color: var(--ink-soft); }
+
+  .pregnancy-main > .pregnancy-hero .intro { font-size: .875rem; }
+  .pregnancy-main > .pregnancy-hero .week-card { margin-top: 6px; padding: 14px; border-radius: 16px; background: var(--rose-soft); box-shadow: none; border: 0; }
+  .pregnancy-main > .pregnancy-hero .week-card > .panel-kicker { display: none; }
+  .pregnancy-main > .pregnancy-hero .stage-line .week-number { font-size: 1.125rem; }
+  .pregnancy-main > .pregnancy-hero .stage-name { font-size: .8125rem; }
+  .pregnancy-main > .pregnancy-hero .stage-nudge { font-size: .8125rem; }
+  .pregnancy-main > .pregnancy-hero .stage-petals { margin-block: 9px; }
+  .pregnancy-main .stage-settings summary { min-height: 44px; }
+  .pregnancy-main .stage-settings summary small { display: none; }
+  .care-inline-links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: -6px 0 12px; }
+  .care-inline-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--rose-press); font-size: .8125rem; text-decoration: none; }
+  .care-inline-links .care-help-link { color: var(--coral); text-decoration: underline; text-underline-offset: 3px; }
+  .care-secondary-links { margin: 16px 0; border-block: 1px solid var(--line); }
+  .care-secondary-links a { display: flex; gap: 12px; align-items: center; justify-content: space-between; min-height: 50px; color: var(--ink); text-decoration: none; font-size: .875rem; }
+  .care-secondary-links a + a { border-top: 1px solid var(--line); }
+  .care-secondary-links a > span:last-child { color: var(--rose); }
+  .pregnancy-main > .care-board { box-shadow: none; background: var(--surface); padding: 14px; border-radius: 16px; }
+  .pregnancy-main .check-text strong { font-size: .875rem; }
+  .pregnancy-main .check-text small { font-size: .8125rem; }
+  .pregnancy-main .checklist-group summary { min-height: 48px; }
+  .pregnancy-main .checklist-group summary h3 { font-size: .9375rem; }
+  .nutrition-disclosure > .stage-nutrition { border: 0; background: transparent; padding: 0 14px 14px; margin: 0; box-shadow: none; }
+  .nutrition-disclosure .stage-nutrition-heading { display: none; }
+
+  /* Search never touches health content: this is a small, local tool catalog. */
+  .tool-directory { margin-top: 22px; scroll-margin-top: 16px; }
+  .tool-search { display: grid; gap: 8px; font-size: .875rem; color: var(--ink); font-weight: 600; }
+  .tool-search > div { display: flex; align-items: center; gap: 4px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); padding: 0 4px 0 12px; }
+  .tool-search:focus-within > div { outline: 2px solid var(--rose); outline-offset: 2px; }
+  .tool-search input { width: 100%; min-width: 0; min-height: 48px; border: 0; padding: 10px 0; font: inherit; font-size: 16px; color: var(--ink); background: transparent; border-radius: 0; box-shadow: none; outline: none; }
+  .tool-search input::-webkit-search-cancel-button { display: none; }
+  .tool-search button { display: grid; place-items: center; flex: none; width: 44px; height: 44px; background: transparent; color: var(--ink-soft); border: 0; }
+  .tool-search button .icon { width: 18px; height: 18px; }
+  .tool-search-count { margin: 12px 0; font-size: .8125rem; color: var(--ink-soft); }
+  .tool-group { border-bottom: 1px solid var(--line); }
+  .tool-group:first-of-type { margin-top: 14px; }
+  .tool-group > summary, .hub-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; list-style: none; cursor: pointer; padding-block: 12px; color: var(--ink); }
+  .tool-group > summary::-webkit-details-marker, .hub-disclosure > summary::-webkit-details-marker { display: none; }
+  .tool-group summary > span, .hub-disclosure summary > span:first-child { display: grid; gap: 4px; min-width: 0; }
+  .tool-group summary strong, .hub-disclosure summary { font-size: .9375rem; font-weight: 600; }
+  .tool-group summary small, .hub-disclosure summary small { font-size: .8125rem; font-weight: 400; color: var(--ink-soft); line-height: 1.4; }
+  .tool-group summary > .icon, .hub-disclosure summary > .icon { height: 18px; width: 18px; flex: none; color: var(--ink-soft); transition: transform 160ms ease; }
+  .tool-group[open] > summary > .icon, .hub-disclosure[open] > summary > .icon { transform: rotate(90deg); }
+  .tool-group > nav { background: var(--surface); border-radius: 14px; padding-inline: 12px; margin-bottom: 14px; }
+  .tool-row { display: flex; align-items: center; gap: 11px; min-height: 64px; padding-block: 12px; text-decoration: none; color: var(--ink); }
+  .tool-row + .tool-row { border-top: 1px solid var(--line); }
+  .tool-row > span { display: grid; gap: 3px; flex: 1; min-width: 0; }
+  .tool-row strong { font-size: .875rem; font-weight: 600; }
+  .tool-row small { color: var(--ink-soft); font-size: .8125rem; line-height: 1.4; }
+  .tool-row .icon { width: 20px; height: 20px; flex: none; color: var(--rose); }
+  .tool-row .icon:last-child { width: 14px; height: 14px; color: var(--ink-soft); }
+  .tool-row:active { background: var(--surface-soft); }
+  .hub-disclosure { margin: 16px 0; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+  .hub-disclosure > summary { padding-inline: 14px; }
+  .hub-disclosure > :not(summary) { margin: 0 14px 14px; }
+  .hub-disclosure .family-connection { padding: 14px 0; border: 0; background: transparent; }
+  .hub-disclosure .family-connection p { font-size: .875rem; }
+  .family-privacy-note { font-size: .8125rem; line-height: 1.5; color: var(--ink-soft); margin-top: 20px; }
+
+  /* Keep common data-entry labels readable; native controls retain16px input. */
+  .care-tracker :is(.care-source-picker legend, .care-plan-form label, .dose-copy small, .dose-source, .care-quick-suggestions small),
+  .care-tracker-heading p, .iphone-health-hub p { font-size: .8125rem; }
+  .care-tracker .care-quick-suggestions button { min-height: 44px; font-size: .8125rem; }
+  .care-tracker .care-primary-actions a, .care-tracker .care-primary-actions button { font-size: .875rem; }
+  .care-area-nav, .memory-section-links { display: flex; flex-wrap: wrap; gap: 6px 16px; padding-block: 6px 12px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .care-area-nav a, .memory-section-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--rose-press); font-size: .875rem; text-decoration: none; }
+  .care-area-nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; background: var(--rose-soft); border: 0; border-radius: 14px; padding: 4px; }
+  .care-area-nav button { min-width: 0; min-height: 44px; padding: 8px; border: 0; border-radius: 10px; color: var(--ink-soft); background: transparent; font: inherit; font-size: .875rem; }
+  .care-area-nav button[aria-pressed="true"] { background: var(--surface); color: var(--rose-press); font-weight: 600; }
+  .care-tab-panel[hidden] { display: none !important; }
+  .memory-section-links a:first-child { font-weight: 600; }
+  .memories-hero .eyebrow { display: none; }
+  .memories-hero h1 em { font-style: normal; color: inherit; }
+}
+@media screen and (max-width: 767px) {
+  .is-studio .family-nav { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .is-studio .family-nav a:nth-child(n) { grid-column: auto; }
+}
+@media screen and (min-width: 768px) {
+  .today-main, .family-home-main { max-width: 760px; }
+  .daily-shortcuts, .family-essentials { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .daily-shortcuts > a, .family-essentials > a { flex-direction: column; justify-content: center; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tool-group summary > .icon, .hub-disclosure summary > .icon { transition: none; }
+}

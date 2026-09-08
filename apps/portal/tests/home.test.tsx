@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import Home, { dynamic } from "../src/app/page";
@@ -12,7 +13,7 @@ describe("family portal home", () => {
     expect(dynamic).toBe("force-dynamic");
   });
 
-  it("shows the family timeline and gallery as the two primary destinations", async () => {
+  it("prioritizes four daily maternal actions and a short journal preview instead of a tool catalog", async () => {
     const { container } = render(await Home());
 
     expect(
@@ -21,19 +22,24 @@ describe("family portal home", () => {
         name: "Hôm nay"
       })
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Nhật ký" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Gần đây của nhà mình" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Xem toàn bộ nhật ký" })).toHaveAttribute("href", "/nhat-ky");
-    expect(screen.getByRole("heading", { name: "Mở nhanh" })).toBeInTheDocument();
+    const actions = screen.getByRole("navigation", { name: "Lối tắt hằng ngày" });
+    expect(within(actions).getAllByRole("link")).toHaveLength(4);
+    expect(within(actions).getByRole("link", { name: "Ghi bữa ăn" })).toHaveAttribute("href", "/me-bau/bua-an");
+    expect(within(actions).getByRole("link", { name: "Ghi sức khỏe" })).toHaveAttribute("href", "/me-bau/suc-khoe");
+    expect(within(actions).getByRole("link", { name: "Thuốc & vi chất" })).toHaveAttribute("href", "/me-bau/suc-khoe-iphone#vi-chat-thuoc");
+    expect(within(actions).getByRole("link", { name: "Thêm giấy tờ" })).toHaveAttribute("href", "/me-bau/ho-so#them-giay-to");
     expect(container.querySelector(".family-hero-art")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Mở album kỷ niệm" })).toHaveAttribute("href", "/ky-niem");
-    expect(screen.getByRole("link", { name: "Xem cách sử dụng đơn giản" })).toHaveAttribute(
-      "href",
-      "/huong-dan"
-    );
-    expect(screen.getByRole("link", { name: "Hỏi trợ lý riêng của gia đình" })).toHaveAttribute(
-      "href",
-      "/tro-ly"
-    );
+    expect(container.querySelector('a[href="/studio"]')).not.toBeInTheDocument();
+    expect(container.querySelector('a[href="/huong-dan"]')).not.toBeInTheDocument();
+  });
+
+  it("requests a bounded preview and caps merged pending and published entries at three", () => {
+    const source = readFileSync("src/app/page.tsx", "utf8");
+    expect(source).toContain("getTimeline(3)");
+    expect(source).toContain("getPendingJournalEntries(3)");
+    expect(source).toMatch(/\.sort\([\s\S]*?\.slice\(0, 3\)/);
   });
 
   it("puts the current pregnancy stage before postnatal tools", async () => {

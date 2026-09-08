@@ -8,7 +8,7 @@ describe("canonical pregnancy due date", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
-    // Pin the fixture before week 28; wall-clock drift otherwise changes the stage action.
+    // Keep the pregnancy chapter fixture at the same gestational stage.
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-09-07T10:00:00+07:00"));
   });
@@ -25,17 +25,17 @@ describe("canonical pregnancy due date", () => {
     expect(localStorage.getItem("embe:pregnancy:due-date")).toBe("2026-12-01");
   });
 
-  it("shows the correct quick action without opening pregnancy settings first", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
-      dueDate: "2026-12-01", completed: [], hasProfile: true, hasDayState: false
-    })));
+  it("offers useful quick actions on a new phone without waiting for a due-date request", () => {
+    vi.stubGlobal("fetch", vi.fn());
 
     render(<QuickActions />);
-    await waitFor(() => expect(localStorage.getItem("embe:pregnancy:due-date")).toBe("2026-12-01"));
     fireEvent.click(screen.getByRole("button", { name: "Mở thao tác nhanh" }));
 
     expect(screen.queryByRole("link", { name: /Cài giai đoạn thai kỳ/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Lưu sức khỏe hôm nay/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ghi sức khỏe/ })).toHaveAttribute("href", "/me-bau/suc-khoe");
+    expect(screen.getByRole("link", { name: /Ghi bữa ăn/ })).toHaveAttribute("href", "/me-bau/bua-an");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(localStorage.getItem("embe:pregnancy:due-date")).toBeNull();
   });
 
   it("retains the last saved date when the server is temporarily unavailable", async () => {

@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const route = vi.hoisted(() => ({ pathname: "/me-bau", postpartum: false }));
 vi.mock("next/navigation", () => ({ usePathname: () => route.pathname }));
 vi.mock("../src/lib/use-family-stage", () => ({ useFamilyStage: () => ({ postpartum: route.postpartum }) }));
-vi.mock("../src/lib/use-pregnancy-due-date", () => ({ usePregnancyDueDate: () => "" }));
 vi.mock("../src/components/device-access-prompt", () => ({ default: () => null }));
 
 import QuickActions from "../src/components/quick-actions";
@@ -26,9 +25,10 @@ describe("mobile quick actions", () => {
 
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("dialog", { name: "Ghi nhanh" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Cài giai đoạn thai kỳ/ })).toHaveAttribute("href", "/me-bau#cai-dat-giai-doan");
+    expect(screen.queryByRole("link", { name: /Cài giai đoạn thai kỳ/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ghi sức khỏe/ })).toHaveAttribute("href", "/me-bau/suc-khoe");
     expect(screen.getByRole("link", { name: /Thêm lịch khám/ })).toHaveAttribute("href", "/me-bau/ho-so?quick=appointment#ho-so-kham");
-    expect(screen.getByRole("link", { name: /Chụp bữa ăn/ })).toHaveAttribute("href", "/me-bau/bua-an");
+    expect(screen.getByRole("link", { name: /Ghi bữa ăn/ })).toHaveAttribute("href", "/me-bau/bua-an");
     expect(screen.getByRole("link", { name: /Thêm việc cần làm/ })).toHaveAttribute("href", "/ke-hoach?them=1#them-viec");
     expect(screen.getByRole("link", { name: /Ghi một dòng/ })).toHaveAttribute("href", "/ghi-lai#viet-nhat-ky");
     expect(screen.getByRole("link", { name: /Chụp hoặc chọn ảnh/ })).toHaveAttribute("href", "/ky-niem#gui-anh");

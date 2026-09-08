@@ -93,11 +93,17 @@ export default async function MemoriesPage({
       <AppHeader note="Chỉ ảnh bố mẹ đã chọn" />
       <section className="memories-hero">
         <p className="eyebrow">Ảnh &amp; câu chuyện</p>
-        <h1>Những ngày <em>mình muốn nhớ</em></h1>
+        <h1>Kỷ niệm</h1>
         {dateHeading ? <p className="intro">{dateHeading}</p> : null}
       </section>
+      <nav className="memory-section-links" aria-label="Ảnh và câu chuyện">
+        <a href="#album-gia-dinh">Album ảnh</a>
+        <Link href="/nhat-ky">Nhật ký</Link>
+        <Link href="/ky-niem/thai-ky">Ảnh thai kỳ</Link>
+        <Link href="/so-me-va-be">Sổ &amp; bản in</Link>
+        <Link href="/tim-kiem">Tìm kỷ niệm</Link>
+      </nav>
       <PhotoComposer />
-      <Link className="btn btn-quiet" href="/ky-niem/thai-ky">Ảnh bụng bầu theo tuần & thiệp kỷ niệm</Link>
       {selectedDate ? (
         <section className="selected-date-card" aria-label="Ngày đang xem">
           <div>
@@ -108,6 +114,7 @@ export default async function MemoriesPage({
           <Link href="/ky-niem?view=ngay-thang">Xem tất cả ngày</Link>
         </section>
       ) : null}
+      <div id="album-gia-dinh" />
       <Suspense fallback={<MemoryLoading />}>
         <MemoryGallery album={albumValue} date={date} view={view} />
       </Suspense>

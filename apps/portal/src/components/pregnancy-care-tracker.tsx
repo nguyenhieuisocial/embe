@@ -137,7 +137,7 @@ function metricSyncLabel(health: IphoneHealth, key: string): string {
     : "Chưa đồng bộ riêng";
 }
 
-export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek: number | null }) {
+export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { pregnancyWeek: number | null; activePanel?: "iphone" | "medication" }) {
   const [day, setDay] = useState("");
   const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
   const [meals, setMeals] = useState<MealEntry[]>([]);
@@ -390,7 +390,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
             : "Chưa kết nối Apple Health";
 
   return (<>
-    <section className="iphone-health-hub" id="suc-khoe-iphone" aria-labelledby="iphone-health-title">
+    <section className="iphone-health-hub care-tab-panel" hidden={activePanel === "medication"} id="suc-khoe-iphone" aria-labelledby="iphone-health-title">
       <header className="iphone-health-hub-heading">
         <div>
           <h2 id="iphone-health-title">Sức khỏe từ iPhone</h2>
@@ -490,7 +490,7 @@ export default function PregnancyCareTracker({ pregnancyWeek }: { pregnancyWeek:
       </p>
     </section>
 
-    <section className="care-tracker" id="vi-chat-thuoc" aria-labelledby="care-tracker-title">
+    <section className="care-tracker care-tab-panel" hidden={activePanel === "iphone"} id="vi-chat-thuoc" aria-labelledby="care-tracker-title">
       <header className="care-tracker-heading">
         <div>
           <span className="care-heading-mark" aria-hidden="true">✦</span>

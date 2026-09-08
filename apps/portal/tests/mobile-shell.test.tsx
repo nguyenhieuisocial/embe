@@ -90,7 +90,7 @@ describe("mobile family shell", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
     expect(css).toContain("--control: 48px");
-    expect(css).toContain("--paper: #FFF8FB");
+    expect(css).toContain("--paper: #FCF9F7");
     expect(css).toContain("--rose: #A54A6A");
     expect(ruleBody(css, ".eyebrow, .panel-kicker")).toMatch(/text-transform:\s*none/);
     expect(ruleBody(css, ".btn")).toMatch(/min-height:\s*var\(--control\)/);

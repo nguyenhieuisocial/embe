@@ -35,8 +35,13 @@ describe("app-like navigation performance", () => {
       join(process.cwd(), "src", "components", "quick-actions.tsx"),
       join(process.cwd(), "src", "components", "today-priorities-panel.tsx"),
       join(process.cwd(), "src", "components", "pregnancy-chapter.tsx"),
+      join(process.cwd(), "src", "components", "daily-shortcuts.tsx"),
+      join(process.cwd(), "src", "components", "maternal-tools.tsx"),
+      join(process.cwd(), "src", "components", "family-tool-directory.tsx"),
       join(process.cwd(), "src", "app", "page.tsx"),
-      join(process.cwd(), "src", "app", "me-bau", "page.tsx")
+      join(process.cwd(), "src", "app", "me-bau", "page.tsx"),
+      join(process.cwd(), "src", "app", "nha-minh", "page.tsx"),
+      join(process.cwd(), "src", "app", "me-bau", "suc-khoe-iphone", "page.tsx")
     ].map((path) => readFileSync(path, "utf8"));
 
     for (const source of sources) expect(source).toContain("prefetch={false}");
@@ -51,12 +56,16 @@ describe("app-like navigation performance", () => {
 
   it("keeps large pregnancy tools out of the daily route bundle", () => {
     const source = readFileSync(join(process.cwd(), "src", "app", "me-bau", "page.tsx"), "utf8");
+    const tools = readFileSync(join(process.cwd(), "src", "components", "maternal-tools.tsx"), "utf8");
     expect(source).not.toContain('from "../../components/meal-photo-tracker"');
     expect(source).not.toContain('from "../../components/pregnancy-care-tracker"');
     expect(source).not.toContain('from "../../components/pregnancy-health-tracker"');
     expect(source).not.toContain('from "../../components/pregnancy-medical-records"');
-    expect(source).toContain('href="/me-bau/bua-an"');
-    expect(source).toContain('href="/me-bau/suc-khoe"');
-    expect(source).toContain('href="/me-bau/suc-khoe-iphone"');
+    expect(source).toContain('<MaternalTools week={week} />');
+    expect(tools).toContain('href="/me-bau/bua-an"');
+    expect(tools).toContain('href="/me-bau/suc-khoe"');
+    expect(tools).toContain('href="/me-bau/suc-khoe-iphone#vi-chat-thuoc"');
+    expect(source).toContain('href="/me-bau/suc-khoe-iphone#suc-khoe-iphone"');
+    expect(tools).not.toMatch(/from ["'][^"']*(?:meal-photo-tracker|pregnancy-care-tracker|pregnancy-health-tracker|pregnancy-medical-records)["']/);
   });
 });

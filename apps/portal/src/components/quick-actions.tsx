@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
-import { calculatePregnancyWeek } from "../lib/pregnancy";
 import { useFamilyStage } from "../lib/use-family-stage";
-import { usePregnancyDueDate } from "../lib/use-pregnancy-due-date";
 import { Icon, type IconName } from "./embe-icon";
 
 type QuickAction = {
@@ -20,19 +18,12 @@ const documentAction: QuickAction = {
   title: "Chụp hoặc chọn giấy tờ", detail: "Phiếu thu, đơn thuốc, siêu âm · ảnh/PDF"
 };
 
-function actionsForStage(dueDate: string): QuickAction[] {
-  const week = calculatePregnancyWeek(dueDate);
-  const stageAction: QuickAction = week === null
-    ? { href: "/me-bau#cai-dat-giai-doan", icon: "care", title: "Cài giai đoạn thai kỳ", detail: "Nhập ngày dự sinh khi đã có" }
-    : week >= 28
-      ? { href: "/do-dung", icon: "supply", title: "Xem đồ cần chuẩn bị", detail: "Nhẹ nhàng rà lại trước ngày sinh" }
-      : { href: "/me-bau/suc-khoe", icon: "care", title: "Lưu sức khỏe hôm nay", detail: "Cân nặng, ngủ, nước và vận động" };
-
+function actionsForStage(): QuickAction[] {
   return [
-    stageAction,
+    { href: "/me-bau/bua-an", icon: "meal", title: "Ghi bữa ăn", detail: "Chụp ảnh hoặc nhập món" },
+    { href: "/me-bau/suc-khoe", icon: "care", title: "Ghi sức khỏe", detail: "Số đo, giấc ngủ và nước" },
     documentAction,
-    { href: "/me-bau/ho-so?quick=appointment#ho-so-kham", icon: "calendar", title: "Thêm lịch khám", detail: "Lưu ngày hẹn và hồ sơ đi cùng" },
-    { href: "/me-bau/bua-an", icon: "meal", title: "Chụp bữa ăn", detail: "Mở camera và nhận diện món" },
+    { href: "/me-bau/ho-so?quick=appointment#ho-so-kham", icon: "calendar", title: "Thêm lịch khám", detail: "Ngày hẹn và nơi khám" },
     { href: "/ke-hoach?them=1#them-viec", icon: "check", title: "Thêm việc cần làm", detail: "Giao cho Mẹ Ngân, Ba Hiếu hoặc cả nhà" },
     { href: "/ghi-lai#viet-nhat-ky", icon: "write", title: "Ghi một dòng", detail: "Lưu điều vừa xảy ra" },
     { href: "/ky-niem#gui-anh", icon: "memory", title: "Chụp hoặc chọn ảnh", detail: "Gửi vào album gia đình" }
@@ -41,7 +32,6 @@ function actionsForStage(dueDate: string): QuickAction[] {
 
 export default function QuickActions() {
   const [open, setOpen] = useState(false);
-  const dueDate = usePregnancyDueDate();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLElement>(null);
@@ -165,7 +155,7 @@ export default function QuickActions() {
                 { href: "/me", icon: "care" as const, title: "Mẹ hồi phục hôm nay", detail: "Ghi thật nhanh các dấu hiệu cần theo dõi" },
                 documentAction,
                 { href: "/ky-niem#gui-anh", icon: "memory" as const, title: "Chụp một khoảnh khắc", detail: "Gửi vào album gia đình" }
-              ] : actionsForStage(dueDate)).map((action) => (
+              ] : actionsForStage()).map((action) => (
                 <Link className="quick-action" href={action.href} prefetch={false} key={action.href} onClick={() => { restoreFocusRef.current = false; setOpen(false); }}>
                   <span className="quick-action-mark" aria-hidden="true"><Icon name={action.icon} /></span>
                   <span>

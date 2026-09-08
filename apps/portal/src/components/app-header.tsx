@@ -1,6 +1,11 @@
-import Link from "next/link";
+"use client";
 
-import { EmBeMark } from "./embe-icon";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { getPageContext } from "../lib/app-navigation";
+import { useFamilyStage } from "../lib/use-family-stage";
+
+import { EmBeMark, Icon } from "./embe-icon";
 
 type AppHeaderProps = {
   note: string;
@@ -9,12 +14,17 @@ type AppHeaderProps = {
 };
 
 export default function AppHeader({ note, tone = "calm" }: AppHeaderProps) {
+  const pathname = usePathname();
+  const { postpartum } = useFamilyStage();
+  const context = getPageContext(pathname ?? "/", postpartum);
   return (
     <header className="app-header">
-      <Link className="wordmark" href="/" prefetch={false} aria-label="EmBe — về trang gia đình">
+      {context ? <Link className="context-back" href={context.parentHref} prefetch={false} aria-label={`Về ${context.parentLabel}`}>
+        <Icon name="arrow" /><span>{context.parentLabel}</span>
+      </Link> : <Link className="wordmark" href="/" prefetch={false} aria-label="EmBe — về trang gia đình">
         <EmBeMark />
         EmBe
-      </Link>
+      </Link>}
       <p className={tone === "wait" ? "privacy-note is-wait" : "privacy-note"}>
         <span className="dot" aria-hidden="true" />
         {note}

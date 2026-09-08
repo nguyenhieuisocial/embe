@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
+import MaternalTools from "../../components/maternal-tools";
 import BirthTransition from "../../components/birth-transition";
 import PregnancySafetySearch from "../../components/pregnancy-safety-search";
 import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
@@ -316,44 +317,7 @@ export default function PregnancyPage() {
       </section>
 
       <BirthTransition dueDate={dueDate} />
-      <Link className="stage-feature-link" href="/me-bau/tuan-nay" prefetch={false}><span><small>Tự đổi theo ngày dự sinh</small><strong>Tuần này của Mẹ và Bé</strong></span><span aria-hidden="true">›</span></Link>
-      <Link className="stage-feature-link" href="/chuan-bi-sinh" prefetch={false}><span><small>Khi gia đình cần</small><strong>Kế hoạch sinh & chế độ cơn gò</strong></span><span aria-hidden="true">›</span></Link>
-
-      <nav className="pregnancy-tool-menu" aria-label="Công cụ hằng ngày">
-        <Link id="suc-khoe" href="/me-bau/suc-khoe">
-          <span><strong>Ghi sức khỏe</strong><small>Cân nặng, huyết áp, ngủ và cảm nhận</small></span><b>Mở</b>
-        </Link>
-        <Link id="bua-an" href="/me-bau/bua-an">
-          <span><strong>Ghi bữa ăn</strong><small>Chụp món, sửa nhận diện rồi lưu</small></span><b>Mở</b>
-        </Link>
-        <Link id="suc-khoe-iphone" href="/me-bau/suc-khoe-iphone">
-          <span><strong>Sức khỏe từ iPhone</strong><small>Đồng bộ chỉ số và lịch dùng hằng ngày</small></span><b>Mở</b>
-        </Link>
-        <Link id="ho-so-kham" href="/me-bau/ho-so">
-          <span><strong>Hồ sơ thai kỳ</strong><small>Lịch khám, kết quả và đơn thuốc</small></span><b>Mở</b>
-        </Link>
-        <Link href="/me-bau/ho-so?quick=prescription#ho-so-kham">
-          <span><strong>Đơn thuốc</strong><small>Chụp đơn, lưu cùng hồ sơ khám</small></span><b>Mở</b>
-        </Link>
-        <Link href="/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc">
-          <span><strong>Tự mua / không đơn</strong><small>Thuốc lẻ, vitamin và vi chất tự mua</small></span><b>Thêm</b>
-        </Link>
-      </nav>
-
-      <div className="pregnancy-reference-label pregnancy-private-tools">
-        <Link href="/me-bau/tam-trang" prefetch={false}>Ghi tâm trạng</Link>
-        <Link href="/me-bau/trieu-chung" prefetch={false}>Ghi triệu chứng</Link>
-        <Link href="/me-bau/meo-dan-gian" prefetch={false}>Mẹo & dân gian</Link>
-      </div>
-
-      <aside className="pregnancy-urgent-shortcut" aria-labelledby="urgent-shortcut-title">
-        <div>
-          <p className="panel-kicker">Cần tìm nhanh</p>
-          <h2 id="urgent-shortcut-title">Có dấu hiệu bất thường?</h2>
-          <p>Mở ngay hướng dẫn liên hệ nơi đang khám.</p>
-        </div>
-        <a href="#can-lien-he">Xem ngay</a>
-      </aside>
+      <MaternalTools week={week} />
 
       <section className="care-board" id="viec-hom-nay" aria-labelledby="daily-title">
         <div className="care-summary">
@@ -415,6 +379,14 @@ export default function PregnancyPage() {
         </div>
       </section>
 
+      <nav className="care-secondary-links" aria-label="Hành trình và kết nối">
+        <Link href="/me-bau/tuan-nay" prefetch={false}><span>Tuần này của Mẹ &amp; Bé</span><span aria-hidden="true">›</span></Link>
+        <Link id="suc-khoe-iphone" href="/me-bau/suc-khoe-iphone#suc-khoe-iphone" prefetch={false}><span>Kết nối sức khỏe iPhone</span><span aria-hidden="true">›</span></Link>
+        {week !== null && week >= 28 ? <Link href="/chuan-bi-sinh" prefetch={false}><span>Chuẩn bị sinh &amp; cơn gò</span><span aria-hidden="true">›</span></Link> : null}
+      </nav>
+
+      <details className="hub-disclosure nutrition-disclosure">
+        <summary><span>Ăn uống theo giai đoạn<small>Gợi ý món, thức uống và lưu ý an toàn</small></span><span aria-hidden="true">⌄</span></summary>
       <section className="stage-nutrition" aria-labelledby="stage-nutrition-title">
         <div className="stage-nutrition-heading">
           <div>
@@ -466,6 +438,8 @@ export default function PregnancyPage() {
           <span aria-hidden="true">›</span>
         </a>
       </section>
+
+      </details>
 
       <PregnancySafetySearch />
 

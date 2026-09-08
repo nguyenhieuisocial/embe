@@ -7,6 +7,7 @@ import PwaRuntime from "../components/pwa-runtime";
 import FamilyDataRuntime from "../components/family-data-runtime";
 import { currentAppVersion } from "../lib/app-version";
 import "./globals.css";
+import "./interface.css";
 
 const body = Be_Vietnam_Pro({
   subsets: ["vietnamese"],

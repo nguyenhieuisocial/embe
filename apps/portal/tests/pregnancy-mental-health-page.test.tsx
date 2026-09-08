@@ -58,8 +58,11 @@ describe("pregnancy mental-health check-in", () => {
   });
 
   it("is linked separately from symptoms on the pregnancy page", async () => {
-    const source = await import("node:fs/promises").then(({ readFile }) => readFile("src/app/me-bau/page.tsx", "utf8"));
-    expect(source).toContain('href="/me-bau/tam-trang"');
-    expect(source).toContain('href="/me-bau/trieu-chung"');
+    const { readFile } = await import("node:fs/promises");
+    const page = await readFile("src/app/me-bau/page.tsx", "utf8");
+    const tools = await readFile("src/components/maternal-tools.tsx", "utf8");
+    expect(page).toContain('<MaternalTools week={week} />');
+    expect(tools).toContain('href="/me-bau/tam-trang"');
+    expect(tools).toContain('href="/me-bau/trieu-chung"');
   });
 });

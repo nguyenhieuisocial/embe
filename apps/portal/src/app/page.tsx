@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import AppHeader from "../components/app-header";
+import DailyShortcuts from "../components/daily-shortcuts";
 import { Icon } from "../components/embe-icon";
 import JournalCaption from "../components/journal-caption";
 import StageToday from "../components/stage-today";
@@ -11,44 +12,6 @@ import { dateInVietnam } from "../lib/family-task-contract";
 import { getTodaySnapshot } from "../lib/today-server";
 
 export const dynamic = "force-dynamic";
-
-const shortcuts = [
-  {
-    href: "/studio",
-    icon: "write" as const,
-    kicker: "EmBe Mẹ Bầu",
-    title: "Studio",
-    label: "Xem kịch bản và video trong Studio"
-  },
-  {
-    href: "/ky-niem",
-    icon: "album" as const,
-    kicker: "Ảnh & chuyến đi",
-    title: "Kỷ niệm",
-    label: "Mở album kỷ niệm"
-  },
-  {
-    href: "/do-dung",
-    icon: "supply" as const,
-    kicker: "Theo dõi số lượng",
-    title: "Đồ dùng",
-    label: "Xem đồ dùng trong nhà"
-  },
-  {
-    href: "/tro-ly",
-    icon: "assistant" as const,
-    kicker: "Theo tuần thai",
-    title: "Trợ lý",
-    label: "Hỏi trợ lý riêng của gia đình"
-  },
-  {
-    href: "/huong-dan",
-    icon: "guide" as const,
-    kicker: "Cài trên iPhone",
-    title: "Hướng dẫn",
-    label: "Xem cách sử dụng đơn giản"
-  }
-];
 
 const freshnessNote = {
   fresh: "Nhật ký vừa được cập nhật.",
@@ -62,18 +25,18 @@ function vietnameseDate(value: string): string {
 
 async function TimelinePanel() {
   const [published, pending, freshness] = await Promise.all([
-    getTimeline(20),
-    getPendingJournalEntries(20),
+    getTimeline(3),
+    getPendingJournalEntries(3),
     getTimelineFreshness()
   ]);
   const timeline = [...pending, ...published]
     .sort((left, right) => new Date(right.eventAt).getTime() - new Date(left.eventAt).getTime())
-    .slice(0, 20);
+    .slice(0, 3);
 
   return (
     <section className="section timeline-panel" aria-labelledby="timeline-title">
       <div className="section-head">
-        <div><p className="panel-kicker">Theo dòng thời gian</p><h2 id="timeline-title">Nhật ký</h2></div>
+        <h2 id="timeline-title">Gần đây của nhà mình</h2>
         <Link className="journal-all-link" href="/nhat-ky" prefetch={false} aria-label="Xem toàn bộ nhật ký">Xem tất cả</Link>
       </div>
 
@@ -112,7 +75,7 @@ function TimelineLoading() {
   return (
     <section className="section timeline-panel" aria-busy="true">
       <div className="section-head">
-        <div><p className="panel-kicker">Theo dòng thời gian</p><h2>Nhật ký</h2></div>
+        <h2>Gần đây của nhà mình</h2>
         <Link className="journal-all-link" href="/nhat-ky" prefetch={false} aria-label="Xem toàn bộ nhật ký">Xem tất cả</Link>
       </div>
       <div className="skeleton" role="status">
@@ -139,16 +102,15 @@ export default function Home() {
   }).format(new Date());
 
   return (
-    <main className="page">
+    <main className="page today-main">
       <AppHeader note="Chỉ gia đình nhìn thấy" />
 
       <section className="today-hero">
         <div className="today-meta">
-          <p className="eyebrow">Sổ nhà Ngân &amp; Hiếu</p>
           <time dateTime={dateInVietnam()}>{todayLabel}</time>
         </div>
         <h1 aria-label="Hôm nay">Hôm nay</h1>
-        <p className="intro">Mình chỉ cần để ý vài điều quan trọng.</p>
+        <p className="intro">Một ngày nhẹ nhàng cùng nhà mình.</p>
 
       </section>
 
@@ -156,24 +118,8 @@ export default function Home() {
         <SmartTodayPanel />
       </Suspense>
 
+      <DailyShortcuts />
       <StageToday />
-
-      <nav className="section shortcut-list home-shortcuts" aria-label="Lối tắt của gia đình">
-        <div className="home-shortcuts-heading">
-          <p className="panel-kicker">Đi thẳng đến nơi cần dùng</p>
-          <h2>Mở nhanh</h2>
-        </div>
-        {shortcuts.map((shortcut) => (
-          <Link className="shortcut" href={shortcut.href} prefetch={false} key={shortcut.href} aria-label={shortcut.label}>
-            <span className="shortcut-mark" aria-hidden="true"><Icon name={shortcut.icon} /></span>
-            <span className="shortcut-text">
-              <small>{shortcut.kicker}</small>
-              <strong>{shortcut.title}</strong>
-            </span>
-            <Icon name="arrow" className="icon icon-chevron" />
-          </Link>
-        ))}
-      </nav>
 
       <Suspense fallback={<TimelineLoading />}>
         <TimelinePanel />
