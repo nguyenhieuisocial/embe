@@ -12,6 +12,7 @@ import json
 import math
 import time
 import wave
+from contextlib import ExitStack
 from fractions import Fraction
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
@@ -105,7 +106,7 @@ def frame_image(background, photo, local_frame: int, scene_frames: int, overall:
     return image
 
 
-def render_video(path: Path, visuals: list, seconds: list[float], samples: np.ndarray, on_progress=None, *, audio_rate=RATE, audio_bitrate=48000) -> dict:
+def render_video(path: Path, visuals: list, seconds: list[float], samples: np.ndarray, on_progress=None, *, audio_rate=RATE, audio_bitrate=48000, subtitle_cues=None) -> dict:
     if audio_rate not in (RATE, 48000) or audio_bitrate not in (48000, 128000):
         raise ValueError('invalid_audio_format')
     scene_frames = [round(duration * FPS) for duration in seconds]
@@ -116,7 +117,16 @@ def render_video(path: Path, visuals: list, seconds: list[float], samples: np.nd
         raise ValueError('audio_timeline_mismatch')
     started = time.monotonic()
     frame_count, audio_cursor = 0, 0
-    with av.open(str(path), "w", format="mp4", options={"movflags": "+faststart"}) as container:
+    overlays=[];cue_index=0
+    with ExitStack() as resources:
+        if subtitle_cues is not None:
+            from .subtitles import validate_cues, caption_overlay
+            validate_cues(subtitle_cues,sum(seconds))
+            for cue in subtitle_cues:
+                layer,position=caption_overlay(cue['text'])
+                resources.callback(layer.close)
+                overlays.append((layer,position))
+        container=resources.enter_context(av.open(str(path), "w", format="mp4", options={"movflags": "+faststart"}))
         video = container.add_stream("libx264", rate=FPS)
         video.width, video.height = SIZE
         video.pix_fmt = "yuv420p"
@@ -132,7 +142,13 @@ def render_video(path: Path, visuals: list, seconds: list[float], samples: np.nd
                 if frame_count % FPS == 0 and (time.monotonic() - started > 480 or (path.exists() and path.stat().st_size > MAX_BYTES)):
                     raise RuntimeError("render_budget_exceeded")
                 image = frame_image(background, photo, index, duration_frames, (frame_count + 1) / total_frames)
+                if subtitle_cues:
+                    now=frame_count/FPS
+                    while cue_index<len(subtitle_cues) and now>=subtitle_cues[cue_index]['end']: cue_index+=1
+                    if cue_index<len(subtitle_cues) and now>=subtitle_cues[cue_index]['start']:
+                        overlay,position=overlays[cue_index];image.paste(overlay,position,overlay)
                 frame = av.VideoFrame.from_image(image)
+                image.close()
                 frame.pts, frame.time_base = frame_count, Fraction(1, FPS)
                 for packet in video.encode(frame):
                     container.mux(packet)

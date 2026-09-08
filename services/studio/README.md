@@ -126,6 +126,15 @@ Xem [nguồn gốc minh họa](assets/PROVENANCE.md) và [catalog có nguồn t�
 
 ## Dựng bảng kiến thức có giọng đọc
 
+### Phụ đề và chú thích tự động (08/09/2026)
+
+- Worker web tự tạo phụ đề từ đúng chữ đã lưu, tối đa hai dòng, theo từng cụm ngắn. Giữ số với đơn vị và cụm phủ định cùng nhau; không dùng nhận dạng lời nói để đoán lại số liệu. TTS vẫn đọc nguyên cảnh, không cắt thành các lời đọc rời rạc.
+- Mốc đầu/cuối cảnh dựa trên âm thanh thực; mốc từng cụm **ước lượng trong cảnh**, không phải karaoke hoặc căn từng từ bằng forced alignment. Cấu trúc `captions.timing=estimated_within_scene` ghi rõ giới hạn này.
+- Chữ được ghép sẵn trong MP4, nền tương phản, chừa mép phải và đáy cho nút mạng xã hội. Tự ghi tên nguồn đã lưu; không tự chứng nhận nội dung y khoa. Không có hiệu ứng nhấp nháy.
+- Bản dựng hoàn tất có file VTT, SRT và chú thích đăng bài lấy từ snapshot bất biến của chính video. Caption để trống thì dùng tiêu đề/giai đoạn/nguồn; giữ caption tác giả nếu có, thêm nhãn AI và chưa duyệt chuyên môn. Không tạo thêm kết luận sức khỏe, link sản phẩm hoặc tự đăng mạng xã hội.
+- Chỉ tự áp dụng cho lần dựng mới; video lịch sử giữ nguyên, VTT/SRT cũ tiếp tục dùng timeline cả cảnh. Asset và nội dung tải xuống vẫn yêu cầu đăng nhập, `private, no-store`.
+- Kiểm tra hữu hạn: `tests/test_subtitles.py`, `voice_tests/test_narrated.py`, portal `studio-voice-subtitles.test.ts`, `mobile-shell.test.tsx`. `scripts/preview_subtitles.py` dựng hai cảnh gốc với mạng bị chặn. `scripts/health/studio-subtitles-live.mjs` chỉ đọc bản demo có sẵn, kiểm tra video/tải phụ đề trên Cent riêng; không thay iPhone/Safari thật.
+
 ### Tự động từ bản nháp đến video (08/09/2026)
 
 - Bản mới mặc định `auto-south`, `autoRender: true`. Một giọng nữ miền Nam nhất quán (Thục Đoan v2), tự chậm lại ở cảnh có số liệu; chuẩn hóa phát âm chỉ cho lời đọc, không sửa số/liều, phụ đề hoặc nguồn. Tùy chỉnh thủ công được thu gọn và không bắt buộc.

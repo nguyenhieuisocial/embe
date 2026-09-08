@@ -12,6 +12,18 @@ from embe_studio.narrated import FPS, RATE, SIZE, frame_image, layers, render_vi
 
 
 class NarratedRenderTests(unittest.TestCase):
+    def test_burned_captions_change_only_their_region_and_follow_timing(self):
+        with tempfile.TemporaryDirectory(prefix='embe-caption-check-') as temp:
+            path=Path(temp)/'caption.mp4'
+            with Image.new('RGB',SIZE,'white') as bg, Image.new('RGB',(80,60),'pink') as photo:
+                cues=[{'start':.25,'end':1.75,'text':'Cùng mẹ thật nhẹ nhàng.'}]
+                render_video(path,[(bg,photo)],[2],np.zeros(2*RATE,dtype=np.float32),subtitle_cues=cues)
+                with av.open(str(path)) as media: frames=[f.to_ndarray(format='rgb24') for f in media.decode(video=0)]
+                region=(slice(880,980),slice(48,600))
+                self.assertGreater(float(frames[0][region].mean()),245)
+                self.assertLess(float(frames[24][region].mean()),150)
+                self.assertGreater(float(frames[47][region].mean()),245)
+
     def test_subsecond_scene_boundaries_remain_frame_and_sample_aligned(self):
         with tempfile.TemporaryDirectory(prefix='embe-voice-timing-') as temp:
             with Image.new('RGB',SIZE,'white') as bg, Image.new('RGB',(80,60),'pink') as photo:

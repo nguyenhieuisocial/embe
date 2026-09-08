@@ -10,6 +10,6 @@ export async function workspaceRpc(action: string, id: string | null = null, rev
 export function workspaceFailure(status: number) { return privateReply({error:status===409?'revision_conflict':status===429?'queue_full':status===404?'not_found':status===400?'invalid_request':'temporarily_unavailable'},status); }
 // Object locators and claim tokens are used only by the server/worker, never as browser URLs.
 export function workspacePublic(data: any) {
-  const clean = (r: any) => { const {snapshot: _s,claim: _c,output,...rest}=r; return {...rest,output:output?{duration:output.duration,beats:output.beats,voiceCredit:output.voiceCredit}:null}; };
+  const clean = (r: any) => { const {snapshot: _s,claim: _c,output,...rest}=r; return {...rest,output:output?{duration:output.duration,beats:output.beats,voiceCredit:output.voiceCredit,...(output.captions?{captions:output.captions}:{})}:null}; };
   return {...data,...(data.renders?{renders:data.renders.map(clean)}:{}),...(data.render?{render:clean(data.render)}:{})};
 }

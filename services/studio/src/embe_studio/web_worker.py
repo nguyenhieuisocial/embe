@@ -89,7 +89,7 @@ def render_document(document, directory: Path, progress):
         opts=ort.SessionOptions();opts.intra_op_num_threads=2;opts.inter_op_num_threads=1
         voice=PiperVoice(session=ort.InferenceSession(str(model),sess_options=opts,providers=['CPUExecutionProvider']),config=PiperConfig.from_dict(json.loads(config.read_text(encoding='utf-8'))))
         credit=VOICE_CREDIT
-    visuals=[];sounds=[];durations=[];beats=[];elapsed=0
+    visuals=[];sounds=[];durations=[];beats=[];cues=[];elapsed=0
     try:
         for i,scene in enumerate(doc['scenes']):
             progress(5+int(i/len(doc['scenes'])*35))
@@ -114,6 +114,10 @@ def render_document(document, directory: Path, progress):
                 duration=math.ceil(len(pcm)/rate+.45)
                 padded=np.zeros(duration*rate,dtype=np.float32);start=round(rate*.15);padded[start:start+len(pcm)]=pcm
             if elapsed+duration>90:raise ValueError('voice_too_long')
+            from .subtitles import scene_cues, caption_overlay
+            # Pronunciation overrides must not rewrite the reviewed display text.
+            scene_subtitles=scene_cues(scene['text'],padded,rate,elapsed)
+            cues.extend(scene_subtitles)
             sounds.append(padded);durations.append(duration)
             background=Image.new('RGB',(720,1280),(255,248,246));draw=ImageDraw.Draw(background)
             draw.rounded_rectangle((48,65,300,115),radius=25,fill=(249,224,231))
@@ -122,12 +126,14 @@ def render_document(document, directory: Path, progress):
             try:
                 text_block(draw,doc['title'],150,size=36,bottom=270)
                 text_block(draw,doc['stage'],305,size=26,width=305,bottom=408)
-                y=text_block(draw,scene['heading'],452,size=44,bottom=610)
+                y=text_block(draw,scene['heading'],530,size=44,width=540,bottom=755)
                 draw.line((60,y+30,190,y+30),fill=(183,101,127),width=5)
-                text_block(draw,scene['text'],y+75,size=36,bottom=990)
             except ValueError as e:
                 background.close();raise ValueError('text_does_not_fit') from e
-            draw.text((60,1050),'Nguồn đối chiếu trong kịch bản kèm theo',font=font_at(24),fill=(121,102,109))
+            source_note='Nguồn: '+doc['sources'][0]['title']
+            if len(doc['sources'])>1: source_note+=f' (+{len(doc["sources"])-1})'
+            while font_at(24).getlength(source_note)>540: source_note=source_note[:-2]+'…'
+            draw.text((60,1030),source_note,font=font_at(24),fill=(121,102,109))
             draw.text((60,1095),'Minh họa & giọng đọc AI',font=font_at(24),fill=(121,102,109))
             draw.text((60,1140),'Tham khảo · Chưa duyệt chuyên môn',font=font_at(23),fill=(121,102,109))
             draw.text((60,1178),'Không thay tư vấn y tế cá nhân',font=font_at(23),fill=(121,102,109))
@@ -136,6 +142,7 @@ def render_document(document, directory: Path, progress):
             visuals.append((background,photo))
             if i==0:
                 poster=frame_image(background,photo,1,duration*24,0)
+                overlay,position=caption_overlay(scene_subtitles[0]['text']);poster.paste(overlay,position,overlay);overlay.close()
                 poster.save(directory/'poster.png',optimize=True);poster.close()
             beats.append({'heading':scene['heading'],'text':scene['text'],'start':elapsed,'end':elapsed+duration});elapsed+=duration
         progress(45)
@@ -145,8 +152,9 @@ def render_document(document, directory: Path, progress):
             soundtrack,mastering=master_narration(soundtrack)
             credit={**credit,'mastering':mastering}
         result=render_video(directory/'video.mp4',visuals,durations,soundtrack,on_progress=progress,
-            audio_rate=rate,audio_bitrate=128000 if story else 48000)
-        return {'duration':elapsed,'beats':beats,'voiceCredit':credit,'verification':result}
+            audio_rate=rate,audio_bitrate=128000 if story else 48000,subtitle_cues=cues)
+        return {'duration':elapsed,'beats':beats,'voiceCredit':credit,'verification':result,
+                'captions':{'version':1,'burnedIn':True,'language':'vi','timing':'estimated_within_scene','cues':cues}}
     finally:
         for background,photo in visuals:background.close();photo.close()
         if southern or story:voice.close()
