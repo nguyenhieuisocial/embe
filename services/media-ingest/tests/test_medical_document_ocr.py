@@ -50,11 +50,20 @@ def test_timeout_is_not_success_and_does_not_echo_private_input(monkeypatch):
     assert ocr.read_page_ocr(b'https://untrusted.invalid/image.jpg').text == ''
 
 
-def test_actual_local_ocr_retains_source_from_synthetic_rendered_pdf():
+@pytest.mark.parametrize('angle', [0, -4, 4])
+def test_actual_local_ocr_retains_source_from_synthetic_rendered_pdf(angle):
     # Reuses the committed invented fixture; no network, model API or real records.
     from medical_document_worker import document_pages
     body = (Path(__file__).parent / 'fixtures/synthetic-ruled-medical.pdf').read_bytes()
     image, _, _ = next(document_pages(body, 'application/pdf'))
+    if angle:
+        import io
+        from PIL import Image
+        with Image.open(io.BytesIO(image)) as source:
+            rotated = source.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True, fillcolor='white')
+            output = io.BytesIO()
+            rotated.save(output, format='JPEG', quality=95)
+            image = output.getvalue()
     result = ocr.read_page_ocr(image)
     assert result.text and 'HGB' in result.text and 'TSH' in result.text
     assert '11,2' in result.text and 'không phải hồ sơ người thật' in result.text

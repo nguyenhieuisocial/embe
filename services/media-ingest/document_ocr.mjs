@@ -24,7 +24,9 @@ export async function recognizeDocument(image) {
       langPath: models, cacheMethod: 'none', logger: () => {}, errorHandler: () => {}
     });
     await worker.setParameters({ tessedit_pageseg_mode: PSM.AUTO, preserve_interword_spaces: '1', user_defined_dpi: '300' });
-    const { data } = await worker.recognize(image, {}, { text: true });
+    // Deskew the OCR working image only. Keep the uploaded original unchanged;
+    // even a small camera tilt can make ruled-table rows disappear in AUTO mode.
+    const { data } = await worker.recognize(image, { rotateAuto: true }, { text: true });
     const text = data.text.normalize('NFC').replace(/\f/g, '\n').trim();
     if ([...text].length > 48000 || /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text)) throw new Error('ocr_text_too_large');
     return { text, engine: 'tesseract-vie-eng', lowConfidence: !Number.isFinite(data.confidence) || data.confidence < 75 };
