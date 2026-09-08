@@ -131,7 +131,8 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
     if (instructions.length > 200) { warnings.push(`${name}: lời dặn dài; giữ đầy đủ trong bản đọc, chưa rút gọn để nhập thuốc.`); return []; }
     return [{ name, ingredients, dose, frequency, instructions }];
   });
-  const uniqueMedicines = medicines.filter((item, i) => medicines.findIndex(other => JSON.stringify(other) === JSON.stringify(item)) === i);
+  const medicineKey = (item: MedicalMedicine) => JSON.stringify([item.name,item.ingredients??'',item.dose,item.frequency,item.instructions].map(value=>value.normalize('NFC').trim().replace(/\s+/g,' ')));
+  const uniqueMedicines = medicines.filter((item, i) => medicines.findIndex(other => medicineKey(other) === medicineKey(item)) === i);
   const drugConflicts = new Set(uniqueMedicines.filter((item, i) => uniqueMedicines.some((other, j) => i !== j && fold(other.name) === fold(item.name))).map(item => fold(item.name)));
   if (drugConflicts.size) warnings.push('Thuốc cùng tên có cách dùng khác nhau: giữ trong bản đọc để kiểm tra.');
   const sameProvider = records.filter(r => r.id !== recordId && !r.documentIntake && providerKey(provider).length >= 5 && providerKey(r.provider) === providerKey(provider));

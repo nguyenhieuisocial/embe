@@ -22,3 +22,11 @@ it('maps explicit units to new clinical fields and preserves wrong-unit values o
  }
  expect(proposeDocumentImport(analysis('Creatinine','1','mg/dL'),[],'id').details.measurements).toEqual({});
 });
+it('deduplicates spacing-only medicine differences but does not select conflicting doses',()=>{
+ const source=analysis('Ngày khám','07/09/2026');source.pages[0].kind='prescription';
+ const medicine={name:'Thuốc A',ingredients:'',dose:'1 viên',frequency:'2 lần/ngày',instructions:'Sau ăn',evidence:'',unclear:false};
+ source.pages[0].medicines=[medicine,{...medicine,name:' Thuốc A ',dose:'1  viên'}];
+ expect(proposeDocumentImport(source,[],'id').details.medicines).toHaveLength(1);
+ source.pages[0].medicines[1].dose='2 viên';
+ const result=proposeDocumentImport(source,[],'id');expect(result.details.medicines).toHaveLength(0);expect(result.warnings.join(' ')).toContain('cách dùng khác nhau');
+});

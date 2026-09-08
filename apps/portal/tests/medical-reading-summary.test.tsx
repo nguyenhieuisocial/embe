@@ -31,5 +31,5 @@ it('shows readings before clinical import and exposes unavailable sources',()=>{
  render(<PregnancyRecordSummary records={[record]}/>);
  expect(screen.getByText('Thuốc mẫu')).toBeInTheDocument();
  expect(screen.getByRole('alert')).toHaveTextContent('1 bản đọc chưa tải được');
- expect(screen.getByText('Xem nguồn · trang 1').closest('a')).toHaveAttribute('href','/me-bau/ho-so/tai-lieu/d');
+ expect(screen.getByText('Đơn thuốc · trang 1').closest('a')).toHaveAttribute('href','/me-bau/ho-so/tai-lieu/d');
 });

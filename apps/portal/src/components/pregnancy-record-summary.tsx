@@ -4,6 +4,7 @@ import {medicalInsights, type MedicalRecord, type MedicalDocument} from '../lib/
 import {MEDICAL_MEASUREMENTS} from '../lib/medical-measurements';
 import type {MedicalReadingSummary} from '../lib/medical-reading-summary';
 import {medicalFindingGroups} from '../lib/medical-finding-groups';
+import {medicineDisplayGroups} from '../lib/medicine-display-groups';
 
 const date = (value:string) => new Date(value).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
 export function summarizeRecords(records:MedicalRecord[],now=Date.now()) {
@@ -29,6 +30,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
   const summary=summarizeRecords(records);
   const documents=records.flatMap(record=>record.documents);
   const findings=medicalFindingGroups(records);
+  const medicines=medicineDisplayGroups(documents.flatMap(document=>(document.readingSummary?.medicines??[]).map(row=>({row,document}))),entry=>entry.row.label);
   const count=(group:keyof MedicalReadingSummary)=>documents.reduce((total,document)=>total+(document.readingSummary?.[group].length??0),0);
   const failed=documents.filter(document=>['review','confirmed'].includes(document.scanStatus??'')&&!document.readingSummary);
   return <section className="pregnancy-record-summary" aria-label="Tóm tắt thai kỳ">
@@ -52,10 +54,18 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       {!count('results')?<p>Chưa có kết quả trong bản đọc đã tải.</p>:null}
       <SourceRows documents={documents} group="results" />
     </details>
-    <details><summary>Thuốc đã đọc từ giấy tờ <small>{count('medicines')} dòng</small></summary>
+    <details><summary>Thuốc đã đọc từ giấy tờ <small>{medicines.length} tên thuốc</small></summary>
       <p>Thuốc và cách dùng tự lấy từ hồ sơ, không cần tải lại đơn. Đây chưa phải lịch thuốc đang uống.</p>
       {!count('medicines')?<p>Chưa có thuốc trong bản đọc đã tải.</p>:null}
-      <SourceRows documents={documents} group="medicines" />
+      {medicines.map(group=><details key={group.name}>
+        <summary>{group.name} <small>{group.rows.length} bản ghi nguồn</small></summary>
+        {group.rows.length>1?<small>Các bản dưới đây được giữ riêng; không cộng liều giữa các đơn.</small>:null}
+        {group.rows.map(({row,document},index)=><article key={`${document.id}:${index}`}>
+          <p>{row.value || 'Chưa đọc rõ liều/cách dùng'}</p>{row.details.map((detail,i)=><small key={i}>{detail}</small>)}
+          {row.unclear?<small>Bản đọc chưa xác minh</small>:null}
+          <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename} · trang {row.page}</Link>
+        </article>)}
+      </details>)}
       <Link href="/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc">Thuốc & lịch uống</Link>
     </details>
     <details><summary>Chỉ số mới nhất đã lưu <small>{summary.metrics.length} chỉ số</small></summary>
