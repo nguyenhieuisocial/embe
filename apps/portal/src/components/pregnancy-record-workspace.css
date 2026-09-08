@@ -1,4 +1,9 @@
 .medical-workspace{color:#392d34;min-width:0}
+.medical-saved-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px;font-size:.8125rem;color:var(--ink-soft)}
+.medical-saved-toolbar label{display:flex;align-items:center;gap:8px}
+.medical-saved-toolbar select{min-height:44px;min-width:0;max-width:100%;font:inherit;font-size:16px;padding:8px;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);color:var(--ink)}
+.medical-saved-documents>summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--rose-press);cursor:pointer}
+.medical-saved-documents>summary small{color:var(--ink-soft);font-size:.8125rem}
 .pregnancy-profile-page .pregnancy-profile-intro{max-width:880px;margin:16px auto 20px;text-align:left}.pregnancy-profile-page .pregnancy-profile-intro h1{font-size:1.7rem;margin:10px 0 6px}.pregnancy-profile-page .pregnancy-profile-intro .intro{font-size:.9rem;line-height:1.6;margin:0;color:#725d67}
 .medical-workspace .medical-records-heading h2{font-size:1.2rem;line-height:1.35;margin:0}
 .medical-workspace .medical-records-heading p{font-size:.82rem;color:#725d67;margin:5px 0 0}

@@ -73,6 +73,8 @@ export default function PregnancyMedicalRecords() {
   const [medicationScans, setMedicationScans] = useState<MedicationScan[]>([]);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState('');
+  const [openDocuments, setOpenDocuments] = useState<string[]>([]);
+  const [recordOrder, setRecordOrder] = useState('newest');
   const [formMode, setFormMode] = useState<"new" | "prepare" | "outcome">("new");
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
@@ -130,7 +132,7 @@ export default function PregnancyMedicalRecords() {
   const visibleRecords = records.filter(record => (filter === 'all' || record.kind === filter) && (!query || normalizeSearch([
     record.title, record.provider, record.clinician, record.notes,
     ...record.documents.flatMap(d => [d.originalFilename, d.displayName ?? ''])
-  ].join(' ')).includes(query)));
+  ].join(' ')).includes(query))).sort((a,b) => (recordOrder === 'newest' ? -1 : 1) * (Date.parse(a.occurredAt) - Date.parse(b.occurredAt)));
   const savedDocuments = records.flatMap(record => record.documents);
   const readDocuments = savedDocuments.filter(document => document.imported || ['review', 'confirmed'].includes(document.scanStatus ?? '')).length;
   const appointmentWorkspace = decodeAppointmentWorkspace(editingRecord?.notes ?? "");
@@ -486,6 +488,7 @@ export default function PregnancyMedicalRecords() {
           <button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>Tất cả</button>
           {Object.entries(kinds).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}
         </div>
+        <div className="medical-saved-toolbar"><span>{visibleRecords.length}/{records.length} hồ sơ</span><label>Sắp xếp<select value={recordOrder} onChange={event=>setRecordOrder(event.target.value)}><option value="newest">Mới nhất trước</option><option value="oldest">Cũ nhất trước</option></select></label></div>
         <div className="medical-timeline">
           {!visibleRecords.length ? <div className="medical-empty-short"><p>Không có hồ sơ khớp với tìm kiếm hoặc bộ lọc. Giấy tờ đã lưu vẫn còn nguyên.</p><button type="button" onClick={() => { setFilter('all'); setSearch(''); }}>Xem tất cả hồ sơ</button></div> : null}
           {visibleRecords.map((record) => <article key={record.id} id={`record-${record.id}`}>
@@ -510,11 +513,15 @@ export default function PregnancyMedicalRecords() {
                 {workspace.outcome ? <div><b>Kết quả và lời dặn</b><p>{workspace.outcome}</p></div> : null}
               </div>;
             })() : record.notes ? <details className="medical-record-expand"><summary>Ghi chú & lời dặn</summary><p className="medical-record-note">{record.notes}</p></details> : null}
-            {record.documents.length ? <div className="medical-documents">{record.documents.map((document) => <div key={document.id}>
+            {record.documents.length ? <details className="medical-record-expand medical-saved-documents" onToggle={event => {
+              const open = event.currentTarget.open;
+              setOpenDocuments(current => open ? [...new Set([...current, record.id])] : current.filter(id => id !== record.id));
+            }}><summary>Giấy tờ & bản đọc <small>{record.documents.length} tài liệu</small></summary>
+              {openDocuments.includes(record.id) ? <div className="medical-documents">{record.documents.map((document) => <div key={document.id}>
               <Link className="medical-document-summary-link" href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>{document.displayName || document.originalFilename}<small>Xem thông tin & tổng hợp</small></Link>
               <MedicalDocumentButton document={document} documents={record.documents}>{document.mimeType === 'application/pdf' ? 'Xem PDF gốc' : 'Xem ảnh gốc'}</MedicalDocumentButton>
               {document.imported || document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? <MedicalDocumentData key={`${document.id}:${document.scanStatus}:${Boolean(document.imported)}`} document={document} recordId={record.id} /> : null}
-            </div>)}</div> : null}
+            </div>)}</div> : null}</details> : null}
           </article>)}
         </div>
       </> : status === 'loading' ? <p role="status">Đang tải hồ sơ và giấy tờ đã lưu…</p>
