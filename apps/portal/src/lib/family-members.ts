@@ -2,8 +2,43 @@ import { dateKey, parseDateKey } from "./calendar";
 
 export const MEMBER_ROLES = { mother: "Mẹ", father: "Ba", child: "Con", relative: "Người thân" } as const;
 export type MemberRole = keyof typeof MEMBER_ROLES;
-export type ProfileField = { key: string; label: string; type?: "date" | "email" | "tel" | "number"; options?: readonly string[]; max?: number };
-export const PROFILE_GROUPS: { title: string; fields: ProfileField[] }[] = [
+export type ProfileField = { key: string; label: string; type?: "date" | "email" | "tel" | "number"; options?: readonly string[]; max?: number; min?: number; integer?: boolean };
+export const PROFILE_GROUPS: { title: string; role?: MemberRole; fields: ProfileField[] }[] = [
+  { title: "Tiền sử sản khoa", role: "mother", fields: [
+    { key: "pregnancyCount", label: "Số lần mang thai (kể cả lần hiện tại)", type: "number", min: 0, max: 40, integer: true },
+    { key: "termBirthCount", label: "Số lần sinh đủ tháng", type: "number", min: 0, max: 40, integer: true },
+    { key: "pretermBirthCount", label: "Số lần sinh non", type: "number", min: 0, max: 40, integer: true },
+    { key: "miscarriageCount", label: "Số lần sảy thai", type: "number", min: 0, max: 40, integer: true },
+    { key: "stillbirthCount", label: "Số lần thai lưu", type: "number", min: 0, max: 40, integer: true },
+    { key: "terminationCount", label: "Số lần chấm dứt thai kỳ (nếu muốn ghi)", type: "number", min: 0, max: 40, integer: true },
+    { key: "ectopicCount", label: "Số lần thai ngoài tử cung", type: "number", min: 0, max: 40, integer: true },
+    { key: "livingChildrenCount", label: "Số con hiện sống", type: "number", min: 0, max: 40, integer: true },
+    { key: "caesareanCount", label: "Số lần sinh mổ", type: "number", min: 0, max: 40, integer: true },
+    { key: "previousPregnancyDetails", label: "Các lần mang thai trước: năm, tuổi thai, cách sinh, cân nặng bé" },
+    { key: "previousPregnancyComplications", label: "Biến chứng thai kỳ / sau sinh trước đây do bác sĩ ghi nhận" },
+    { key: "uterineCervicalProcedures", label: "Can thiệp tử cung / cổ tử cung: loại, thời điểm" },
+  ] },
+  { title: "Thông tin sản khoa bổ sung", role: "mother", fields: [
+    { key: "conceptionMethod", label: "Hình thức thụ thai", options: ["Chưa rõ", "Tự nhiên", "IUI", "IVF / ICSI", "Khác"] },
+    { key: "assistedConceptionDetails", label: "Hỗ trợ sinh sản: cơ sở, ngày chuyển phôi, tuổi phôi theo hồ sơ" },
+    { key: "cycleHistory", label: "Chu kỳ trước mang thai: số ngày, đều / không đều" },
+    { key: "multiplePregnancyDetails", label: "Đa thai: số thai, bánh nhau / buồng ối theo siêu âm" },
+    { key: "obstetricRiskPlan", label: "Yếu tố nguy cơ và kế hoạch theo dõi do bác sĩ xác nhận" },
+    { key: "paternalFamilyHistory", label: "Tiền sử bệnh / di truyền phía Ba liên quan đến thai kỳ" },
+    { key: "geneticCounselling", label: "Tư vấn di truyền: cơ sở, ngày và kết luận đã nhận" },
+  ] },
+  { title: "Chăm sóc & chuẩn bị sinh", role: "mother", fields: [
+    { key: "pregnancyCareTeam", label: "Bác sĩ sản khoa, nơi theo dõi và cách liên hệ" },
+    { key: "birthHospital", label: "Cơ sở dự kiến sinh" },
+    { key: "birthPreferences", label: "Mong muốn khi sinh để trao đổi với bác sĩ" },
+    { key: "hospitalTransport", label: "Phương án đến viện & người đồng hành" },
+    { key: "feedingPreferences", label: "Dự định nuôi dưỡng bé & hỗ trợ cần có" },
+    { key: "postpartumSupport", label: "Người hỗ trợ và kế hoạch chăm sóc sau sinh" },
+    { key: "mentalHealthHistory", label: "Tiền sử sức khỏe tinh thần & hỗ trợ đang nhận (tự nguyện)" },
+    { key: "workExposure", label: "Công việc, hóa chất / khói bụi và điều cần trao đổi khi khám" },
+    { key: "nonPrescriptionProducts", label: "Thuốc tự mua, thảo dược / sản phẩm bổ sung cần báo bác sĩ" },
+    { key: "carePlanReviewedAt", label: "Ngày cập nhật kế hoạch chăm sóc", type: "date" },
+  ] },
   { title: "Liên hệ & đời sống", fields: [
     { key: "phone", label: "Điện thoại", type: "tel" }, { key: "email", label: "Email", type: "email" },
     { key: "hometown", label: "Quê quán / nơi sống" }, { key: "languages", label: "Ngôn ngữ sử dụng" },
@@ -141,6 +176,8 @@ function date(value: unknown, future = false): boolean { return value === null |
 function revision(value: unknown): boolean { return Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) < 2147483647; }
 
 export function validFamilyMember(value: unknown): value is FamilyMember {
+  // Leave room for jsonb whitespace within the database's 48 KiB profile limit.
+  if (new TextEncoder().encode(JSON.stringify(value) ?? "").length > 44000) return false;
   if (!object(value) || Object.keys(value).some(k => !["id","role","fullName","preferredName","birthDate","sexAtBirth","details","revision","archived","updatedAt"].includes(k))) return false;
   if (!text(value.id, 36) || !UUID.test(value.id) || !Object.hasOwn(MEMBER_ROLES, String(value.role))
     || !text(value.fullName, 160) || !value.fullName.trim() || !text(value.preferredName, 80)
@@ -155,7 +192,8 @@ export function validFamilyMember(value: unknown): value is FamilyMember {
     if (key === "nutritionContextHash" && !/^[a-f0-9]{64}$/.test(entry)) return false;
     if (key === "foodAllergenCodes" && entry.split(",").some(code => !["milk","egg","fish","shellfish","peanut","tree_nut","soy","gluten","sesame"].includes(code))) return false;
     if (field.options && !field.options.includes(entry)) return false;
-    if (field.type === "number" && (!/^\d+(\.\d+)?$/.test(entry) || Number(entry) <= 0 || Number(entry) > (field.max ?? 100000))) return false;
+    if (field.type === "number" && (!/^\d+(\.\d+)?$/.test(entry) || Number(entry) < (field.min ?? .1) || Number(entry) > (field.max ?? 100000) || field.integer && !Number.isInteger(Number(entry)))) return false;
+    if (field.type === "date" && !parseDateKey(entry)) return false;
     if (field.type === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) return false;
     return true;
   });

@@ -1,6 +1,7 @@
 import AppHeader from "../../../components/app-header";
 import PregnancyMedicalRecords from "../../../components/pregnancy-medical-records";
 import PregnancyProfileEditor from "../../../components/pregnancy-profile-editor";
+import Link from "next/link";
 
 export default function PregnancyProfilePage() {
   return (
@@ -11,6 +12,7 @@ export default function PregnancyProfilePage() {
         <p className="intro">Chụp giấy tờ, xem kết quả và chuẩn bị lần khám tiếp theo.</p>
       </header>
       <PregnancyMedicalRecords />
+      <Link className="btn btn-quiet btn-block" href="/nha-minh/ho-so?role=mother">Tiền sử sản khoa & hồ sơ sức khỏe Mẹ</Link>
       <details className="pregnancy-profile-settings"><summary>Thông tin thai kỳ & người liên hệ</summary><PregnancyProfileEditor /></details>
     </main>
   );

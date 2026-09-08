@@ -125,12 +125,13 @@ export default function FamilyMembers({ initialRole, initialTab = "profile" }: {
             <label>Giới tính khi sinh (nếu cần cho hồ sơ sức khỏe)<select value={member.sexAtBirth} onChange={e => edit({ sexAtBirth: e.target.value as FamilyMember["sexAtBirth"] })}>
               <option value="unknown">Chưa ghi / không muốn ghi</option><option value="female">Nữ</option><option value="male">Nam</option>
             </select></label>
-            {PROFILE_GROUPS.map(group => <details className="member-group" key={group.title}>
+            {member.role === "mother" ? <p className="state-note">Để trống khi chưa rõ; nhập 0 nếu xác nhận chưa từng có. Các mục này dùng chung cho hai điện thoại. Kết quả khám, số đo, thuốc và xét nghiệm lưu theo từng lần trong Sức khỏe & bệnh án.</p> : null}
+            {PROFILE_GROUPS.filter(group => !group.role || group.role === member.role).map(group => <details className="member-group" key={group.title}>
               <summary>{group.title}<small>{group.fields.filter(f => member.details[f.key]).length}/{group.fields.length} mục</small></summary>
               {group.fields.map(field => <label key={field.key}>{field.label}
                 {field.options ? <select value={member.details[field.key] ?? ""} onChange={e => edit({ details: { ...member.details, [field.key]: e.target.value } })}>
                   <option value="">Chưa ghi</option>{field.options.map(option => <option key={option}>{option}</option>)}
-                </select> : field.type ? <input type={field.type} min={field.type === "number" ? .1 : undefined} max={field.max} step="any" maxLength={1000}
+                </select> : field.type ? <input type={field.type} min={field.type === "number" ? (field.min ?? .1) : undefined} max={field.max} step={field.integer ? 1 : "any"} maxLength={1000}
                   value={member.details[field.key] ?? ""} onChange={e => edit({ details: { ...member.details, [field.key]: e.target.value } })} />
                   : <textarea rows={2} maxLength={1000} value={member.details[field.key] ?? ""} onChange={e => edit({ details: { ...member.details, [field.key]: e.target.value } })} />}
               </label>)}
