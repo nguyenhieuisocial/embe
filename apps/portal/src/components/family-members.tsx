@@ -65,6 +65,12 @@ export default function FamilyMembers({ initialRole, initialTab = "profile" }: {
       birthDate: null, sexAtBirth: "unknown", details: {}, revision: 0, archived: false };
     setDrafts(old => ({ ...old, [next.id]: next })); setSelected(next.id); setTab("profile"); setMessage(""); setArchived(false);
   }
+  function editDetail(key: string, value: string) {
+    if (!member) return;
+    const details = { ...member.details, [key]: value };
+    delete details[`maternalSource_${key}`];
+    edit({ details });
+  }
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!member || saving) return;
@@ -131,11 +137,12 @@ export default function FamilyMembers({ initialRole, initialTab = "profile" }: {
             {PROFILE_GROUPS.filter(group => !group.role || group.role === member.role).map(group => <details className="member-group" key={group.title}>
               <summary>{group.title}<small>{group.fields.filter(f => member.details[f.key]).length}/{group.fields.length} mục</small></summary>
               {group.fields.map(field => <label key={field.key}>{field.label}
-                {field.options ? <select value={member.details[field.key] ?? ""} onChange={e => edit({ details: { ...member.details, [field.key]: e.target.value } })}>
+                {member.details[`maternalSource_${field.key}`] ? <small>Đã bổ sung từ giấy tờ · {JSON.parse(member.details[`maternalSource_${field.key}`]).map((source: {documentId: string; page: number}, index: number) => <Link key={index} href={`/me-bau/ho-so/tai-lieu/${source.documentId}`}>Nguồn trang {source.page} </Link>)}</small> : null}
+                {field.options ? <select value={member.details[field.key] ?? ""} onChange={e => editDetail(field.key, e.target.value)}>
                   <option value="">Chưa ghi</option>{field.options.map(option => <option key={option}>{option}</option>)}
                 </select> : field.type ? <input type={field.type} min={field.type === "number" ? (field.min ?? .1) : undefined} max={field.max} step={field.integer ? 1 : "any"} maxLength={1000}
-                  value={member.details[field.key] ?? ""} onChange={e => edit({ details: { ...member.details, [field.key]: e.target.value } })} />
-                  : <textarea rows={2} maxLength={1000} value={member.details[field.key] ?? ""} onChange={e => edit({ details: { ...member.details, [field.key]: e.target.value } })} />}
+                  value={member.details[field.key] ?? ""} onChange={e => editDetail(field.key, e.target.value)} />
+                  : <textarea rows={2} maxLength={1000} value={member.details[field.key] ?? ""} onChange={e => editDetail(field.key, e.target.value)} />}
               </label>)}
             </details>)}
             {member.revision > 0 && !["mother","father"].includes(member.role) ? <label className="member-checkbox"><input type="checkbox" checked={member.archived} onChange={e => edit({ archived: e.target.checked })} />Lưu trữ hồ sơ (giữ lại dữ liệu)</label> : null}

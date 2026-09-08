@@ -83,6 +83,7 @@ export const PROFILE_GROUPS: { title: string; role?: MemberRole; fields: Profile
   ] },
 ];
 const fields = new Map(PROFILE_GROUPS.flatMap(g => g.fields.map(f => [f.key, f] as const)));
+const maternalSourceKeys = new Set(PROFILE_GROUPS.flatMap(group => group.role === 'mother' ? group.fields.map(field => `maternalSource_${field.key}`) : []).concat('maternalSource_bloodGroup'));
 // Edited in the compact meal preference panel; still versioned with the person's profile.
 for (const field of [
   { key: "foodAllergenCodes", label: "Dị ứng thực phẩm" }, { key: "foodAvoidTerms", label: "Món cần tránh" },
@@ -186,6 +187,10 @@ export function validFamilyMember(value: unknown): value is FamilyMember {
   // Existing parent birthday APIs intentionally accept dates from 1940 onward.
   if (["mother", "father"].includes(String(value.role)) && value.birthDate !== null && String(value.birthDate) < "1940-01-01") return false;
   return Object.entries(value.details).every(([key, entry]) => {
+    if (maternalSourceKeys.has(key)) {
+      if (!text(entry, 1000)) return false;
+      try { const sources = JSON.parse(entry); return Array.isArray(sources) && sources.length > 0 && sources.length <= 4 && sources.every(source => object(source) && Object.keys(source).sort().join(',') === 'documentId,page' && typeof source.documentId === 'string' && UUID.test(source.documentId) && Number.isInteger(source.page) && Number(source.page) >= 1 && Number(source.page) <= 6); } catch { return false; }
+    }
     const field = fields.get(key);
     if (!field || !text(entry, 1000)) return false;
     if (!entry) return true;

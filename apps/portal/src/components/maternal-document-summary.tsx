@@ -6,12 +6,27 @@ import { useFamilyDataRefresh } from '../lib/use-family-data-refresh';
 import { validDocumentAnalysis, type DocumentScan } from '../lib/medical-document-scan';
 import { DOCUMENT_DATA_GROUPS, groupDocumentData } from '../lib/medical-document-data';
 import { medicalDocumentName } from '../lib/medical-document-name';
+import { refreshFamilyData } from '../lib/family-data-refresh';
 
 type Summary = { scans: DocumentScan[]; total: number; pending: number; failed: number };
 export default function MaternalDocumentSummary() {
   const [data, setData] = useState<Summary | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [syncNote, setSyncNote] = useState('');
+  useEffect(() => {
+    let active = true;
+    void fetch('/api/family/members/sync-maternal', { method: 'POST' }).then(async response => {
+      if (!response.ok) throw new Error('sync');
+      const result = await response.json();
+      if (!active) return;
+      setSyncNote(result.added.length ? `Đã bổ sung ${result.added.length} mục từ giấy tờ vào hồ sơ Mẹ.`
+        : result.conflicts.length ? 'Có giá trị khác nhau giữa hồ sơ và giấy tờ; đã giữ nguyên thông tin đang lưu.'
+        : 'Đã kiểm tra khớp dữ liệu. Chỉ tự thêm mục trống từ bản đọc đã đối chiếu và đúng họ tên Mẹ.');
+      if (result.added.length) refreshFamilyData();
+    }).catch(() => { if (active) setSyncNote('Chưa tự khớp được dữ liệu; hồ sơ đang lưu vẫn được giữ. Lần mở sau sẽ thử lại.'); });
+    return () => { active = false; };
+  }, []);
   async function load(signal?: AbortSignal, canApply = () => true, background = false) {
     if (!background) setLoading(true);
     try {
@@ -45,6 +60,7 @@ export default function MaternalDocumentSummary() {
   useFamilyDataRefresh(canApply => load(undefined, canApply, true), !loading);
   return <section aria-label="Dữ liệu từ giấy tờ của Mẹ">
     <h2>Dữ liệu từ giấy tờ</h2>
+    {syncNote ? <p role="status" className="state-note">{syncNote}</p> : null}
     <p className="state-note">Tự tổng hợp bản đọc đã lưu, không cần nhập lại. Đây là nội dung trên giấy, không phải kết luận sức khỏe hay đơn thuốc đang dùng.</p>
     {loading ? <p role="status">Đang cập nhật dữ liệu giấy tờ…</p> : null}
     {error ? <p role="alert">Chưa cập nhật được giấy tờ. <button type="button" className="btn btn-quiet" disabled={loading} onClick={() => void load()}>Thử lại</button></p> : null}
