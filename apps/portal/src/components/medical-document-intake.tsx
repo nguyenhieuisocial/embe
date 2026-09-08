@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { uploadDocument } from '../lib/medical-upload-client';
-import { clearPrivateGetCache } from '../lib/private-get-cache';
+import { notifyFamilyDataChanged } from '../lib/family-data-refresh';
 import './medical-document-intake.css';
 
 type Entry = { id: string; documentId: string; file: File; status: 'waiting' | 'uploading' | 'saved' | 'failed' };
@@ -35,7 +35,7 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
           body: JSON.stringify({ id: entry.id, title: `Chờ đọc · ${entry.file.name || 'Ảnh chụp'}`.slice(0, 100) }), signal: AbortSignal.timeout(20000) });
         if (!created.ok) throw new Error('intake_failed');
         await uploadDocument(entry.id, entry.file, entry.documentId);
-        mark('saved'); setLastSavedName(entry.file.name || 'Ảnh chụp'); clearPrivateGetCache('/api/pregnancy/records'); onSaved();
+        mark('saved'); setLastSavedName(entry.file.name || 'Ảnh chụp'); notifyFamilyDataChanged(); onSaved();
       } catch { mark('failed'); }
     }
     lock.current = false;

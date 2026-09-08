@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
+import { notifyFamilyDataChanged } from '../lib/family-data-refresh';
 import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import { announceLinkedDailyAction } from "../lib/linked-daily-actions";
 import { readDeviceRole, type DeviceRole } from "../lib/device-preferences";
@@ -247,7 +248,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       const payload = await response.json() as { snapshot?: Snapshot; checklistCompletion?: unknown };
       if (!payload.snapshot) throw new Error("malformed snapshot");
       announceLinkedDailyAction(payload.checklistCompletion);
-      clearPrivateGetCache("/api/pregnancy/care?");
+      notifyFamilyDataChanged();
       const nextSnapshot = payload.snapshot;
       setSnapshot((current) => ({
         ...nextSnapshot,

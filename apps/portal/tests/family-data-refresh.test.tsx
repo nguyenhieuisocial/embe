@@ -2,7 +2,7 @@ import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { refreshFamilyData } from '../src/lib/family-data-refresh';
+import { refreshFamilyData, notifyFamilyDataChanged } from '../src/lib/family-data-refresh';
 import { useFamilyDataRefresh } from '../src/lib/use-family-data-refresh';
 import FamilyDataRuntime, { FAMILY_SYNC_INTERVAL_MS } from '../src/components/family-data-runtime';
 import FamilyPlanner from '../src/components/family-planner';
@@ -18,6 +18,14 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe('family data subscriptions', () => {
+  it('refreshes once for a burst of verified writes without a service worker', async()=>{
+    vi.useFakeTimers();
+    const view=render(<FamilyDataRuntime/>);
+    act(()=>{notifyFamilyDataChanged();notifyFamilyDataChanged();notifyFamilyDataChanged();});
+    await act(async()=>{await vi.advanceTimersByTimeAsync(301);});
+    expect(navigation.router.refresh).toHaveBeenCalledOnce();
+    view.unmount();
+  });
   it('defers changes while editing and catches up when the draft closes', async () => {
     const callback = vi.fn();
     const view = renderHook(({ enabled }) => useFamilyDataRefresh(callback, enabled), { initialProps: { enabled: false } });

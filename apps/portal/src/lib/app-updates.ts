@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-health-sync', date: '2026-09-08', title: 'Cập nhật hồ sơ và thuốc ngay sau khi lưu', items: [
+    { title: 'Bớt chờ dữ liệu giữa các màn', description: 'Thêm giấy tờ, nhập bản đọc, lưu hoặc xóa hồ sơ và ghi thuốc sẽ báo các màn/tab đang mở cập nhật ngay, kể cả khi service worker chưa tiếp quản. Giữ bản nháp đang nhập; không tự kích hoạt thuốc hoặc xác nhận dữ liệu chưa rõ.', href: '/me-bau/ho-so', action: 'Mở hồ sơ' },
+  ] },
   { id: '2026-09-08-health-workspace', date: '2026-09-08', title: 'Hồ sơ gọn theo việc cần làm', items: [
     { title: 'Tổng quan, giấy tờ và lịch khám tách riêng', description: 'Chuyển nhanh giữa ba mục, giữ nội dung đang nhập và mở đúng mục từ liên kết hồ sơ. Đồng nhất thêm tiêu đề ở Nhật ký, Mẹ, Bé; bỏ nút quay lại trùng và bổ sung đường về Cài đặt từ trang Cập nhật.', href: '/me-bau/ho-so', action: 'Mở hồ sơ' },
   ] },

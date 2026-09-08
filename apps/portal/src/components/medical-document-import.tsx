@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { DOCUMENT_TYPES, editableDocumentAnalysis, type DocumentAnalysis } from '../lib/medical-document-scan';
 import { proposeDocumentImport, validImportDetails, type DocumentImportContext, type DocumentImportDetails } from '../lib/medical-document-import';
 import { MEDICAL_MEASUREMENTS } from '../lib/medical-measurements';
-import { clearPrivateGetCache } from '../lib/private-get-cache';
+import { notifyFamilyDataChanged } from '../lib/family-data-refresh';
 import { DOCUMENT_DATA_GROUPS, groupDocumentData } from '../lib/medical-document-data';
 import { documentDateEvidence } from '../lib/medical-document-name';
 
@@ -33,7 +33,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
         if (!response.ok) throw new Error('Chưa tự thêm được. Bản đọc vẫn được giữ; có thể thử lại.');
         const result = await response.json();
         if (result.imported && result.recordId === recordId) {
-          clearPrivateGetCache('/api/pregnancy/records'); setDone(true); await onImported();
+          notifyFamilyDataChanged(); setDone(true); await onImported();
         }
       } catch (error) { setError((error as Error).message); }
       finally { setBusy(false); onBusy?.(false); }
@@ -72,7 +72,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
       if (response.status === 409) { setConflict(true); throw new Error('Hồ sơ đã thay đổi, hoặc có số đo/thuốc khác với bản đã lưu. EmBe chưa ghi đè. Mở hồ sơ để đối chiếu rồi nạp lại trang.'); }
       if (!response.ok) throw new Error('Chưa thêm được vào hồ sơ. Bản đang sửa vẫn còn; có thể thử lại.');
       const saved = await response.json(); if (!saved.imported || saved.recordId !== recordId) throw new Error('Chưa xác minh được kết quả lưu.');
-      clearPrivateGetCache('/api/pregnancy/records'); setDone(true); await onImported();
+      notifyFamilyDataChanged(); setDone(true); await onImported();
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); onBusy?.(false); }
   }

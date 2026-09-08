@@ -22,6 +22,7 @@ import MedicalDocumentButton from './medical-document-viewer';
 import type { MedicationScanMedicine } from "../lib/medication-scan-contract";
 import { cachedPrivateGet, clearPrivateGetCache } from "../lib/private-get-cache";
 import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
+import { notifyFamilyDataChanged } from '../lib/family-data-refresh';
 import { MEDICAL_MEASUREMENTS, medicalMeasurementSeries } from "../lib/medical-measurements";
 import {medicalWorkspaceView, type MedicalWorkspaceView} from '../lib/medical-workspace-view';
 
@@ -263,7 +264,7 @@ export default function PregnancyMedicalRecords() {
       });
       if (!response.ok) throw new Error("scan_confirm_failed");
       updateMedicationScan(scan.documentId, (current) => ({ ...current, status: "confirmed" }));
-      clearPrivateGetCache("/api/pregnancy/records");
+      notifyFamilyDataChanged();
       await load();
     } catch {
       updateMedicationScan(scan.documentId, (current) => ({ ...current, status: "review" }));
@@ -308,7 +309,7 @@ export default function PregnancyMedicalRecords() {
       if (!response.ok) throw new Error("save_failed");
       const result = await response.json() as { id?: string };
       if (!result.id) throw new Error("save_failed");
-      clearPrivateGetCache("/api/pregnancy/records");
+      notifyFamilyDataChanged();
       const uploaded: Array<{ documentId: string; mimeType: string }> = [];
       for (const file of files.slice(0, 6)) {
         const attempt = documentAttempts.current.get(file) ?? { id: crypto.randomUUID() };
@@ -342,7 +343,7 @@ export default function PregnancyMedicalRecords() {
     try {
       const response = await fetch(`/api/pregnancy/records/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("delete_failed");
-      clearPrivateGetCache("/api/pregnancy/records");
+      notifyFamilyDataChanged();
       await load();
     } catch { setStatus("error"); }
   }
