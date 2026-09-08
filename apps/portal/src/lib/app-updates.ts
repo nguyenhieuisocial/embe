@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-prescription-frequency', date: '2026-09-08', title: 'Bớt nhập lại cách dùng thuốc', items: [
+    { title: 'Điền sẵn số lần từ đơn đã lưu', description: 'Khi chọn thuốc từ hồ sơ, cách dùng ghi rõ như “2 lần/ngày” sẽ điền sẵn số lần. Không suy ra từ số viên, không tự chọn giờ nhắc hoặc biến thuốc dùng khi cần thành lịch uống cố định.', href: '/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc', action: 'Mở Thuốc' },
+  ] },
   { id: '2026-09-08-reuse-prescription', date: '2026-09-08', title: 'Dùng lại đơn thuốc đã lưu', items: [
     { title: 'Không phải chụp hoặc nhập lại đơn', description: 'Mục Thuốc có Lấy từ hồ sơ đã lưu: chọn thuốc để điền sẵn tên, liều và cách dùng từ hồ sơ hoặc bản đọc. Không nhận diện lại, không tự kích hoạt đơn cũ. Chọn số lần, giờ nhắc và kiểm tra phần bản đọc chưa chắc trước khi lưu lịch.', href: '/me-bau/suc-khoe-iphone?quick=medication#vi-chat-thuoc', action: 'Mở Thuốc' },
   ] },

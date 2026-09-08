@@ -29,6 +29,14 @@
 
 ## Cách dùng
 
+## Áp dụng thực tế bổ sung — 08/09/2026
+
+- RTK: chạy trực tiếp `git status` trên EmBe, xác nhận cây sạch; không cài hook toàn máy.
+- UI UX Pro Max: truy vấn `form prefill redundant entry --domain ux -n 2` trả về Redundant Entry và Submit Feedback. Áp dụng vào luồng lấy thuốc đã lưu: tự điền số lần khi văn bản ghi rõ số lần/ngày; không suy ra lịch từ số viên, số lượng cấp, tần suất theo tuần hay cách dùng khi cần.
+- Bộ OCR hiện có: `pytest services/media-ingest/tests/test_medical_document_ocr.py -q` đạt 11 kiểm thử. Không coi unit tests là đo độ chính xác trên hồ sơ thật.
+- Luồng thuốc + mobile shell: 44 kiểm thử đạt, typecheck đạt. Không thêm nhà cung cấp AI, không gửi thêm dữ liệu y tế ra dịch vụ ngoài.
+- Chưa cài hoặc xác minh runtime gstack; không gọi việc áp dụng một phương pháp là đã tích hợp cả repo.
+
 ```powershell
 & C:/EmBe/tools/bin/rtk-0.48.0/rtk.exe git status
 & C:/EmBe/.venv/Scripts/python.exe C:/EmBe/.agents/skills/ui-ux-pro-max/scripts/search.py 'focus not obscured' --domain ux -n 2

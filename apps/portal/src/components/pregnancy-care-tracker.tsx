@@ -3,6 +3,7 @@
 import Link from "next/link";
 import MedicationUseGuide from './medication-use-guide';
 import SavedPrescriptionPicker, { type SavedPrescriptionMedicine } from './saved-prescription-picker';
+import { explicitDailyFrequency } from '../lib/prescription-frequency';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
@@ -524,7 +525,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
 
       {showSavedPrescriptions ? <SavedPrescriptionPicker onSelect={medicine=>{
         setSavedMedicine(medicine); setPlanName(medicine.name); setPlanSource('clinician_plan'); setPlanCategory('medicine');
-        setSelectedMedication(null); setPlanTimesPerDay(0); setShowPlan(true); setShowSavedPrescriptions(false);
+        setSelectedMedication(null); setPlanTimesPerDay(explicitDailyFrequency(medicine.frequency) ?? 0); setShowPlan(true); setShowSavedPrescriptions(false);
         requestAnimationFrame(()=>document.querySelector('.care-plan-form')?.scrollIntoView({block:'start'}));
       }} /> : null}
 
