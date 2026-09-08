@@ -28,6 +28,11 @@ try{
  await nav.getByRole('link',{name:'Tổng quan',exact:true}).click();
  if(await search.isVisible())throw new Error('inactive_section_visible');
  await page.getByRole('region',{name:'Tóm tắt thai kỳ'}).waitFor();
+ const readingCounts=await page.getByRole('region',{name:'Tóm tắt thai kỳ'}).locator(':scope > details').evaluateAll(sections=>sections.slice(0,3).map(section=>({
+   label:section.querySelector(':scope > summary')?.textContent,
+   entries:section.querySelectorAll('article').length,
+   sources:section.querySelectorAll('a[href*="/tai-lieu/"]').length,
+ })));
  await page.setViewportSize({width:393,height:852});
  await page.screenshot({path:'data/medical-workspace-verification/overview.png',fullPage:true});
  await nav.getByRole('link',{name:'Lịch khám',exact:true}).click();
@@ -35,5 +40,5 @@ try{
  const targets=await nav.locator('a').evaluateAll(links=>links.map(link=>({width:link.getBoundingClientRect().width,height:link.getBoundingClientRect().height})));
  if(targets.some(t=>t.width<44||t.height<44))throw new Error('small_nav_target');
  await nav.getByRole('link',{name:'Giấy tờ',exact:true}).focus();await page.keyboard.press('Enter');await search.waitFor();
- console.log(JSON.stringify({viewports:5,overflow:false,searchReset:true,sections:3,keyboard:true}));
+ console.log(JSON.stringify({viewports:5,overflow:false,searchReset:true,sections:3,keyboard:true,readingCounts}));
 }finally{if(logged)await context.request.post(origin+'/api/auth/logout',{headers:{origin},maxRedirects:0}).catch(()=>{});await browser.close();}

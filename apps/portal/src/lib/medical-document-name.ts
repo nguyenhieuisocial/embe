@@ -10,6 +10,7 @@ export function documentDateEvidence(analyses: DocumentAnalysis[]) {
   const dates = [...new Set(rows.map(f => printedDate(f.value)).filter(Boolean))];
   const conflictingPdf = rows.some(f => f.pdfValue && printedDate(f.pdfValue) && printedDate(f.pdfValue) !== printedDate(f.value));
   return { dates, conflicting: dates.length > 1 || conflictingPdf,
+    invalid: rows.some(f => !printedDate(f.value)),
     tentative: rows.some(f => f.unclear || !printedDate(f.value)) };
 }
 

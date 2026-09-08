@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import {medicalInsights, type MedicalRecord, type MedicalDocument} from '../lib/pregnancy-medical';
+import {medicalInsights, type MedicalRecord} from '../lib/pregnancy-medical';
 import {MEDICAL_MEASUREMENTS} from '../lib/medical-measurements';
 import type {MedicalReadingSummary} from '../lib/medical-reading-summary';
 import {medicalFindingGroups} from '../lib/medical-finding-groups';
@@ -16,21 +16,15 @@ export function summarizeRecords(records:MedicalRecord[],now=Date.now()) {
   });
   return {latest:clinical[0],metrics,prescription:completed.find(r=>r.medicines.length),upcoming:medicalInsights(records,new Date(now)).upcoming};
 }
-function SourceRows({documents,group}:{documents:MedicalDocument[];group:keyof MedicalReadingSummary}) {
-  return documents.filter(document=>document.readingSummary?.[group].length).map(document=><details key={document.id}>
-    <summary>{document.displayName || document.originalFilename} <small>{document.readingSummary![group].length} mục</small></summary>
-    {document.readingSummary![group].map((row,index)=><article key={`${row.page}:${index}`}>
-      <strong>{row.label}</strong><p>{row.value}</p>{row.details.map((detail,i)=><small key={i}>{detail}</small>)}
-      {row.unclear?<small>Bản đọc chưa xác minh</small>:null}
-      <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`}>Xem nguồn · trang {row.page}</Link>
-    </article>)}
-  </details>);
+function ReadingSources({sources}:{sources:ReturnType<typeof medicalFindingGroups>[number]['sources']}) {
+  return <details><summary>Nguồn đối chiếu <small>{sources.length} trang</small></summary>{sources.map(source=><Link key={`${source.documentId}:${source.page}`} href={`/me-bau/ho-so/tai-lieu/${source.documentId}`}>{source.title} · trang {source.page}</Link>)}</details>;
 }
 export default function PregnancyRecordSummary({records}:{records:MedicalRecord[]}) {
   const summary=summarizeRecords(records);
   const documents=records.flatMap(record=>record.documents);
   const findings=medicalFindingGroups(records);
-  const medicines=medicineDisplayGroups(documents.flatMap(document=>(document.readingSummary?.medicines??[]).map(row=>({row,document}))),entry=>entry.row.label);
+  const results=medicalFindingGroups(records,'results');
+  const medicines=medicineDisplayGroups(medicalFindingGroups(records,'medicines'),entry=>entry.row.label);
   const count=(group:keyof MedicalReadingSummary)=>documents.reduce((total,document)=>total+(document.readingSummary?.[group].length??0),0);
   const failed=documents.filter(document=>['review','confirmed'].includes(document.scanStatus??'')&&!document.readingSummary);
   return <section className="pregnancy-record-summary" aria-label="Tóm tắt thai kỳ">
@@ -46,24 +40,28 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
         <strong>{finding.labels.join(' / ')}</strong>{finding.row.sourceDay?<small>{finding.row.sourceDay.split('-').reverse().join('/')}</small>:null}
         <p>{finding.row.value}</p>{finding.row.details.map((detail,i)=><small key={i}>{detail}</small>)}
         {finding.row.unclear?<small>Bản đọc chưa xác minh</small>:null}
-        <details><summary>Nguồn đối chiếu <small>{finding.sources.length} trang</small></summary>{finding.sources.map(source=><Link key={`${source.documentId}:${source.page}`} href={`/me-bau/ho-so/tai-lieu/${source.documentId}`}>{source.title} · trang {source.page}</Link>)}</details>
+        <ReadingSources sources={finding.sources}/>
       </article>)}
     </details>
-    <details><summary>Kết quả & chỉ số trên giấy <small>{count('results')} mục</small></summary>
+    <details><summary>Kết quả & chỉ số trên giấy <small>{results.length} mục</small></summary>
       <p>Giữ số, đơn vị và thời điểm theo từng tài liệu; chưa dùng bản đọc chưa xác minh để kết luận sức khỏe.</p>
       {!count('results')?<p>Chưa có kết quả trong bản đọc đã tải.</p>:null}
-      <SourceRows documents={documents} group="results" />
+      {results.map(({row,sources},index)=><article key={index}>
+        <strong>{row.label}</strong><p>{row.value}</p>{row.details.map((detail,i)=><small key={i}>{detail}</small>)}
+        {row.unclear?<small>Bản đọc chưa xác minh</small>:null}
+        <ReadingSources sources={sources}/>
+      </article>)}
     </details>
     <details><summary>Thuốc đã đọc từ giấy tờ <small>{medicines.length} tên thuốc</small></summary>
       <p>Thuốc và cách dùng tự lấy từ hồ sơ, không cần tải lại đơn. Đây chưa phải lịch thuốc đang uống.</p>
       {!count('medicines')?<p>Chưa có thuốc trong bản đọc đã tải.</p>:null}
       {medicines.map(group=><details key={group.name}>
-        <summary>{group.name} <small>{group.rows.length} bản ghi nguồn</small></summary>
+        <summary>{group.name} <small>{group.rows.length} bản thông tin</small></summary>
         {group.rows.length>1?<small>Các bản dưới đây được giữ riêng; không cộng liều giữa các đơn.</small>:null}
-        {group.rows.map(({row,document},index)=><article key={`${document.id}:${index}`}>
+        {group.rows.map(({row,sources},index)=><article key={index}>
           <p>{row.value || 'Chưa đọc rõ liều/cách dùng'}</p>{row.details.map((detail,i)=><small key={i}>{detail}</small>)}
           {row.unclear?<small>Bản đọc chưa xác minh</small>:null}
-          <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename} · trang {row.page}</Link>
+          <ReadingSources sources={sources}/>
         </article>)}
       </details>)}
       <Link href="/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc">Thuốc & lịch uống</Link>
