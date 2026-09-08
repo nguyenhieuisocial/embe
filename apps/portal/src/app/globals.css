@@ -1354,29 +1354,28 @@ input::-webkit-datetime-edit {
   color: var(--jade);
 }
 .app-update-banner {
-  align-items: center;
+  align-items: start;
   background: var(--surface);
   border: 1px solid color-mix(in srgb, var(--jade) 42%, var(--line));
   border-radius: 16px;
   bottom: calc(88px + env(safe-area-inset-bottom));
   box-shadow: var(--shadow-lift);
   color: var(--ink);
-  display: flex;
-  gap: 10px;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 8px 10px;
   left: max(12px, env(safe-area-inset-left));
   padding: 10px 10px 10px 13px;
   position: fixed;
   right: max(12px, env(safe-area-inset-right));
   z-index: 46;
 }
-.app-update-banner > span { display: grid; gap: 1px; min-width: 0; }
+.app-update-banner > span { display: grid; gap: 4px; min-width: 0; grid-column: 1; grid-row: 1; }
 .app-update-banner strong { color: var(--jade); font-size: .82rem; }
-.app-update-banner small { color: var(--ink-soft); font-size: .68rem; line-height: 1.35; }
+.app-update-banner small { color: var(--ink-soft); font-size: .75rem; line-height: 1.45; }
 .app-update-banner > span { overflow-wrap: anywhere; }
-.app-update-banner .activity-dismiss { background: transparent; color: var(--ink-soft); min-width: 44px; padding: 8px; }
-.app-update-banner button,
-.app-update-banner a,
+.app-update-banner .activity-dismiss { display: grid; place-items: center; grid-column: 2; grid-row: 1; background: transparent; color: var(--ink-soft); width: 44px; height: 44px; min-height: 44px; border: 0; border-radius: 10px; padding: 0; font: inherit; font-size: 1.4rem; line-height: 1; }
+.app-update-banner .app-update-action,
 .app-refresh-control button {
   background: var(--jade);
   border: 0;
@@ -1390,6 +1389,10 @@ input::-webkit-datetime-edit {
   padding: 8px 13px;
   text-decoration: none;
 }
+.app-update-banner .app-update-action { display: inline-flex; align-items: center; justify-content: center; grid-column: 1; grid-row: 2; justify-self: start; border-radius: 10px; min-width: 72px; height: 44px; box-sizing: border-box; padding: 0 16px; line-height: 1.2; }
+.app-update-release > span { grid-column: 1 / -1; }
+.app-update-banner .app-update-details { background: none; color: var(--jade); min-height: 44px; display: inline-flex; align-items: center; justify-self: start; text-decoration: underline; text-underline-offset: 3px; font-size: .75rem; }
+.app-update-banner :is(a, button):focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
 
 /* ── Bottom sheet ────────────────────────────────────────────── */
 
@@ -5333,8 +5336,7 @@ h2, h3 { font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Sego
   box-shadow: var(--shadow-soft);
 }
 
-.app-update-banner button,
-.app-update-banner a {
+.app-update-banner .app-update-action {
   background: var(--rose);
 }
 

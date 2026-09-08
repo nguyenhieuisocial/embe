@@ -179,7 +179,7 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
     <div className="app-update-banner" role="status" aria-live="polite">
       <span><strong>{familyActivity.title}</strong><small>{familyActivity.body}</small>
         {familyActivity.createdAt && Number.isFinite(Date.parse(familyActivity.createdAt)) ? <small><time dateTime={familyActivity.createdAt}>{new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(familyActivity.createdAt))}</time></small> : null}</span>
-      <Link href={familyActivity.url} onClick={() => {
+      <Link className="app-update-action" href={familyActivity.url} onClick={() => {
         clearPrivateGetCache();
         if (familyActivity.id) localStorage.setItem(DISMISSED_ACTIVITY_KEY, familyActivity.id);
         setFamilyActivity(null);
@@ -194,9 +194,9 @@ export default function PwaRuntime({ version = "development" }: { version?: stri
   if (!updateAvailable) return null;
 
   return (
-    <div className="app-update-banner" role="status" aria-live="polite">
-      <span><strong>Có phiên bản EmBe mới</strong><small>{updateSummary}</small><Link href="/cap-nhat">Xem chi tiết thay đổi</Link></span>
-      <button type="button" onClick={() => {
+    <div className="app-update-banner app-update-release" role="status" aria-live="polite">
+      <span><strong>Có phiên bản EmBe mới</strong><small>{updateSummary}</small><Link className="app-update-details" href="/cap-nhat">Xem chi tiết thay đổi</Link></span>
+      <button className="app-update-action" type="button" onClick={() => {
         setUpdateAvailable(false);
         window.history.go(0);
       }}>Cập nhật</button>
