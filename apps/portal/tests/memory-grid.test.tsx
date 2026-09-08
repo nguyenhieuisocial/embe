@@ -40,6 +40,16 @@ function memory(index: number): MediaMemory {
 }
 
 describe("mobile memory grid", () => {
+  it.each([undefined, "2026-08-30"])("leaves an album through server navigation, preserving only the date %s", date => {
+    render(<MemoryGrid initial={[memory(1)]} initialView="album" album="da-lat-2025" date={date} />);
+    for (const [name, view] of [["Ngày tháng", "ngay-thang"], ["Chuyến đi", "chuyen-di"], ["Bản đồ", "ban-do"]]) {
+      const link = screen.getByRole("link", { name });
+      const url = new URL(link.getAttribute("href")!, "https://embe.hieu.asia");
+      expect(url.searchParams.get("view")).toBe(view);
+      expect(url.searchParams.has("album")).toBe(false);
+      expect(url.searchParams.get("date")).toBe(date ?? null);
+    }
+  });
   it("finds Vietnamese album names without accents and clears an empty search", () => {
     render(<MemoryGrid initial={[memory(1)]} initialView="album" albums={[
       { key: 'da-lat', title: 'Đà Lạt', count: 5, covers: [memory(1)] },

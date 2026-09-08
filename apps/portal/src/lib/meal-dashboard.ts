@@ -38,14 +38,19 @@ export function buildMealDashboard(history: MealHistoryEntry[], days: number, no
   let mealsWithCalories = 0;
 
   for (const entry of history) {
-    const day = byDay.get(dayKey(new Date(entry.eatenAt)));
-    if (day) day.meals += 1;
+    const timestamp = Date.parse(entry.eatenAt);
+    if (!Number.isFinite(timestamp) || timestamp > now.getTime()) continue;
+    const day = byDay.get(dayKey(new Date(timestamp)));
+    // Every total must use the same date window as the chart, including when
+    // cached history contains older rows or a malformed imported date.
+    if (!day) continue;
+    day.meals += 1;
     const range = entry.analysis.nutrition?.calorieRange;
     if (range) {
       calorieLow += range.low;
       calorieHigh += range.high;
       mealsWithCalories += 1;
-      if (day) day.calories += range.mid;
+      day.calories += range.mid;
     }
     for (const [key, value] of Object.entries(entry.analysis.nutrition?.totals ?? {})) {
       nutrientTotals[key] = (nutrientTotals[key] ?? 0) + value;

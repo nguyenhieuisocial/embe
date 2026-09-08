@@ -356,9 +356,15 @@ export default function MemoryGrid({ initial, albums = [], album, date, initialV
       <nav className="memory-view-switcher" aria-label="Cách xem kỷ niệm">
         <Link href="/lich">Lịch</Link>
         <button aria-pressed={view === "album"} onClick={() => selectView("album")} type="button">Album</button>
-        <button aria-label="Ngày tháng" aria-pressed={view === "ngay-thang"} onClick={() => selectView("ngay-thang")} type="button">Ngày</button>
-        <button aria-label="Chuyến đi" aria-pressed={view === "chuyen-di"} onClick={() => selectView("chuyen-di")} type="button">Chuyến</button>
-        <button aria-pressed={view === "ban-do"} onClick={() => selectView("ban-do")} type="button">Bản đồ</button>
+        {([ ["ngay-thang", "Ngày", "Ngày tháng"], ["chuyen-di", "Chuyến", "Chuyến đi"], ["ban-do", "Bản đồ", "Bản đồ"] ] as const).map(([nextView, label, accessibleLabel]) => album ? (
+          // Leaving an album changes the server-side photo scope. A history-only
+          // update would retain both its photos and its pagination filter.
+          <Link key={nextView} aria-label={accessibleLabel} scroll={false}
+            href={`/ky-niem?${new URLSearchParams({ view: nextView, ...(date ? { date } : {}) })}`}>{label}</Link>
+        ) : (
+          <button key={nextView} aria-label={accessibleLabel} aria-pressed={view === nextView}
+            onClick={() => selectView(nextView)} type="button">{label}</button>
+        ))}
       </nav>
 
       {view === "album" && !album ? <AlbumOverview albums={albums} /> : null}
