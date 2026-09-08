@@ -3,7 +3,7 @@
 @media screen {
   .app-shell { background: var(--paper); min-height: 100dvh; }
   .app-header { gap: 10px; }
-  .context-back { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; max-width: 65%; color: var(--rose-press); font-size: .875rem; font-weight: 600; text-decoration: none; }
+  .context-back { display: inline-flex; align-items: center; gap: 5px; min-width: 44px; min-height: 44px; max-width: 65%; color: var(--rose-press); font-size: .875rem; font-weight: 600; text-decoration: none; }
   .context-back .icon { width: 18px; height: 18px; flex: none; transform: rotate(180deg); }
   .context-back span { overflow-wrap: anywhere; }
   .app-header:has(.context-back) + .pregnancy-tool-intro > a:first-child { display: none; }

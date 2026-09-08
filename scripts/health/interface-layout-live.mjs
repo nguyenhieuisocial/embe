@@ -8,12 +8,19 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('C:/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const origin = 'https://embe.hieu.asia';
 const baseline = process.argv.includes('--baseline');
+const allStatic = process.argv.includes('--all-static');
 const output = resolve('data/interface-verification');
 const version = process.env.EMBE_VERIFY_VERSION;
 const password = process.env.EMBE_VERIFY_PASSWORD;
-const routes = process.argv.includes('--care-only') ? ['/me-bau/suc-khoe-iphone'] : ['/', '/me-bau', '/nha-minh', '/ky-niem', '/me-bau/bua-an', '/me-bau/ho-so', '/me-bau/suc-khoe-iphone', '/ke-hoach', '/nhat-ky', '/cai-dat', '/studio', '/studio/nghien-cuu'];
+const coreRoutes = ['/', '/me-bau', '/nha-minh', '/ky-niem', '/me-bau/bua-an', '/me-bau/ho-so', '/me-bau/suc-khoe-iphone', '/ke-hoach', '/nhat-ky', '/cai-dat', '/studio', '/studio/nghien-cuu'];
+const routes = process.argv.includes('--care-only') ? ['/me-bau/suc-khoe-iphone'] : allStatic ? [...coreRoutes,
+  '/me-bau/suc-khoe', '/me-bau/tam-trang', '/me-bau/trieu-chung', '/me-bau/tuan-nay', '/me-bau/thai-may', '/me-bau/thu-gian', '/me-bau/meo-dan-gian',
+  '/chuan-bi-sinh', '/me', '/be', '/be/ho-so', '/be/phat-trien', '/ky-niem/thai-ky', '/ghi-lai', '/nha-minh/ho-so', '/lich', '/do-dung', '/ngan-sach',
+  '/tro-ly', '/so-me-va-be', '/tim-kiem', '/huong-dan', '/studio/ban-lam-viec', '/studio/soan', '/studio/duyet-dang', '/studio/kham-pha',
+] : coreRoutes;
 const viewports = [[375, 667], [393, 852], [430, 932], [412, 915], [768, 1024], [1280, 900]];
 const hubs = new Map([['/', 'home'], ['/me-bau', 'mother'], ['/nha-minh', 'family'], ['/ky-niem', 'memories']]);
+const rootsWithoutBackLink = new Set([...hubs.keys(), '/me', '/be']);
 const selectors = {
   '/': '.daily-shortcuts a',
   '/me-bau': '.maternal-shortcuts a',
@@ -38,6 +45,9 @@ async function settleLayout(page) {
 
 async function ready(page) {
   await page.locator('.family-nav').waitFor({ state: 'visible' });
+  // Streamed routes can briefly contain both the loading header and the real
+  // header. Wait for the actual page, not merely its persistent app shell.
+  await page.locator('main[aria-busy="true"][aria-label="Đang mở nội dung"]').waitFor({ state: 'hidden' });
   // Server HTML may appear before client-side navigation ownership settles.
   await page.waitForFunction(() => document.querySelectorAll('.family-nav a[aria-current="page"]').length === 1);
   await settleLayout(page);
@@ -46,7 +56,7 @@ async function ready(page) {
 async function layoutAt(page, path, width, height) {
   await page.setViewportSize({ width, height });
   await settleLayout(page);
-  const selector = baseline || path === '/ky-niem' ? '' : selectors[path] ?? '.context-back';
+  const selector = baseline || (rootsWithoutBackLink.has(path) && !selectors[path]) ? '' : selectors[path] ?? '.context-back';
   const measurement = await page.evaluate(targetSelector => {
     const visible = node => {
       const r = node.getBoundingClientRect(), style = getComputedStyle(node);
@@ -223,9 +233,9 @@ async function run() {
           if (await page.locator('#vi-chat-thuoc').isVisible()) fail('medication_panel_not_hidden');
           result.carePanels = true;
         }
-        if (!hubs.has(path)) {
+        if (!rootsWithoutBackLink.has(path)) {
           phase = `back_link:${path}`;
-          await page.locator('.context-back').waitFor({ state: 'visible' });
+          await page.locator('.context-back:visible').waitFor({ state: 'visible' });
         }
       }
       phase = `layout:${path}`;
@@ -261,7 +271,7 @@ try {
 } finally {
   if (result.failures.length && result.status === 'passed') { result.status = 'failed'; process.exitCode = 1; }
   await mkdir(output, { recursive: true });
-  await writeFile(resolve(output, `${result.mode}.json`), JSON.stringify(result, null, 2));
+  await writeFile(resolve(output, `${result.mode}${allStatic ? '-all-static' : ''}.json`), JSON.stringify(result, null, 2));
 }
 console.log(JSON.stringify({
   mode: result.mode, version: result.version, status: result.status, browser: result.browser,
