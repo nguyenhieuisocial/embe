@@ -37,10 +37,14 @@ it('queues multiple files and additional camera shots while the first upload is 
   fireEvent.change(screen.getByLabelText('Chụp giấy tờ khám'), { target: { files: [third] } });
   expect(mock.upload).toHaveBeenCalledTimes(1);
   expect(screen.getAllByText('Chờ tải…')).toHaveLength(2);
+  expect(screen.queryByText(/Đã thêm thành công/)).not.toBeInTheDocument();
   finish();
   await waitFor(() => expect(saved).toHaveBeenCalledTimes(3));
   expect(mock.upload.mock.calls.map(call => call[1])).toEqual([first, second, third]);
   expect(screen.getAllByRole('link', { name: 'Xem bản đọc' })).toHaveLength(3);
+  expect(screen.getByRole('status')).toHaveTextContent('Đã thêm thành công 3/3 giấy tờ');
+  expect(screen.getByRole('status')).toHaveTextContent('Vừa lưu: three.jpg');
+  expect(screen.getByRole('status')).toHaveTextContent('dữ liệu nhận diện sẽ cập nhật sau');
 });
 
 describe('safe medical import proposal', () => {
@@ -193,7 +197,10 @@ it('offers camera and multi-file upload without a manual record form, retrying w
   expect(screen.getByLabelText('Chụp giấy tờ khám')).toHaveAttribute('capture', 'environment');
   const file = new File(['synthetic'], 'sample.jpg', { type: 'image/jpeg' });
   fireEvent.change(screen.getByLabelText('Chọn giấy tờ khám'), { target: { files: [file] } });
-  fireEvent.click(await screen.findByRole('button', { name: 'Thử lại' }));
+  const retry = await screen.findByRole('button', { name: 'Thử lại' });
+  expect(screen.getByRole('status')).toHaveTextContent('1 file chưa lưu');
+  expect(screen.queryByText(/Đã thêm thành công/)).not.toBeInTheDocument();
+  fireEvent.click(retry);
   await screen.findByRole('link', { name: 'Xem bản đọc' });
   await waitFor(() => expect(mock.upload).toHaveBeenCalledTimes(2));
   expect(mock.upload.mock.calls[0]).toEqual(mock.upload.mock.calls[1]);

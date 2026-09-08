@@ -9,10 +9,14 @@ type Entry = { id: string; documentId: string; file: File; status: 'waiting' | '
 export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [notice, setNotice] = useState('');
+  const [lastSavedName, setLastSavedName] = useState('');
   const lock = useRef(false);
   const queue = useRef<Entry[]>([]);
   const camera = useRef<HTMLInputElement>(null); const picker = useRef<HTMLInputElement>(null);
   const busy = entries.some(e => e.status === 'uploading' || e.status === 'waiting');
+  const saved = entries.filter(e => e.status === 'saved');
+  const failed = entries.filter(e => e.status === 'failed').length;
+  const remaining = entries.length - saved.length - failed;
   useEffect(() => {
     if (!busy) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
@@ -31,7 +35,7 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
           body: JSON.stringify({ id: entry.id, title: `Chờ đọc · ${entry.file.name || 'Ảnh chụp'}`.slice(0, 100) }), signal: AbortSignal.timeout(20000) });
         if (!created.ok) throw new Error('intake_failed');
         await uploadDocument(entry.id, entry.file, entry.documentId);
-        mark('saved'); clearPrivateGetCache('/api/pregnancy/records'); onSaved();
+        mark('saved'); setLastSavedName(entry.file.name || 'Ảnh chụp'); clearPrivateGetCache('/api/pregnancy/records'); onSaved();
       } catch { mark('failed'); }
     }
     lock.current = false;
@@ -56,12 +60,18 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
       <button type="button" onClick={() => camera.current?.click()}>{entries.length ? 'Chụp thêm trang' : 'Chụp giấy tờ'}</button>
       <button type="button" onClick={() => picker.current?.click()}>Chọn ảnh / PDF</button>
     </div>
+    {entries.length ? <div className="medical-intake-result" role="status" aria-live="polite" aria-atomic="true">
+      <strong>{saved.length ? `Đã thêm thành công ${saved.length}/${entries.length} giấy tờ` : 'Chưa có giấy tờ nào lưu thành công'}</strong>
+      {saved.length ? <span>Vừa lưu: {lastSavedName}. Bản gốc đã được lưu; dữ liệu nhận diện sẽ cập nhật sau.</span> : null}
+      {remaining ? <span>Còn {remaining} file đang tải/chờ. Giữ trang mở đến khi xong.</span> : null}
+      {failed ? <span>{failed} file chưa lưu — bấm Thử lại ở từng file bên dưới.</span> : null}
+    </div> : null}
     <input ref={camera} hidden type="file" accept="image/*" capture="environment" aria-label="Chụp giấy tờ khám" onChange={e => { select(e.target.files); e.target.value = ''; }} />
     <input ref={picker} hidden type="file" accept="image/*,application/pdf" multiple aria-label="Chọn giấy tờ khám" onChange={e => { select(e.target.files); e.target.value = ''; }} />
     <small>Chọn nhiều ảnh/PDF cùng lúc, hoặc chụp từng trang rồi bấm Chụp thêm trang; có thể thêm khi file trước đang tải. Tối đa 6 file đang tải/chờ, 15 MB/file; PDF tối đa 6 trang. Mỗi file được lưu riêng, không tự ghép thành một PDF.</small>
     {notice ? <p role="alert">{notice}</p> : null}
     {entries.length ? <ul aria-live="polite">{entries.map((entry, i) => <li key={entry.id}>
-      <span><b>{i + 1}. {entry.file.name || 'Ảnh chụp'}</b><small>{entry.status === 'saved' ? 'Đã lưu riêng tư · tự đọc trên máy tại nhà' : entry.status === 'failed' ? 'Tải chưa xong · giữ trang này để thử lại' : entry.status === 'uploading' ? 'Đang tải và lưu bản gốc…' : 'Chờ tải…'}</small></span>
+      <span><b>{i + 1}. {entry.file.name || 'Ảnh chụp'}</b><small>{entry.status === 'saved' ? 'Đã thêm thành công · bản gốc đã lưu' : entry.status === 'failed' ? 'Tải chưa xong · giữ trang này để thử lại' : entry.status === 'uploading' ? 'Đang tải và lưu bản gốc…' : 'Chờ tải…'}</small></span>
       {entry.status === 'saved' ? <Link href={`/me-bau/ho-so/tai-lieu/${entry.documentId}`} prefetch={false}>Xem bản đọc</Link> : entry.status === 'failed' ? <button type="button" disabled={busy} onClick={() => void run([entry])}>Thử lại</button> : null}
     </li>)}</ul> : null}
   </section>;
