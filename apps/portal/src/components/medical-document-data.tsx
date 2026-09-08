@@ -55,6 +55,7 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
           {rows.map(row => <div className="medical-data-row" key={`${row.page}:${row.sourceGroup}:${row.index}`}>
             <div><b>{row.label || 'Mục chưa có tên'}</b><p>{row.value || 'Chưa đọc rõ'}</p>
               {row.details.map((text, i) => <small key={i}>{text}</small>)}
+              {row.duplicateCount ? <small>Gộp hiển thị {row.duplicateCount} dòng giống nhau trên trang {row.page}; toàn văn giữ nguyên.</small> : null}
               {row.unclear ? <small className="medical-data-warning">Cần đối chiếu bản gốc</small> : null}
               {row.evidence ? <details className="medical-data-evidence"><summary>Chữ đối chiếu</summary><blockquote>{row.evidence}</blockquote></details> : null}
             </div>

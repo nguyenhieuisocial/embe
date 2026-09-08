@@ -45,7 +45,20 @@ it('does not mislabel headers and footer text as laboratory measurements', () =>
   const a = structuredClone(analysis);
   a.pages[0].fields.push(field('Chân trang', 'Không dùng để điều trị'), field('Tiêu đề cột', 'Tên xét nghiệm | Kết quả'));
   const groups = groupDocumentData(a);
-  expect(groups.other.map(row => row.label)).toEqual(['Chân trang', 'Tiêu đề cột']);
+  expect(groups.other.map(row => row.label)).toEqual(['Thông tin chưa biết', 'Chân trang', 'Tiêu đề cột']);
+});
+it('collapses exact fields but preserves differing context, pages, uncertainty and financial lines', () => {
+  const a = structuredClone(analysis);
+  const glucose = structuredClone(a.pages[0].fields[4]);
+  a.pages[0].fields.push(glucose, { ...glucose, context: 'Sau ăn' }, { ...glucose, unclear: false });
+  a.pages[0].fields.push(structuredClone(a.pages[0].fields[7]));
+  a.pages.push({ ...structuredClone(a.pages[0]), page: 2, fields: [glucose], medicines: [], charges: [] });
+  const before = structuredClone(a);
+  const groups = groupDocumentData(a);
+  expect(groups.results.find(r => r.page === 1 && r.details.includes('Thời điểm / ngữ cảnh: Lúc đói') && r.unclear)?.duplicateCount).toBe(2);
+  expect(groups.results.filter(r => r.label === 'Glucose')).toHaveLength(5);
+  expect(groups.charges.filter(r => r.label === 'Đã thanh toán')).toHaveLength(2);
+  expect(a).toEqual(before);
 });
 it('fetches on demand, searches without accents, preserves uncertainty and never renders source HTML', async () => {
   const fetcher = vi.fn(async () => Response.json({ documentId: id, recordId: id, importedAt: '2026-09-08T00:00:00Z', analysis }));

@@ -9,6 +9,7 @@ export const DOCUMENT_DATA_GROUPS = {
 export type DocumentDataRow = {
   page: number; sourceGroup: 'fields' | 'medicines' | 'charges'; index: number;
   label: string; value: string; details: string[]; evidence: string; unclear: boolean;
+  duplicateCount?: number;
 };
 export type ImportedDocumentData = {
   documentId: string; recordId: string; importedAt: string; analysis: DocumentAnalysis;
@@ -27,9 +28,10 @@ export function groupDocumentData(analysis: DocumentAnalysis) {
       const administrative = ['bac si', 'bac si kham', 'bac si dieu tri', 'doctor', 'clinician', 'gioi tinh', 'dia chi', 'so dien thoai', 'ma ho so', 'so benh an', 'so the bhyt', 'so can cuoc'].includes(label);
       const financial = ['tong tien', 'tong cong', 'thanh tien', 'da thanh toan', 'so tien da thu', 'con no', 'con lai', 'tam ung', 'mien giam', 'bao hiem thanh toan', 'so phieu thu', 'so hoa don', 'invoice total', 'amount paid', 'balance due'].includes(label)
         || /^(?:VND|VNĐ|đ|USD|EUR)$/i.test(row.unit.trim());
+      const metric = /^(?:crl|nt|bpd|hc|ac|fl|efw|afi|fhr|hgb|hb|hct|plt|rbc|wbc|glucose|hba1c|tsh|ft4|ast|alt|ferritin|bmi|can nang|chieu cao|huyet ap|nhip tim|tim thai|tuoi thai|tuan thai)(?:\s|$)/.test(label);
       const key = freeText ? 'other' : financial ? 'charges' : administrative || category === 'patient' || category === 'patient-id' || category === 'facility' ? 'identity'
         : category === 'date' ? 'visits' : category === 'conclusion' || category === 'instructions' ? 'findings'
-          : row.unit || row.reference || row.context || ['laboratory', 'ultrasound'].includes(page.kind) ? 'results' : 'other';
+          : row.unit || row.reference || metric ? 'results' : 'other';
       groups[key].push({ page: page.page, sourceGroup: 'fields', index, label: row.label, value: withPrintedUnit(row.value, row.unit),
         details: [row.context && `Thời điểm / ngữ cảnh: ${row.context}`, row.reference && `Tham chiếu in trên phiếu: ${row.reference}`,
           row.pdfValue && row.pdfValue !== row.value && `Chữ PDF khác bản đã lưu: ${row.pdfValue}`].filter(Boolean) as string[], evidence: row.evidence, unclear: row.unclear });
@@ -41,6 +43,18 @@ export function groupDocumentData(analysis: DocumentAnalysis) {
     page.charges.forEach((row, index) => groups.charges.push({ page: page.page, sourceGroup: 'charges', index,
       label: row.label, value: withPrintedUnit(row.amount, row.currency), evidence: row.evidence, unclear: row.unclear,
       details: [row.quantity && `Số lượng: ${row.quantity}`, row.unitPrice && `Đơn giá: ${row.unitPrice}`].filter(Boolean) as string[] }));
+  }
+  // Collapse only identical source fields on the SAME page. Separate visits/pages,
+  // medicine lines and charges may legitimately repeat and must never be merged.
+  for (const [group, rows] of Object.entries(groups)) {
+    const seen = new Map<string, DocumentDataRow>();
+    groups[group as keyof typeof groups] = rows.filter(row => {
+      if (row.sourceGroup !== 'fields' || group === 'charges') return true;
+      const signature = JSON.stringify([row.page, row.label, row.value, row.details, row.evidence, row.unclear]);
+      const prior = seen.get(signature);
+      if (prior) { prior.duplicateCount = (prior.duplicateCount ?? 1) + 1; return false; }
+      seen.set(signature, row); return true;
+    });
   }
   return groups;
 }
