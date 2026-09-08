@@ -2,8 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StudioVoice } from '../lib/studio-project';
 
-type SampleVoice = Exclude<StudioVoice['id'],'piper'|'auto-south'>;
-const names:Record<SampleVoice,string> = {'thuc-doan-south-v3':'Thục Đoan','thuy-dung-south-v3':'Thùy Dung','thuc-doan-south-v2':'Thục Đoan','my-duyen-south-v2':'Mỹ Duyên','kim-thanh-south-v2':'Kim Thanh','thuc-doan-south-v1':'Thục Đoan (bản trước)','my-duyen-south-v1':'Mỹ Duyên (bản trước)','ai-han-south':'Ái Hân'};
+type SampleVoice = Exclude<StudioVoice['id'],'piper'|'auto-south'> | 'thuc-doan-maternal-preview';
+const names:Record<SampleVoice,string> = {'thuc-doan-maternal-preview':'Thục Đoan · nhịp nhẹ','thuc-doan-south-v3':'Thục Đoan','thuy-dung-south-v3':'Thùy Dung','thuc-doan-south-v2':'Thục Đoan','my-duyen-south-v2':'Mỹ Duyên','kim-thanh-south-v2':'Kim Thanh','thuc-doan-south-v1':'Thục Đoan (bản trước)','my-duyen-south-v1':'Mỹ Duyên (bản trước)','ai-han-south':'Ái Hân'};
 function SamplePlayer({voice,speed}:{voice:SampleVoice;speed:StudioVoice['speed']}) {
   const [open,setOpen]=useState(false),[failed,setFailed]=useState(false);
   const audio=useRef<HTMLAudioElement>(null);
@@ -28,11 +28,13 @@ export function SouthernVoiceSample({voice,speed=1}:{voice?:SampleVoice;speed?:S
   const selected=voice??comparison;
   return <div>
     {!voice&&<label className="studio-filter">Giọng nghe thử<select value={comparison} onChange={e=>setComparison(e.target.value as SampleVoice)}>
+      <optgroup label="Mẫu nhịp đọc mới"><option value="thuc-doan-maternal-preview">Thục Đoan · nhịp nhẹ (nghe thử)</option></optgroup>
       <optgroup label="Bản nâng cấp"><option value="thuc-doan-south-v3">Thục Đoan · kể chuyện</option><option value="thuy-dung-south-v3">Thùy Dung · thuyết minh</option></optgroup>
       <optgroup label="Nhịp đọc trước"><option value="thuc-doan-south-v2">Thục Đoan</option><option value="my-duyen-south-v2">Mỹ Duyên</option><option value="kim-thanh-south-v2">Kim Thanh</option></optgroup>
       <optgroup label="So sánh bản trước"><option value="thuc-doan-south-v1">Thục Đoan (bản trước)</option><option value="my-duyen-south-v1">Mỹ Duyên (bản trước)</option><option value="ai-han-south">Ái Hân</option></optgroup>
     </select></label>}
     <SamplePlayer key={selected} voice={selected} speed={speed}/>
+    {selected==='thuc-doan-maternal-preview'&&<p className="discovery-help">Nghỉ giữa hai ý, tốc độ dựng 0,95×. Mẫu so sánh; chưa thay giọng mặc định.</p>}
     {!voice&&<p className="discovery-help">Cùng một đoạn để so sánh giọng mới và bản trước. Không tự phát âm thanh.</p>}
   </div>;
 }

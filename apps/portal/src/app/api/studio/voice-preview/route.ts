@@ -2,6 +2,7 @@ import { memberAuthorization } from '../../../../lib/family-members-server';
 import { serveStudioAsset } from '../../../../lib/studio-media-server';
 export const runtime='nodejs';
 const samples = {
+  'thuc-doan-maternal-preview': {path:'editorial/ca526d4912a5a3ab1d6b391c0b540427d39a0ae6aba19570d2b5cda82693f5ca.mp4',mime:'video/mp4',size:142037,checksum:'ca526d4912a5a3ab1d6b391c0b540427d39a0ae6aba19570d2b5cda82693f5ca'},
   'thuc-doan-south-v3': {path:'editorial/63fb6cc3900f5c03eaebd405297d54155d7634ee836bd4ca078f66a513ddc2d1.mp4',mime:'video/mp4',size:132484,checksum:'63fb6cc3900f5c03eaebd405297d54155d7634ee836bd4ca078f66a513ddc2d1'},
   'thuy-dung-south-v3': {path:'editorial/ef8f95f8025c3856cab8c27008aedbdac8b5d2d2ce4900cd218f8511aeda4d00.mp4',mime:'video/mp4',size:116901,checksum:'ef8f95f8025c3856cab8c27008aedbdac8b5d2d2ce4900cd218f8511aeda4d00'},
   'thuc-doan-south-v2': {path:'editorial/54d98d16defeb861107c690439f72cdbb498e4f520fab20a3bfaf861069c509b.mp4',mime:'video/mp4',size:137561,checksum:'54d98d16defeb861107c690439f72cdbb498e4f520fab20a3bfaf861069c509b'},

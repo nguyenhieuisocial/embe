@@ -53,3 +53,12 @@ it('preview tempo preserves pitch, player and position when changing speed',()=>
   expect(audio.preservesPitch).toBe(true);expect(audio.autoplay).toBe(false);
   expect(audio.pause).toHaveBeenCalledTimes(pauses);expect(audio.load).toHaveBeenCalledTimes(loads);
 });
+it('offers the maternal preview without adding an unsupported project voice',async()=>{
+  render(<SouthernVoiceSample/>);
+  fireEvent.change(screen.getByLabelText('Giọng nghe thử'),{target:{value:'thuc-doan-maternal-preview'}});
+  fireEvent.click(screen.getByRole('button',{name:'Nghe mẫu Thục Đoan · nhịp nhẹ'}));
+  expect(document.querySelector('audio')?.getAttribute('src')).toContain('thuc-doan-maternal-preview');
+  const response=await GET(new Request('https://embe.hieu.asia/api/studio/voice-preview?voice=thuc-doan-maternal-preview'));
+  expect(response.status).toBe(200);
+  expect(()=>studioDocument({...templateDocument(),voice:{id:'thuc-doan-maternal-preview',speed:1}})).toThrow();
+});
