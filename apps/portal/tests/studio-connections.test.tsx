@@ -44,3 +44,20 @@ it('stays collapsed and only checks on request, with no publish action',async()=
   await waitFor(()=>expect(screen.getByRole('status').textContent).toContain('Chưa cấu hình Postiz'));
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
+it('checks automatically once when opened and identifies an expired EmBe session',async()=>{
+  fetcher.mockResolvedValue(new Response('',{status:401}));
+  render(<StudioConnectionsPanel/>);
+  const disclosure=document.querySelector('details')!;
+  disclosure.open=true;fireEvent(disclosure,new Event('toggle'));
+  await waitFor(()=>expect(screen.getByRole('status').textContent).toContain('Phiên EmBe đã hết hạn'));
+  disclosure.open=false;fireEvent(disclosure,new Event('toggle'));
+  disclosure.open=true;fireEvent(disclosure,new Event('toggle'));
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
+it('aborts a pending check on unmount',()=>{
+  fetcher.mockReturnValue(new Promise(()=>{}));
+  const {unmount}=render(<StudioConnectionsPanel/>);
+  fireEvent.click(screen.getByRole('button',{name:'Kiểm tra kết nối'}));
+  const signal=fetcher.mock.calls[0][1].signal as AbortSignal;
+  expect(signal.aborted).toBe(false);unmount();expect(signal.aborted).toBe(true);
+});

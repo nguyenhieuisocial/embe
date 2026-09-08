@@ -18,7 +18,6 @@ try{
     await page.setViewportSize({width,height:852});
     const section=page.locator('details').filter({has:page.locator('summary',{hasText:'Tài khoản mạng xã hội'})});
     if(!await section.evaluate(el=>el.open))await section.locator('summary').click();
-    await section.getByRole('button',{name:'Kiểm tra kết nối',exact:true}).click();
     await section.getByRole('status').filter({hasText:'Chưa cấu hình Postiz'}).waitFor();
     if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw new Error('overflow_'+width);
     results.push({width,unconfiguredShown:true});
