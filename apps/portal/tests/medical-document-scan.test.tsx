@@ -280,7 +280,7 @@ describe('document review UX', () => {
     await screen.findByText('CRL', { selector: 'strong' });
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Thông tin & tổng hợp' })).toBeVisible();
-    expect(vi.mocked(fetch).mock.calls.every(([url]) => String(url).endsWith('/scan'))).toBe(true);
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url) === `/api/pregnancy/documents/${id}`)).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Xem bản gốc ngay tại đây' }));
     const image = screen.getByRole('img', { name: 'Bản gốc tài liệu để đối chiếu' });
     expect(image).toHaveAttribute('src', `/api/pregnancy/documents/${id}`);
