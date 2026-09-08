@@ -88,6 +88,14 @@ Lượt xác minh cuối trên `https://embe.hieu.asia` phiên bản `61ed55218c
 
 Worker: `services/media-ingest/medical_document_worker.py`; cài dependencies bằng `requirements-medical.txt`, đăng ký bằng `scripts/install-medical-document-worker.ps1`. Live health cục bộ: `data/status/medical-document-worker.json`. Bộ mẫu và kết quả ở `data/medical-recognition-verification`; không đưa file gia đình vào Git.
 
+## Chữ nguồn độc lập — v5.3 (08/09/2026)
+
+- Cài thêm `npm ci --ignore-scripts --prefix services/media-ingest` trên máy worker (Node 16+; runtime hiện dùng Node 22). [Tesseract.js](https://github.com/naptha/tesseract.js) 7.0.0 và model tiếng Việt/Anh được khóa phiên bản trong package-lock; không tải model từ CDN khi đọc hồ sơ.
+- Ảnh trang chuẩn hóa truyền qua stdin sang tiến trình Node ẩn, tối đa 25 giây/trang. Không truyền Supabase keys, không ghi ảnh/chữ OCR vào tệp tạm. Python quản lý thư mục model tạm và dọn cả khi Node bị timeout. Không cần Docker hoặc cài Tesseract hệ thống.
+- Giữ `ocrText`/`ocrEngine` riêng với `pdfText`, tối đa 48.000 codepoints/nguồn/trang và 1,25 MB/bản đọc. Bộ đọc chữ có thể sai dấu, số và thứ tự; không gán nguồn OCR vào `pdfValue` hay tự xác nhận liều thuốc. Khi AI trả cấu trúc hỏng sau lượt đọc chi tiết, vẫn lưu nguồn đã lấy và báo chưa phân loại; nếu AI mất kết nối, giữ cơ chế thử lại hiện có.
+- “Chữ đọc từ ảnh” và “Chữ từ PDF” mặc định thu gọn, có tìm không dấu theo từng trang. Nút chép nội dung mang theo chữ nguồn và cảnh báo. Trigger hiện có bảo vệ nguồn khi sửa/lưu; không thêm quyền đọc công khai hoặc tự ghi vào dữ liệu sức khỏe.
+- Benchmark dùng `scripts/health/medical-recognition-quality-benchmark.py --ocr`; sáu loại mẫu giả lập đều giữ nguồn và đúng 16 nhóm giá trị kiểm tra. Không suy kết quả này thành độ chính xác của hồ sơ thật. Bản đọc cũ không bị tự động xử lý lại hoặc sửa đổi.
+
 ## Nâng cấp đọc chi tiết và đối chiếu — 07/09/2026
 
 - Ảnh JPEG/PNG/WebP hợp lệ dưới 15 MB và tối đa 16 triệu điểm ảnh được giữ nguyên khi tải, tránh nén lại mất chữ nhỏ. Ảnh khác vẫn qua luồng chuyển đổi giới hạn 3200px; PDF không bị đổi. Worker không thay file lưu.

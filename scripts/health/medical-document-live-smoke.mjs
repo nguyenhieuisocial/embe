@@ -70,6 +70,8 @@ try {
   if (scan?.status !== 'review' || scan.analysis?.pages[0]?.kind !== (ruledPdf ? 'laboratory' : 'receipt')) throw new Error('recognition_incomplete');
   result.secondsUntilReview = (Date.now() - started) / 1000;
   result.pageCount = scan.analysis.pages.length;
+  result.independentOcrEveryPage = scan.analysis.pages.every(page => page.ocrText?.length > 80 && page.ocrEngine === 'tesseract-vie-eng');
+  if (!result.independentOcrEveryPage) throw new Error('independent_ocr_source_missing');
   const receipt = scan.analysis.pages[ruledPdf ? 2 : 0];
   result.charges = receipt.charges.length;
   result.receiptLineAmounts = (ruledPdf ? ['250.000', '350.000', '50.000', '550.000'] : ['251.000', '254.500', '279.000', '289.500', '3.200.000']).every(amount => receipt.charges.some(row => row.amount.includes(amount)));
@@ -136,6 +138,20 @@ try {
   if (await activePage.getByLabel('Tiêu đề', { exact: true }).inputValue() !== 'Phiếu thu mẫu đã đối chiếu') throw new Error('edit_not_persisted');
   if (!(await page.getByText('Khoản mẫu chỉnh tay', { exact: true }).isVisible())) throw new Error('added_row_not_persisted');
   result.editAddConfirmReload = true;
+  const reloaded = await (await context.request.get(`${origin}${endpoint}`)).json();
+  result.independentSourcePersists = reloaded.analysis.pages.every((value, index) => value.ocrText === scan.analysis.pages[index].ocrText
+    && value.ocrEngine === scan.analysis.pages[index].ocrEngine && value.pdfText === scan.analysis.pages[index].pdfText);
+  if (!result.independentSourcePersists) throw new Error('source_changed_on_confirmation');
+  const sourcePage = ruledPdf ? 3 : 1;
+  await activePage.getByText(`Chữ đọc từ ảnh · trang ${sourcePage}`, { exact: true }).click();
+  const search = activePage.getByRole('searchbox', { name: `Tìm trong chữ đọc từ ảnh trang ${sourcePage}` });
+  await search.fill(ruledPdf ? '250.000' : '251.000');
+  if (!(await activePage.getByLabel(`Lớp chữ OCR trang ${sourcePage}`, { exact: true }).textContent()).includes(ruledPdf ? '250.000' : '251.000')) throw new Error('ocr_source_search');
+  await search.fill('KHONG_CO_TRONG_TAI_LIEU');
+  await activePage.getByText('Không tìm thấy trong lớp chữ này. Kiểm tra thêm bản gốc.', { exact: true }).waitFor();
+  await search.fill('');
+  if (await activePage.getByLabel(`Lớp chữ OCR trang ${sourcePage}`, { exact: true }).textContent() !== scan.analysis.pages[sourcePage - 1].ocrText) throw new Error('ocr_source_not_fully_visible');
+  result.sourceSearchAndFullText = true;
   const stale = await jsonRequest(endpoint, 'PATCH', { revision: scan.revision, analysis: scan.analysis, confirmed: true });
   if (stale.status() !== 409) throw new Error('stale_revision_not_blocked');
   result.staleRevisionBlocked = true;
@@ -157,6 +173,8 @@ try {
     result.widths.push(width);
   }
   await page.setViewportSize({ width: 393, height: 852 });
+  await search.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(output, 'live-ocr-source-iphone.png') });
   await page.getByRole('heading', { name: 'Đọc & đối chiếu', exact: true }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: resolve(output, ruledPdf ? 'live-pdf-overview-iphone.png' : 'live-review-iphone.png'), fullPage: true });

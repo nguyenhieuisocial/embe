@@ -1,0 +1,11 @@
+{
+  "name": "@embe/document-ocr",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test tests/document-ocr.test.mjs" },
+  "dependencies": {
+    "tesseract.js": "7.0.0",
+    "@tesseract.js-data/vie": "1.0.0",
+    "@tesseract.js-data/eng": "1.0.0"
+  }
+}

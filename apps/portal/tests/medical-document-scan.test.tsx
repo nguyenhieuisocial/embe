@@ -22,6 +22,57 @@ afterEach(() => {
 });
 
 describe('document recognition contract', () => {
+  it('accepts independent local OCR alongside PDF source and excludes both from editable data', () => {
+    const a = structuredClone(analysis);
+    a.pages[0].pdfText = 'Nguồn PDF không thay đổi';
+    a.pages[0].ocrText = 'Chữ OCR từ ảnh\nKhông phải dữ liệu đã xác nhận';
+    a.pages[0].ocrEngine = 'tesseract-vie-eng';
+    const original = structuredClone(a);
+    expect(validDocumentAnalysis(a)).toBe(true);
+    expect(editableDocumentAnalysis(a)).toEqual(analysis);
+    expect(a).toEqual(original);
+    for (const confirmed of [false, true]) {
+      const copied = documentAnalysisText(a, confirmed);
+      expect(copied).toContain('Nguồn PDF không thay đổi');
+      expect(copied).toContain('OCR cục bộ (tesseract-vie-eng)');
+      expect(copied).toContain('có thể sai chữ, số hoặc thứ tự; chưa được xác nhận');
+      expect(copied).toContain(a.pages[0].ocrText);
+    }
+  });
+  it.each([
+    { ocrText: 'Chữ' }, { ocrEngine: 'tesseract-vie-eng' },
+    { ocrText: 'Chữ', ocrEngine: 'model-generated' },
+    { ocrText: null, ocrEngine: 'tesseract-vie-eng' },
+    { ocrText: ['Chữ'], ocrEngine: 'tesseract-vie-eng' },
+    { ocrText: 'Chữ', ocrEngine: null },
+    { ocrText: 'Chữ', ocrEngine: 'tesseract-vie-eng', ocrConfidence: 1 },
+    { ocrText: 'Chữ\u0001ẩn', ocrEngine: 'tesseract-vie-eng' }
+  ])('rejects unpaired, untrusted or malformed OCR metadata (%#)', extra => {
+    expect(validDocumentAnalysis({ ...analysis, pages: [{ ...analysis.pages[0], ...extra }] })).toBe(false);
+  });
+  it('bounds OCR by Unicode codepoints and permits empty paired output without claiming recognition', () => {
+    const a = structuredClone(analysis);
+    a.pages[0].ocrEngine = 'tesseract-vie-eng';
+    a.pages[0].ocrText = '';
+    expect(validDocumentAnalysis(a)).toBe(true);
+    a.pages[0].ocrText = '𠀀'.repeat(48000);
+    expect(validDocumentAnalysis(a)).toBe(true);
+    a.pages[0].ocrText += 'a';
+    expect(validDocumentAnalysis(a)).toBe(false);
+  });
+  it('keeps the 1.25 MB total source cap and the independent editable budget', () => {
+    const a: DocumentAnalysis = { version: 1, pages: Array.from({ length: 6 }, (_, index) => ({
+      ...structuredClone(analysis.pages[0]), page: index + 1,
+      pdfText: 'x'.repeat(48000), ocrText: 'x'.repeat(48000), ocrEngine: 'tesseract-vie-eng'
+    })) };
+    expect(validDocumentAnalysis(a)).toBe(true);
+    a.pages.forEach(page => { page.pdfText = 'ữ'.repeat(48000); page.ocrText = 'ữ'.repeat(48000); });
+    expect(new TextEncoder().encode(JSON.stringify(a)).length).toBeGreaterThan(1_250_000);
+    expect(validDocumentAnalysis(a)).toBe(false);
+    a.pages = [a.pages[0]];
+    a.pages[0].fields = Array.from({ length: 40 }, () => ({ ...analysis.pages[0].fields[0], value: 'x'.repeat(1600) }));
+    expect(validDocumentAnalysis(a)).toBe(false);
+  });
   it('accepts bounded original PDF text without expanding editable analysis', () => {
     const a = structuredClone(analysis);
     a.pages[0].pdfText = 'Nội dung chưa phân loại\n' + 'ữ'.repeat(47000);
@@ -144,7 +195,7 @@ describe('document review UX', () => {
     vi.stubGlobal('fetch', fetcher);
     render(<MedicalDocumentReview documentId={id} />);
     fireEvent.click(await screen.findByText('Chữ từ PDF · trang 1'));
-    expect(screen.getByLabelText('Lớp chữ PDF trang 1')).toHaveTextContent('<script>sourceNotCode()</script>');
+    expect(await screen.findByLabelText('Lớp chữ PDF trang 1')).toHaveTextContent('<script>sourceNotCode()</script>');
     expect(screen.getByLabelText('Lớp chữ PDF trang 1').querySelector('script')).toBeNull();
     fireEvent.click(screen.getByLabelText('Tôi đã đối chiếu các trang với bản gốc'));
     fireEvent.click(screen.getByRole('button', { name: 'Lưu bản đối chiếu' }));

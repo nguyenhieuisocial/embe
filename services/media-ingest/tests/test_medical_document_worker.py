@@ -10,12 +10,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from medical_document_worker import MedicalDocumentWorker, ScanFailure, document_pages, image_bytes, validate_page, page_views, check_evidence, merge_page_readings, needs_detail_read, attach_pdf_source
 from meal_analysis_worker import Config, HttpResponse
 from medical_document_text import pdf_field_candidates, reconcile_pdf_fields, pdf_table_candidates, reconcile_pdf_tables
+from medical_document_ocr import OcrReading
 
 
 def sample_page():
     return {'kind': 'ultrasound', 'title': 'Phiếu siêu âm mẫu', 'fields': [
         {'label': 'CRL', 'value': '45,6', 'unit': 'mm', 'reference': '', 'evidence': 'CRL: 45,6 mm', 'unclear': False}],
         'medicines': [], 'charges': [], 'warnings': []}
+
+
+def test_invalid_ai_keeps_ocr_as_source_only_without_inventing_fields():
+    def transport(*args):
+        return HttpResponse(200, {}, b'{"message":{"content":"invalid response"}}')
+    worker = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), transport)
+    result = worker.analyze_page(image_bytes(Image.new('RGB', (300, 400), 'white')), '', ocr=OcrReading('Chữ cần giữ 0,005 mg'))
+    assert result['ocrText'] == 'Chữ cần giữ 0,005 mg' and result['kind'] == 'other'
+    assert not result['fields'] and not result['medicines'] and not result['charges']
+    assert any(warning.startswith('Chưa phân loại đầy đủ:') for warning in result['warnings'])
+    with pytest.raises(ScanFailure, match='unreadable_output'):
+        worker.analyze_page(image_bytes(Image.new('RGB', (300, 400), 'white')), '')
+
+
+def test_ai_unavailability_keeps_existing_retry_instead_of_marking_it_complete():
+    worker = MedicalDocumentWorker(Config('https://unused.invalid', 'unused'), lambda *args: HttpResponse(503, {}, b''))
+    with pytest.raises(ScanFailure, match='local_ai_unavailable'):
+        worker.analyze_page(image_bytes(Image.new('RGB', (300, 400), 'white')), '', ocr=OcrReading('Chữ nguồn'))
 
 
 def test_preserves_printed_decimal_units_and_ranges():
@@ -76,10 +95,13 @@ def test_worker_fences_updates_and_never_writes_clinical_data():
         assert url == 'http://127.0.0.1:11434/api/chat'
         assert payload['format']['additionalProperties'] is False
         return HttpResponse(200, {}, json.dumps({'message': {'content': json.dumps(sample_page())}}).encode())
-    result = MedicalDocumentWorker(Config('https://example.supabase.co', 'private'), transport, rpc).run_once()
+    result = MedicalDocumentWorker(Config('https://example.supabase.co', 'private'), transport, rpc, ocr_reader=lambda _: OcrReading('Mã ngoài biểu mẫu: TEST-TAIL')).run_once()
     assert result == {'status': 'review', 'pages': 1}
     assert [name for name, _ in calls] == ['embe_claim_document_scan', 'embe_progress_document_scan', 'embe_finish_document_scan']
     assert all(data['p_claim_token'] == 'claim-one' for _, data in calls[1:])
+    page = calls[-1][1]['p_analysis']['pages'][0]
+    assert page['ocrText'] == 'Mã ngoài biểu mẫu: TEST-TAIL' and page['ocrEngine'] == 'tesseract-vie-eng'
+    assert 'pdfText' not in page and all('pdfValue' not in row for row in page['fields'])
 
 
 def synthetic_sheet(kind):

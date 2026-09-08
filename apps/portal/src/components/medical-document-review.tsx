@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MedicalDocumentImport from './medical-document-import';
+import MedicalDocumentSourceText from './medical-document-source-text';
 import MedicalDocumentButton from './medical-document-viewer';
 import MedicalDocumentOverview, { documentSourceKey } from './medical-document-overview';
 import { buildDocumentOverview, type DocumentOverviewRef } from '../lib/medical-document-overview';
@@ -167,7 +168,7 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
     {!scan && !error ? <p role="status">Đang mở tài liệu…</p> : null}
     {scan ? <>
       <DocumentOriginal documentId={documentId} scan={scan} pageNumber={selectedPage + 1} />
-      <p className="document-state" role="status">{scan.status === 'confirmed' ? 'Đã xác nhận' : scan.status === 'review' ? 'Đã đọc · cần đối chiếu' : scan.status === 'processing'
+      <p className="document-state" role="status">{scan.status === 'confirmed' ? 'Đã xác nhận' : scan.status === 'review' ? (draft?.pages.some(page => page.warnings.some(warning => warning.startsWith('Chưa phân loại đầy đủ:'))) ? 'Đã lấy chữ · chưa phân loại đầy đủ' : 'Đã đọc · cần đối chiếu') : scan.status === 'processing'
         ? `Đang đọc trang ${scan.completedPages + 1}${scan.pageCount ? `/${scan.pageCount}` : ''} trên máy tại nhà` : scan.status === 'queued' ? 'Đã xếp hàng · chờ máy tại nhà' : scan.status === 'failed' ? 'Chưa đọc xong' : 'Chưa đọc tự động'}</p>
       {scan.status === 'idle' || scan.status === 'failed' ? <div className="document-start">
         <p>{scan.error ? SCAN_ERROR_TEXT[scan.error] ?? 'Lượt đọc bị gián đoạn. Thử lại hoặc xem bản gốc để nhập thủ công.' : 'Ảnh hoặc PDF tối đa 6 trang. Mỗi trang được phân loại riêng; chữ không rõ sẽ được đánh dấu.'}</p>
@@ -200,11 +201,8 @@ export default function MedicalDocumentReview({ documentId }: { documentId: stri
         <label>Loại giấy tờ<select value={page.kind} onChange={e => changePage(pageIndex, p => ({ ...p, kind: e.target.value }))}>
           {Object.entries(DOCUMENT_TYPES).map(([kind, name]) => <option key={kind} value={kind}>{name}</option>)}</select></label>
         <label>Tiêu đề<input value={page.title} maxLength={160} onChange={e => changePage(pageIndex, p => ({ ...p, title: e.target.value }))} /></label>
-        {page.pdfText ? <details className="document-source-text">
-          <summary>Chữ từ PDF · trang {page.page}</summary>
-          <p>Giữ cả phần chưa phân loại. Lớp chữ có thể sai thứ tự hoặc thiếu so với hình gốc; không tự dùng làm chỉ số hay liều thuốc.</p>
-          <pre tabIndex={0} aria-label={`Lớp chữ PDF trang ${page.page}`}>{page.pdfText}</pre>
-        </details> : null}
+        {page.pdfText ? <MedicalDocumentSourceText text={page.pdfText} page={page.page} kind="pdf" /> : null}
+        {page.ocrText ? <MedicalDocumentSourceText text={page.ocrText} page={page.page} kind="ocr" /> : null}
         {page.warnings.length ? <ul className="document-warnings">{page.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul> : null}
         {onlyUnclear && !pageReviewCount(page.page) ? <p className="document-filter-empty" role="status">Trang này không có mục đang đánh dấu cần kiểm tra. Vẫn nên đối chiếu với bản gốc.</p> : null}
         {(Object.keys(GROUPS) as Group[]).map(group => <section key={group} className="document-group" aria-label={GROUPS[group]}>
