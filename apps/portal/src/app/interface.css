@@ -3,7 +3,10 @@
 @media screen and (max-width: 767px) {
   /* One measured correction keeps the navigation and quick action together.
      Individual translate preserves the quick button's existing horizontal transform. */
-  .has-nav :is(.family-nav, .quick-trigger) { translate: 0 var(--embe-dock-offset, 0px); }
+  .has-nav :is(.family-nav, .quick-trigger) { translate: 0 calc(var(--embe-dock-offset, 0px) + var(--embe-dock-hide, 0px)); transition: translate 180ms ease-out, opacity 180ms ease-out; }
+  .has-nav.is-dock-hidden { --embe-dock-hide: 160px; }
+  .has-nav.is-dock-hidden :is(.family-nav, .quick-trigger) { opacity: 0; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .has-nav :is(.family-nav, .quick-trigger) { transition: none; } }
 }
 @media screen {
   .app-shell { background: var(--paper); min-height: 100dvh; }

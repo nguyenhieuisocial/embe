@@ -14,13 +14,15 @@ const page = await context.newPage(); let loggedIn = false;
 page.setDefaultTimeout(15000);
 const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 async function aligned(label) {
+  await page.waitForTimeout(220); // Let the bounded dock transition settle.
   await settle();
   const geometry = await page.evaluate(() => {
     const nav = document.querySelector('.family-nav').getBoundingClientRect();
     const quick = document.querySelector('.quick-trigger').getBoundingClientRect();
-    return { navBottom: nav.bottom, navTop: nav.top, quickTop: quick.top, quickBottom: quick.bottom, height: innerHeight, width: innerWidth, scrollWidth: document.documentElement.scrollWidth };
+    return { hidden: document.querySelector('.app-shell').classList.contains('is-dock-hidden'), navBottom: nav.bottom, navTop: nav.top, quickTop: quick.top, quickBottom: quick.bottom, height: innerHeight, width: innerWidth, scrollWidth: document.documentElement.scrollWidth };
   });
-  if (geometry.width < 768 && (Math.abs(geometry.navBottom - geometry.height) > 2 || geometry.quickBottom > geometry.height + 2 || geometry.quickTop < geometry.navTop - 35)) throw new Error(`misaligned_${label}_${JSON.stringify(geometry)}`);
+  const targetBottom = geometry.height + (geometry.hidden ? 160 : 0);
+  if (geometry.width < 768 && (Math.abs(geometry.navBottom - targetBottom) > 2 || geometry.quickBottom > targetBottom + 2 || geometry.quickTop < geometry.navTop - 35)) throw new Error(`misaligned_${label}_${JSON.stringify(geometry)}`);
   if (geometry.scrollWidth > geometry.width + 1) throw new Error(`horizontal_overflow_${label}`);
   result.checks.push(label);
 }

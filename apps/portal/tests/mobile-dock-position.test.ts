@@ -23,6 +23,22 @@ it('leaves correctly anchored navigation alone and coalesces scroll events into 
   for (let n = 0; n < 30; n++) window.dispatchEvent(new Event('scroll'));
   expect(frames.size).toBe(1); flush(); expect(offset()).toBe(0); expect(window.scrollTo).not.toHaveBeenCalled();
 });
+it('hides on deliberate downward scroll, ignores jitter, reveals upward and on keyboard focus', () => {
+  vi.spyOn(document.documentElement, 'scrollHeight', 'get').mockReturnValue(4000);
+  const scroll = (y: number) => { vi.stubGlobal('scrollY', y); window.dispatchEvent(new Event('scroll')); flush(); };
+  scroll(120); expect(root.classList.contains('is-dock-hidden')).toBe(true);
+  scroll(118); expect(root.classList.contains('is-dock-hidden')).toBe(true);
+  scroll(106); expect(root.classList.contains('is-dock-hidden')).toBe(false);
+  scroll(160); expect(root.classList.contains('is-dock-hidden')).toBe(true);
+  root.dispatchEvent(new FocusEvent('focusin')); expect(root.classList.contains('is-dock-hidden')).toBe(false);
+  scroll(220); scroll(0); expect(root.classList.contains('is-dock-hidden')).toBe(false);
+  expect(window.scrollTo).not.toHaveBeenCalled();
+});
+it('does not repair away the intended scroll-hide translation', () => {
+  vi.spyOn(window, 'getComputedStyle').mockReturnValue({ translate: '0px 160px' } as CSSStyleDeclaration);
+  bottom = 1012; window.dispatchEvent(new Event('scroll')); flush();
+  expect(offset()).toBe(0);
+});
 it('corrects a keyboard-era floating origin and does not accumulate translation on later scrolls', () => {
   bottom = 552; window.dispatchEvent(new Event('scroll')); flush(); expect(offset()).toBe(300);
   for (let n = 0; n < 5; n++) { viewport.dispatchEvent(new Event('scroll')); flush(); expect(offset()).toBe(300); }
