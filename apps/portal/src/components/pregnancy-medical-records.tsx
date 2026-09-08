@@ -470,9 +470,9 @@ export default function PregnancyMedicalRecords() {
       <MeasurementHistory records={records} />
       {records.length ? <>
         {savedDocuments.length ? <p role="status">{savedDocuments.length} giấy tờ đã lưu · {readDocuments} bản đọc sẵn sàng.
-          {savedDocuments.length > readDocuments ? ` ${savedDocuments.length - readDocuments} giấy tờ chưa có bản đọc hoàn tất; mở từng giấy để xem tiến độ hoặc đọc lại.` : ''}
-          {' '}Bản đọc và chỉ số đã đối chiếu là hai phần riêng; chưa có chỉ số không có nghĩa là mất giấy tờ.</p> : null}
+          {savedDocuments.length > readDocuments ? ` Còn ${savedDocuments.length - readDocuments} giấy tờ chưa đọc xong.` : ''}</p> : null}
         <details className="medical-workspace-overview"><summary>Tổng quan & điều cần bổ sung</summary><aside className="medical-insights">
+          <p>Bản đọc và chỉ số đã đối chiếu là hai phần riêng; chưa có chỉ số không có nghĩa là mất giấy tờ.</p>
           <div><strong>{insights.completedCount}</strong><span>lần đã lưu</span></div>
           <div><strong>{insights.activeMedicines.length}</strong><span>thuốc trong đơn</span></div>
           {insights.questions.length ? <ul>{insights.questions.map((question) => <li key={question}>{question}</li>)}</ul> : <p>Xem giấy tờ và bản đọc bên dưới. Chưa thể kết luận hồ sơ đã đầy đủ chỉ từ các mốc đã nhập.</p>}
@@ -512,7 +512,7 @@ export default function PregnancyMedicalRecords() {
             })() : record.notes ? <details className="medical-record-expand"><summary>Ghi chú & lời dặn</summary><p className="medical-record-note">{record.notes}</p></details> : null}
             {record.documents.length ? <div className="medical-documents">{record.documents.map((document) => <div key={document.id}>
               <MedicalDocumentButton document={document} documents={record.documents} />
-              <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>{document.imported ? 'Đã thêm vào hồ sơ · xem bản đọc' : document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? 'Đã tự lưu bản đọc · xem hoặc sửa' : document.scanStatus === 'queued' || document.scanStatus === 'processing' ? 'Đang đọc · xem tiến độ' : 'Đọc & đối chiếu'}</Link>
+              <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>{document.imported ? 'Xem bản đã nhập' : document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? 'Xem / sửa bản đọc' : document.scanStatus === 'queued' || document.scanStatus === 'processing' ? 'Xem tiến độ đọc' : 'Đọc giấy tờ'}</Link>
               {document.imported || document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? <MedicalDocumentData key={`${document.id}:${document.scanStatus}:${Boolean(document.imported)}`} document={document} recordId={record.id} /> : null}
             </div>)}</div> : null}
           </article>)}
