@@ -134,7 +134,8 @@ describe("mobile meal journal", () => {
 
   it("shows worker availability, charts and full meal details for 7 or 28 days", async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({
-      history, suggestions: ["Các bữa đã ghi có rau."], worker: { status: "offline" }
+      history: history.map(entry => ({ ...entry, eatenAt: new Date().toISOString() })),
+      suggestions: ["Các bữa đã ghi có rau."], worker: { status: "offline" }
     }), { status: 200 }));
     vi.stubGlobal("fetch", fetch);
 
