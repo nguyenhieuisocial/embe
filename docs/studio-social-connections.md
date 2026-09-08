@@ -5,7 +5,8 @@
 - Studio → Bàn làm việc → Tài khoản mạng xã hội → Kiểm tra kết nối.
 - `GET /api/studio/connections` yêu cầu phiên gia đình, trả dữ liệu không cache.
 - Bộ đọc API Postiz hosted; chỉ lấy tên, nền tảng và trạng thái disabled. Không đọc nội dung bài hay gửi media.
-- Chưa triển khai OAuth, tạo/lên lịch bài, theo dõi kết quả đăng, analytics hoặc giỏ hàng. Có tài khoản trong danh sách không chứng minh có quyền đăng.
+- Có nút mở OAuth qua Postiz cho TikTok, Instagram, Facebook và YouTube; yêu cầu chủ tài khoản đăng nhập/cấp quyền trên nền tảng. `POST /api/studio/connections` kiểm tra phiên và nguồn yêu cầu, chỉ nhận provider cho phép, không nhận URL tùy ý; khóa API chỉ ở máy chủ. URL trả về phải là HTTPS đúng máy chủ nền tảng. Postiz quản lý state và callback.
+- Chưa triển khai tạo/lên lịch bài, theo dõi kết quả đăng, analytics hoặc giỏ hàng. Có tài khoản trong danh sách không chứng minh có quyền đăng. Chưa xác minh OAuth đầu-cuối nếu thiếu tài khoản/khóa Postiz và lần cấp quyền thật.
 
 ## Cấu hình cần thiết
 
