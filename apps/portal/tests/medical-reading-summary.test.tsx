@@ -20,6 +20,12 @@ it('does not remove uncertainty after document confirmation',()=>{
 it('preserves medicines on separate pages instead of merging separate instructions',()=>{
  expect(medicalReadingSummary({...analysis,pages:[analysis.pages[0],{...analysis.pages[0],page:2}]},false).medicines.map(r=>r.page)).toEqual([1,2]);
 });
+it('never uses an uncertain printed date as a grouping key',()=>{
+ const dated={...analysis,pages:[{...analysis.pages[0],fields:[{label:'Ngày khám',value:'07/09/2026',unit:'',reference:'',evidence:'',unclear:true}]}]};
+ expect(medicalReadingSummary(dated,true).medicines[0].sourceDay).toBeUndefined();
+ dated.pages[0].fields[0].unclear=false;
+ expect(medicalReadingSummary(dated,true).medicines[0].sourceDay).toBe('2026-09-07');
+});
 it('shows readings before clinical import and exposes unavailable sources',()=>{
  const record:MedicalRecord={id:'r',kind:'other',status:'completed',occurredAt:'2026-09-08',title:'Hồ sơ',provider:'',clinician:'',notes:'',gestationalWeek:null,nextAppointmentAt:null,measurements:{},medicines:[],documentIntake:true,documents:[{id:'d',originalFilename:'Đơn thuốc',mimeType:'image/jpeg',byteSize:1,createdAt:'2026-09-08',scanStatus:'review',readingSummary:medicalReadingSummary(analysis,false)},{id:'failed',originalFilename:'Chưa tải',mimeType:'image/jpeg',byteSize:1,createdAt:'2026-09-08',scanStatus:'review'}]};
  render(<PregnancyRecordSummary records={[record]}/>);
