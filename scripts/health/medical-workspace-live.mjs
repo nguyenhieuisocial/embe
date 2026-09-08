@@ -28,6 +28,24 @@ try{
  await nav.getByRole('link',{name:'Tổng quan',exact:true}).click();
  if(await search.isVisible())throw new Error('inactive_section_visible');
  await page.getByRole('region',{name:'Tóm tắt thai kỳ'}).waitFor();
+ for(const [width,height] of [[375,812],[393,852],[430,932],[852,393],[768,1024],[1280,852]]){
+  await page.setViewportSize({width,height});
+  if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw new Error('overview_overflow_'+width);
+ }
+ await page.setViewportSize({width:375,height:812});
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.evaluate(()=>document.documentElement.style.fontSize='20px');
+ if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw new Error('large_text_overflow');
+ await page.evaluate(()=>document.documentElement.style.fontSize='');
+ const capture=page.getByRole('link',{name:'+ Chụp / thêm giấy tờ',exact:true});
+ const captureBox=await capture.boundingBox();
+ if(!captureBox||captureBox.height<44||captureBox.width<44)throw new Error('capture_target_small');
+ const overview=page.getByRole('region',{name:'Tóm tắt thai kỳ'});
+ if(await overview.locator('details[open]').count())throw new Error('overview_should_start_collapsed');
+ const firstSummary=overview.locator(':scope > details > summary').first();
+ await firstSummary.focus();await page.keyboard.press('Enter');
+ if(!await firstSummary.evaluate(el=>el.parentElement.open))throw new Error('summary_keyboard_failed');
+ await page.keyboard.press('Enter');
  const encounterChains=await page.getByRole('region',{name:'Chuỗi khám & tái khám'}).locator(':scope > details').evaluateAll(groups=>groups.map(group=>({
    documents:group.querySelectorAll('a[href*="/tai-lieu/"]').length,
    followups:group.querySelectorAll('time').length,
@@ -44,5 +62,5 @@ try{
  const targets=await nav.locator('a').evaluateAll(links=>links.map(link=>({width:link.getBoundingClientRect().width,height:link.getBoundingClientRect().height})));
  if(targets.some(t=>t.width<44||t.height<44))throw new Error('small_nav_target');
  await nav.getByRole('link',{name:'Giấy tờ',exact:true}).focus();await page.keyboard.press('Enter');await search.waitFor();
- console.log(JSON.stringify({viewports:5,overflow:false,searchReset:true,sections:3,keyboard:true,readingCounts,encounterChains}));
+ console.log(JSON.stringify({documentViewports:5,overviewViewports:6,largeText:true,reducedMotion:true,overflow:false,searchReset:true,sections:3,keyboard:true,readingCounts,encounterChains}));
 }finally{if(logged)await context.request.post(origin+'/api/auth/logout',{headers:{origin},maxRedirects:0}).catch(()=>{});await browser.close();}
