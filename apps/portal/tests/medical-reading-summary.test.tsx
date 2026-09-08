@@ -33,3 +33,12 @@ it('shows readings before clinical import and exposes unavailable sources',()=>{
  expect(screen.getByRole('alert')).toHaveTextContent('1 bản đọc chưa tải được');
  expect(screen.getByText('Đơn thuốc · trang 1').closest('a')).toHaveAttribute('href','/me-bau/ho-so/tai-lieu/d');
 });
+it('renders two OCR variants from the same prescription as one source card',()=>{
+ const duplicated:DocumentAnalysis={...analysis,pages:[{...analysis.pages[0],medicines:[analysis.pages[0].medicines[0],{...analysis.pages[0].medicines[0],frequency:'2 lần'}]}]};
+ const record:MedicalRecord={id:'r',kind:'clinical',status:'completed',occurredAt:'2026-09-08',title:'Hồ sơ',provider:'',clinician:'',notes:'',gestationalWeek:null,nextAppointmentAt:null,measurements:{},medicines:[],documents:[{id:'d',originalFilename:'Đơn thuốc',mimeType:'image/jpeg',byteSize:1,createdAt:'2026-09-08',readingSummary:medicalReadingSummary(duplicated,false)}]};
+ render(<PregnancyRecordSummary records={[record]}/>);
+ expect(screen.getAllByText('Đơn thuốc · trang 1')).toHaveLength(1);
+ expect(screen.getByText('2 bản đọc cách dùng trên cùng giấy tờ')).toBeInTheDocument();
+ expect(screen.getByText('1 viên · 2 lần/ngày')).toBeInTheDocument();
+ expect(screen.getByText('1 viên · 2 lần')).toBeInTheDocument();
+});

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { validDocumentAnalysis, type DocumentAnalysis } from '../lib/medical-document-scan';
 import { normalizeMedicalRecord, type MedicalMedicine, type MedicalRecord } from '../lib/pregnancy-medical';
 import { medicalDocumentName } from '../lib/medical-document-name';
-import {medicineDisplayGroups} from '../lib/medicine-display-groups';
+import {medicineDisplayGroups,medicineSourceGroups} from '../lib/medicine-display-groups';
 import {subscribeFamilyDataRefresh} from '../lib/family-data-refresh';
 
 export type SavedPrescriptionMedicine = MedicalMedicine & { source: string; href: string; uncertain: boolean };
@@ -59,13 +59,17 @@ export default function SavedPrescriptionPicker({ onSelect }: { onSelect: (medic
     {failed ? <p role="alert">Chưa tải đủ giấy tờ. <button type="button" onClick={()=>setRetry(n=>n+1)}>Thử lại</button></p> : null}
     {!loading && !failed && !rows.length ? <p>Chưa có thuốc trong dữ liệu đã đọc. <Link href="/me-bau/ho-so">Xem giấy tờ đã lưu</Link></p> : null}
     {!loading ? medicineDisplayGroups(rows,row=>row.name).map(group=><article key={group.name} style={{overflowWrap:'anywhere',marginBlock:12}}>
-      <strong>{group.name}</strong><small style={{display:'block'}}>{group.rows.length} bản ghi nguồn · không cộng liều giữa các bản</small>
-      {group.rows.map((row,index)=><details key={`${row.href}-${index}`}>
-      <summary style={{minHeight:44,paddingBlock:12}}>{row.source}</summary>
+      <strong>{group.name}</strong><small style={{display:'block'}}>{medicineSourceGroups(group.rows,row=>row.href).length} giấy tờ nguồn</small>
+      {medicineSourceGroups(group.rows,row=>row.href).map(source=><details key={source.source}>
+      <summary style={{minHeight:44,paddingBlock:12}}>{source.rows[0].source}</summary>
+      <Link href={source.source}>Xem giấy tờ gốc</Link>
+      {source.rows.length>1?<small style={{display:'block'}}>Cùng một giấy tờ có {source.rows.length} bản đọc cách dùng; không phải các đơn riêng.</small>:null}
+      {source.rows.map((row,index)=><div key={index}>
+      {source.rows.length>1?<strong>Bản đọc {index+1}</strong>:null}
       <p>{[row.dose,row.frequency,row.instructions].filter(Boolean).join(' · ') || 'Chưa đọc được cách dùng'}</p>
-      <Link href={row.href}>{row.source}</Link>
       {row.uncertain ? <small style={{display:'block'}}>Bản đọc chưa chắc chắn — kiểm tra thông tin điền sẵn.</small> : null}
       <button className="care-add-button" type="button" onClick={()=>onSelect(row)}>Dùng thông tin thuốc này</button>
+      </div>)}
       </details>)}
     </article>) : null}
   </section>;

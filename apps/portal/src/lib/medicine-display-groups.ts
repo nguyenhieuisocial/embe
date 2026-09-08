@@ -9,3 +9,14 @@ export function medicineDisplayGroups<T>(rows:T[],name:(row:T)=>string):{name:st
  }
  return [...groups.values()];
 }
+
+/** One source document, possibly several OCR variants. Never infer equivalent doses. */
+export function medicineSourceGroups<T>(rows:T[],source:(row:T)=>string):{source:string;rows:T[]}[]{
+ const groups=new Map<string,{source:string;rows:T[]}>();
+ for(const row of rows){
+  const key=source(row);
+  const existing=groups.get(key);
+  if(existing)existing.rows.push(row);else groups.set(key,{source:key,rows:[row]});
+ }
+ return [...groups.values()];
+}

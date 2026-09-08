@@ -4,7 +4,7 @@ import {medicalInsights, type MedicalRecord} from '../lib/pregnancy-medical';
 import {MEDICAL_MEASUREMENTS} from '../lib/medical-measurements';
 import type {MedicalReadingSummary} from '../lib/medical-reading-summary';
 import {medicalFindingGroups,medicalFindingTopics} from '../lib/medical-finding-groups';
-import {medicineDisplayGroups} from '../lib/medicine-display-groups';
+import {medicineDisplayGroups,medicineSourceGroups} from '../lib/medicine-display-groups';
 
 const date = (value:string) => new Date(value).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
 export function summarizeRecords(records:MedicalRecord[],now=Date.now()) {
@@ -64,12 +64,15 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       <p>Thuốc và cách dùng tự lấy từ hồ sơ, không cần tải lại đơn. Đây chưa phải lịch thuốc đang uống.</p>
       {!count('medicines')?<p>Chưa có thuốc trong bản đọc đã tải.</p>:null}
       {medicines.map(group=><details key={group.name}>
-        <summary>{group.name} <small>{group.rows.length} bản thông tin</small></summary>
-        {group.rows.length>1?<small>Các bản dưới đây được giữ riêng; không cộng liều giữa các đơn.</small>:null}
-        {group.rows.map(({row,sources},index)=><article key={index}>
+        <summary>{group.name}</summary>
+        {medicineSourceGroups(group.rows,entry=>JSON.stringify(entry.sources.map(s=>[s.documentId,s.page]).sort())).map(source=><article key={source.source}>
+          <ReadingSources sources={source.rows[0].sources}/>
+          {source.rows.length>1?<details><summary>{source.rows.length} bản đọc cách dùng trên cùng giấy tờ</summary>
+            {source.rows.map(({row},index)=><div key={index}><strong>Bản đọc {index+1}</strong><p>{row.value || 'Chưa đọc rõ liều/cách dùng'}</p>{row.details.map((detail,i)=><small key={i}>{detail}</small>)}{row.unclear?<small>Bản đọc chưa xác minh</small>:null}</div>)}
+          </details>:source.rows.map(({row},index)=><div key={index}>
           <p>{row.value || 'Chưa đọc rõ liều/cách dùng'}</p>{row.details.map((detail,i)=><small key={i}>{detail}</small>)}
           {row.unclear?<small>Bản đọc chưa xác minh</small>:null}
-          <ReadingSources sources={sources}/>
+          </div>)}
         </article>)}
       </details>)}
       <Link href="/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc">Thuốc & lịch uống</Link>
