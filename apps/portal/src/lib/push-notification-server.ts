@@ -1,4 +1,5 @@
 import webpush from "web-push";
+import { compactPushCopy } from './push-message-copy';
 
 import { verifySessionCookie } from "./portal-auth";
 
@@ -24,7 +25,7 @@ export async function sendPush(target: PushTarget, message: PushMessage): Promis
   const privateKey = process.env.EMBE_VAPID_PRIVATE_KEY;
   if (!publicKey || !privateKey) throw new Error("push_not_configured");
   webpush.setVapidDetails("mailto:family@hieu.asia", publicKey, privateKey);
-  await webpush.sendNotification({ endpoint: target.endpoint, keys: { p256dh: target.p256dh, auth: target.auth } }, JSON.stringify(message), {
+  await webpush.sendNotification({ endpoint: target.endpoint, keys: { p256dh: target.p256dh, auth: target.auth } }, JSON.stringify({...message, ...compactPushCopy(message)}), {
     TTL: 86_400, urgency: "normal", timeout: 10_000
   });
 }
