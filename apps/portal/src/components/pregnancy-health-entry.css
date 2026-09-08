@@ -17,3 +17,6 @@
 .health-entry-card :is(button, summary, input, select, textarea):focus-visible { outline: 2px solid #aa5274; outline-offset: 3px; }
 .health-entry-card .health-note textarea { width: 100%; font-size: 16px; box-sizing: border-box; }
 @media (max-width: 430px) { .health-tracker .section-heading-row { flex-direction: column; } }
+@media (max-width: 767px) {
+  .has-nav:has(.health-entry-card :is(button, summary):active) :is(.family-nav, .quick-trigger) { display: none; }
+}

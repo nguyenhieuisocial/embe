@@ -39,6 +39,7 @@ try {
   await page.keyboard.press('Tab');
   if (!await page.getByLabel('Giấc ngủ (giờ)').evaluate(n => n === document.activeElement)) throw Error('keyboard_order');
   await page.getByRole('button',{name:'Lưu sức khỏe hôm nay'}).click();
+  console.log(JSON.stringify({ syntheticWrites:writes, state:await page.locator('.health-save-state').textContent().catch(()=>null), url: new URL(page.url()).pathname }));
   await page.getByRole('button',{name:'Sửa thông tin hôm nay'}).waitFor();
   if (writes !== 1) throw Error('unexpected_synthetic_write_count');
   console.log('Passed: 6 viewport sizes, collapsed/expanded overflow, keyboard order, synthetic save. Not physical iOS.');
