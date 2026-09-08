@@ -63,10 +63,11 @@ function labelKey(value: string): string {
     .replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-function categoryOf(label: string): DocumentOverviewCategory | undefined {
+export function documentFieldCategory(label: string): DocumentOverviewCategory | undefined {
   const key = labelKey(label);
   return (Object.keys(labels) as DocumentOverviewCategory[]).find(category => labels[category].has(key));
 }
+const categoryOf = documentFieldCategory;
 
 // Do not fold accents or parse IDs as numbers: Đỗ/Do and 001/1 can identify different people.
 const identityKey = (value: string) => value.normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('vi');

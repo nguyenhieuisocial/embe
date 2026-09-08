@@ -5,6 +5,7 @@ import { DOCUMENT_TYPES, editableDocumentAnalysis, type DocumentAnalysis } from 
 import { proposeDocumentImport, validImportDetails, type DocumentImportContext, type DocumentImportDetails } from '../lib/medical-document-import';
 import { MEDICAL_MEASUREMENTS } from '../lib/medical-measurements';
 import { clearPrivateGetCache } from '../lib/private-get-cache';
+import { DOCUMENT_DATA_GROUPS, groupDocumentData } from '../lib/medical-document-data';
 
 export default function MedicalDocumentImport({ documentId, recordId, revision, analysis, disabled, onImported, onBusy, onDirty }: {
   documentId: string; recordId: string; revision: number; analysis: DocumentAnalysis; disabled: boolean; onImported: () => Promise<void>;
@@ -27,6 +28,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
     return () => { ignore = true; };
   }, [documentId, revision, retry]);
   const proposal = useMemo(() => proposeDocumentImport(analysis, context?.records ?? [], recordId), [analysis, context, recordId]);
+  const grouped = useMemo(() => groupDocumentData(analysis), [analysis]);
   const details: DocumentImportDetails = { ...proposal.details, ...overrides,
     measurements: Object.fromEntries(Object.entries(proposal.details.measurements).filter(([key]) => !excluded.includes(key))),
     medicines: proposal.details.medicines.filter((_, i) => !excluded.includes(`medicine-${i}`)),
@@ -74,17 +76,30 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
       </details>
       {!details.occurredOn ? <p>Mở mục kiểm tra phía trên để bổ sung ngày trên giấy trước khi thêm vào hồ sơ.</p> : null}
       {details.linkedRecordId ? <p>Liên kết: {context.records.find(r => r.id === details.linkedRecordId)?.title}</p> : null}
+      <details className="document-import-values"><summary>Thông tin được xếp vào đâu?</summary>
+        <p>Tại hồ sơ đang chứa tài liệu, có thể mở riêng từng nhóm và đối chiếu trang gốc:</p>
+        <ul>{Object.entries(grouped).filter(([, rows]) => rows.length).map(([key, rows]) => <li key={key}>{DOCUMENT_DATA_GROUPS[key as keyof typeof DOCUMENT_DATA_GROUPS]}: {rows.length} dòng</li>)}</ul>
+        <p>Giữ nguyên từng số, dấu so sánh, đơn vị và thời điểm. Mục chưa rõ có nhãn cần đối chiếu; không coi là dữ liệu y tế đã xác minh.</p>
+      </details>
       <details className="document-import-values"><summary>Dữ liệu sẽ thêm · {Object.keys(details.measurements).length} chỉ số · {details.medicines.length} thuốc</summary>
         {Object.entries(proposal.details.measurements).map(([key, value]) => { const metric = MEDICAL_MEASUREMENTS.find(m => m.key === key)!; return <label className="document-check" key={key}><input type="checkbox" checked={!excluded.includes(key)} onChange={e => exclude(key, e.target.checked)} />{metric.label}: {value} {metric.unit}</label>; })}
         {proposal.details.medicines.map((m, i) => <label className="document-check" key={i}><input type="checkbox" checked={!excluded.includes(`medicine-${i}`)} onChange={e => exclude(`medicine-${i}`, e.target.checked)} />{m.name} · {[m.dose, m.frequency].filter(Boolean).join(' · ')}</label>)}
         <p>Để sửa giá trị, mở mục tương ứng trong bản đọc bên dưới. Chỉ số khác đơn vị hoặc nhiều kết quả được giữ nguyên văn, không tự chuyển đổi.</p>
       </details>
+      {proposal.followups.length ? <details className="document-import-values"><summary>Lịch tái khám từ tài liệu</summary>
+        {proposal.followups.map((row, i) => <p key={i}>{row.label}: {row.value}{row.unclear ? ' · Cần đối chiếu' : ''}</p>)}
+        <label>Ngày và giờ hẹn đã đối chiếu<input type="datetime-local" value={details.nextAppointmentAt ? new Date(Date.parse(details.nextAppointmentAt) + 7 * 3600000).toISOString().slice(0, 16) : ''}
+          onChange={e => { const date = e.target.value ? new Date(`${e.target.value}:00+07:00`) : null;
+            change({ nextAppointmentAt: date && Number.isFinite(date.getTime()) ? date.toISOString() : null }); }} /></label>
+        <small>Giờ Việt Nam. Chỉ thêm vào Lịch & Việc cần làm khi đủ ngày, giờ và đã xác nhận; để trống sẽ chỉ lưu nguyên văn. Không ghi đè lịch hẹn đang có.</small>
+      </details> : null}
       {proposal.unresolved ? <p>{proposal.unresolved} mục chưa rõ: vẫn lưu trong tài liệu, chưa đưa vào chỉ số/thuốc. Đối chiếu rồi bỏ dấu “vẫn cần kiểm tra” ở từng dòng nếu đã đọc đúng.</p> : null}
       {proposal.warnings.length ? <ul>{proposal.warnings.map((text, i) => <li key={i}>{text}</li>)}</ul> : null}
-      <small>Giữ toàn bộ bản đọc, khoản thu, lời dặn và bản gốc trong tài liệu liên kết. Không tự tạo chi tiêu, nhắc uống thuốc hay đổi lịch hẹn.</small>
+      <small>Không cộng khoản thu thành chi tiêu, không tự đặt liều hoặc nhắc uống thuốc. Liên kết lần khám không chuyển giấy tờ sang hồ sơ khác.</small>
       <label className="document-check"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} />Đây là giấy tờ của Mẹ Ngân; tôi đã đối chiếu thông tin và dữ liệu sẽ thêm với bản gốc.</label>
-      {proposal.patients.length > 1 ? <p role="alert">Có nhiều tên người bệnh. Tách giấy tờ theo từng người; chưa thể nhập chung vào hồ sơ Mẹ.</p> : null}
-      <button className="document-import-confirm" type="button" disabled={!ack || busy || conflict || proposal.patients.length > 1 || !validImportDetails(details)} onClick={() => void importRecord()}>{busy ? 'Đang thêm vào hồ sơ…' : 'Xác nhận & thêm vào hồ sơ'}</button>
+      {proposal.identityConflict ? <p role="alert">Có nhiều tên hoặc mã người bệnh. Tách giấy tờ theo từng người; chưa thể nhập chung vào hồ sơ Mẹ.</p> : null}
+      {proposal.multipleVisits ? <p role="alert">Có nhiều ngày khám. Giữ riêng các kết quả trong thông tin tài liệu; không gộp chỉ số, thuốc hoặc lịch hẹn.</p> : null}
+      <button className="document-import-confirm" type="button" disabled={!ack || busy || conflict || proposal.identityConflict || proposal.ambiguousScope && Boolean(details.nextAppointmentAt) || !validImportDetails(details)} onClick={() => void importRecord()}>{busy ? 'Đang thêm vào hồ sơ…' : 'Xác nhận & thêm vào hồ sơ'}</button>
       {error ? <p role="alert">{error}</p> : null}
       {conflict ? <Link href={`/me-bau/ho-so#record-${recordId}`}>Mở hồ sơ đang có</Link> : null}
     </>}

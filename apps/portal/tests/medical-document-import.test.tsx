@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { printedDate, proposeDocumentImport, providerKey, validImportDetails } from '../src/lib/medical-document-import';
+import { printedDate, printedAppointment, proposeDocumentImport, providerKey, validImportDetails } from '../src/lib/medical-document-import';
 import type { DocumentAnalysis, ExtractedField } from '../src/lib/medical-document-scan';
 import type { MedicalRecord } from '../src/lib/pregnancy-medical';
 import MedicalDocumentImport from '../src/components/medical-document-import';
@@ -17,10 +17,32 @@ vi.mock('../src/lib/medical-upload-client', () => ({ uploadDocument: (...args: u
 vi.mock('../src/lib/family-members-server', () => ({ memberAuthorization: vi.fn(async () => mock.denied ? new Response('', { status: 401 }) : null), memberBody: (r: Request) => r.json() }));
 vi.mock('../src/lib/photo-upload-server', async () => ({ ...(await vi.importActual('../src/lib/photo-upload-server')), photoStore: () => ({ rpc: (...args: unknown[]) => ({ abortSignal: () => mock.calls(...args) }) }) }));
 vi.mock('../src/lib/family-view-revalidation', () => ({ revalidateFamilyViews: vi.fn() }));
-import { POST } from '../src/app/api/pregnancy/documents/[id]/import/route';
+import { GET, POST } from '../src/app/api/pregnancy/documents/[id]/import/route';
 afterEach(() => { mock.denied = false; mock.calls.mockReset(); mock.upload.mockReset(); vi.unstubAllGlobals(); });
 
 describe('safe medical import proposal', () => {
+  it('only proposes an exact unambiguous Vietnamese appointment time', () => {
+    expect(printedAppointment('09/09/2026 08:30')).toBe('2026-09-09T01:30:00.000Z');
+    for (const value of ['09/09/2026', '31/02/2026 08:30', '09/09/2026 24:30', 'sau 2 tuần', '09/09/2026 8 giờ', '09/09/2026 đến 10/09/2026 08:30']) expect(printedAppointment(value)).toBeNull();
+    const a = structuredClone(analysis);
+    a.pages[0].fields.push(field('Ngày tái khám', '09/09/2026 08:30'));
+    expect(proposeDocumentImport(a, [], id).details.nextAppointmentAt).toBe('2026-09-09T01:30:00.000Z');
+    a.pages[0].fields.push(field('Ngày hẹn', '09/09/2026'));
+    expect(proposeDocumentImport(a, [], id).details.nextAppointmentAt).toBeNull();
+    const details = proposeDocumentImport(analysis, [], id).details;
+    expect(validImportDetails({ ...details, nextAppointmentAt: '2026-09-06T01:30:00.000Z' })).toBe(false);
+    expect(validImportDetails({ ...details, nextAppointmentAt: '2026-02-31T01:30:00.000Z' })).toBe(false);
+  });
+  it('does not fill dates or facilities from unclear rows', () => {
+    const p = proposeDocumentImport(sheet([field('Ngày khám', '7/9/2026', '', true), field('Bệnh viện', 'BV Mẫu', '', true)]), [record], id);
+    expect(p.details.occurredOn).toBe(''); expect(p.details.provider).toBe(''); expect(p.details.linkedRecordId).toBeNull();
+  });
+  it('blocks mixed patient IDs and clinical flattening across visits or facilities', () => {
+    for (const fields of [[field('Mã bệnh nhân', '001'), field('Mã bệnh nhân', '002')], [field('Ngày khám', '8/9/2026')], [field('Bệnh viện', 'BV Khác')]]) {
+      const a = structuredClone(analysis); a.pages[0].fields.push(...fields);
+      expect(proposeDocumentImport(a, [], id).details.measurements).toEqual({});
+    }
+  });
   it('retains gestational weeks when OCR separates the printed number and unit', () => {
     expect(proposeDocumentImport(sheet([field('Tuổi thai', '12', 'tuần')]), [], id).details.gestationalWeek).toBe(12);
     expect(proposeDocumentImport(sheet([field('Tuổi thai', '12 tuần 3 ngày', 'tuần')]), [], id).details.gestationalWeek).toBe(12);
@@ -83,6 +105,25 @@ describe('safe medical import proposal', () => {
     const a = sheet([field('Huyết áp tâm thu', '120', 'mmHg'), field('Huyết áp', '110/70', 'mmHg')]);
     expect(proposeDocumentImport(a, [], id).details.measurements).toEqual({ diastolic: 70 });
   });
+});
+it('enforces identity and visit boundaries server-side, even when the caller checks consent', async () => {
+  const details = proposeDocumentImport(analysis, [], id).details;
+  for (const fields of [[field('Mã bệnh nhân', '001'), field('Mã bệnh nhân', '002')], [field('Ngày khám', '8/9/2026')], [field('Bệnh viện', 'BV Khác')]]) {
+    const a = structuredClone(analysis); a.pages[0].fields.push(...fields);
+    const response = await POST(new Request('https://embe.hieu.asia/api', { method: 'POST', body: JSON.stringify({ analysis: a, details, revision: 1, recordUpdatedAt: '2026-09-07T00:00:00Z', confirmed: true, patientConfirmed: true }) }), { params: Promise.resolve({ id }) });
+    expect(response.status).toBe(400);
+  }
+  expect(mock.calls).not.toHaveBeenCalled();
+});
+it('loads only the protected immutable import snapshot without listing all records', async () => {
+  const request = () => new Request('https://embe.hieu.asia/api?view=imported');
+  mock.denied = true; expect((await GET(request(), { params: Promise.resolve({ id }) })).status).toBe(401);
+  expect(mock.calls).not.toHaveBeenCalled(); mock.denied = false;
+  mock.calls.mockResolvedValue({ data: { documentId: id, recordId: linked, analysis } });
+  const response = await GET(request(), { params: Promise.resolve({ id }) });
+  expect(response.status).toBe(200); expect(response.headers.get('cache-control')).toContain('no-store');
+  expect(mock.calls).toHaveBeenCalledExactlyOnceWith('embe_imported_document_data', { p_document_id: id });
+  mock.calls.mockResolvedValue({ data: null }); expect((await GET(request(), { params: Promise.resolve({ id }) })).status).toBe(404);
 });
 it('requires authenticated explicit patient/review consent and passes both version fences', async () => {
   const details = proposeDocumentImport(analysis, [], id).details;

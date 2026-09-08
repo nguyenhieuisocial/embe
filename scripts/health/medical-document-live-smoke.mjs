@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('C:/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
@@ -15,6 +16,8 @@ if (health.version !== expected) { console.log(JSON.stringify({ pending: true, v
 const output = resolve('data/medical-recognition-verification');
 await mkdir(output, { recursive: true });
 const ruledPdf = process.argv.includes('--ruled-pdf');
+const importRouting = process.argv.includes('--import-routing');
+if (importRouting && !ruledPdf) throw new Error('routing_requires_synthetic_pdf');
 const bytes = await readFile(ruledPdf ? resolve('services/media-ingest/tests/fixtures/synthetic-ruled-medical.pdf') : resolve(output, 'receipt_long-dense.jpg'));
 const filename = ruledPdf ? 'EMBE_SYNTHETIC_RULED_TABLES.pdf' : 'EMBE_SYNTHETIC_RECEIPT.jpg';
 const mimeType = ruledPdf ? 'application/pdf' : 'image/jpeg';
@@ -178,6 +181,74 @@ try {
   await page.getByRole('heading', { name: 'Đọc & đối chiếu', exact: true }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: resolve(output, ruledPdf ? 'live-pdf-overview-iphone.png' : 'live-review-iphone.png'), fullPage: true });
+  if (importRouting) {
+    const current = await (await context.request.get(`${origin}${endpoint}`)).json();
+    const reviewed = { version: 1, pages: current.analysis.pages.map(({ pdfText, ocrText, ocrEngine, ...value }) => value) };
+    for (const item of reviewed.pages.flatMap(value => value.fields)) {
+      if (/^Ngày (khám|xét nghiệm|lập|thu|kê đơn)$/.test(item.label) && /^0?8\/0?9\/2026$/.test(item.value)) item.unclear = false;
+    }
+    // Explicit synthetic manual appointment exercises routing, not OCR accuracy.
+    reviewed.pages[0].fields.push({ label: 'Ngày tái khám', value: '09/09/2026 09:30', unit: '', reference: '', evidence: 'SYNTHETIC MANUAL APPOINTMENT; NOT PRINTED ON PDF', unclear: false });
+    const prepared = await jsonRequest(endpoint, 'PATCH', { revision: current.revision, analysis: reviewed, confirmed: true });
+    if (prepared.status() !== 200) throw new Error('routing_prepare');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    const importer = page.locator('.document-import');
+    await importer.getByText('Lịch tái khám từ tài liệu', { exact: true }).click();
+    const appointment = importer.getByLabel('Ngày và giờ hẹn đã đối chiếu');
+    if (await appointment.inputValue() !== '2026-09-09T09:30') throw new Error('followup_not_proposed');
+    await importer.getByText('Kiểm tra ngày, cơ sở và lần khám', { exact: true }).click();
+    await importer.getByLabel('Ngày khám / ngày trên giấy', { exact: true }).fill('2026-09-08');
+    await importer.getByLabel('Liên kết lần khám', { exact: true }).selectOption('');
+    // This fixture must never be linked to an existing real family record.
+    const importRequest = page.waitForRequest(request => request.url().endsWith(`/documents/${documentId}/import`) && request.method() === 'POST');
+    await importer.getByLabel(/Đây là giấy tờ của Mẹ Ngân/).check();
+    await importer.getByRole('button', { name: 'Xác nhận & thêm vào hồ sơ' }).click();
+    const payload = (await importRequest).postDataJSON();
+    await page.getByText('Đã thêm dữ liệu vào hồ sơ', { exact: true }).waitFor();
+    const importPath = `/api/pregnancy/documents/${documentId}/import`;
+    const again = await jsonRequest(importPath, 'POST', payload);
+    if (again.status() !== 200) throw new Error('import_not_idempotent');
+    const changed = await jsonRequest(importPath, 'POST', { ...payload, details: { ...payload.details, clinician: 'DIFFERENT SYNTHETIC VALUE' } });
+    if (changed.status() !== 409) throw new Error('import_rewrite_not_blocked');
+    const snapshot = await (await context.request.get(`${origin}${importPath}?view=imported`)).json();
+    if (snapshot.recordId !== recordId || !isDeepStrictEqual(snapshot.analysis, payload.analysis)) throw new Error('import_snapshot_mismatch');
+    const savedRecords = await (await context.request.get(`${origin}/api/pregnancy/records`)).json();
+    const ownRecord = savedRecords.records.find(record => record.id === recordId);
+    if (!ownRecord || new Date(ownRecord.nextAppointmentAt).toISOString() !== '2026-09-09T02:30:00.000Z' || ownRecord.notes !== 'SYNTHETIC TEST; NOT FAMILY MEDICAL DATA') throw new Error('followup_or_notes_not_preserved');
+    const tasks = await (await context.request.get(`${origin}/api/tasks?from=2026-09-09&to=2026-09-09`)).json();
+    const ownTasks = tasks.tasks.filter(task => task.title === `Lịch tái khám: ${ownRecord.title}`);
+    if (ownTasks.length !== 1 || ownTasks[0].dueTime !== '09:30') throw new Error('followup_task_missing_or_duplicate');
+    result.importCalendarAndIdempotency = true;
+    // A newer draft must not silently rewrite the data already imported.
+    const importedScan = await (await context.request.get(`${origin}${endpoint}`)).json();
+    const later = structuredClone(payload.analysis); later.pages[0].title = 'LATER SYNTHETIC DRAFT';
+    if ((await jsonRequest(endpoint, 'PATCH', { revision: importedScan.revision, analysis: later, confirmed: true })).status() !== 200) throw new Error('later_draft_save');
+    const stable = await (await context.request.get(`${origin}${importPath}?view=imported`)).json();
+    if (!isDeepStrictEqual(stable.analysis, snapshot.analysis)) throw new Error('import_snapshot_changed');
+    result.immutableImportedRevision = true;
+    await page.goto(`${origin}/me-bau/ho-so#record-${recordId}`, { waitUntil: 'domcontentloaded' });
+    const panel = page.locator(`#record-${recordId} .medical-data`);
+    await panel.getByRole('button', { name: 'Xem thông tin đã phân loại' }).click();
+    const search = panel.getByRole('searchbox', { name: 'Tìm trong tài liệu' });
+    await search.fill('250.000');
+    await panel.getByRole('button', { name: 'Trang 3', exact: true }).first().click();
+    const viewer = page.getByRole('dialog', { name: 'Xem tài liệu hồ sơ' });
+    if (!(await viewer.locator('iframe').getAttribute('src')).endsWith('#page=3')) throw new Error('import_wrong_source_page');
+    await viewer.getByRole('button', { name: 'Quay lại hồ sơ', exact: true }).click();
+    await search.fill('');
+    for (const width of [375, 393, 430, 412, 768, 1280]) {
+      await page.setViewportSize({ width, height: 852 });
+      const metrics = await panel.evaluate(node => ({ overflow: document.documentElement.scrollWidth > innerWidth + 1,
+        small: [...node.querySelectorAll('button,a,summary,input')].some(el => { const r = el.getBoundingClientRect(); return r.height > 0 && (r.height < 43 || r.width < 43); }) }));
+      if (metrics.overflow || metrics.small) throw new Error(`import_layout_${width}`);
+    }
+    await page.setViewportSize({ width: 393, height: 852 });
+    await search.fill('Glucose'); await search.focus(); await page.keyboard.press('Tab');
+    if (!(await page.locator(':focus').evaluate(node => node.tagName === 'SUMMARY'))) throw new Error('import_keyboard_focus');
+    await panel.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(output, 'live-imported-data-iphone.png') });
+    result.categorizedDataMobileAndSource = true;
+  }
   result.status = 'passed';
 } catch (error) {
   // Playwright request errors can contain cookies; never print their stack or call log.

@@ -1,11 +1,14 @@
 import { DOCUMENT_TYPES, type DocumentAnalysis } from './medical-document-scan';
 import { MEDICAL_MEASUREMENTS, validMedicalMeasurements } from './medical-measurements';
 import type { MedicalMedicine, MedicalRecord } from './pregnancy-medical';
+import { buildDocumentOverview, documentFieldCategory } from './medical-document-overview';
 
 export type DocumentImportDetails = {
   kind: string; title: string; occurredOn: string; provider: string; clinician: string;
   gestationalWeek: number | null; linkedRecordId: string | null;
   measurements: Record<string, number>; medicines: MedicalMedicine[];
+  /** Only a printed/confirmed date AND time; never manufacture an hour from a date. */
+  nextAppointmentAt?: string | null;
 };
 export type DocumentImportContext = {
   recordUpdatedAt: string; intake: boolean; imported: boolean; records: MedicalRecord[];
@@ -37,13 +40,22 @@ export function medicalDay(at: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(at));
 }
 
+export function printedAppointment(text: string): string | null {
+  const match = /^(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}|\d{4}-\d{2}-\d{2})[T\s]+([01]?\d|2[0-3])[:h]([0-5]\d)(?:\s*giờ)?$/i.exec(text.trim());
+  const day = match ? printedDate(match[1]) : '';
+  if (!day || !match) return null;
+  return new Date(`${day}T${match[2].padStart(2, '0')}:${match[3]}:00+07:00`).toISOString();
+}
+
 // A proposal, never an autonomous medical decision. Unknown units, ranges and conflicting
 // observations stay in the complete transcription, not in numeric health charts.
 export function proposeDocumentImport(analysis: DocumentAnalysis, records: MedicalRecord[], recordId: string) {
   const fields = analysis.pages.flatMap(page => page.fields);
+  const overview = buildDocumentOverview(analysis);
+  const identityConflict = overview.differences.some(d => d.kind === 'patient-names' || d.kind === 'patient-ids');
   const warnings: string[] = [];
   function one(labels: string[], max: number, numericUnit = false): string {
-    const values = [...new Set(fields.filter(row => labels.map(fold).includes(labelKey(row.label))).map(row => {
+    const values = [...new Set(fields.filter(row => !row.unclear && labels.map(fold).includes(labelKey(row.label))).map(row => {
       const value = row.value.trim();
       return numericUnit && /^\d{1,2}$/.test(value) && row.unit.trim() ? `${value} ${row.unit.trim()}` : value;
     }).filter(Boolean))];
@@ -55,8 +67,12 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   // Multiple representations of one date are equivalent. Birth/appointment/sample
   // dates are not visit dates; don't silently choose between different visits.
   const dateLabels = ['Ngày khám', 'Ngày khám bệnh', 'Ngày xét nghiệm', 'Ngày siêu âm', 'Ngày lập', 'Ngày thu', 'Ngày ra viện', 'Ngày kê đơn', 'Ngày', 'Visit date', 'Date'].map(fold);
-  const dates = [...new Set(fields.filter(row => dateLabels.includes(labelKey(row.label))).map(row => printedDate(row.value)).filter(Boolean))];
+  const dates = [...new Set(fields.filter(row => !row.unclear && dateLabels.includes(labelKey(row.label))).map(row => printedDate(row.value)).filter(Boolean))];
   const occurredOn = dates.length === 1 ? dates[0] : '';
+  const multipleVisits = dates.length > 1;
+  const facilities = new Set(fields.filter(row => documentFieldCategory(row.label) === 'facility' && row.value.trim()).map(row => providerKey(row.value)));
+  const ambiguousScope = multipleVisits || facilities.size > 1;
+  if (facilities.size > 1) warnings.push('Nhiều cơ sở khám trên tài liệu: giữ kết quả riêng theo trang, chưa gộp chỉ số hoặc thuốc.');
   if (dates.length > 1) warnings.push('Nhiều ngày trên tài liệu; chọn đúng ngày của hồ sơ trước khi liên kết.');
   const clinician = one(['Bác sĩ', 'Bác sĩ khám', 'Bác sĩ điều trị', 'Doctor', 'Clinician'], 100);
   const patientFields = fields.filter(row => ['ho ten', 'ho va ten', 'ten benh nhan', 'ho ten benh nhan', 'ho ten nguoi benh', 'ho va ten nguoi benh', 'nguoi benh', 'benh nhan', 'patient name'].includes(labelKey(row.label)));
@@ -65,6 +81,11 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   const weekText = one(['Tuổi thai', 'Tuần thai', 'Gestational age'], 80, true);
   const week = /^(\d{1,2})\s*(?:tuần|weeks?|w)(?:\s*\d\s*(?:ngày|days?|d))?$/i.exec(weekText);
   const gestationalWeek = week && Number(week[1]) >= 1 && Number(week[1]) <= 42 ? Number(week[1]) : null;
+  const followups = fields.filter(row => ['ngay hen tai kham', 'ngay tai kham', 'hen tai kham', 'lich tai kham', 'ngay hen', 'follow-up date', 'next appointment'].includes(labelKey(row.label)) && row.value.trim());
+  const followupValues = [...new Set(followups.map(row => row.unclear ? null : printedAppointment(row.value)))];
+  let nextAppointmentAt = followupValues.length === 1 ? followupValues[0] : null;
+  if (nextAppointmentAt && (!occurredOn || medicalDay(nextAppointmentAt) < occurredOn)) nextAppointmentAt = null;
+  if (followups.length && !nextAppointmentAt) warnings.push('Lịch tái khám chưa rõ cả ngày và giờ, hoặc có nhiều mốc: giữ nguyên trong hồ sơ, chưa tự đặt giờ nhắc.');
   const measurements: Record<string, number> = {};
   const conflicted = new Set<string>();
   for (const row of fields) {
@@ -113,11 +134,12 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   return {
     details: {
       kind: kinds.length === 1 ? kinds[0] : 'other', title: (analysis.pages[0]?.title || 'Tài liệu khám thai').slice(0, 100), occurredOn,
-      provider: sameProvider[0]?.provider ?? provider, clinician, gestationalWeek,
-      linkedRecordId: candidates.length === 1 ? candidates[0].id : null,
-      measurements: patients.length > 1 ? {} : measurements, medicines: patients.length > 1 ? [] : uniqueMedicines.filter(item => !drugConflicts.has(fold(item.name))).slice(0, 12),
+      provider: sameProvider[0]?.provider ?? provider, clinician, gestationalWeek: identityConflict || ambiguousScope ? null : gestationalWeek,
+      linkedRecordId: !identityConflict && candidates.length === 1 ? candidates[0].id : null,
+      nextAppointmentAt: identityConflict || ambiguousScope ? null : nextAppointmentAt,
+      measurements: identityConflict || ambiguousScope ? {} : measurements, medicines: identityConflict || ambiguousScope ? [] : uniqueMedicines.filter(item => !drugConflicts.has(fold(item.name))).slice(0, 12),
     } satisfies DocumentImportDetails,
-    patients, warnings, candidates,
+    patients, warnings, candidates, identityConflict, multipleVisits, ambiguousScope, followups,
     unresolved: fields.filter(row => row.unclear).length + analysis.pages.flatMap(page => page.medicines).filter(row => row.unclear).length,
   };
 }
@@ -126,10 +148,14 @@ export function validImportDetails(value: unknown): value is DocumentImportDetai
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const d = value as DocumentImportDetails;
   const text = (v: unknown, n: number) => typeof v === 'string' && v.length <= n && !/[\u0000-\u001f]/.test(v);
-  return Object.keys(d).sort().join(',') === 'clinician,gestationalWeek,kind,linkedRecordId,measurements,medicines,occurredOn,provider,title'
+  return Object.keys(d).filter(key => key !== 'nextAppointmentAt').sort().join(',') === 'clinician,gestationalWeek,kind,linkedRecordId,measurements,medicines,occurredOn,provider,title'
     && Object.hasOwn(DOCUMENT_TYPES, d.kind) && text(d.title, 100) && Boolean(d.title.trim())
     && /^\d{4}-\d{2}-\d{2}$/.test(d.occurredOn) && printedDate(d.occurredOn) === d.occurredOn
     && text(d.provider, 120) && text(d.clinician, 100)
+    && (!Object.hasOwn(d, 'nextAppointmentAt') || d.nextAppointmentAt === null || typeof d.nextAppointmentAt === 'string'
+      && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/.test(d.nextAppointmentAt)
+      && Number.isFinite(Date.parse(d.nextAppointmentAt)) && new Date(d.nextAppointmentAt).toISOString() === d.nextAppointmentAt
+      && medicalDay(d.nextAppointmentAt) >= d.occurredOn && Number(d.nextAppointmentAt.slice(0, 4)) <= 2100)
     && (d.gestationalWeek === null || Number.isInteger(d.gestationalWeek) && d.gestationalWeek >= 1 && d.gestationalWeek <= 42)
     && (d.linkedRecordId === null || /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(d.linkedRecordId))
     && validMedicalMeasurements(d.measurements) && Object.keys(d.measurements).every(key => MEDICAL_MEASUREMENTS.some(m => m.key === key))

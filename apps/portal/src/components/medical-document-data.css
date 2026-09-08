@@ -1,0 +1,20 @@
+.medical-data { min-width: 0; margin: 8px 0; color: var(--ink); font-size: .84rem; overflow-wrap: anywhere; }
+.medical-data .medical-data-toggle { width: 100%; justify-content: space-between; text-align: left; background: var(--surface); color: var(--rose); }
+.medical-data :is(button, summary, a) { min-height: 44px; min-width: 44px; }
+.medical-data p { white-space: pre-wrap; margin: 6px 0; font-size: .8rem; }
+.medical-data > div > p, .medical-data small { color: var(--ink-soft); line-height: 1.6; }
+.medical-data .medical-data-search { display: grid; gap: 6px; margin: 12px 0; }
+.medical-data input { width: 100%; box-sizing: border-box; min-width: 0; min-height: 44px; font: inherit; font-size: 16px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--surface); color: var(--ink); }
+.medical-data details { border-top: 1px solid var(--line); min-width: 0; }
+.medical-data summary { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; }
+.medical-data summary span { font-size: .75rem; color: var(--ink-soft); margin-left: auto; }
+.medical-data-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: start; padding: 8px 0; }
+.medical-data-row > div { min-width: 0; }
+.medical-data-row b { font-weight: 500; }
+.medical-data-row small { display: block; font-size: .75rem; white-space: pre-wrap; }
+.medical-data-row button { align-self: start; font-size: .75rem; }
+.medical-data .medical-data-warning { color: var(--rose); }
+.medical-data .medical-data-evidence { border: 0; font-size: .75rem; }
+.medical-data blockquote { margin: 0 0 8px; border-left: 2px solid var(--line); padding-left: 8px; white-space: pre-wrap; }
+.medical-data a { display: flex; align-items: center; color: var(--rose); }
+.medical-data :is(button, summary, a, input):focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
