@@ -114,6 +114,35 @@ def test_validates_signatures_and_keeps_source_unchanged():
         list(document_pages(b'broken', 'application/pdf'))
 
 
+def test_preparation_prefetches_only_one_page_and_preserves_source_order(monkeypatch):
+    import threading
+    import medical_document_worker as module
+    second_ready = threading.Event()
+    seen = []
+    closed = []
+    def pages(*_):
+        try:
+            for index in range(1, 5):
+                yield bytes([index]), f'Full source {index}', 4
+        finally:
+            closed.append(True)
+    def ocr(image):
+        seen.append(image[0])
+        if image[0] == 2:
+            second_ready.set()
+        return OcrReading(f'OCR {image[0]}')
+    monkeypatch.setattr(module, 'document_pages', pages)
+    stream = module.prepared_document_pages(b'synthetic', 'image/jpeg', ocr)
+    first = next(stream)
+    assert second_ready.wait(2), 'page two must prepare while page one is consumed'
+    assert seen == [1, 2], 'never decode the whole document ahead of AI'
+    assert first[0:4] == (1, b'\x01', 'Full source 1', 4)
+    rest = list(stream)
+    assert [page[0] for page in rest] == [2, 3, 4]
+    assert [page[-1].text for page in rest] == ['OCR 2', 'OCR 3', 'OCR 4']
+    assert closed == [True]
+
+
 def test_worker_fences_updates_and_never_writes_clinical_data():
     calls = []
     document_id = '11111111-1111-4111-8111-111111111111'

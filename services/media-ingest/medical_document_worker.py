@@ -12,6 +12,7 @@ import socket
 import time
 import unicodedata
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -38,7 +39,7 @@ DETAILS = {
     'charges': {'quantity': 80, 'unitPrice': 80},
 }
 PAGE_COUNTS = {'fields': 64, 'medicines': 24, 'charges': 80}
-ENGINE_REVISION = 'medical-source-v5.4'
+ENGINE_REVISION = 'medical-source-v5.5'
 SOURCE_LIMITS = {'pdfValue': 1600, 'pdfEvidence': 1800}
 MAX_BYTES = 15_000_000
 MAX_PAGES = 6
@@ -479,6 +480,34 @@ def attach_pdf_source(page: dict[str, Any], printed: str, table_text: str = '', 
     return page
 
 
+def prepared_document_pages(body, mime_type, ocr_reader):
+    """One-page lookahead; OCR overlaps AI without parallel model requests.
+
+    PDF decoding and layout stay on the same single preparation thread. No
+    document content is cached on disk or shared between documents.
+    """
+    source = iter(document_pages(body, mime_type))
+    def prepare(number):
+        page = next(source, None)
+        if page is None:
+            return None
+        image, printed, count = page
+        layout = extract_pdf_layout(body, number) if mime_type == 'application/pdf' else LayoutReading()
+        return number, image, printed, count, layout, ocr_reader(image)
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix='embe-document-prep') as executor:
+        try:
+            future = executor.submit(prepare, 1)
+            while True:
+                current = future.result()
+                if current is None:
+                    break
+                future = executor.submit(prepare, current[0] + 1)
+                yield current
+        finally:
+            # Close PDF resources on the preparation thread, after any pending read.
+            executor.submit(source.close).result()
+
+
 class MedicalDocumentWorker:
     def __init__(self, config: Config, transport=None, rpc=None, ocr_reader=read_page_ocr):
         bridge = MealAnalysisWorker(config) if transport is None else MealAnalysisWorker(config, transport)
@@ -604,10 +633,8 @@ class MedicalDocumentWorker:
             if response.status != 200 or len(response.body) != item['byte_size']:
                 raise ScanFailure('storage_unavailable')
             pages = []
-            for number, (image, printed, count) in enumerate(document_pages(response.body, item['mime_type']), 1):
+            for number, image, printed, count, layout, ocr in prepared_document_pages(response.body, item['mime_type'], self.ocr_reader):
                 self.rpc('embe_progress_document_scan', {'p_document_id': document_id, 'p_claim_token': token, 'p_completed': number - 1, 'p_total': count})
-                layout = extract_pdf_layout(response.body, number) if item['mime_type'] == 'application/pdf' else LayoutReading()
-                ocr = self.ocr_reader(image)
                 pages.append({'page': number, **self.analyze_page(image, printed, table_text=layout.table_text, layout_warnings=layout.warnings, ocr=ocr, progress=lambda: self.rpc(
                     'embe_progress_document_scan', {'p_document_id': document_id, 'p_claim_token': token, 'p_completed': number - 1, 'p_total': count}))})
             analysis = {'version': 1, 'pages': pages}
@@ -650,7 +677,7 @@ def main():
         if not args.watch:
             print(json.dumps(result))
             return
-        time.sleep(15 if result['status'] in {'idle', 'retry'} else 1)
+        time.sleep(3 if result['status'] == 'idle' else 15 if result['status'] == 'retry' else 1)
 
 
 if __name__ == '__main__':
