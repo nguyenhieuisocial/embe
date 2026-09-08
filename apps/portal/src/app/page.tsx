@@ -7,6 +7,7 @@ import { Icon } from "../components/embe-icon";
 import JournalCaption from "../components/journal-caption";
 import StageToday from "../components/stage-today";
 import TodayPrioritiesPanel from "../components/today-priorities-panel";
+import TodayMedications from '../components/today-medications';
 import { getPendingJournalEntries, getTimeline, getTimelineFreshness } from "../lib/timeline";
 import { dateInVietnam } from "../lib/family-task-contract";
 import { getTodaySnapshot } from "../lib/today-server";
@@ -119,6 +120,7 @@ export default function Home() {
       </Suspense>
 
       <DailyShortcuts />
+      <TodayMedications />
       <StageToday />
 
       <Suspense fallback={<TimelineLoading />}>
