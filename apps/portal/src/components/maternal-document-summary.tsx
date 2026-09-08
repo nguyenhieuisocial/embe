@@ -62,7 +62,7 @@ export default function MaternalDocumentSummary() {
   return <section aria-label="Dữ liệu từ giấy tờ của Mẹ">
     <h2>Dữ liệu từ giấy tờ</h2>
     {syncNote ? <p role="status" className="state-note">{syncNote}</p> : null}
-    <p className="state-note">Tự tổng hợp bản đọc đã lưu, không cần nhập lại. Đây là nội dung trên giấy, không phải kết luận sức khỏe hay đơn thuốc đang dùng.</p>
+    <p className="state-note">Nội dung trên giấy · không thay kết luận bác sĩ hoặc lịch thuốc.</p>
     {loading ? <p role="status">Đang cập nhật dữ liệu giấy tờ…</p> : null}
     {error ? <p role="alert">Chưa cập nhật được giấy tờ. <button type="button" className="btn btn-quiet" disabled={loading} onClick={() => void load()}>Thử lại</button></p> : null}
     {data ? <>
