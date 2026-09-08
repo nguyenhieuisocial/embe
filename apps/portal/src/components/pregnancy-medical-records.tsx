@@ -1,5 +1,6 @@
 "use client";
 import MedicalDocumentData from './medical-document-data';
+import './pregnancy-record-workspace.css';
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -71,6 +72,7 @@ export default function PregnancyMedicalRecords() {
   const [medicines, setMedicines] = useState<MedicalMedicine[]>([emptyMedicine()]);
   const [medicationScans, setMedicationScans] = useState<MedicationScan[]>([]);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState('');
   const [formMode, setFormMode] = useState<"new" | "prepare" | "outcome">("new");
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
   const [status, setStatus] = useState<"loading" | "idle" | "saving" | "error">("loading");
@@ -123,7 +125,12 @@ export default function PregnancyMedicalRecords() {
     void load();
   }, []);
   const insights = useMemo(() => medicalInsights(records), [records]);
-  const visibleRecords = filter === "all" ? records : records.filter((record) => record.kind === filter);
+  const normalizeSearch = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase();
+  const query = normalizeSearch(search.trim());
+  const visibleRecords = records.filter(record => (filter === 'all' || record.kind === filter) && (!query || normalizeSearch([
+    record.title, record.provider, record.clinician, record.notes,
+    ...record.documents.flatMap(d => [d.originalFilename, d.displayName ?? ''])
+  ].join(' ')).includes(query)));
   const savedDocuments = records.flatMap(record => record.documents);
   const readDocuments = savedDocuments.filter(document => document.imported || ['review', 'confirmed'].includes(document.scanStatus ?? '')).length;
   const appointmentWorkspace = decodeAppointmentWorkspace(editingRecord?.notes ?? "");
@@ -335,16 +342,19 @@ export default function PregnancyMedicalRecords() {
   }
 
   return (
-    <section className="medical-records" id="ho-so-kham" aria-labelledby="medical-records-title">
+    <section className="medical-records medical-workspace" id="ho-so-kham" aria-labelledby="medical-records-title">
       <div className="section-heading-row medical-records-heading">
-        <div><p className="panel-kicker">Lịch hẹn · kết quả · đơn thuốc</p><h2 id="medical-records-title">Hồ sơ khám thai</h2></div>
+        <div><h2 id="medical-records-title">Sổ khám của Mẹ</h2><p>Giấy tờ, kết quả và lịch hẹn ở cùng một nơi.</p></div>
         <button className="medical-add" type="button" disabled={status === "saving"} onClick={() => {
           if (showForm) { setShowForm(false); setEditingRecord(null); setFormMode("new"); }
           else openForm("new");
         }}>{showForm ? "Đóng" : "+ Thêm hồ sơ"}</button>
       </div>
+      <nav className="medical-workspace-nav" aria-label="Đi nhanh trong hồ sơ">
+        <a href="#them-giay-to">Thêm giấy tờ</a><a href="#lich-kham-ke-tiep">Lịch khám</a><a href="#ho-so-da-luu">Đã lưu</a>
+      </nav>
       <MedicalDocumentIntake onSaved={() => void load()} />
-      <div className="medical-subsection-title"><h3>Lịch khám tiếp theo</h3></div>
+      <div className="medical-subsection-title" id="lich-kham-ke-tiep"><h3>Lịch khám tiếp theo</h3></div>
       {insights.upcoming ? <article className="next-appointment next-appointment-compact" aria-label="Lịch khám tiếp theo">
         <div className="appointment-workspace">
           <time className="appointment-when" dateTime={insights.upcoming.occurredAt}>{displayDate(insights.upcoming.occurredAt)}</time>
@@ -453,7 +463,7 @@ export default function PregnancyMedicalRecords() {
         </div> : null}
       </article>)}
 
-      <div className="medical-subsection-title">
+      <div className="medical-subsection-title" id="ho-so-da-luu">
         <h3>Hồ sơ đã lưu</h3>
         <small>{records.length ? `${records.length} mục` : status === 'loading' ? 'Đang tải…' : status === 'error' ? 'Chưa tải được' : 'Chưa có'}</small>
       </div>
@@ -462,40 +472,44 @@ export default function PregnancyMedicalRecords() {
         {savedDocuments.length ? <p role="status">{savedDocuments.length} giấy tờ đã lưu · {readDocuments} bản đọc sẵn sàng.
           {savedDocuments.length > readDocuments ? ` ${savedDocuments.length - readDocuments} giấy tờ chưa có bản đọc hoàn tất; mở từng giấy để xem tiến độ hoặc đọc lại.` : ''}
           {' '}Bản đọc và chỉ số đã đối chiếu là hai phần riêng; chưa có chỉ số không có nghĩa là mất giấy tờ.</p> : null}
-        <aside className="medical-insights">
+        <details className="medical-workspace-overview"><summary>Tổng quan & điều cần bổ sung</summary><aside className="medical-insights">
           <div><strong>{insights.completedCount}</strong><span>lần đã lưu</span></div>
           <div><strong>{insights.activeMedicines.length}</strong><span>thuốc trong đơn</span></div>
           {insights.questions.length ? <ul>{insights.questions.map((question) => <li key={question}>{question}</li>)}</ul> : <p>Xem giấy tờ và bản đọc bên dưới. Chưa thể kết luận hồ sơ đã đầy đủ chỉ từ các mốc đã nhập.</p>}
           <small>EmBe chỉ phát hiện phần chưa ghi và gom dữ liệu; không kết luận kết quả khám.</small>
-        </aside>
+        </aside></details>
+        <div className="medical-search"><label htmlFor="medical-record-search">Tìm hồ sơ</label>
+          <input id="medical-record-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Tên hồ sơ, nơi khám, giấy tờ…" />
+          {search ? <button type="button" onClick={() => setSearch('')}>Xóa tìm kiếm</button> : null}
+        </div>
         <div className="medical-filters" role="group" aria-label="Lọc hồ sơ">
           <button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>Tất cả</button>
           {Object.entries(kinds).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}
         </div>
         <div className="medical-timeline">
-          {!visibleRecords.length ? <div className="medical-empty-short"><p>Không có hồ sơ trong bộ lọc này. Các giấy tờ đã tải vẫn được giữ.</p><button type="button" onClick={() => setFilter('all')}>Xem tất cả hồ sơ</button></div> : null}
+          {!visibleRecords.length ? <div className="medical-empty-short"><p>Không có hồ sơ khớp với tìm kiếm hoặc bộ lọc. Giấy tờ đã lưu vẫn còn nguyên.</p><button type="button" onClick={() => { setFilter('all'); setSearch(''); }}>Xem tất cả hồ sơ</button></div> : null}
           {visibleRecords.map((record) => <article key={record.id} id={`record-${record.id}`}>
             <i aria-hidden="true" />
-            <div className="medical-record-head"><span>{kinds[record.kind] ?? "Hồ sơ"} · {record.documentIntake ? 'chờ xác nhận bản đọc' : record.status === "planned" ? "sắp tới" : "đã lưu"}</span>
+            <div className="medical-record-head"><span>{kinds[record.kind] ?? "Hồ sơ"} · {record.documentIntake ? 'giấy tờ đã lưu' : record.status === "planned" ? "sắp tới" : "đã lưu"}</span>
               <div><button type="button" onClick={() => openForm("new", record)}>Sửa</button><button type="button" onClick={() => void remove(record.id)}>Xóa</button></div></div>
             <strong>{record.title}</strong><time>{record.documentIntake ? 'Tải lên · ' : ''}{record.documentDateOnly ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'long' }).format(new Date(record.occurredAt)) : displayDate(record.occurredAt)}</time>
             {record.linkedRecordId && records.some(r => r.id === record.linkedRecordId) ? <p><a href={`#record-${record.linkedRecordId}`} onClick={() => setFilter('all')}>Cùng lần khám · {records.find(r => r.id === record.linkedRecordId)?.title}</a></p> : null}
             {records.some(r => r.linkedRecordId === record.id) ? <p>{records.filter(r => r.linkedRecordId === record.id).map(r => <a key={r.id} href={`#record-${r.id}`} onClick={() => setFilter('all')}>{r.title} · </a>)}</p> : null}
             {(record.provider || record.clinician) ? <p>{[record.provider, record.clinician].filter(Boolean).join(" · ")}</p> : null}
             {record.gestationalWeek ? <small>Tuần thai {record.gestationalWeek}</small> : null}
-            {record.medicines.length ? <ul className="medical-record-medicines">{record.medicines.map((medicine, index) => <li key={`${medicine.name}-${index}`}><b>{medicine.name}</b>{medicine.ingredients ? <span>Thành phần: {medicine.ingredients}</span> : null}<span>{[medicine.dose, medicine.frequency, medicine.instructions].filter(Boolean).join(" · ")}</span></li>)}</ul> : null}
-            {Object.keys(record.measurements).length ? <div className="medical-record-metrics">
+            {record.medicines.length ? <details className="medical-record-expand"><summary>Thuốc trong hồ sơ <small>{record.medicines.length} loại</small></summary><ul className="medical-record-medicines">{record.medicines.map((medicine, index) => <li key={`${medicine.name}-${index}`}><b>{medicine.name}</b>{medicine.ingredients ? <span>Thành phần: {medicine.ingredients}</span> : null}<span>{[medicine.dose, medicine.frequency, medicine.instructions].filter(Boolean).join(" · ")}</span></li>)}</ul></details> : null}
+            {Object.keys(record.measurements).length ? <details className="medical-record-expand"><summary>Chỉ số đã ghi <small>{Object.keys(record.measurements).length} chỉ số</small></summary><div className="medical-record-metrics">
               {Object.entries(record.measurements).map(([key, value]) => { const metric = MEDICAL_MEASUREMENTS.find(item => item.key === key);
                 return <span key={key}><b>{value} {metric?.unit ?? ""}</b>{metric?.label ?? `${key} — xem đơn vị trong bản gốc`}</span>;
               })}
-            </div> : null}
+            </div></details> : null}
             {record.kind === "appointment" ? (() => {
               const workspace = decodeAppointmentWorkspace(record.notes);
               return <div className="appointment-record-summary">
                 {workspace.questions.length ? <div><b>Câu hỏi đã chuẩn bị</b><ul>{workspace.questions.map((question) => <li key={question}>{question}</li>)}</ul></div> : null}
                 {workspace.outcome ? <div><b>Kết quả và lời dặn</b><p>{workspace.outcome}</p></div> : null}
               </div>;
-            })() : record.notes ? <p className="medical-record-note">{record.notes}</p> : null}
+            })() : record.notes ? <details className="medical-record-expand"><summary>Ghi chú & lời dặn</summary><p className="medical-record-note">{record.notes}</p></details> : null}
             {record.documents.length ? <div className="medical-documents">{record.documents.map((document) => <div key={document.id}>
               <MedicalDocumentButton document={document} documents={record.documents} />
               <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>{document.imported ? 'Đã thêm vào hồ sơ · xem bản đọc' : document.scanStatus === 'review' || document.scanStatus === 'confirmed' ? 'Đã tự lưu bản đọc · xem hoặc sửa' : document.scanStatus === 'queued' || document.scanStatus === 'processing' ? 'Đang đọc · xem tiến độ' : 'Đọc & đối chiếu'}</Link>

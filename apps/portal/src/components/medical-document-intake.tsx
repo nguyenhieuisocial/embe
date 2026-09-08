@@ -68,7 +68,7 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
     </div> : null}
     <input ref={camera} hidden type="file" accept="image/*" capture="environment" aria-label="Chụp giấy tờ khám" onChange={e => { select(e.target.files); e.target.value = ''; }} />
     <input ref={picker} hidden type="file" accept="image/*,application/pdf" multiple aria-label="Chọn giấy tờ khám" onChange={e => { select(e.target.files); e.target.value = ''; }} />
-    <small>Chọn nhiều ảnh/PDF cùng lúc, hoặc chụp từng trang rồi bấm Chụp thêm trang; có thể thêm khi file trước đang tải. Tối đa 6 file đang tải/chờ, 15 MB/file; PDF tối đa 6 trang. Mỗi file được lưu riêng, không tự ghép thành một PDF.</small>
+    <details className="medical-intake-help"><summary>Cách chụp & giới hạn file</summary><small>Chọn nhiều ảnh/PDF cùng lúc, hoặc chụp từng trang rồi bấm Chụp thêm trang; có thể thêm khi file trước đang tải. Tối đa 6 file đang tải/chờ, 15 MB/file; PDF tối đa 6 trang. Mỗi file được lưu riêng, không tự ghép thành một PDF.</small></details>
     {notice ? <p role="alert">{notice}</p> : null}
     {entries.length ? <ul aria-live="polite">{entries.map((entry, i) => <li key={entry.id}>
       <span><b>{i + 1}. {entry.file.name || 'Ảnh chụp'}</b><small>{entry.status === 'saved' ? 'Đã thêm thành công · bản gốc đã lưu' : entry.status === 'failed' ? 'Tải chưa xong · giữ trang này để thử lại' : entry.status === 'uploading' ? 'Đang tải và lưu bản gốc…' : 'Chờ tải…'}</small></span>

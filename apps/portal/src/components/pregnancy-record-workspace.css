@@ -1,0 +1,38 @@
+.medical-workspace{color:#392d34;min-width:0}
+.pregnancy-profile-page .pregnancy-profile-intro{max-width:880px;margin:16px auto 20px;text-align:left}.pregnancy-profile-page .pregnancy-profile-intro h1{font-size:1.7rem;margin:10px 0 6px}.pregnancy-profile-page .pregnancy-profile-intro .intro{font-size:.9rem;line-height:1.6;margin:0;color:#725d67}
+.medical-workspace .medical-records-heading h2{font-size:1.2rem;line-height:1.35;margin:0}
+.medical-workspace .medical-records-heading p{font-size:.82rem;color:#725d67;margin:5px 0 0}
+.medical-workspace-nav{display:flex;gap:6px;padding:5px;background:#f6e7ed;border-radius:14px;margin:12px 0}
+.medical-workspace-nav a{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;color:#73344e;font-size:.84rem;text-decoration:none;border-radius:10px}
+.medical-workspace-nav a:focus-visible,.medical-workspace :is(button,input,summary,a,select):focus-visible{outline:2px solid #994663;outline-offset:3px}
+.medical-workspace :is(#lich-kham-ke-tiep,#ho-so-da-luu){scroll-margin-top:90px}
+.medical-workspace .medical-intake{margin:0 0 20px;padding:14px;background:#fffafb;border-radius:16px}
+.medical-workspace .medical-subsection-title{margin:20px 0 10px}
+.medical-workspace .medical-subsection-title h3{font-size:1rem}
+.medical-workspace .next-appointment{background:#fffafb;border-color:#eadce2;padding:14px;margin:0;border-radius:16px}
+.medical-workspace .appointment-workspace{gap:6px}
+.medical-workspace .appointment-when{color:#73344e;font-size:.88rem;font-weight:600}
+.medical-workspace .next-appointment h4{font-size:1rem;margin:4px 0}
+.medical-workspace :is(.medical-workspace-overview,.medical-record-expand){border-top:1px solid #eadce2;margin:6px 0}
+.medical-workspace summary{min-height:44px;padding:12px 4px;cursor:pointer;font-size:.85rem;line-height:1.45}
+.medical-workspace summary small{margin-left:6px;color:#725d67;font-weight:400}
+.medical-workspace .medical-insights{margin:0 0 10px;box-shadow:none;background:transparent}
+.medical-search{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0}
+.medical-search label{flex-basis:100%;font-size:.82rem;font-weight:600}
+.medical-search input{flex:1;min-width:0;width:100%;min-height:44px;background:#fff;border:1px solid #eadce2;border-radius:12px;padding:10px 12px;font:inherit;font-size:16px}
+.medical-workspace .medical-filters{margin:8px 0 14px;gap:6px}
+.medical-workspace .medical-filters button{min-height:44px;padding:8px 12px;font-size:.8rem}
+.medical-workspace .medical-timeline{padding-left:0;gap:12px}
+.medical-workspace .medical-timeline::before,.medical-workspace .medical-timeline>article>i{display:none}
+.medical-workspace .medical-timeline>article{border:1px solid #eadce2;border-radius:16px;padding:14px;background:#fff;gap:7px;min-width:0;box-shadow:none}
+.medical-workspace .medical-timeline>article>strong{font-size:1rem;line-height:1.5;overflow-wrap:anywhere}
+.medical-workspace .medical-record-head{align-items:center;gap:8px}
+.medical-workspace .medical-record-head>span{font-size:.74rem;color:#73344e;text-transform:none;letter-spacing:0}
+.medical-workspace .medical-record-head button,.medical-workspace .medical-search button{min-height:44px;padding:8px 10px}
+.medical-workspace .medical-documents{display:grid;gap:8px;min-width:0}
+.medical-workspace .medical-documents>div{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0;padding:8px 0;border-top:1px solid #f1e8ed}
+.medical-workspace .medical-documents .medical-document-trigger{max-width:100%;white-space:normal;overflow-wrap:anywhere;min-height:44px;background:#fffafb;border-color:#eadce2;text-align:left;font-size:.82rem}
+.medical-workspace .medical-documents>div>a{min-height:44px;display:flex;align-items:center;font-size:.78rem;color:#73344e}
+.medical-workspace .medical-data{flex-basis:100%;min-width:0}
+.medical-workspace .medical-form :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box;font-size:16px}
+@media(min-width:900px){.medical-workspace{max-width:880px;margin-inline:auto}.medical-workspace .medical-timeline{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}

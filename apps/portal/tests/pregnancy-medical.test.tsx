@@ -17,6 +17,19 @@ const record: MedicalRecord = {
 };
 
 describe("pregnancy medical record book", () => {
+  it('searches without accents and lets the user recover from no matches', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ records: [record] })));
+    render(<PregnancyMedicalRecords />);
+    const search = await screen.findByRole('searchbox', { name: 'Tìm hồ sơ' });
+    fireEvent.change(search, { target: { value: 'benh vien' } });
+    expect(document.getElementById(`record-${record.id}`)).not.toBeNull();
+    fireEvent.change(search, { target: { value: 'khong ton tai' } });
+    expect(document.getElementById(`record-${record.id}`)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Xem tất cả hồ sơ' }));
+    expect(search).toHaveValue('');
+    expect(document.getElementById(`record-${record.id}`)).not.toBeNull();
+    expect(screen.getByText('Tổng quan & điều cần bổ sung').closest('details')).not.toHaveAttribute('open');
+  });
   it("never calls a failed load empty and lets the user retry without uploading again", async () => {
     vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce(Response.json({ error: 'unavailable' }, { status: 503 }))
