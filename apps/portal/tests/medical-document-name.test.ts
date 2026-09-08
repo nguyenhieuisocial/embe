@@ -3,6 +3,13 @@ import { medicalDocumentName } from '../src/lib/medical-document-name';
 import type { DocumentAnalysis } from '../src/lib/medical-document-scan';
 const sheet = (kind: string, dates: [string, string, boolean?][]): DocumentAnalysis => ({ version: 1, pages: [{ page: 1, kind, title: 'image.jpg', medicines: [], charges: [], warnings: [], fields: dates.map(([label, value, unclear = false]) => ({ label, value, unclear, evidence: value, unit: '', reference: '' })) }] });
 describe('automatic document names', () => {
+  it('prefers the printed heading over a generic document category', () => {
+    const a = sheet('clinical', [['Tiêu đề', 'PHIẾU KẾT QUẢ SIÊU ÂM'], ['Ngày', '08/09/2026']]);
+    expect(medicalDocumentName([a])).toBe('PHIẾU KẾT QUẢ SIÊU ÂM · 08/09/2026');
+    a.pages[0].fields = [];
+    a.pages[0].title = 'Phiếu khám chuyên khoa';
+    expect(medicalDocumentName([a])).toBe('Phiếu khám chuyên khoa · Chưa rõ ngày');
+  });
   it('names the type and printed date, ignoring birth and follow-up dates', () => {
     expect(medicalDocumentName([sheet('prescription', [['Ngày kê đơn', '08/09/2026'], ['Ngày sinh', '01/01/1990'], ['Ngày tái khám', '20/09/2026']])])).toBe('Đơn thuốc · 08/09/2026');
   });

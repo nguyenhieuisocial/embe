@@ -29,6 +29,13 @@ async function open() {
 }
 
 describe('private medical original viewer', () => {
+  it('uses the document title consistently in the trigger and full-screen image', async () => {
+    const displayName = 'Phiếu siêu âm · 08/09/2026';
+    render(<MedicalDocumentButton document={{ ...image, displayName }} />);
+    fireEvent.click(screen.getByRole('button', { name: displayName }));
+    await screen.findByRole('img', { name: displayName });
+    expect(screen.getByText(displayName, { selector: 'strong' })).toBeVisible();
+  });
   it('uses the same viewer but a member-bound endpoint for general health documents', async () => {
     render(<MedicalDocumentButton document={image} familyScope={{ memberId: pdf.id, recordId: image.id }} />);
     await open();

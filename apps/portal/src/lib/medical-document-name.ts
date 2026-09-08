@@ -8,7 +8,14 @@ const dateLabels = new Set(['ngay', 'date', 'visit date', 'ngay kham', 'ngay kha
 export function medicalDocumentName(analyses: DocumentAnalysis[]): string {
   const pages = analyses.flatMap(a => a.pages);
   if (!pages.length) return '';
-  const types = [...new Set(pages.map(p => DOCUMENT_TYPES[p.kind] ?? 'Tài liệu khác'))];
+  const types = [...new Set(pages.map(p => {
+    const headings = [...new Set(p.fields.filter(f => !f.unclear && ['tieu de', 'ten phieu', 'ten giay to', 'ten tai lieu'].includes(key(f.label))).map(f => f.value.trim()).filter(Boolean))];
+    const title = headings.length === 1 ? headings[0] : p.title.trim();
+    // Prefer the actual document heading over a broad classification. Reject upload placeholders.
+    const usable = title && title.length <= 160 && !/\.(?:jpe?g|png|webp|heic|pdf)$/i.test(title)
+      && !/^(?:chờ đọc|tài liệu cần đối chiếu|tài liệu khác|ảnh chụp|image|sample|mẫu)(?:\s|$)/i.test(title);
+    return usable ? title : DOCUMENT_TYPES[p.kind] ?? 'Tài liệu khác';
+  }))];
   const rows = pages.flatMap(p => p.fields).filter(f => dateLabels.has(key(f.label)));
   const dates = [...new Set(rows.filter(f => !f.unclear).map(f => printedDate(f.value)).filter(Boolean))];
   // Never select a birth/due/follow-up date, or silently ignore an ambiguous document date.

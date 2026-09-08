@@ -130,13 +130,13 @@ function MedicalDocumentViewer({ documents, initialId, pageNumber, token, onClos
     <div className="medical-viewer-layout">
       <header className="medical-viewer-header">
         <button ref={back} type="button" onClick={close} aria-label="Quay lại hồ sơ"><span aria-hidden="true">‹</span> Quay lại</button>
-        <div><strong>{item.originalFilename}</strong><small>{isPdf ? 'PDF' : 'Ảnh gốc'}{documents.length > 1 ? ` · ${index + 1}/${documents.length}` : ''}</small></div>
+        <div><strong>{item.displayName || item.originalFilename}</strong><small>{isPdf ? 'PDF' : 'Ảnh gốc'}{documents.length > 1 ? ` · ${index + 1}/${documents.length}` : ''}</small></div>
       </header>
       <div className="medical-viewer-content">
         {error ? <div className="medical-viewer-notice" role="alert"><p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)}>Thử tải lại</button></div>
           : !current ? <p className="medical-viewer-notice" role="status">Đang tải bản gốc…</p>
-            : isPdf ? <iframe className="medical-viewer-pdf" title={`PDF · ${item.originalFilename}`} src={`${current.url}#page=${item.id === initialId ? pageNumber : 1}`} />
-              : <PhotoViewerImage key={current.url} src={current.url} title={item.originalFilename} rotatable fitLabel="Vừa khung ảnh" showNavigation={false}
+            : isPdf ? <iframe className="medical-viewer-pdf" title={`PDF · ${item.displayName || item.originalFilename}`} src={`${current.url}#page=${item.id === initialId ? pageNumber : 1}`} />
+              : <PhotoViewerImage key={current.url} src={current.url} title={item.displayName || item.originalFilename} rotatable fitLabel="Vừa khung ảnh" showNavigation={false}
                 onMove={direction => setIndex(value => Math.max(0, Math.min(documents.length - 1, value + direction)))} onError={() => setError('Chưa hiển thị được ảnh. Thử tải lại hoặc lưu bản gốc về máy.')} />}
       </div>
       <footer className="medical-viewer-footer">

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MedicalDocumentImport from './medical-document-import';
 import MedicalDocumentSourceText from './medical-document-source-text';
 import MedicalDocumentButton from './medical-document-viewer';
+import { medicalDocumentName } from '../lib/medical-document-name';
 import MedicalDocumentOverview, { documentSourceKey } from './medical-document-overview';
 import { buildDocumentOverview, type DocumentOverviewRef } from '../lib/medical-document-overview';
 import { DOCUMENT_TYPES, DOCUMENT_ROW_LIMITS, DOCUMENT_DETAIL_DEFAULTS, SCAN_ERROR_TEXT, documentAnalysisText, editableDocumentAnalysis, validDocumentAnalysis, withPrintedUnit,
@@ -44,7 +45,7 @@ function DocumentOriginal({ documentId, scan, pageNumber }: { documentId: string
         <img src={url} alt="Bản gốc tài liệu để đối chiếu" style={{ width: `${zoom * 100}%` }} onError={() => setFailed(true)} />
       </div>}
     </div> : null}
-    <MedicalDocumentButton className="document-original" document={{ id: documentId, originalFilename: scan.filename, mimeType: scan.mimeType }} pageNumber={pageNumber}>Xem toàn màn hình · {scan.filename}</MedicalDocumentButton>
+    <MedicalDocumentButton className="document-original" document={{ id: documentId, originalFilename: scan.filename, displayName: scan.analysis ? medicalDocumentName([scan.analysis]) : undefined, mimeType: scan.mimeType }} pageNumber={pageNumber}>Xem toàn màn hình · {scan.analysis ? medicalDocumentName([scan.analysis]) : scan.filename}</MedicalDocumentButton>
   </div>;
 }
 
