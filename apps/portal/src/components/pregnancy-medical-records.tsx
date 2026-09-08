@@ -103,7 +103,8 @@ export default function PregnancyMedicalRecords() {
       const response = await cachedPrivateGet("/api/pregnancy/records");
       if (!response.ok) throw new Error("records unavailable");
       const payload = await response.json() as { records?: MedicalRecord[] };
-      const nextRecords = payload.records ?? [];
+      if (!Array.isArray(payload.records)) throw new Error('invalid records response');
+      const nextRecords = payload.records;
       if (!canApply()) return;
       setRecords(nextRecords);
       if (background) setStatus(current => current === "error" ? "idle" : current);
@@ -123,6 +124,8 @@ export default function PregnancyMedicalRecords() {
   }, []);
   const insights = useMemo(() => medicalInsights(records), [records]);
   const visibleRecords = filter === "all" ? records : records.filter((record) => record.kind === filter);
+  const savedDocuments = records.flatMap(record => record.documents);
+  const readDocuments = savedDocuments.filter(document => document.imported || ['review', 'confirmed'].includes(document.scanStatus ?? '')).length;
   const appointmentWorkspace = decodeAppointmentWorkspace(editingRecord?.notes ?? "");
 
   function openForm(mode: "new" | "prepare" | "outcome", record: MedicalRecord | null = null) {
@@ -452,14 +455,17 @@ export default function PregnancyMedicalRecords() {
 
       <div className="medical-subsection-title">
         <h3>Hồ sơ đã lưu</h3>
-        <small>{records.length ? `${records.length} mục` : "Chưa có"}</small>
+        <small>{records.length ? `${records.length} mục` : status === 'loading' ? 'Đang tải…' : status === 'error' ? 'Chưa tải được' : 'Chưa có'}</small>
       </div>
       <MeasurementHistory records={records} />
       {records.length ? <>
+        {savedDocuments.length ? <p role="status">{savedDocuments.length} giấy tờ đã lưu · {readDocuments} bản đọc sẵn sàng.
+          {savedDocuments.length > readDocuments ? ` ${savedDocuments.length - readDocuments} giấy tờ chưa có bản đọc hoàn tất; mở từng giấy để xem tiến độ hoặc đọc lại.` : ''}
+          {' '}Bản đọc và chỉ số đã đối chiếu là hai phần riêng; chưa có chỉ số không có nghĩa là mất giấy tờ.</p> : null}
         <aside className="medical-insights">
           <div><strong>{insights.completedCount}</strong><span>lần đã lưu</span></div>
           <div><strong>{insights.activeMedicines.length}</strong><span>thuốc trong đơn</span></div>
-          {insights.questions.length ? <ul>{insights.questions.map((question) => <li key={question}>{question}</li>)}</ul> : <p>Hồ sơ hiện đã có đủ mốc cơ bản để xem lại.</p>}
+          {insights.questions.length ? <ul>{insights.questions.map((question) => <li key={question}>{question}</li>)}</ul> : <p>Xem giấy tờ và bản đọc bên dưới. Chưa thể kết luận hồ sơ đã đầy đủ chỉ từ các mốc đã nhập.</p>}
           <small>EmBe chỉ phát hiện phần chưa ghi và gom dữ liệu; không kết luận kết quả khám.</small>
         </aside>
         <div className="medical-filters" role="group" aria-label="Lọc hồ sơ">
@@ -467,6 +473,7 @@ export default function PregnancyMedicalRecords() {
           {Object.entries(kinds).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}
         </div>
         <div className="medical-timeline">
+          {!visibleRecords.length ? <div className="medical-empty-short"><p>Không có hồ sơ trong bộ lọc này. Các giấy tờ đã tải vẫn được giữ.</p><button type="button" onClick={() => setFilter('all')}>Xem tất cả hồ sơ</button></div> : null}
           {visibleRecords.map((record) => <article key={record.id} id={`record-${record.id}`}>
             <i aria-hidden="true" />
             <div className="medical-record-head"><span>{kinds[record.kind] ?? "Hồ sơ"} · {record.documentIntake ? 'chờ xác nhận bản đọc' : record.status === "planned" ? "sắp tới" : "đã lưu"}</span>
@@ -496,7 +503,9 @@ export default function PregnancyMedicalRecords() {
             </div>)}</div> : null}
           </article>)}
         </div>
-      </> : <div className="medical-empty-short"><strong>Chưa có hồ sơ đã lưu</strong><p>Kết quả khám, đơn thuốc và tài liệu sẽ được xếp theo ngày tại đây.</p></div>}
+      </> : status === 'loading' ? <p role="status">Đang tải hồ sơ và giấy tờ đã lưu…</p>
+        : status === 'error' ? <div className="medical-empty-short" role="alert"><strong>Chưa tải được hồ sơ</strong><p>Không thể xác định hồ sơ trống khi mất kết nối. Đừng tải lại giấy tờ; hãy thử tải danh sách trước.</p><button type="button" onClick={() => { clearPrivateGetCache('/api/pregnancy/records'); setStatus('loading'); void load(); }}>Tải lại hồ sơ</button></div>
+        : <div className="medical-empty-short"><strong>Chưa có hồ sơ đã lưu</strong><p>Kết quả khám, đơn thuốc và tài liệu sẽ được xếp theo ngày tại đây.</p></div>}
       {uploadNotice ? <p role="status">{uploadNotice}</p> : null}
       <p className={`medical-status is-${status}`} aria-live="polite">{status === "error" ? "Chưa lưu hoặc tải hồ sơ được. Hãy kiểm tra mạng và thử lại." : "Hồ sơ y tế được giữ riêng, không xuất hiện trong album gia đình."}</p>
     </section>

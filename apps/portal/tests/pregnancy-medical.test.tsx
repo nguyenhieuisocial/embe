@@ -17,6 +17,22 @@ const record: MedicalRecord = {
 };
 
 describe("pregnancy medical record book", () => {
+  it("never calls a failed load empty and lets the user retry without uploading again", async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(Response.json({ error: 'unavailable' }, { status: 503 }))
+      .mockResolvedValue(Response.json({ records: [record] })));
+    render(<PregnancyMedicalRecords />);
+    expect(screen.queryByText('Chưa có hồ sơ đã lưu')).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Tải lại hồ sơ' }));
+    await screen.findAllByText('Khám thai định kỳ');
+    expect(screen.queryByText('Chưa có hồ sơ đã lưu')).not.toBeInTheDocument();
+  });
+  it("rejects a successful but malformed response instead of claiming there are no records", async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({})));
+    render(<PregnancyMedicalRecords />);
+    await screen.findByRole('button', { name: 'Tải lại hồ sơ' });
+    expect(screen.queryByText('Chưa có hồ sơ đã lưu')).not.toBeInTheDocument();
+  });
   afterEach(() => {
     clearPrivateGetCache();
     window.history.replaceState({}, "", "/");
