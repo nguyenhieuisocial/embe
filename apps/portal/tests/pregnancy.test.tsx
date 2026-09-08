@@ -257,6 +257,25 @@ describe("pregnancy daily page", () => {
     expect(screen.getByRole("heading", { name: "Lịch sử sức khỏe chi tiết" })).toBeInTheDocument();
   });
 
+  it("keeps daily entry compact and retains readings when extra fields collapse", async () => {
+    render(<PregnancyHealthPage />);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    const weight = screen.getByLabelText("Cân nặng (kg)");
+    const pressure = screen.getByLabelText("Huyết áp tâm thu");
+    expect(weight.closest("details")).toBeNull();
+    const extra = pressure.closest("details")!;
+    expect(extra.open).toBe(false);
+    extra.open = true;
+    fireEvent.change(pressure, { target: { value: "112" } });
+    extra.open = false;
+    expect(pressure).toHaveValue(112);
+    fireEvent.click(screen.getByRole("button", { name: "Lưu sức khỏe hôm nay" }));
+    expect(extra.open).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Khá ổn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Khá ổn" }));
+    expect(screen.getByRole("button", { name: "Khá ổn" })).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("stops an incomplete blood-pressure pair before sending private data", async () => {
     render(<PregnancyHealthPage />);
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });

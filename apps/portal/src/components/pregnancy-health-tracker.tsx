@@ -1,5 +1,7 @@
 "use client";
 
+import "./pregnancy-health-entry.css";
+
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { localDateKey } from "../lib/pregnancy";
@@ -108,6 +110,7 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
   const [editing, setEditing] = useState(true);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const dirtyRef = useRef(false);
+  const extraRef = useRef<HTMLDetailsElement>(null);
   const reload = useRef<(canApply: () => boolean) => Promise<void>>(async () => {});
   useFamilyDataRefresh(canApply => reload.current(canApply), !dirtyRef.current && status !== "saving" && status !== "loading");
 
@@ -174,11 +177,13 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
     const bloodGlucoseMgDl = inputNumber(form.bloodGlucoseMgDl);
     if ((systolic === null) !== (diastolic === null)) {
       setStatus("invalid");
+      if (extraRef.current) extraRef.current.open = true;
       setValidationError("Cần nhập đủ cả hai số huyết áp tâm thu và tâm trương.");
       return;
     }
     if ((bloodGlucoseMgDl === null) !== (form.glucoseContext === "")) {
       setStatus("invalid");
+      if (extraRef.current) extraRef.current.open = true;
       setValidationError("Đường huyết cần có cả kết quả và thời điểm đo.");
       return;
     }
@@ -251,26 +256,50 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
     <section className="health-tracker" aria-labelledby="health-title">
       <div className="section-heading-row">
         <div>
-          <p className="panel-kicker">Ghi nhanh · chỉ số thực</p>
-          <h2 id="health-title">Nhật ký sức khỏe</h2>
+          <h2 id="health-title">Hôm nay{today ? ` · ${today.slice(8)}/${today.slice(5, 7)}` : ""}</h2>
         </div>
-        <p>Chỉ nhập số Mẹ Ngân thực sự đo hoặc nhớ được. Để trống mục chưa có; EmBe không tự chẩn đoán.</p>
+        <p>Chỉ ghi số đã đo. Để trống mục chưa có.</p>
       </div>
 
       {!editing && todayMetric ? <article className="health-saved-card" aria-label="Sức khỏe đã lưu hôm nay">
         <div><span aria-hidden="true">✓</span><p><strong>Đã lưu sức khỏe hôm nay {hasIphoneValues(todayMetric) ? <em className="health-source-badge">Từ iPhone</em> : null}</strong><small>{[typeof todayMetric.weightKg === "number" ? `${todayMetric.weightKg} kg` : "", typeof todayMetric.sleepMinutes === "number" ? `${todayMetric.sleepMinutes / 60} giờ ngủ` : "", typeof todayMetric.waterGlasses === "number" ? `${todayMetric.waterGlasses} cốc nước` : "", typeof todayMetric.waterMl === "number" ? `${todayMetric.waterMl.toLocaleString("vi-VN")} ml nước` : ""].filter(Boolean).join(" · ") || "Đã lưu ghi chú và dấu hiệu đã chọn"}</small></p></div>
         <button type="button" onClick={() => setEditing(true)}>Sửa thông tin hôm nay</button>
-      </article> : <form className="health-entry-card" onSubmit={(event) => void save(event)}>
+      </article> : <form className="health-entry-card" onInvalidCapture={(event) => {
+        const group = (event.target as HTMLElement).closest("details");
+        if (group) group.open = true;
+      }} onSubmit={(event) => void save(event)}>
+        <fieldset className="wellbeing-picker">
+          <legend>Hôm nay Mẹ cảm thấy thế nào?</legend>
+          <div>
+            {wellbeingOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={form.wellbeing === option.value}
+                aria-label={option.label}
+                onClick={() => setField("wellbeing", form.wellbeing === option.value ? null : option.value)}
+              >
+                <span aria-hidden="true">{option.emoji}</span>
+                <small>{option.label}</small>
+              </button>
+            ))}
+          </div>
+        </fieldset>
         <div className="health-fields">
           <label>Cân nặng (kg)<input inputMode="decimal" min="25" max="300" step="0.1" type="number" value={form.weightKg} onChange={(event) => setField("weightKg", event.target.value)} /></label>
+
+          <label>Giấc ngủ (giờ)<input inputMode="decimal" min="0" max="24" step="0.5" type="number" value={form.sleepHours} onChange={(event) => setField("sleepHours", event.target.value)} /></label>
+          <label>Số cốc nước<input inputMode="numeric" min="0" max="30" type="number" value={form.waterGlasses} onChange={(event) => setField("waterGlasses", event.target.value)} /></label>
+          <label>Vận động (phút)<input inputMode="numeric" min="0" max="600" type="number" value={form.movementMinutes} onChange={(event) => setField("movementMinutes", event.target.value)} /></label>
+        </div>
+        <details className="health-extra" ref={extraRef}>
+          <summary>Theo dõi thêm <small>{[form.systolic || form.diastolic ? "Đã ghi huyết áp" : "Huyết áp", form.bloodGlucoseMgDl ? "đã ghi đường huyết" : "đường huyết", form.fetalMovementCount ? "đã ghi cử động thai" : ""].filter(Boolean).join(" · ")}</small></summary>
+          <div className="health-fields">
           <fieldset className="pressure-fields">
             <legend>Huyết áp (mmHg)</legend>
             <label>Tâm thu<span className="sr-only">Huyết áp </span><input aria-label="Huyết áp tâm thu" inputMode="numeric" min="60" max="250" type="number" value={form.systolic} onChange={(event) => setField("systolic", event.target.value)} /></label>
             <label>Tâm trương<span className="sr-only">Huyết áp </span><input aria-label="Huyết áp tâm trương" inputMode="numeric" min="30" max="160" type="number" value={form.diastolic} onChange={(event) => setField("diastolic", event.target.value)} /></label>
           </fieldset>
-          <label>Giấc ngủ (giờ)<input inputMode="decimal" min="0" max="24" step="0.5" type="number" value={form.sleepHours} onChange={(event) => setField("sleepHours", event.target.value)} /></label>
-          <label>Số cốc nước<input inputMode="numeric" min="0" max="30" type="number" value={form.waterGlasses} onChange={(event) => setField("waterGlasses", event.target.value)} /></label>
-          <label>Vận động (phút)<input inputMode="numeric" min="0" max="600" type="number" value={form.movementMinutes} onChange={(event) => setField("movementMinutes", event.target.value)} /></label>
           <label>Đường huyết (mg/dL)<input aria-label="Đường huyết (mg/dL)" inputMode="decimal" min="20" max="600" step="0.1" type="number" value={form.bloodGlucoseMgDl} onChange={(event) => setField("bloodGlucoseMgDl", event.target.value)} /></label>
           <label>Thời điểm đo đường huyết<select aria-label="Thời điểm đo đường huyết" value={form.glucoseContext} onChange={(event) => setField("glucoseContext", event.target.value as FormState["glucoseContext"])}><option value="">Chưa chọn</option><option value="fasting">Lúc đói</option><option value="after_1h">Sau ăn 1 giờ</option><option value="after_2h">Sau ăn 2 giờ</option><option value="other">Thời điểm khác</option></select></label>
           {pregnancyWeek === null || pregnancyWeek >= 16
@@ -278,6 +307,9 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
             : <p className="stage-field-note">Mục cử động thai sẽ hiện ở giai đoạn phù hợp hơn.</p>}
         </div>
 
+        </details>
+        <details className="health-extra">
+          <summary>Dấu hiệu cần ghi lại <small>{form.symptoms.length ? `${form.symptoms.length} đã chọn` : "Chạm để chọn"}</small></summary>
         <fieldset className="symptom-picker">
           <legend>Dấu hiệu cần ghi lại</legend>
           <div>{symptomOptions.map(([value, label]) => <label key={value}>
@@ -288,25 +320,11 @@ export default function PregnancyHealthTracker({ pregnancyWeek = null }: { pregn
           <p>Nếu có dấu hiệu đáng lo, liên hệ cơ sở y tế; việc đánh dấu chỉ để lưu lại, không thay thế đánh giá của bác sĩ.</p>
         </fieldset>
 
-        <label className="health-note">Ghi chú sức khỏe hôm nay<textarea aria-label="Ghi chú sức khỏe hôm nay" rows={2} maxLength={500} value={form.healthNote} onChange={(event) => setField("healthNote", event.target.value)} placeholder="Ví dụ: chóng mặt buổi sáng, đã trao đổi với bác sĩ…" /></label>
+        </details>
+        <p className="health-safety-note">Có dấu hiệu đáng lo? Liên hệ cơ sở y tế, không chờ ghi xong.</p>
+        <label className="health-note">Ghi chú sức khỏe hôm nay<textarea aria-label="Ghi chú sức khỏe hôm nay" rows={2} maxLength={500} value={form.healthNote} onChange={(event) => setField("healthNote", event.target.value)} placeholder="Điều Mẹ muốn ghi nhớ…" /></label>
 
-        <fieldset className="wellbeing-picker">
-          <legend>Hôm nay Mẹ cảm thấy thế nào?</legend>
-          <div>
-            {wellbeingOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={form.wellbeing === option.value}
-                aria-label={option.label}
-                onClick={() => setField("wellbeing", option.value)}
-              >
-                <span aria-hidden="true">{option.emoji}</span>
-                <small>{option.label}</small>
-              </button>
-            ))}
-          </div>
-        </fieldset>
+
 
         <button className="health-save" type="submit" disabled={!today || status === "saving"}>
           {status === "saving" ? "Đang lưu…" : "Lưu sức khỏe hôm nay"}

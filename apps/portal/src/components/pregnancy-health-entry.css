@@ -1,0 +1,19 @@
+.health-tracker .section-heading-row { align-items: start; gap: 6px; }
+.health-tracker .section-heading-row h2 { font-size: 1.05rem; }
+.health-tracker .section-heading-row p { font-size: .75rem; margin: 0; }
+.health-entry-card { gap: 14px; }
+.health-entry-card > *, .health-fields > *, .health-fields input, .health-fields select { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.health-fields select { width: 100%; min-height: 48px; font-size: 16px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--paper); padding: 8px; }
+.health-entry-card .wellbeing-picker { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.health-entry-card .wellbeing-picker button[aria-pressed="true"] { background: #f8e6ee; color: #833c57; border-color: #aa5274; }
+.health-extra { border-top: 1px solid var(--line); min-width: 0; }
+.health-extra > summary { min-height: 48px; padding: 12px 0; cursor: pointer; font-size: .85rem; font-weight: 600; }
+.health-extra > summary small { display: block; font-size: .72rem; font-weight: 400; color: var(--ink-soft); margin-top: 3px; }
+.health-extra[open] > .health-fields, .health-extra[open] > fieldset { padding: 0 0 12px; }
+.health-safety-note { margin: 0; font-size: .72rem; color: var(--ink-soft); line-height: 1.5; }
+.health-measurement-link { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); text-decoration: none; }
+.health-measurement-link strong { font-size: .83rem; }
+.health-measurement-link span { font-size: .75rem; color: var(--ink-soft); }
+.health-entry-card :is(button, summary, input, select, textarea):focus-visible { outline: 2px solid #aa5274; outline-offset: 3px; }
+.health-entry-card .health-note textarea { width: 100%; font-size: 16px; box-sizing: border-box; }
+@media (max-width: 430px) { .health-tracker .section-heading-row { flex-direction: column; } }

@@ -16,13 +16,11 @@ export default function PregnancyHealthPage() {
       <AppHeader note="Sức khỏe riêng của Mẹ Ngân" />
       <header className="pregnancy-tool-intro">
         <Link href="/me-bau">← Mẹ bầu</Link>
-        <p className="eyebrow">Một lần ghi · xem được cả lịch sử</p>
-        <h1>Sức khỏe của Mẹ</h1>
-        <p className="intro">Cân nặng, huyết áp, giấc ngủ và những điều cần nhớ khi đi khám.</p>
+        <h1>Ghi sức khỏe</h1>
+        <p className="intro">Một chút mỗi ngày, để chăm sóc Mẹ hơn.</p>
       </header>
-      <Link className="btn btn-primary btn-block" href="/nha-minh/ho-so?role=mother&tab=records">Ghi số đo nhiều lần trong ngày</Link>
-      <p className="state-note">Lưu từng giờ và trước / sau ăn ở sổ số đo. Phần dưới vẫn là bản tổng hợp theo ngày.</p>
       <PregnancyHealthTracker pregnancyWeek={week} />
+      <Link className="health-measurement-link" href="/nha-minh/ho-so?role=mother&tab=records"><strong>Ghi nhiều lần đo trong ngày →</strong><span>Lưu riêng từng giờ, trước hoặc sau ăn trong sổ số đo.</span></Link>
     </main>
   );
 }
