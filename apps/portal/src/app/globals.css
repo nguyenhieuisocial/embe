@@ -58,6 +58,8 @@
   --radius-pill: 999px;
   --tap: 44px;
   --control: 48px;
+  --text-control: .9375rem;
+  --text-caption: .8125rem;
   --rail: 92px;
   --content: 640px;
   --measure: 560px;
@@ -110,9 +112,9 @@
 .care-tracker .care-quick-suggestions button { min-height: 42px; padding: 7px 10px; font-size: .7rem; }
 .care-tracker .care-quick-suggestions small { font-size: .64rem; }
 .care-tracker .care-form-grid { gap: 9px; }
-.care-tracker .care-plan-form label { color: #68555d; font-size: .7rem; }
-.care-tracker .care-plan-form label > small { display: inline; color: #9a858d; font-size: .6rem; font-weight: 500; }
-.care-tracker .care-plan-form input, .care-tracker .care-plan-form select { min-height: 46px; padding: 9px 11px; border-color: #e5d6db; border-radius: 11px; background: #fffcfd; font-size: .82rem; }
+.care-tracker .care-plan-form label { color: var(--ink); font-size: var(--text-control); }
+.care-tracker .care-plan-form label > small { display: inline; color: var(--ink-soft); font-size: var(--text-caption); font-weight: 500; }
+.care-tracker .care-plan-form input, .care-tracker .care-plan-form select { min-height: var(--control); padding: 10px 12px; border-color: var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); font-size: 1rem; }
 .care-tracker .medication-suggestions { max-height: min(245px, 35dvh); overflow-y: auto; box-shadow: 0 12px 28px rgb(94 58 70 / 12%); }
 .care-tracker .clinician-check { min-height: 48px; padding: 8px; border-radius: 12px; background: #fff6f9; color: #604f55; }
 .care-tracker .nutrient-entry { border-top: 1px solid #f0e5e8; }
@@ -123,22 +125,22 @@
 .care-tracker .dose-list { gap: 8px; margin: 10px 0; }
 .dose-list-heading { align-items: end; display: flex; justify-content: space-between; padding: 2px 2px 0; }
 .dose-list-heading h3 { margin: 0; color: #5a4049; font-size: .86rem; }
-.dose-list-heading small { color: #907b83; font-size: .62rem; }
+.dose-list-heading small { color: var(--ink-soft); font-size: var(--text-caption); }
 .care-tracker .dose-list > article { gap: 9px; padding: 11px; border-color: #ecdee3; border-radius: 16px; box-shadow: none; }
 .care-tracker .dose-copy { gap: 2px; }
-.care-tracker .dose-source { color: #9b5570; font-size: .62rem; }
+.care-tracker .dose-source { color: var(--ink-soft); font-size: var(--text-caption); }
 .care-tracker .dose-copy strong { color: #50373f; font-size: .9rem; }
-.care-tracker .dose-copy small { font-size: .69rem; }
+.care-tracker .dose-copy small { font-size: var(--text-caption); line-height: 1.5; }
 .dose-slots { gap: 7px; }
 .dose-slot-row { align-items: center; display: grid; gap: 7px; grid-template-columns: minmax(0, 1fr) auto; padding: 7px 8px; border-radius: 13px; background: #fcf7f9; }
 .dose-slot-row > div { display: grid; gap: 1px; }
 .dose-slot-row time { color: #613d4b; font-size: .82rem; font-weight: 750; }
-.dose-slot-row > div small { color: #89757d; font-size: .61rem; }
+.dose-slot-row > div small { color: var(--ink-soft); font-size: var(--text-caption); }
 .dose-taken-button, .dose-done { align-items: center; display: inline-flex; justify-content: center; min-height: 44px; padding: 7px 11px; border-radius: 999px; font-size: .7rem; font-weight: 750; white-space: nowrap; }
 .dose-taken-button { border: 0; background: #a94769; color: #fff; font: inherit; }
 .dose-done { background: #e8f5ef; color: #35765f; }
 .dose-adjust { grid-column: 1 / -1; border-top: 1px solid #eee2e6; }
-.dose-adjust summary { align-items: center; display: flex; justify-content: space-between; min-height: 44px; color: #806c74; cursor: pointer; font-size: .66rem; list-style: none; }
+.dose-adjust summary { align-items: center; display: flex; justify-content: space-between; min-height: 44px; color: var(--ink-soft); cursor: pointer; font-size: var(--text-caption); list-style: none; }
 .dose-adjust summary::-webkit-details-marker { display: none; }
 .dose-adjust summary span { transition: transform 160ms ease-out; }
 .dose-adjust[open] summary span { transform: rotate(180deg); }
@@ -1142,9 +1144,9 @@ html[data-embe-obscured="on"] body::after { align-items: center; background: var
   gap: 8px;
   padding: 12px 14px;
 }
-.state-note.is-ok { background: var(--jade-soft); color: var(--jade); }
+.state-note.is-ok { background: var(--mint-soft); color: #285B48; border-inline-start: 3px solid #35765F; }
 .state-note.is-wait { background: var(--sun-soft); color: var(--sun-ink); }
-.state-note.is-error { background: var(--coral-soft); color: var(--coral); }
+.state-note.is-error { background: var(--coral-soft); color: var(--coral); border-inline-start: 3px solid var(--coral); }
 .state-note a { font-weight: 600; }
 
 .empty-state {
