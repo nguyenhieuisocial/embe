@@ -1,5 +1,9 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-medical-fields', date: '2026-09-08', title: 'Bổ sung chỉ số và khớp dữ liệu hồ sơ', items: [
+    { title: 'Thêm 12 chỉ số khám và xét nghiệm', description: 'Bổ sung chiều cao Mẹ, mạch, nhiệt độ, SpO₂, nhịp thở, WBC, RBC, HCT, MCV, MCH, creatinine và urê. Có ô nhập, lịch sử và quy tắc khớp từ bản đọc đúng đơn vị. Dữ liệu chưa rõ hoặc mâu thuẫn không được tự đưa vào biểu đồ.', href: '/me-bau/ho-so', action: 'Mở hồ sơ y tế' },
+    { title: 'Đọc được thêm định dạng ngày trên giấy tờ', description: 'Nhận ngày viết bằng chữ, có tiền tố địa điểm như “TP. HCM, ngày … tháng … năm …”, và nhãn ngày lập phiếu / ngày thực hiện. Không lấy ngày sinh hay ngày tái khám làm ngày của lần khám.', href: '/me-bau/ho-so', action: 'Xem giấy tờ' },
+  ] },
   { id: '2026-09-08-today-medicines', date: '2026-09-08', title: 'Lịch thuốc đầy đủ trên Hôm nay', items: [
     { title: 'Xem từng thuốc và từng giờ uống', description: 'Hôm nay hiển thị toàn bộ lần dùng của các thuốc đang theo dõi, liều đã lưu và trạng thái đã uống / bỏ qua / hoãn. Lần dùng chưa đặt giờ vẫn được liệt kê riêng. Không tự đặt liều hoặc giờ từ ảnh đơn thuốc.', href: '/', action: 'Mở Hôm nay' },
   ] },

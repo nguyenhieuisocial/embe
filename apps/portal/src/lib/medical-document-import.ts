@@ -16,8 +16,13 @@ export type DocumentImportContext = {
 const fold = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/\s+/g, ' ').trim();
 const labelKey = (text: string) => fold(text).replace(/\s*[:：]\s*$/, '');
 export const providerKey = (text: string) => fold(text).replace(/\bbenh vien\b/g, 'bv').replace(/\bphong kham\b/g, 'pk').replace(/[^a-z0-9]/g, '');
-const unitKey = (text: string) => fold(text).replace(/\s/g, '').replace(/⁹/g, '9').replace(/\^/g, '');
+const unitKey = (text: string) => fold(text).replace(/\s/g, '').replace(/⁹/g, '9').replace(/¹²/g, '12').replace(/μ/g, 'µ').replace(/\^/g, '');
 const aliases: Record<string, string[]> = {
+  heightCm: ['chiều cao mẹ', 'chiều cao', 'height'], maternalHeartRate: ['mạch', 'mạch mẹ', 'nhịp tim mẹ', 'maternal heart rate', 'pulse'],
+  temperatureC: ['nhiệt độ', 'nhiệt độ cơ thể', 'temperature'], oxygenPercent: ['spo2', 'sp o2', 'độ bão hòa oxy'],
+  respiratoryRate: ['nhịp thở', 'respiratory rate'], wbc109l: ['wbc', 'bạch cầu', 'số lượng bạch cầu'],
+  rbc1012l: ['rbc', 'hồng cầu', 'số lượng hồng cầu'], hematocritPercent: ['hct', 'hematocrit'],
+  mcvFl: ['mcv'], mchPg: ['mch'], creatinineUmolL: ['creatinine', 'creatinin'], ureaMmolL: ['urê', 'urea', 'ure'],
   weightKg: ['cân nặng mẹ', 'cân nặng', 'weight'], systolic: ['huyết áp tâm thu', 'systolic'], diastolic: ['huyết áp tâm trương', 'diastolic'],
   fetalHeartRate: ['nhịp tim thai', 'tim thai', 'fhr'], crlMm: ['crl', 'chiều dài đầu mông'], ntMm: ['nt', 'độ mờ da gáy'],
   bpdMm: ['bpd', 'đường kính lưỡng đỉnh'], hcMm: ['hc', 'chu vi đầu'], acMm: ['ac', 'chu vi bụng'], flMm: ['fl', 'chiều dài xương đùi'],
@@ -27,7 +32,8 @@ const aliases: Record<string, string[]> = {
   tshMiuL: ['tsh'], ft4PmolL: ['ft4'], astUL: ['ast', 'sgot'], altUL: ['alt', 'sgpt'],
 };
 export function printedDate(text: string): string {
-  const clean = text.trim().replace(/^ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})\s+năm\s+(\d{4})$/i, '$1/$2/$3');
+  // Permit a printed location prefix only before an explicit Vietnamese date.
+  const clean = text.trim().replace(/^(?:[\p{L} .\-]+,\s*)?(?:ngày\s+)?(\d{1,2})\s+tháng\s+(\d{1,2})\s+năm\s+(\d{4})$/iu, '$1/$2/$3');
   const vn = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})(?:\s.*)?$/.exec(clean);
   const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/.exec(clean);
   if (!vn && !iso) return '';
@@ -66,7 +72,7 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   const provider = one(['Cơ sở khám', 'Tên cơ sở', 'Bệnh viện', 'Tên bệnh viện', 'Phòng khám', 'Cơ sở y tế', 'Nơi khám', 'Hospital', 'Clinic', 'Provider'], 120);
   // Multiple representations of one date are equivalent. Birth/appointment/sample
   // dates are not visit dates; don't silently choose between different visits.
-  const dateLabels = ['Ngày khám', 'Ngày khám bệnh', 'Ngày xét nghiệm', 'Ngày siêu âm', 'Ngày lập', 'Ngày thu', 'Ngày ra viện', 'Ngày kê đơn', 'Ngày', 'Visit date', 'Date'].map(fold);
+  const dateLabels = ['Ngày khám', 'Ngày khám bệnh', 'Ngày xét nghiệm', 'Ngày siêu âm', 'Ngày lập', 'Ngày lập phiếu', 'Ngày thực hiện', 'Địa điểm và ngày', 'Địa chỉ và ngày', 'Ngày thu', 'Ngày ra viện', 'Ngày kê đơn', 'Ngày', 'Visit date', 'Date'].map(fold);
   const dates = [...new Set(fields.filter(row => !row.unclear && dateLabels.includes(labelKey(row.label))).map(row => printedDate(row.value)).filter(Boolean))];
   const occurredOn = dates.length === 1 ? dates[0] : '';
   const multipleVisits = dates.length > 1;
@@ -108,7 +114,7 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
       warnings.push('Cân nặng trên siêu âm chưa rõ của Mẹ hay thai; chưa đưa vào biểu đồ của Mẹ.'); continue;
     }
     const metric = MEDICAL_MEASUREMENTS.find(item => (aliases[item.key] ?? []).some(alias => fold(alias) === label)
-      && (unitKey(item.unit) === unitKey(row.unit) || item.key === 'fetalHeartRate' && ['bpm', 'beats/min'].includes(unitKey(row.unit))));
+      && (unitKey(item.unit) === unitKey(row.unit) || ['fetalHeartRate', 'maternalHeartRate'].includes(item.key) && ['bpm', 'beats/min'].includes(unitKey(row.unit))));
     if (!metric) continue;
     const raw = row.value.trim().replace(/\s+/g, ' ');
     const numberText = row.unit && raw.toLowerCase().endsWith(row.unit.toLowerCase()) ? raw.slice(0, -row.unit.length).trim() : raw;

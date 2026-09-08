@@ -2,6 +2,18 @@ import type { MedicalRecord } from "./pregnancy-medical";
 
 // Units are part of each identifier. Limits catch typing errors, not clinical normality.
 export const MEDICAL_MEASUREMENTS = [
+  { key: "heightCm", label: "Chiều cao Mẹ", unit: "cm", group: "Số đo khi khám", max: 280 },
+  { key: "maternalHeartRate", label: "Mạch / nhịp tim Mẹ", unit: "lần/phút", group: "Số đo khi khám", max: 300 },
+  { key: "temperatureC", label: "Nhiệt độ cơ thể", unit: "°C", group: "Số đo khi khám", max: 45 },
+  { key: "oxygenPercent", label: "SpO₂", unit: "%", group: "Số đo khi khám", max: 100 },
+  { key: "respiratoryRate", label: "Nhịp thở", unit: "lần/phút", group: "Số đo khi khám", max: 150 },
+  { key: "wbc109l", label: "Bạch cầu — WBC", unit: "10⁹/L", group: "Xét nghiệm", max: 1000 },
+  { key: "rbc1012l", label: "Hồng cầu — RBC", unit: "10¹²/L", group: "Xét nghiệm", max: 20 },
+  { key: "hematocritPercent", label: "Hematocrit — HCT", unit: "%", group: "Xét nghiệm", max: 100 },
+  { key: "mcvFl", label: "MCV", unit: "fL", group: "Xét nghiệm", max: 300 },
+  { key: "mchPg", label: "MCH", unit: "pg", group: "Xét nghiệm", max: 100 },
+  { key: "creatinineUmolL", label: "Creatinine", unit: "µmol/L", group: "Xét nghiệm", max: 5000 },
+  { key: "ureaMmolL", label: "Urê", unit: "mmol/L", group: "Xét nghiệm", max: 100 },
   { key: "weightKg", label: "Cân nặng Mẹ", unit: "kg", group: "Số đo khi khám", max: 300 },
   { key: "systolic", label: "Huyết áp tâm thu", unit: "mmHg", group: "Số đo khi khám", max: 350 },
   { key: "diastolic", label: "Huyết áp tâm trương", unit: "mmHg", group: "Số đo khi khám", max: 250 },
