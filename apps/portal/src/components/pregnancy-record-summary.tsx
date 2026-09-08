@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {medicalInsights, type MedicalRecord, type MedicalDocument} from '../lib/pregnancy-medical';
 import {MEDICAL_MEASUREMENTS} from '../lib/medical-measurements';
 import type {MedicalReadingSummary} from '../lib/medical-reading-summary';
+import {medicalFindingGroups} from '../lib/medical-finding-groups';
 
 const date = (value:string) => new Date(value).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
 export function summarizeRecords(records:MedicalRecord[],now=Date.now()) {
@@ -27,6 +28,7 @@ function SourceRows({documents,group}:{documents:MedicalDocument[];group:keyof M
 export default function PregnancyRecordSummary({records}:{records:MedicalRecord[]}) {
   const summary=summarizeRecords(records);
   const documents=records.flatMap(record=>record.documents);
+  const findings=medicalFindingGroups(records);
   const count=(group:keyof MedicalReadingSummary)=>documents.reduce((total,document)=>total+(document.readingSummary?.[group].length??0),0);
   const failed=documents.filter(document=>['review','confirmed'].includes(document.scanStatus??'')&&!document.readingSummary);
   return <section className="pregnancy-record-summary" aria-label="Tóm tắt thai kỳ">
@@ -36,9 +38,14 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       <div><span>Lịch tiếp theo</span>{summary.upcoming?<><strong>{date(summary.upcoming.occurredAt)} · {summary.upcoming.title}</strong><Link href="#lich-kham-ke-tiep" onClick={()=>document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','')}>Xem lịch hẹn</Link></>:<p>Chưa có lịch hẹn sắp tới được lưu.</p>}</div>
     </div>
     {failed.length?<p role="alert">{failed.length} bản đọc chưa tải được; tổng hợp chưa đầy đủ. {failed.map(document=><Link key={document.id} href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename}</Link>)}</p>:null}
-    <details><summary>Kết luận & lời dặn trên giấy <small>{count('findings')} mục</small></summary>
+    <details><summary>Kết luận & lời dặn trên giấy <small>{findings.length} nội dung</small></summary>
       {!count('findings')?<p>Chưa lấy được kết luận từ bản đọc. Không có nghĩa kết quả khám bình thường.</p>:null}
-      <SourceRows documents={documents} group="findings" />
+      {findings.map((finding,index)=><article key={index}>
+        <strong>{finding.labels.join(' / ')}</strong>{finding.row.sourceDay?<small>{finding.row.sourceDay.split('-').reverse().join('/')}</small>:null}
+        <p>{finding.row.value}</p>{finding.row.details.map((detail,i)=><small key={i}>{detail}</small>)}
+        {finding.row.unclear?<small>Bản đọc chưa xác minh</small>:null}
+        <details><summary>Nguồn đối chiếu <small>{finding.sources.length} trang</small></summary>{finding.sources.map(source=><Link key={`${source.documentId}:${source.page}`} href={`/me-bau/ho-so/tai-lieu/${source.documentId}`}>{source.title} · trang {source.page}</Link>)}</details>
+      </article>)}
     </details>
     <details><summary>Kết quả & chỉ số trên giấy <small>{count('results')} mục</small></summary>
       <p>Giữ số, đơn vị và thời điểm theo từng tài liệu; chưa dùng bản đọc chưa xác minh để kết luận sức khỏe.</p>

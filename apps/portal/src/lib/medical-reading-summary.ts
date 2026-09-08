@@ -1,11 +1,15 @@
 import { groupDocumentData } from './medical-document-data';
 import type { DocumentAnalysis } from './medical-document-scan';
+import {documentDateEvidence} from './medical-document-name';
 
-export type ReadingRow = {page:number;label:string;value:string;details:string[];unclear:boolean};
+export type ReadingRow = {page:number;label:string;value:string;details:string[];unclear:boolean;sourceDay?:string};
 export type MedicalReadingSummary = {findings:ReadingRow[];results:ReadingRow[];medicines:ReadingRow[]};
 /** A compact projection of the reading, never a confirmed medical record or care plan. */
 export function medicalReadingSummary(analysis:DocumentAnalysis, confirmed:boolean):MedicalReadingSummary {
   const groups=groupDocumentData(analysis);
-  const rows=(key:keyof MedicalReadingSummary)=>groups[key].map(row=>({page:row.page,label:row.label,value:row.value,details:row.details,unclear:row.unclear||!confirmed||analysis.pages.some(page=>page.page===row.page&&page.warnings.length>0)}));
+  const rows=(key:keyof MedicalReadingSummary)=>groups[key].map(row=>{
+    const evidence=documentDateEvidence([{...analysis,pages:analysis.pages.filter(page=>page.page===row.page)}]);
+    return {page:row.page,label:row.label,value:row.value,details:row.details,sourceDay:!evidence.conflicting&&evidence.dates.length===1?evidence.dates[0]:undefined,unclear:row.unclear||!confirmed||analysis.pages.some(page=>page.page===row.page&&page.warnings.length>0)};
+  });
   return {findings:rows('findings'),results:rows('results'),medicines:rows('medicines')};
 }
