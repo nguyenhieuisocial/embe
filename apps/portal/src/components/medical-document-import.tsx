@@ -67,7 +67,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
       <label>Cơ sở khám<input value={details.provider} maxLength={120} list="medical-provider-history" onChange={e => change({ provider: e.target.value, linkedRecordId: null })} /></label>
       <datalist id="medical-provider-history">{[...new Set(context.records.map(r => r.provider).filter(Boolean))].map(p => <option key={p} value={p} />)}</datalist>
       <label>Bác sĩ<input value={details.clinician} maxLength={100} onChange={e => change({ clinician: e.target.value })} /></label>
-      <label>Tuần thai ghi trên giấy<input type="number" inputMode="numeric" min={1} max={42} value={details.gestationalWeek ?? ''} onChange={e => change({ gestationalWeek: e.target.value ? Number(e.target.value) : null })} /></label>
+      <label>Tuần thai ghi trên giấy<input type="number" inputMode="numeric" min={1} max={42} disabled={proposal.ambiguousScope} value={details.gestationalWeek ?? ''} onChange={e => change({ gestationalWeek: e.target.value ? Number(e.target.value) : null })} /></label>
       <label>Liên kết lần khám<select value={details.linkedRecordId ?? ''} onChange={e => change({ linkedRecordId: e.target.value || null })}>
         <option value="">Lưu riêng, chưa liên kết</option>
         {context.records.filter(r => r.id !== recordId && !r.documentIntake).map(r => <option key={r.id} value={r.id}>{r.title} · {new Date(r.occurredAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} · {r.provider}</option>)}
@@ -99,7 +99,7 @@ export default function MedicalDocumentImport({ documentId, recordId, revision, 
       <label className="document-check"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} />Đây là giấy tờ của Mẹ Ngân; tôi đã đối chiếu thông tin và dữ liệu sẽ thêm với bản gốc.</label>
       {proposal.identityConflict ? <p role="alert">Có nhiều tên hoặc mã người bệnh. Tách giấy tờ theo từng người; chưa thể nhập chung vào hồ sơ Mẹ.</p> : null}
       {proposal.multipleVisits ? <p role="alert">Có nhiều ngày khám. Giữ riêng các kết quả trong thông tin tài liệu; không gộp chỉ số, thuốc hoặc lịch hẹn.</p> : null}
-      <button className="document-import-confirm" type="button" disabled={!ack || busy || conflict || proposal.identityConflict || proposal.ambiguousScope && Boolean(details.nextAppointmentAt) || !validImportDetails(details)} onClick={() => void importRecord()}>{busy ? 'Đang thêm vào hồ sơ…' : 'Xác nhận & thêm vào hồ sơ'}</button>
+      <button className="document-import-confirm" type="button" disabled={!ack || busy || conflict || proposal.identityConflict || proposal.ambiguousScope && (Boolean(details.nextAppointmentAt) || details.gestationalWeek !== null) || !validImportDetails(details)} onClick={() => void importRecord()}>{busy ? 'Đang thêm vào hồ sơ…' : 'Xác nhận & thêm vào hồ sơ'}</button>
       {error ? <p role="alert">{error}</p> : null}
       {conflict ? <Link href={`/me-bau/ho-so#record-${recordId}`}>Mở hồ sơ đang có</Link> : null}
     </>}

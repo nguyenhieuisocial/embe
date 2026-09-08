@@ -198,7 +198,9 @@ try {
     if (await appointment.inputValue() !== '2026-09-09T09:30') throw new Error('followup_not_proposed');
     await importer.getByText('Kiểm tra ngày, cơ sở và lần khám', { exact: true }).click();
     await importer.getByLabel('Ngày khám / ngày trên giấy', { exact: true }).fill('2026-09-08');
-    await importer.getByLabel('Liên kết lần khám', { exact: true }).selectOption('');
+    const linkSelect = importer.getByLabel('Liên kết lần khám', { exact: true });
+    // The preceding date edit already clears a suggested link.
+    if (await linkSelect.inputValue()) await linkSelect.selectOption({ value: '' });
     // This fixture must never be linked to an existing real family record.
     const importRequest = page.waitForRequest(request => request.url().endsWith(`/documents/${documentId}/import`) && request.method() === 'POST');
     await importer.getByLabel(/Đây là giấy tờ của Mẹ Ngân/).check();
@@ -211,7 +213,10 @@ try {
     const changed = await jsonRequest(importPath, 'POST', { ...payload, details: { ...payload.details, clinician: 'DIFFERENT SYNTHETIC VALUE' } });
     if (changed.status() !== 409) throw new Error('import_rewrite_not_blocked');
     const snapshot = await (await context.request.get(`${origin}${importPath}?view=imported`)).json();
-    if (snapshot.recordId !== recordId || !isDeepStrictEqual(snapshot.analysis, payload.analysis)) throw new Error('import_snapshot_mismatch');
+    const editable = value => ({ version: 1, pages: value.pages.map(({ pdfText, ocrText, ocrEngine, ...page }) => page) });
+    if (snapshot.recordId !== recordId || !isDeepStrictEqual(editable(snapshot.analysis), payload.analysis)) throw new Error('import_snapshot_mismatch');
+    if (!snapshot.sourceSnapshot || !snapshot.analysis.pages.every((page, index) => page.pdfText === reloaded.analysis.pages[index].pdfText && page.ocrText === reloaded.analysis.pages[index].ocrText)) throw new Error('import_full_source_missing');
+    result.fullDocumentSourceImported = true;
     const savedRecords = await (await context.request.get(`${origin}/api/pregnancy/records`)).json();
     const ownRecord = savedRecords.records.find(record => record.id === recordId);
     if (!ownRecord || new Date(ownRecord.nextAppointmentAt).toISOString() !== '2026-09-09T02:30:00.000Z' || ownRecord.notes !== 'SYNTHETIC TEST; NOT FAMILY MEDICAL DATA') throw new Error('followup_or_notes_not_preserved');
@@ -236,6 +241,12 @@ try {
     if (!(await viewer.locator('iframe').getAttribute('src')).endsWith('#page=3')) throw new Error('import_wrong_source_page');
     await viewer.getByRole('button', { name: 'Quay lại hồ sơ', exact: true }).click();
     await search.fill('');
+    await panel.getByText('Toàn văn từng trang · kể cả phần chưa phân loại', { exact: true }).click();
+    await panel.getByText('Chữ từ PDF · trang 3', { exact: true }).click();
+    if (await panel.getByLabel('Lớp chữ PDF trang 3', { exact: true }).textContent() !== snapshot.analysis.pages[2].pdfText) throw new Error('full_document_text_not_visible');
+    await search.fill('KHÔNG DÙNG ĐỂ ĐIỀU TRỊ');
+    if (!await panel.getByText(/Khớp trong toàn văn/).isVisible()) throw new Error('unmapped_footer_not_searchable');
+    await search.fill('');
     for (const width of [375, 393, 430, 412, 768, 1280]) {
       await page.setViewportSize({ width, height: 852 });
       const metrics = await panel.evaluate(node => ({ overflow: document.documentElement.scrollWidth > innerWidth + 1,
@@ -253,6 +264,12 @@ try {
 } catch (error) {
   // Playwright request errors can contain cookies; never print their stack or call log.
   result.status = 'failed'; result.error = String(error.message).split('\n')[0];
+  if (page.url().includes(`/tai-lieu/${documentId}`)) {
+    await page.screenshot({ path: resolve(output, 'live-routing-failure.png') }).catch(() => {});
+    result.importControlState = await page.locator('.document-import').evaluate(node => ({ disabled: node.disabled,
+      details: [...node.querySelectorAll('details')].map(item => item.open),
+      selects: [...node.querySelectorAll('select')].map(item => ({ disabled: item.disabled, count: item.options.length, empty: item.value === '' })) })).catch(() => null);
+  }
   process.exitCode = 1;
 } finally {
   try {

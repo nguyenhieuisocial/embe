@@ -85,6 +85,8 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   const followupValues = [...new Set(followups.map(row => row.unclear ? null : printedAppointment(row.value)))];
   let nextAppointmentAt = followupValues.length === 1 ? followupValues[0] : null;
   if (nextAppointmentAt && (!occurredOn || medicalDay(nextAppointmentAt) < occurredOn)) nextAppointmentAt = null;
+  const owningRecord = records.find(record => record.id === recordId);
+  if (nextAppointmentAt && owningRecord && !owningRecord.documentIntake && medicalDay(nextAppointmentAt) < medicalDay(owningRecord.occurredAt)) nextAppointmentAt = null;
   if (followups.length && !nextAppointmentAt) warnings.push('Lịch tái khám chưa rõ cả ngày và giờ, hoặc có nhiều mốc: giữ nguyên trong hồ sơ, chưa tự đặt giờ nhắc.');
   const measurements: Record<string, number> = {};
   const conflicted = new Set<string>();

@@ -1,6 +1,6 @@
 import { memberAuthorization, memberBody } from '../../../../../../lib/family-members-server';
 import { isUuidV4, photoStore, privateReply } from '../../../../../../lib/photo-upload-server';
-import { validDocumentAnalysis } from '../../../../../../lib/medical-document-scan';
+import { editableDocumentAnalysis, validDocumentAnalysis } from '../../../../../../lib/medical-document-scan';
 import { proposeDocumentImport, validImportDetails } from '../../../../../../lib/medical-document-import';
 import { normalizeMedicalRecord } from '../../../../../../lib/pregnancy-medical';
 import { revalidateFamilyViews } from '../../../../../../lib/family-view-revalidation';
@@ -45,7 +45,7 @@ export async function POST(request: Request, context: Context) {
   const store = photoStore(); if (!store) return privateReply({ error: 'temporarily_unavailable' }, 503);
   try {
     const result = await store.rpc('embe_import_document', { p_document_id: id, p_revision: input.revision,
-      p_record_updated_at: input.recordUpdatedAt, p_analysis: input.analysis, p_details: input.details }).abortSignal(AbortSignal.timeout(12000));
+      p_record_updated_at: input.recordUpdatedAt, p_analysis: editableDocumentAnalysis(input.analysis), p_details: input.details }).abortSignal(AbortSignal.timeout(12000));
     if (result.error) return privateReply({ error: result.error.code === 'PT409' ? 'import_conflict' : result.error.code === 'PT404' ? 'not_found' : 'import_unavailable' },
       result.error.code === 'PT409' ? 409 : result.error.code === 'PT404' ? 404 : result.error.code === '22023' ? 400 : 503);
     if (!result.data?.imported || !isUuidV4(result.data.recordId)) return privateReply({ error: 'import_unavailable' }, 503);

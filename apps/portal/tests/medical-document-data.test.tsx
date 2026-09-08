@@ -42,3 +42,17 @@ it('rejects data belonging to another record', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Xem thông tin đã phân loại' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Chưa xác minh được'); expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
 });
+it('searches and exposes the entire independent text including content without a mapped field', async () => {
+  const a = structuredClone(analysis);
+  a.pages[0].pdfText = 'Nội dung cuối trang: MÃ NGOÀI BIỂU MẪU 000123\nĐịa chỉ xuất hóa đơn';
+  a.pages[0].ocrText = 'Toàn bộ nội dung viết tay chưa phân loại'; a.pages[0].ocrEngine = 'tesseract-vie-eng';
+  vi.stubGlobal('fetch', vi.fn(async () => Response.json({ documentId: id, recordId: id, analysis: a, sourceSnapshot: true })));
+  render(<MedicalDocumentData document={{ id, originalFilename: 'sample.pdf', mimeType: 'application/pdf', byteSize: 100, createdAt: '' }} recordId={id} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Xem thông tin đã phân loại' }));
+  const search = await screen.findByRole('searchbox', { name: 'Tìm trong tài liệu' });
+  fireEvent.change(search, { target: { value: 'ngoai bieu mau' } });
+  expect(await screen.findByText('Nội dung cuối trang: MÃ NGOÀI BIỂU MẪU 000123')).toBeVisible();
+  fireEvent.click(screen.getByText('Toàn văn từng trang · kể cả phần chưa phân loại'));
+  fireEvent.click(screen.getByText('Chữ từ PDF · trang 1'));
+  expect(await screen.findByLabelText('Lớp chữ PDF trang 1')).toHaveTextContent('Địa chỉ xuất hóa đơn');
+});

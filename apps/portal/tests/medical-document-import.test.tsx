@@ -27,6 +27,7 @@ describe('safe medical import proposal', () => {
     const a = structuredClone(analysis);
     a.pages[0].fields.push(field('Ngày tái khám', '09/09/2026 08:30'));
     expect(proposeDocumentImport(a, [], id).details.nextAppointmentAt).toBe('2026-09-09T01:30:00.000Z');
+    expect(proposeDocumentImport(a, [{ ...record, id, occurredAt: '2026-09-10T01:00:00Z' }], id).details.nextAppointmentAt).toBeNull();
     a.pages[0].fields.push(field('Ngày hẹn', '09/09/2026'));
     expect(proposeDocumentImport(a, [], id).details.nextAppointmentAt).toBeNull();
     const details = proposeDocumentImport(analysis, [], id).details;

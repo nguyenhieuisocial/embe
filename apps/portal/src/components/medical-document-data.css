@@ -18,3 +18,6 @@
 .medical-data blockquote { margin: 0 0 8px; border-left: 2px solid var(--line); padding-left: 8px; white-space: pre-wrap; }
 .medical-data a { display: flex; align-items: center; color: var(--rose); }
 .medical-data :is(button, summary, a, input):focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+.medical-data .document-source-text { min-width: 0; }
+.medical-data .document-source-text label { display: grid; gap: 6px; }
+.medical-data .document-source-text pre { max-height: 50vh; max-height: 50dvh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.65; user-select: text; }

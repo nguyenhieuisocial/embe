@@ -1,10 +1,11 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DOCUMENT_DATA_GROUPS, groupDocumentData, type ImportedDocumentData } from '../lib/medical-document-data';
 import { validDocumentAnalysis } from '../lib/medical-document-scan';
 import type { MedicalDocument } from '../lib/pregnancy-medical';
 import MedicalDocumentButton from './medical-document-viewer';
+import MedicalDocumentSourceText from './medical-document-source-text';
 import './medical-document-data.css';
 
 /** Fetch only when opened. Never place medical source text in persistent browser caches. */
@@ -28,8 +29,12 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
   }, [open, data, retry, document.id, recordId]);
   const groups = useMemo(() => data ? groupDocumentData(data.analysis) : null, [data]);
   const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase();
-  const search = fold(query.trim());
+  const search = useDeferredValue(fold(query.trim()));
   const visible = groups ? Object.entries(groups).map(([key, rows]) => [key, rows.filter(row => !search || fold([row.label, row.value, ...row.details, row.evidence].join(' ')).includes(search))] as const).filter(([, rows]) => rows.length) : [];
+  const sourceMatches = data && search ? data.analysis.pages.flatMap(page => (['pdf', 'ocr'] as const).flatMap(kind => {
+    const text = kind === 'pdf' ? page.pdfText : page.ocrText;
+    return (text?.split(/\r?\n/) ?? []).filter(line => fold(line).includes(search)).map((line, index) => ({ page: page.page, kind, line, index }));
+  })) : [];
   return <section className="medical-data" aria-label={`Thông tin từ ${document.originalFilename}`}>
     <button className="medical-data-toggle" type="button" aria-expanded={open} aria-controls={`medical-data-${document.id}`} onClick={() => setOpen(v => !v)}>
       {open ? 'Thu gọn thông tin đã phân loại' : 'Xem thông tin đã phân loại'}
@@ -50,7 +55,23 @@ export default function MedicalDocumentData({ document, recordId }: { document: 
             <MedicalDocumentButton document={document} pageNumber={row.page}>Trang {row.page}</MedicalDocumentButton>
           </div>)}
         </details>)}
-        {!visible.length ? <p>Không có mục phù hợp{search ? ' với từ khóa này' : ' trong bản đã lưu'}. Toàn bộ chữ gốc vẫn có trong bản đọc.</p> : null}
+        {sourceMatches.length ? <details open><summary>Khớp trong toàn văn <span>{sourceMatches.length}</span></summary>
+          <p>Kể cả chữ chưa thành trường dữ liệu. Kết quả PDF và OCR có thể trùng nhau hoặc đọc khác nhau.</p>
+          {sourceMatches.map(match => <div className="medical-data-row" key={`${match.page}:${match.kind}:${match.index}`}>
+            <div><small>{match.kind === 'pdf' ? 'Chữ PDF' : 'OCR từ ảnh'} · Trang {match.page}</small><p>{match.line}</p></div>
+            <MedicalDocumentButton document={document} pageNumber={match.page}>Trang {match.page}</MedicalDocumentButton>
+          </div>)}
+        </details> : null}
+        {!visible.length && !sourceMatches.length ? <p>Không có mục phù hợp{search ? ' với từ khóa này' : ' trong bản đã lưu'}. Kiểm tra toàn văn và bản gốc bên dưới.</p> : null}
+        <details className="medical-data-fulltext"><summary>Toàn văn từng trang · kể cả phần chưa phân loại</summary>
+          <p>{data.sourceSnapshot ? 'Giữ cùng bản dữ liệu lúc nhập hồ sơ.' : 'Toàn văn hiện có từ bộ đọc; có thể mới hơn các trường đã nhập trước đây.'} Không cắt chỉ lấy vùng y tế. Chữ mờ, chữ viết tay hoặc ký hiệu vẫn có thể đọc sai; bản gốc luôn được giữ để xem lại.</p>
+          {data.analysis.pages.map(page => <div key={page.page}>
+            {page.pdfText ? <MedicalDocumentSourceText text={page.pdfText} page={page.page} kind="pdf" /> : null}
+            {page.ocrText ? <MedicalDocumentSourceText text={page.ocrText} page={page.page} kind="ocr" /> : null}
+            {!page.pdfText && !page.ocrText ? <p>Trang {page.page}: chưa có lớp chữ độc lập. Không coi là đã trích xuất hết; mở bản gốc hoặc đọc lại tài liệu.</p> : null}
+            <MedicalDocumentButton document={document} pageNumber={page.page}>Bản gốc · Trang {page.page}</MedicalDocumentButton>
+          </div>)}
+        </details>
       </>}
       <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} prefetch={false}>Mở bản đọc đầy đủ & đối chiếu</Link>
     </div> : null}
