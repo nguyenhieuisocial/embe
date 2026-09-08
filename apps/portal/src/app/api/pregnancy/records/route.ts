@@ -2,6 +2,8 @@ import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../
 import { MEDICAL_KINDS, medicalInsights, normalizeMedicalRecord } from "../../../../lib/pregnancy-medical";
 import { verifySessionCookie } from "../../../../lib/portal-auth";
 import { validMedicalMeasurements } from "../../../../lib/medical-measurements";
+import { validDocumentAnalysis, type DocumentAnalysis } from '../../../../lib/medical-document-scan';
+import { medicalDocumentName } from '../../../../lib/medical-document-name';
 
 function session(request: Request): boolean {
   const cookie = request.headers.get("cookie")?.split(";").map((part) => part.trim().split("="))
@@ -47,6 +49,27 @@ export async function GET(request: Request): Promise<Response> {
     const result = await store.rpc("embe_list_pregnancy_medical_records");
     if (result.error || !Array.isArray(result.data)) throw new Error("records unavailable");
     const records = result.data.flatMap((value: unknown) => { const record = normalizeMedicalRecord(value); return record ? [record] : []; });
+    // Derive names from persisted readings without overwriting user titles or clinical dates.
+    const pendingNames = records.filter(r => r.documentIntake && r.title.startsWith('Chờ đọc ·'));
+    const ids = pendingNames.flatMap(r => r.documents.map(d => d.id));
+    if (ids.length) {
+      try {
+        const scans = await store.schema('portal_read_model').from('medical_document_scan')
+          .select('document_id,status,analysis,confirmed_analysis').in('document_id', ids)
+          .abortSignal(AbortSignal.timeout(4000));
+        if (!scans.error && scans.data) {
+          const names = new Map<string, DocumentAnalysis>();
+          for (const scan of scans.data) {
+            const analysis = scan.status === 'confirmed' ? scan.confirmed_analysis : scan.analysis;
+            if (['review', 'confirmed'].includes(scan.status) && validDocumentAnalysis(analysis)) names.set(scan.document_id, analysis);
+          }
+          for (const record of pendingNames) {
+            const analyses = record.documents.flatMap(d => names.has(d.id) ? [names.get(d.id)!] : []);
+            if (analyses.length === record.documents.length && analyses.length) record.title = medicalDocumentName(analyses);
+          }
+        }
+      } catch { /* A name lookup must not hide already saved records. */ }
+    }
     return privateReply({ records, insights: medicalInsights(records), notice: "EmBe chỉ sắp xếp dữ liệu đã nhập; không đọc kết quả thay bác sĩ." }, 200);
   } catch { return privateReply({ error: "temporarily_unavailable" }, 503); }
 }
