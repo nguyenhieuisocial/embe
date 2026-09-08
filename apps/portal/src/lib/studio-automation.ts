@@ -4,6 +4,7 @@ export type StudioAutomation = {
   enabled: boolean; revision: number; nextRunAt: string; lastCheckedAt: string | null;
   status: string; workerSeenAt: string | null; remaining: number; reviewDue: string | null;
   publication: { status: 'not_connected'; publishedCount: 0 };
+  handoff?: {status:'waiting'|'ready'|'queue_full'|'failed';checkedAt:string|null;pendingCount:number;devices:number;notificationsPending:number;notificationsSent:number};
   history: { slug: string; project_id: string; title: string; created_at: string; deleted: boolean;
     render_id: string | null; render_status: StudioRender['status'] | null; progress: number | null; error: string | null }[];
 };

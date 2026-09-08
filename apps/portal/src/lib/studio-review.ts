@@ -1,7 +1,7 @@
 import type { StudioDocument } from './studio-project';
 export const studioChannels = {undecided:'Chưa chọn',tiktok:'TikTok',instagram:'Instagram',facebook:'Facebook',youtube:'YouTube',zalo:'Zalo Video'} as const;
 export type StudioChannel = keyof typeof studioChannels;
-export type ReviewRequest = {id:string;project_id:string;project_revision:number;render_id:string;target:StudioChannel;status:'pending'|'cancelled';revision:number;created_at:string;updated_at:string;title?:string;stale:boolean;snapshot?:StudioDocument};
+export type ReviewRequest = {id:string;project_id:string;project_revision:number;render_id:string;target:StudioChannel;status:'pending'|'cancelled';revision:number;created_at:string;updated_at:string;title?:string;stale:boolean;snapshot?:StudioDocument;origin?:'manual'|'automatic'};
 export type ReviewEvent = {id:number;action:'requested'|'commented'|'cancelled'|'reopened';note:string;created_at:string};
 // A checklist of things to inspect, never a diagnosis, clinical approval or proof that a source supports a claim.
 export function editorialChecks(doc:StudioDocument) {

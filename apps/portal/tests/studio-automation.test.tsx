@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { studioDocument } from '../src/lib/studio-project';
 import StudioAutomation from '../src/components/studio-automation';
@@ -9,7 +9,7 @@ import { GET, POST } from '../src/app/api/studio/automation/route';
 const status = { enabled:true,revision:2,nextRunAt:'2026-09-09T01:00:00Z',status:'scheduled',remaining:6,reviewDue:'2026-10-07',workerSeenAt:new Date().toISOString(),history:[],publication:{status:'not_connected',publishedCount:0} };
 const req = (body: unknown) => new Request('https://embe.hieu.asia/api/studio/automation', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
 beforeEach(() => { auth.denied=false; auth.check.mockClear(); vi.stubEnv('SUPABASE_URL','https://example.supabase.co');vi.stubEnv('SUPABASE_SECRET_KEY','test-only'); });
-afterEach(() => { vi.restoreAllMocks();vi.unstubAllEnvs(); });
+afterEach(() => { vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllEnvs(); });
 
 describe('Studio automatic creation', () => {
   it('authenticates reads and same-origin mutations before calling the database', async () => {
@@ -54,5 +54,17 @@ describe('Studio automatic creation', () => {
     fetch.mockResolvedValueOnce(new Response('{}',{status:503}));fireEvent.click(screen.getByRole('button',{name:'Tạm dừng'}));
     await waitFor(()=>expect(screen.getByRole('alert')).toHaveTextContent('Cài đặt trên máy chủ không bị thay đổi'));
     expect(screen.getByRole('button',{name:'Tạm dừng'})).toBeEnabled();
+  });
+  it('shows automatic handoff and refreshes without asking the user or creating a job',async()=>{
+    const fetch=vi.spyOn(globalThis,'fetch').mockResolvedValue(Response.json({...status,handoff:{status:'ready',pendingCount:2,devices:2,notificationsPending:1,notificationsSent:0}}));
+    const view=render(<StudioAutomation/>);await screen.findByRole('link',{name:'2 video trong hàng chờ duyệt'});
+    expect(screen.getByText(/Báo video mới trên 2 thiết bị/)).toBeInTheDocument();
+    vi.useFakeTimers();
+    // Simulate reconnect rather than waiting for a button press.
+    fetch.mockResolvedValue(Response.json({...status,handoff:{status:'ready',pendingCount:3,devices:2,notificationsPending:0,notificationsSent:1}}));
+    await act(async()=>{window.dispatchEvent(new Event('online'));});
+    expect(screen.getByRole('link',{name:'3 video trong hàng chờ duyệt'})).toBeInTheDocument();
+    expect(fetch.mock.calls.every(([,options])=>!options?.method)).toBe(true);
+    view.unmount();
   });
 });

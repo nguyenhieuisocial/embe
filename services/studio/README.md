@@ -126,6 +126,15 @@ Xem [nguồn gốc minh họa](assets/PROVENANCE.md) và [catalog có nguồn t�
 
 ## Dựng bảng kiến thức có giọng đọc
 
+### Tự chuyển bước sau khi dựng (08/09/2026)
+
+- Worker hiện có tự đưa video hoàn tất của bản bật `autoRender` vào hàng chờ nội bộ. Chỉ nhận đúng revision/snapshot hiện tại, không nhận bản đã xóa hoặc đang dựng. `origin=automatic` và sự kiện nêu rõ chưa có người xem/xác nhận; không thay duyệt chuyên môn, không tự đăng mạng xã hội.
+- Dùng chung advisory lock, khóa duy nhất theo render và giới hạn 3 bản/lượt, 100 yêu cầu. Không thêm yêu cầu hoặc thông báo trùng; bản đã rút không tự mở lại. Lỗi chuyển bước được ghi trạng thái và thử lại bởi worker có sẵn, không khởi động lại Docker/PowerShell.
+- Thông báo dùng `push_delivery` có sẵn, khóa `studio-ready:<render_id>`. Chỉ thiết bị đang bật nhận; tôn trọng `detail_preview`, hoãn thông báo mới ngoài 08:00–21:00 theo múi giờ thiết bị. Workflow `availability.yml` gửi theo lịch 30 phút; đây không phải cam kết thông báo tức thì hoặc xác nhận iPhone đã hiển thị. Không thay đổi giờ nhắc thuốc/lịch khám.
+- Studio tự đọc tiến độ mỗi 15 giây khi trang đang mở, có mạng; mở thông báo dẫn tới đúng hồ sơ video. Khu thao tác thủ công được thu gọn, giữ bảng màu/phông EmBe và mục tiêu chạm 44 px. Không tự chạy video/audio.
+- `supabase/tests/studio_automatic_handoff.sql` kiểm tra bằng bản ghi tổng hợp chưa commit, dưới khóa Studio; không gọi HTTP/gửi push. Bản thật chỉ được xác minh bằng trạng thái hàng chờ và trình duyệt đăng nhập. Không dùng số thông báo xếp hàng để tuyên bố đã nhận trên điện thoại.
+- Advisor báo INFO cho các bảng riêng đã bật RLS nhưng không có policy khách: giữ chủ đích deny-by-default, quyền RPC chỉ `service_role`. Xem [giải thích của Supabase](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy); không mở quyền khách để làm mất cảnh báo.
+
 ### Phụ đề và chú thích tự động (08/09/2026)
 
 - Worker web tự tạo phụ đề từ đúng chữ đã lưu, tối đa hai dòng, theo từng cụm ngắn. Giữ số với đơn vị và cụm phủ định cùng nhau; không dùng nhận dạng lời nói để đoán lại số liệu. TTS vẫn đọc nguyên cảnh, không cắt thành các lời đọc rời rạc.

@@ -16,14 +16,23 @@ const localTime = (time: string) => new Date(time).toLocaleString('vi-VN', { tim
 
 export default function StudioAutomation() {
   const [data,setData] = useState<Automation | null>(null), [busy,setBusy] = useState(false), [error,setError] = useState('');
-  const flight = useRef(false), generation = useRef(0);
+  const flight = useRef(false), generation = useRef(0), refreshing=useRef(false);
   async function refresh() {
-    if (flight.current) return;
+    if (flight.current || refreshing.current) return;
+    refreshing.current=true;
     const version = ++generation.current;
     try { const next = await request(); if (version === generation.current) { setData(next); setError(''); } }
     catch (e) { if (version === generation.current) setError((e as Error).message); }
+    finally { refreshing.current=false; }
   }
   useEffect(() => { void refresh(); return () => { generation.current++; }; }, []);
+  useEffect(()=>{
+    // Poll only the visible status, never a draft or a mutation. Resume on reconnect.
+    const update=()=>{if(navigator.onLine&&document.visibilityState!=='hidden')void refresh();};
+    const timer=setInterval(update,15000);
+    window.addEventListener('online',update);document.addEventListener('visibilitychange',update);
+    return()=>{clearInterval(timer);window.removeEventListener('online',update);document.removeEventListener('visibilitychange',update);};
+  },[]);
   useFamilyDataRefresh(async canApply => {
     const version = generation.current, next = await request();
     if (canApply() && !flight.current && version === generation.current) { setData(next); setError(''); }
@@ -42,10 +51,16 @@ export default function StudioAutomation() {
     {error && <p role="alert" className="discovery-status">{error} <button className="discovery-button" disabled={busy} onClick={() => void refresh()}>Cập nhật trạng thái</button></p>}
     {!data && !error && <p role="status" className="discovery-help">Đang lấy tiến độ tự động…</p>}
     {data && <>
-      <p className="discovery-help">{data.enabled ? '1 video/ngày, lúc 08:00 giờ Việt Nam. Tự chọn kịch bản, đọc giọng nữ miền Nam và dựng video dọc.' : 'Đã tạm dừng tạo mới. Video đang dựng vẫn tiếp tục, bản đã có được giữ lại.'}</p>
+      <p className="discovery-help">{data.enabled ? '1 video/ngày, lúc 08:00 giờ Việt Nam. EmBe tự chọn kịch bản, đọc giọng nữ miền Nam, ghép phụ đề và đưa vào hàng chờ duyệt.' : 'Đã tạm dừng tạo mới. Video đang dựng vẫn tiếp tục, bản đã có được giữ lại.'}</p>
       <p role="status" className="discovery-status">{automationLabels[data.status] || 'Đang lấy trạng thái.'}</p>
       {data.enabled && data.remaining > 0 && <p className="discovery-help">Lượt kế tiếp: {localTime(data.nextRunAt)}. Còn {data.remaining} chủ đề có nguồn trong thư viện.</p>}
       {!workerOnline && <p className="studio-notice">Máy dựng chưa kết nối gần đây. Video mới sẽ chờ máy nhà hoạt động; không cần mở trang này.</p>}
+      {data.handoff&&<div className="studio-auto-handoff">
+        <Link className="studio-back" href="/studio/duyet-dang">{data.handoff.pendingCount} video trong hàng chờ duyệt</Link>
+        <p className="discovery-help">Không cần tự chuyển bản dựng. Trang cập nhật tiến độ khi đang mở; rời trang vẫn tiếp tục chạy.</p>
+        {data.handoff.status==='failed'||data.handoff.status==='queue_full'?<p role="alert" className="discovery-status">{data.handoff.status==='failed'?'Chuyển hàng chờ đang lỗi; EmBe sẽ thử lại, video đã dựng không mất.':'Hàng chờ đã đầy; video mới vẫn được giữ trong Bàn làm việc.'}</p>:null}
+        <p className="discovery-help">{data.handoff.devices?`Báo video mới trên ${data.handoff.devices} thiết bị đã bật thông báo, trong 08:00–21:00. Thông báo có thể đến chậm theo lượt gửi nền.`:'Chưa có thiết bị bật thông báo. Kết quả vẫn tự hiện tại Studio.'}</p>
+      </div>}
       {latest && <div className="studio-auto-latest"><Link className="studio-back" href={`/studio/soan?du-an=${latest.project_id}`}>{latest.title}</Link>
         <p className="discovery-help">{latest.render_status ? renderLabels[latest.render_status] : 'Kịch bản đã lưu, sắp dựng'}{latest.render_status === 'rendering' ? ` · ${latest.progress}%` : ''}</p>
         {latest.error && <p className="discovery-status">{renderErrors[latest.error] || 'Chưa dựng được video.'}</p>}

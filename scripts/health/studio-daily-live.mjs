@@ -28,6 +28,8 @@ try {
   if(!response.ok() || !response.headers()['cache-control']?.includes('no-store')) throw new Error('status_failed');
   const status=await response.json();
   if(!status.enabled || status.publication.status!=='not_connected') throw new Error('incorrect_state');
+  if(status.handoff?.status!=='ready'||status.handoff.pendingCount<1)throw new Error('automatic_handoff_missing');
+  result.handoff=status.handoff;
   const first=status.history.find(item=>!item.deleted);
   if(first?.render_status!=='completed') throw new Error('render_not_complete');
   result.projectId=first.project_id;result.renderId=first.render_id;result.remaining=status.remaining;result.nextRunAt=status.nextRunAt;
@@ -46,6 +48,23 @@ try {
     result.viewports.push({width,...layout});if(layout.overflow||layout.small.length)throw new Error('mobile_layout');
   }
   await page.setViewportSize({width:393,height:852});await panel.screenshot({path:resolve(dir,'studio-automatic-iphone.png')});
+  // No click/refresh signal: status must update from the visible-page timer.
+  await page.waitForResponse(r=>r.url()===origin+'/api/studio/automation'&&r.request().method()==='GET'&&r.status()===200,{timeout:22000});
+  result.automaticRefresh=true;
+  await page.goto(origin+`/studio/duyet-dang?du-an=${first.project_id}`,{waitUntil:'domcontentloaded'});
+  const detail=page.getByRole('region',{name:'Chi tiết yêu cầu duyệt'});
+  await detail.getByText(/EmBe tự chuyển bản dựng này vào hàng chờ/).waitFor();
+  const reviewVideo=detail.getByLabel('Video đúng bản yêu cầu duyệt',{exact:true});
+  if(await reviewVideo.getAttribute('src')!==`/api/studio/renders/${first.render_id}/video`)throw new Error('wrong_review_video');
+  if(await page.getByText('Thêm hoặc điều chỉnh yêu cầu thủ công',{exact:true}).evaluate(el=>el.closest('details').open))throw new Error('manual_form_not_collapsed');
+  for(const [width,height] of [[375,667],[393,852],[430,932],[412,915],[768,1024],[1280,900]]) {
+    await page.setViewportSize({width,height});
+    const layout=await detail.evaluate(el=>({overflow:document.documentElement.scrollWidth>innerWidth+1,
+      small:[...el.querySelectorAll('button,a,summary')].filter(n=>n.getClientRects().length).filter(n=>{const r=n.getBoundingClientRect();return r.height<43.5||r.width<43.5;}).map(n=>n.textContent?.trim().slice(0,60))}));
+    result.viewports.push({page:'review',width,...layout});if(layout.overflow||layout.small.length)throw new Error('review_mobile_layout');
+  }
+  await page.setViewportSize({width:393,height:852});await detail.screenshot({path:resolve(dir,'studio-review-iphone.png')});
+  result.automaticReviewOpen=true;
   await page.keyboard.press('Tab');result.keyboardFocus=await page.evaluate(()=>document.activeElement!==document.body);
   if(result.jobCreationRequests!==0)throw new Error('not_automatic');
   result.status='passed';
