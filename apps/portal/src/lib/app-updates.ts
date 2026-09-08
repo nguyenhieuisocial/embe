@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-08-reading-summary', date: '2026-09-08', title: 'Hồ sơ hiện đủ thông tin đã đọc', items: [
+    { title: 'Thuốc, kết quả và lời dặn có ngay trong tổng quan', description: 'Tổng quan lấy cùng dữ liệu với danh sách hồ sơ, không tải lại từng bản đọc. Có thuốc, liều, cách dùng, kết quả và nguồn từng trang kể cả trước khi nhập chỉ số theo dõi. Tách rõ bản đọc chưa xác minh; không tự kích hoạt thuốc hay đánh dấu đã uống.', href: '/me-bau/ho-so', action: 'Xem hồ sơ' },
+  ] },
   { id: '2026-09-08-pregnancy-summary', date: '2026-09-08', title: 'Tóm tắt thai kỳ từ hồ sơ', items: [
     { title: 'Xem tổng hợp ngay đầu Hồ sơ', description: 'Lần khám gần nhất, lịch sắp tới, kết luận và lời dặn trích từ giấy tờ, chỉ số đã lưu cùng lần trước, thuốc trong hồ sơ và tình trạng đồng bộ. Có nguồn cho từng mục; không tự kết luận sức khỏe bình thường hoặc coi đơn cũ là đang dùng.', href: '/me-bau/ho-so', action: 'Xem tóm tắt' },
   ] },

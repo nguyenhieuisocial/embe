@@ -1,10 +1,11 @@
+import type {MedicalReadingSummary} from './medical-reading-summary';
 export const MEDICAL_KINDS = new Set(["appointment", "ultrasound", "laboratory", "prescription", "receipt", "clinical", "discharge", "other"]);
 export const MEDICAL_BUCKET = "embe-medical-records";
 export const MEDICAL_MAX_BYTES = 15_000_000;
 export const MEDICAL_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
 export type MedicalMedicine = { name: string; ingredients?: string; dose: string; frequency: string; instructions: string };
-export type MedicalDocument = { id: string; originalFilename: string; displayName?: string; detectedKinds?: string[]; mimeType: string; byteSize: number; createdAt: string; scanStatus?: string; imported?: boolean };
+export type MedicalDocument = { id: string; originalFilename: string; displayName?: string; detectedKinds?: string[]; readingSummary?: MedicalReadingSummary; mimeType: string; byteSize: number; createdAt: string; scanStatus?: string; imported?: boolean };
 export type MedicalRecord = {
   id: string; kind: string; status: "planned" | "completed"; occurredAt: string; title: string;
   provider: string; clinician: string; notes: string; gestationalWeek: number | null;

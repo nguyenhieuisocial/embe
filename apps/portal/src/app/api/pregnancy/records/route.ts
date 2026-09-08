@@ -4,6 +4,7 @@ import { verifySessionCookie } from "../../../../lib/portal-auth";
 import { validMedicalMeasurements } from "../../../../lib/medical-measurements";
 import { validDocumentAnalysis, type DocumentAnalysis } from '../../../../lib/medical-document-scan';
 import { medicalDocumentName } from '../../../../lib/medical-document-name';
+import { medicalReadingSummary } from '../../../../lib/medical-reading-summary';
 
 function session(request: Request): boolean {
   const cookie = request.headers.get("cookie")?.split(";").map((part) => part.trim().split("="))
@@ -59,8 +60,10 @@ export async function GET(request: Request): Promise<Response> {
         const readableIds = records.flatMap(r => r.documents.filter(d => ['review', 'confirmed'].includes(d.scanStatus ?? '')).map(d => d.id));
         for (let offset = 0; offset < readableIds.length; offset += 4) {
           await Promise.all(readableIds.slice(offset, offset + 4).map(async id => {
-            const result = await store.rpc('embe_get_document_scan', { p_document_id: id }).abortSignal(AbortSignal.timeout(4000));
-            if (!result.error && result.data?.documentId === id) scans.push({ document_id: id, status: result.data.status, analysis: result.data.analysis });
+            try {
+              const result = await store.rpc('embe_get_document_scan', { p_document_id: id }).abortSignal(AbortSignal.timeout(4000));
+              if (!result.error && result.data?.documentId === id) scans.push({ document_id: id, status: result.data.status, analysis: result.data.analysis });
+            } catch { /* One failed reading must not discard the successful documents. */ }
           }));
         }
         if (scans.length) {
@@ -74,6 +77,7 @@ export async function GET(request: Request): Promise<Response> {
             if (analysis) {
               document.displayName = medicalDocumentName([analysis]);
               document.detectedKinds = [...new Set(analysis.pages.map(page => page.kind))];
+              document.readingSummary = medicalReadingSummary(analysis, scans.find(scan => scan.document_id === document.id)?.status === 'confirmed');
             }
           }
           for (const record of pendingNames) {
