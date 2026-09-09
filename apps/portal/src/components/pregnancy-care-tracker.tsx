@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import MedicationUseGuide from './medication-use-guide';
+import MedicationUseGuide, {MedicationPurpose} from './medication-use-guide';
 import SavedPrescriptionPicker, { type SavedPrescriptionMedicine } from './saved-prescription-picker';
 import { explicitDailyFrequency } from '../lib/prescription-frequency';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -503,7 +503,6 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
           <span className="care-heading-mark" aria-hidden="true">✦</span>
           <div><h2 id="care-tracker-title">Thuốc &amp; vi chất</h2><p>Theo đúng đơn, nhãn và giờ Mẹ đang dùng</p></div>
         </div>
-        <small>Không tự kê thuốc</small>
       </header>
 
       <div className="care-today-grid">
@@ -516,6 +515,8 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
         </article>
       </div>
 
+      <details className="care-medication-manage" open={showPlan || showSavedPrescriptions || undefined}>
+      <summary>Thêm thuốc &amp; lấy từ hồ sơ</summary>
       <div className="care-primary-actions">
         <button className="care-add-button is-primary" type="button" onClick={() => setShowPlan((value) => !value)}>
           {showPlan ? "Đóng" : "+ Thêm thuốc hoặc vi chất"}
@@ -594,6 +595,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
         </details>
         <button className="health-save care-plan-save" type="submit" disabled={status === "saving"}>{status === "saving" ? "Đang lưu…" : "Lưu kế hoạch"}</button>
       </form>}
+      </details>
 
       {timingConflicts.length ? <aside className="supplement-timing-alert">
         <strong>Giờ sắt và canxi đang trùng nhau</strong>
@@ -608,6 +610,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
           <div className="dose-copy">
             <span className="dose-source">{plan.category === "medicine" ? "Thuốc" : "Vi chất"} · {plan.entry_source === "self_purchased" ? "tự mua" : "bác sĩ dặn"}{plan.confirmed_by_clinician ? " · đã hỏi chuyên môn" : ""}</span>
             <strong>{plan.name}</strong><small>{plan.dose_display}{plan.instructions ? ` · ${plan.instructions}` : ""}</small>
+            <MedicationPurpose name={plan.name} />
             <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times ?? []} />
           </div>
           {plan.confirmed_by_clinician || plan.entry_source === "self_purchased" ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
@@ -634,8 +637,11 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
               </div>;
             })}
           </div> : <p className="formula-note">Xác nhận kế hoạch với bác sĩ/dược sĩ trước khi ghi tuân thủ.</p>}
+          <details className="care-medication-manage"><summary>Quản lý thuốc này</summary>
+          <p className="formula-note">Tạm dừng theo dõi không phải chỉ định ngừng thuốc.</p>
           <button className="dose-pause-button" type="button" disabled={status === "saving"}
             onClick={() => void mutate({ action: "planState", planId: plan.id, active: false }, `Đã tạm dừng ${plan.name}.`)}>Tạm dừng {plan.name}</button>
+          </details>
         </article>)}
       </div> : <div className="care-empty"><span aria-hidden="true">♡</span><strong>Chưa có lịch dùng hằng ngày</strong><p>Thêm đúng tên và liều Mẹ đang dùng. EmBe sẽ xếp giờ gọn ở đây.</p></div>}
 

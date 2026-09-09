@@ -4928,6 +4928,22 @@ input::-webkit-datetime-edit {
 .today-priorities.skeleton { align-content: start; min-height: 278px; }
 .today-priority-list { display: grid; list-style: none; margin: 0; padding: 0; }
 .today-medications { min-width:0; }
+.care-tracker .care-medication-manage { min-width:0; margin:8px 0; border:1px solid var(--line); border-radius:12px; padding:0 12px; background:var(--surface); }
+.care-tracker .care-medication-manage > summary { display:flex; align-items:center; min-height:48px; font-size:.875rem; color:var(--rose-press); cursor:pointer; }
+.care-tracker .care-medication-manage > summary::after { content:'+'; margin-left:auto; padding-left:8px; }
+.care-tracker .care-medication-manage[open] > summary::after { content:'−'; }
+.care-tracker .care-medication-manage > summary:focus-visible { outline:2px solid var(--rose); outline-offset:2px; }
+.care-tracker .dose-list > article { min-width:0; padding:14px; border-radius:16px; background:var(--surface); }
+.care-tracker .dose-copy { min-width:0; overflow-wrap:anywhere; }
+.care-tracker .dose-copy > strong { font-size:1rem; line-height:1.5; }
+.care-tracker .dose-copy > small, .care-tracker .dose-source { font-size:.8125rem; line-height:1.5; }
+.care-tracker .dose-slot-row { min-width:0; gap:8px; }
+.care-tracker .dose-slot-row time { font-variant-numeric:tabular-nums; font-size:.9375rem; }
+.care-tracker .dose-slot-row small, .care-tracker .dose-adjust summary { font-size:.8125rem; line-height:1.5; }
+.care-tracker .dose-adjust summary, .care-tracker .dose-taken-button { min-height:44px; }
+.care-tracker .care-primary-actions { grid-template-columns:minmax(0,1fr); gap:8px; }
+.care-tracker .care-primary-actions > * { min-height:44px; font-size:.875rem; }
+.care-tracker .care-tracker-heading p, .care-tracker .adherence-card p { font-size:.8125rem; line-height:1.5; }
 .today-medications-progress { display:grid; gap:6px; margin-top:12px; color:var(--ink-soft); font-size:.875rem; }
 .today-medications-progress progress { appearance:none; width:100%; height:4px; border:0; border-radius:4px; overflow:hidden; background:var(--rose-soft); accent-color:var(--rose); }
 .today-medications-progress progress::-webkit-progress-bar { background:var(--rose-soft); }
