@@ -14,7 +14,7 @@ await context.addInitScript(() => {
 });
 const page = await context.newPage(), errors = [], results = [];
 page.on('pageerror', error => errors.push(error.message));
-let fixture = false, failSave = false, failLoad = false, writes = 0, intakeDay = '';
+let fixture = false, failSave = false, failLoad = false, writes = 0, intakeDay = '', taskWrites = 0;
 const plan = {id: '11111111-1111-4111-8111-111111111111', name: 'Thuốc mẫu kiểm tra giao diện', dose_display: 'Liều mẫu',
   instructions: 'Lời dặn mẫu, không phải chỉ định cho gia đình', active: true, times_per_day: 2, reminder_times: ['08:00:00', '20:00:00'],
   confirmed_by_clinician: false, entry_source: 'clinician_plan', dose_states: []};
@@ -44,6 +44,7 @@ try {
   }
   await context.route('**/api/**', async route => {
     const request = route.request();
+    if(new URL(request.url()).pathname==='/api/tasks'&&!['GET','HEAD'].includes(request.method())) taskWrites++;
     if (fixture && new URL(request.url()).pathname === '/api/pregnancy/care') {
       if (request.method() === 'GET' && failLoad) return route.fulfill({status: 503, json: {error: 'fixture unavailable'}});
       if (request.method() === 'PATCH') {
@@ -88,6 +89,22 @@ try {
     await board.screenshot({path: `${output}/checklist-${width}.png`});
     results.push({case: 'live daily checklist with scheduled doses', width, ...scan});
   }
+  for (const width of [375,430,768,1280]) {
+    await page.setViewportSize({width,height:852});
+    await page.goto(origin+'/ke-hoach');
+    await page.waitForFunction(()=>/\d+\/\d+ việc đã xong/.test(document.querySelector('.planner-progress')?.textContent??''));
+    const scan=await geometry();
+    assert.equal(scan.overflow,false);assert.deepEqual(scan.smallTargets,[]);
+    const doses=await page.locator('.planner-medication').count();
+    const homeDoses=results.find(item=>item.case==='live layout'&&item.width===width).doses;
+    assert.equal(doses,homeDoses,'Planner must include each tracked daily dose automatically');
+    assert.equal(await page.locator('.planner-medication .planner-check').count(),doses);
+    const times=await page.locator('.planner-task-meta > span:first-child').allTextContents();
+    const scheduled=times.filter(value=>/^\d{2}:\d{2}/.test(value)).map(value=>value.slice(0,5));
+    assert.deepEqual(scheduled,[...scheduled].sort(),'Tasks and doses must be chronological');
+    await page.screenshot({path:`${output}/planner-${width}.png`,fullPage:true});
+    results.push({case:'live planner automatically includes daily doses in time order',width,...scan,doses});
+  }
   await page.setViewportSize({width: 375, height: 852}); fixture = true;
   await page.goto(origin + '/');
   const first = page.getByRole('button', {name: 'Đánh dấu đã dùng Thuốc mẫu kiểm tra giao diện lần 1', exact: true});
@@ -130,6 +147,32 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('span.today-medication-check').length === 2);
   assert.equal(writes, 3);
   results.push({case: 'completed checklist doses appear on Home and emit the linked completion once', passed: true});
+  await page.goto(origin+'/ke-hoach');
+  await page.waitForFunction(()=>document.querySelectorAll('.planner-medication.is-complete').length===2);
+  assert.equal(writes,3);
+  results.push({case:'Planner sees recorded doses from Home and checklist without copying tasks',passed:true});
+  plan.dose_states=[];
+  await page.reload();
+  const plannerButton=page.getByRole('button',{name:'Đánh dấu đã dùng Thuốc mẫu kiểm tra giao diện lần 1',exact:true});
+  await plannerButton.click();
+  assert.equal(await plannerButton.isDisabled(),true);
+  assert.equal(await page.locator('.planner-medication.is-complete').count(),0);
+  await page.getByText('Đã ghi Thuốc mẫu kiểm tra giao diện · lần 1 đã dùng.',{exact:true}).waitFor();
+  assert.equal(await page.locator('.planner-medication.is-complete').count(),1);
+  assert.equal(writes,4);assert.equal(taskWrites,0);
+  await page.goto(origin+'/');
+  await page.waitForFunction(()=>document.querySelectorAll('span.today-medication-check').length===1);
+  results.push({case:'Planner writes to the original intake; Home reflects it, no task copies',passed:true});
+  const future=new Date(intakeDay+'T00:00:00Z');future.setUTCDate(future.getUTCDate()+1);
+  await page.goto(origin+'/ke-hoach?date='+future.toISOString().slice(0,10));
+  await page.locator('.planner-medication').first().waitFor();
+  assert.equal(await page.locator('.planner-medication').count(),2);
+  assert.equal(await page.locator('.planner-medication button.planner-check').count(),0);
+  assert.equal(await page.locator('.planner-medication.is-complete').count(),0);
+  assert.equal(taskWrites,0);
+  results.push({case:'Future medication schedule is an explicit read-only preview',passed:true});
+  await page.goto(origin+'/');
+  await page.locator('.today-medication').first().waitFor();
   await page.setViewportSize({width: 667, height: 375});
   await page.addStyleTag({content: 'html {font-size: 20px !important}'});
   const enlarged = await geometry();
@@ -143,8 +186,8 @@ try {
   assert.equal(await page.locator('.today-stage-card').count(), 0);
   results.push({case: 'postpartum switches shortcuts and stage, browser-only fixture', passed: true});
   assert.deepEqual(errors, []);
-  await writeFile(`${output}/audit.json`, JSON.stringify({version, results, errors, mockedMedicationWrites: writes, realFamilyWrites: 0}, null, 2));
-  console.log(JSON.stringify({checks: results.length, errors: errors.length, mockedMedicationWrites: writes, realFamilyWrites: 0}));
+  await writeFile(`${output}/audit.json`, JSON.stringify({version, results, errors, mockedMedicationWrites: writes, taskWrites, realFamilyWrites: 0}, null, 2));
+  console.log(JSON.stringify({checks: results.length, errors: errors.length, mockedMedicationWrites: writes, taskWrites, realFamilyWrites: 0}));
 } finally {
   await context.unrouteAll({behavior: 'wait'});
   await context.request.post(origin + '/api/auth/logout', {headers: {origin}, maxRedirects: 0}).catch(() => {});

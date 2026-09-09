@@ -12,7 +12,7 @@ const task = {
 
 describe("one-handed family planner", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ tasks: [task] }), { status: 200 })));
+    vi.stubGlobal("fetch", vi.fn(async (url:string)=>Response.json(url.startsWith('/api/pregnancy/care')?{snapshot:{plans:[]}}:{tasks:[task]})));
   });
 
   it("shows the day, progress and links each task to its related place", async () => {
@@ -52,6 +52,7 @@ describe("one-handed family planner", () => {
     const writes: { method: string; body: Record<string, unknown> }[] = [];
     let disconnected = true;
     vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+      if(_url.startsWith('/api/pregnancy/care')) return Response.json({snapshot:{plans:[]}});
       if (!init?.method) return Response.json({ tasks: [] });
       writes.push({ method: init.method, body: JSON.parse(String(init.body)) });
       if (init.method === "POST" && disconnected) { disconnected = false; throw new Error("response_lost"); }
@@ -72,7 +73,7 @@ describe("one-handed family planner", () => {
 
   it("locks a pending toggle and rolls it back on failure", async () => {
     let finish: (value: Response) => void = () => {};
-    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => init?.method
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => _url.startsWith('/api/pregnancy/care')?Response.json({snapshot:{plans:[]}}):init?.method
       ? new Promise<Response>(resolve => { finish = resolve; }) : Response.json({ tasks: [task] })));
     render(<FamilyPlanner selectedDate="2026-09-03" />);
     const button = await screen.findByRole("button", { name: "Đánh dấu Đặt lịch khám đã xong" });
@@ -80,7 +81,8 @@ describe("one-handed family planner", () => {
     expect(button).toBeDisabled();
     finish(new Response("", { status: 503 }));
     await waitFor(() => expect(button).toBeEnabled());
-    expect(screen.getByText("0/1 việc đã xong")).toBeInTheDocument();
+    expect(button.closest('article')).not.toHaveClass('is-complete');
+    expect(screen.getByText("Chưa cập nhật đủ")).toBeInTheDocument();
     expect(vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "PATCH")).toHaveLength(1);
   });
 });

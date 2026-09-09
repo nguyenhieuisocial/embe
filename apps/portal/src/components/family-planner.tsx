@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { Icon } from "./embe-icon";
+import MedicationUseGuide from "./medication-use-guide";
+import {useMedicationSchedule} from "../lib/use-medication-schedule";
 import { useFamilyDataRefresh } from "../lib/use-family-data-refresh";
 import {
   dateInVietnam, LINK_DETAILS, type FamilyTask, type LinkTarget,
@@ -73,7 +75,15 @@ export default function FamilyPlanner({ selectedDate, startOpen = false, templat
   const loadSequence = useRef(0);
   const titleRef = useRef<HTMLInputElement>(null);
   const days = useMemo(() => nearbyDays(selectedDate), [selectedDate]);
-  const completed = tasks.filter((task) => task.completed).length;
+  const medications = useMedicationSchedule(selectedDate);
+  const completed = tasks.filter((task) => task.completed).length + medications.rows.filter(row=>row.status==='taken').length;
+  const total = tasks.length + medications.rows.length;
+  const ready = !loading && !error && !medications.loading && !medications.error;
+  // Derived occurrences: never copy a medication into /api/tasks or match by name.
+  const entries = [
+    ...tasks.map(task=>({kind:'task' as const,task,time:task.dueTime??'00:00',key:`task:${task.id}:${task.occurrenceOn}`})),
+    ...medications.rows.map(dose=>({kind:'dose' as const,dose,time:dose.time||'99:99',key:`dose:${dose.plan.id}:${selectedDate}:${dose.slot}`})),
+  ].sort((a,b)=>a.time.localeCompare(b.time)||a.key.localeCompare(b.key));
 
   async function load(background = false, canApply = () => true) {
     const sequence = ++loadSequence.current;
@@ -190,22 +200,49 @@ export default function FamilyPlanner({ selectedDate, startOpen = false, templat
           <div><h2 id="planner-day-title">{dateLabel(selectedDate)}</h2></div>
           <button className="planner-add" type="button" onClick={showCreate} aria-label="Thêm việc mới"><Icon name="plus" /> Thêm</button>
         </div>
-        <div className="planner-progress" aria-label={`${completed} trên ${tasks.length} việc đã xong`}>
-          <span><i style={{ width: tasks.length ? `${Math.round(100 * completed / tasks.length)}%` : "0%" }} /></span>
-          <p>{completed}/{tasks.length} việc đã xong</p>
+        <div className="planner-progress" aria-label={ready?`${completed} trên ${total} việc đã xong`:'Tiến độ chưa cập nhật đủ'}>
+          <span><i style={{ width: ready&&total ? `${Math.round(100 * completed / total)}%` : "0%" }} /></span>
+          <p>{ready?`${completed}/${total} việc đã xong`:loading||medications.loading?'Đang tải việc và thuốc…':'Chưa cập nhật đủ'}</p>
+        </div>
+        <div className="planner-medication-source">
+          <span>{medications.mode==='preview'?'Thuốc dự kiến theo lịch đang lưu; không phải chỉ định dùng kéo dài.':medications.mode==='history'?'Thuốc chỉ hiện những lần đã ghi; không áp lịch hiện tại vào ngày cũ.':'Thuốc tự lấy từ lịch đang theo dõi.'}</span>
+          <Link href="/me-bau/thuoc">Lịch thuốc <Icon name="arrow" /></Link>
         </div>
 
         {error ? <button className="state-note state-error planner-retry" type="button" onClick={() => void load()}>{error}</button> : null}
+        {medications.error?<p className="state-note state-error" role="alert">Chưa cập nhật được thuốc. <button type="button" className="btn btn-quiet" onClick={()=>void medications.refresh()}>Tải lại thuốc</button></p>:null}
+        {medications.feedback?<p className="planner-medication-feedback" role="status">{medications.feedback}</p>:null}
         {loading ? <div className="planner-loading" aria-label="Đang mở kế hoạch"><span /><span /><span /></div> : null}
-        {!loading && tasks.length === 0 ? (
+        {ready && total === 0 ? (
           <div className="planner-empty"><Icon name="check" /><strong>Ngày này đang thật nhẹ</strong><p>Thêm một việc hoặc chọn gợi ý nhanh bên dưới.</p></div>
         ) : null}
 
         <div className="planner-thread">
-          {tasks.map((task) => {
+          {entries.map((entry) => {
+            if(entry.kind==='dose'){
+              const {plan,slot,time,status}=entry.dose;
+              const taken=status==='taken';
+              const historical=medications.mode==='history';
+              return <article className={`planner-task planner-medication${taken?' is-complete':''}`} data-state={status} key={entry.key}>
+                {medications.mode==='today'&&!taken?<button className="planner-check" type="button"
+                  disabled={Boolean(medications.saving)||medications.error||medications.loading}
+                  aria-label={`Đánh dấu đã dùng ${plan.name} lần ${slot}`}
+                  onClick={()=>void medications.markTaken(plan,slot)}><Icon name="check" /></button>
+                  :<span className="planner-check" aria-label={taken?`${plan.name} lần ${slot}: đã dùng`:`${plan.name} lần ${slot}: ${historical?'đã ghi':'dự kiến'}`}><Icon name="check" /></span>}
+                <div className="planner-task-body">
+                  <div className="planner-task-meta"><span>{historical?'Đã ghi trong ngày':time||'Chưa đặt giờ'}</span><span>Mẹ Ngân</span><span className="planner-medication-tag">Thuốc{medications.mode==='preview'?' · dự kiến':''}</span></div>
+                  <strong>{plan.name}</strong>
+                  <p>{historical?`Lần ${slot}`:`${plan.dose_display || 'Chưa có liều đã ghi'} · lần ${slot}/${plan.times_per_day}`}</p>
+                  <small className="planner-dose-state">{medications.saving===`${plan.id}-${slot}`?'Đang lưu…':taken?'Đã dùng':status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':medications.mode==='preview'?'Chưa đến ngày ghi nhận':'Chưa ghi nhận dùng'}</small>
+                  {historical?<Link className="planner-dose-history" href="/me-bau/thuoc">Xem lịch sử dùng thuốc</Link>
+                    :<MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times??[]} summaryLabel="Cách dùng & công dụng" />}
+                </div>
+              </article>;
+            }
+            const task=entry.task;
             const target = LINK_DETAILS[task.linkTarget];
             return (
-              <article className={`planner-task${task.completed ? " is-complete" : ""}`} key={`${task.id}-${task.occurrenceOn}`}>
+              <article className={`planner-task${task.completed ? " is-complete" : ""}`} key={entry.key}>
                 <button className="planner-check" type="button" disabled={pendingToggles.includes(`${task.id}:${task.occurrenceOn}`)} onClick={() => void toggle(task)} aria-label={task.completed ? `Mở lại ${task.title}` : `Đánh dấu ${task.title} đã xong`}><Icon name="check" /></button>
                 <div className="planner-task-body">
                   <div className="planner-task-meta"><span>{task.dueTime ?? "Cả ngày"}</span><span>{ownerLabels[task.ownerRole]}</span>{task.repeatRule !== "none" ? <span>{repeatLabels[task.repeatRule]}</span> : null}</div>

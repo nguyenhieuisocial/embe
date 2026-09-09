@@ -384,6 +384,21 @@
   .planner-main .planner-days strong { font-size: .875rem; }
   .planner-main .planner-days [aria-current="date"] { background: var(--rose); color: var(--surface); }
   .planner-main .planner-days [aria-current="date"] small { color: inherit; }
+  .planner-medication-source { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:8px; color:var(--ink-soft); font-size:.8125rem; line-height:1.5; }
+  .planner-medication-source > span { flex:1 1 180px; }
+  .planner-medication-source a, .planner-dose-history { display:inline-flex; align-items:center; gap:6px; min-height:44px; color:var(--rose-press); text-decoration:none; }
+  .planner-medication-source .icon { width:16px; height:16px; }
+  .planner-main .planner-task { grid-template-columns:44px minmax(0,1fr); }
+  .planner-main .planner-task-body { min-width:0; overflow-wrap:anywhere; }
+  .planner-medication .planner-task-body { border-color:var(--rose-mist); background:var(--blush, var(--surface)); box-shadow:none; }
+  .planner-medication .planner-task-meta .planner-medication-tag { color:var(--rose-press); font-weight:600; }
+  .planner-medication .planner-dose-state { color:var(--ink-soft); font-size:.75rem; }
+  .planner-medication.is-complete .planner-task-body > strong { text-decoration:none; }
+  .planner-medication span.planner-check { display:grid; place-items:center; cursor:default; }
+  .planner-medication:not(.is-complete) span.planner-check .icon { opacity:.3; }
+  .planner-medication .medication-guide.care-secondary-section { border:0; border-top:1px solid var(--line); border-radius:0; padding:0; margin:0; }
+  .planner-medication .medication-guide > summary { min-height:44px; padding:8px 0; font-size:.8125rem; }
+  .planner-medication-feedback { font-size:.8125rem; color:var(--rose-press); margin-top:8px; }
   .has-nav .studio-main .studio-nav { padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
   .has-nav .studio-main .studio-nav a { border-radius: 10px; min-height: 44px; font-size: .875rem; }
   .has-nav .studio-main .studio-nav a[aria-current="page"] { color: var(--lavender); background: var(--lavender-soft); box-shadow: none; }

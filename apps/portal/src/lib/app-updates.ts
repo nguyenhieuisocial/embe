@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-09-planner-medications', date: '2026-09-09', title: 'Thuốc tự có trong Kế hoạch', items: [
+    { title: 'Chung dòng thời gian, chung trạng thái', description: 'Mỗi lần dùng thuốc tự xếp theo giờ cùng việc và lịch hẹn, được tính vào tiến độ. Tích đã dùng cập nhật lịch thuốc gốc, không tạo việc trùng. Ngày cũ chỉ hiện lần đã ghi; ngày tới là lịch dự kiến, chưa thể tích.', href: '/ke-hoach', action: 'Mở Kế hoạch' },
+  ] },
   { id: '2026-09-09-medication-intake', date: '2026-09-09', title: 'Tích thuốc đã dùng ngay trong checklist', items: [
     { title: 'Không còn bị chặn bởi trạng thái xác nhận', description: 'Thuốc đang theo dõi đều có nút tích từng lần đã dùng. Trạng thái đồng bộ giữa Hôm nay, checklist và Thuốc; chỉ báo thành công sau khi lưu. Giữ nguyên liều, lời dặn và xác nhận chuyên môn.', href: '/me-bau#viec-hom-nay', action: 'Mở checklist' },
   ] },
