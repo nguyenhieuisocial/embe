@@ -84,6 +84,13 @@ try{
   const disclosure=overview.locator(':scope > details > summary').first();
   await disclosure.focus();await page.keyboard.press('Enter');
   assert.equal(await disclosure.evaluate(el=>el.parentElement.open),true);
+  await page.screenshot({path:`${output}/keyboard-viewport-375.png`});
+  const focusGeometry=await disclosure.evaluate(el=>{
+   const box=el.getBoundingClientRect(),skip=document.querySelector('.skip-link').getBoundingClientRect();
+   return {top:box.top,bottom:box.bottom,height:innerHeight,skipOutsideViewport:skip.bottom<=0,unobscured:el.contains(document.elementFromPoint(box.x+box.width/2,box.y+box.height/2))};
+  });
+  assert.equal(focusGeometry.skipOutsideViewport,true,JSON.stringify(focusGeometry));
+  assert.equal(focusGeometry.unobscured,true,JSON.stringify(focusGeometry));
   await page.screenshot({path:`${output}/reading-open-375.png`,fullPage:true});
   assert.deepEqual((await geometry()).smallTargets,[]);
   await page.keyboard.press('Enter');
