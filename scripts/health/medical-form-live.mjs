@@ -14,10 +14,14 @@ try {
  await page.getByRole('button',{name:'Tự nhập',exact:true}).click();
  const form=page.locator('#medical-record-form');
  await form.waitFor();
+ await form.locator('.medical-measurements > summary').click();
+ await form.locator('.medical-measurements > details > summary').filter({hasText:'Số đo khi khám'}).click();
  await mkdir('data/medical-form-verification',{recursive:true});
  for(const width of [375,393,768,1280]){
   await page.setViewportSize({width,height:852});
   if(await form.evaluate(el=>el.scrollWidth>el.clientWidth+1))throw new Error('form_overflow_'+width);
+  const measurement=await form.getByLabel('Chiều cao Mẹ (cm)',{exact:true}).boundingBox();
+  if(!measurement||measurement.height<44||measurement.width<100)throw new Error('measurement_input_small');
   const buttons=await form.locator('.medical-kind-picker button').evaluateAll(nodes=>nodes.map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height})));
   if(buttons.some(b=>b.w<44||b.h<44))throw new Error('small_type_target');
  }
