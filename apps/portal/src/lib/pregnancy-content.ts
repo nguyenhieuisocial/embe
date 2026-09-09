@@ -1,3 +1,5 @@
+import { pregnancyCosmetics } from "./pregnancy-cosmetics";
+
 export const dailyChecklist = [
   {
     id: "supplements",
@@ -80,6 +82,7 @@ export const dailyChecklist = [
 ] as const;
 
 export const pregnancyGuidance = [
+  ...pregnancyCosmetics,
   {
     id: "varied-foods",
     level: "do",
