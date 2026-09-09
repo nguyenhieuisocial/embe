@@ -6,7 +6,7 @@ export default function MaternalTools({ week }: { week: number | null }) {
     <nav className="maternal-shortcuts" aria-label="Công cụ hằng ngày">
       <Link id="bua-an" href="/me-bau/bua-an"><Icon name="meal" /><span><strong>Bữa ăn</strong><small>Chụp món · dinh dưỡng</small></span></Link>
       <Link id="suc-khoe" href="/me-bau/suc-khoe"><Icon name="care" /><span><strong>Sức khỏe</strong><small>Số đo · ngủ · nước</small></span></Link>
-      <Link href="/me-bau/suc-khoe-iphone#vi-chat-thuoc"><Icon name="check" /><span><strong>Thuốc &amp; vi chất</strong><small>Lịch uống · bổ sung</small></span></Link>
+      <Link href="/me-bau/thuoc"><Icon name="check" /><span><strong>Thuốc &amp; vi chất</strong><small>Lịch dùng hằng ngày</small></span></Link>
       <Link id="ho-so-kham" href="/me-bau/ho-so"><Icon name="album" /><span><strong>Hồ sơ &amp; lịch khám</strong><small>Giấy tờ · ngày hẹn</small></span></Link>
     </nav>
     <nav className="care-inline-links" aria-label="Chăm sóc và hỗ trợ">

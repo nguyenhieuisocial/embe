@@ -79,7 +79,7 @@ export function medicationCareDestination(value: string): { href: string; label:
   const isPrescription = /(đơn thuốc|toa thuốc|bác sĩ (kê|dặn)|theo đơn)/u.test(text);
   return isPrescription
     ? { href: "/me-bau/ho-so?quick=prescription#ho-so-kham", label: "Lưu đơn thuốc", description: "Đây có vẻ là đơn hoặc lời dặn của bác sĩ. Hãy lưu cùng hồ sơ khám." }
-    : { href: "/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc", label: "Lưu thuốc / vi chất tự mua", description: "Đây có vẻ là sản phẩm tự mua. Hãy lưu riêng để không bị tính thành món ăn." };
+    : { href: "/me-bau/thuoc?quick=self-purchased", label: "Lưu thuốc / vi chất tự mua", description: "Đây có vẻ là sản phẩm tự mua. Hãy lưu riêng để không bị tính thành món ăn." };
 }
 
 function hasInvalidFood(analysis: MealAnalysis): boolean {
@@ -590,7 +590,7 @@ export default function MealPhotoTracker() {
         {view === "capture" && statusMessage ? <p className={`meal-state is-${status}`} role="status">{statusMessage}</p> : null}
         <button className="meal-add-food" type="button" disabled={status === "saving"} onClick={() => { setAnalysis(null); setStatus("idle"); setStatusMessage(""); }}>Chọn lại ảnh hoặc ghi chú</button>
       </div> : null}
-      <Link className="meal-medicine-shortcut" href="/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc">Thuốc & vi chất tự mua<Icon name="arrow" /></Link>
+      <Link className="meal-medicine-shortcut" href="/me-bau/thuoc?quick=self-purchased">Thuốc & vi chất tự mua<Icon name="arrow" /></Link>
       </div>
 
       {!historyLoading && !historyLoadError ? <details className="care-inline" aria-label="Dinh dưỡng hôm nay">

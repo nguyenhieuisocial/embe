@@ -30,9 +30,8 @@ export default async function SearchPage({ searchParams }: {
     <main className="page family-search-main">
       <AppHeader note="Chỉ tìm trong dữ liệu gia đình" />
       <section className="family-search-hero">
-        <p className="eyebrow">Tìm lại thật nhanh</p>
-        <h1>Kỷ niệm nào<br /><em>mình đang nhớ?</em></h1>
-        <p className="intro">Tìm theo ngày, album, địa điểm hoặc lời đã ghi; cả hồ sơ khám và cột mốc.</p>
+        <h1>Tìm trong EmBe</h1>
+        <p className="intro">Ảnh, nhật ký và hồ sơ — theo ngày hoặc từ khóa.</p>
       </section>
 
       <form action="/tim-kiem" className="family-search-form" role="search">

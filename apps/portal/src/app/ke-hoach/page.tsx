@@ -14,12 +14,11 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
     <main className="planner-main">
       <AppHeader note="Kế hoạch riêng của Ngân & Hiếu" />
       <section className="planner-hero">
-        <p className="eyebrow">Việc nhà mình</p>
-        <h1>Một ngày rõ ràng,<br /><em>cả nhà cùng nhẹ lòng</em></h1>
-        <p className="intro">Việc cần làm, lịch hẹn và những điều muốn nhớ nằm chung một mạch.</p>
+        <h1>Kế hoạch gia đình</h1>
+        <p className="intro">Việc cần làm và lịch hẹn của cả nhà.</p>
       </section>
-      <BirthRecoveryPlan day={selectedDate} />
       <FamilyPlanner key={`${selectedDate}:${query.template ?? ""}:${startOpen}`} selectedDate={selectedDate} startOpen={startOpen} template={birthRecoveryStep(query.template)} />
+      <BirthRecoveryPlan day={selectedDate} />
     </main>
   );
 }

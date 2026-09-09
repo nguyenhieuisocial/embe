@@ -18,6 +18,8 @@ describe("one-handed family planner", () => {
   it("shows the day, progress and links each task to its related place", async () => {
     render(<FamilyPlanner selectedDate="2026-09-03" />);
     expect(await screen.findByText("Đặt lịch khám")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Thứ 5, 3/9/2026" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /T5\s*03\/09/ })).toHaveAttribute("aria-current", "date");
     expect(screen.getByText("0/1 việc đã xong")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mở Mẹ bầu" })).toHaveAttribute("href", "/me-bau");
     expect(screen.getByRole("link", { name: "Thêm vào Calendar" })).toHaveAttribute(

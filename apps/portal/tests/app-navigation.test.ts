@@ -66,7 +66,8 @@ describe("page context", () => {
 
   it.each([
     ["/me-bau/suc-khoe", "Sức khỏe của Mẹ"],
-    ["/me-bau/suc-khoe-iphone", "Sức khỏe & thuốc, vi chất"],
+    ["/me-bau/suc-khoe-iphone", "Sức khỏe từ iPhone"],
+    ["/me-bau/thuoc", "Thuốc & vi chất"],
     ["/me-bau/ho-so", "Hồ sơ thai kỳ"],
     ["/me-bau/tuan-nay", "Tuần này"],
     ["/me-bau/tam-trang", "Tâm trạng"],

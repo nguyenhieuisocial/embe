@@ -498,7 +498,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
     </section>
 
     <section className="care-tracker care-tab-panel" hidden={activePanel === "iphone"} id="vi-chat-thuoc" aria-labelledby="care-tracker-title">
-      <header className="care-tracker-heading">
+      <header className={activePanel === "medication" ? "sr-only" : "care-tracker-heading"}>
         <div>
           <span className="care-heading-mark" aria-hidden="true">✦</span>
           <div><h2 id="care-tracker-title">Thuốc &amp; vi chất</h2><p>Theo đúng đơn, nhãn và giờ Mẹ đang dùng</p></div>
@@ -510,8 +510,8 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
           <div className="adherence-ring" style={{ "--progress": `${adherence * 3.6}deg` } as React.CSSProperties}>
             <strong>{doseCount ? `${adherence}%` : "—"}</strong><span>đã dùng</span>
           </div>
-          <div><small>Hôm nay</small><h3>{doseCount ? `${Math.max(0, doseCount - takenCount - skippedCount)} lần còn lại` : "Chưa có lịch dùng"}</h3>
-            <p>{doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : "Thêm đúng thuốc Mẹ đang dùng để bắt đầu."}</p></div>
+          <div><small>Hôm nay</small><h3>{status === "loading" ? "Đang tải lịch…" : doseCount ? `${Math.max(0, doseCount - takenCount - skippedCount)} lần còn lại` : activePlans.length ? `${activePlans.length} thuốc đã lưu` : "Chưa có lịch dùng"}</h3>
+            <p>{status === "loading" ? "" : doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : activePlans.length ? "Kế hoạch chưa xác nhận nên chưa thể tích đã dùng." : "Thêm thuốc đang dùng hoặc lấy từ hồ sơ."}</p></div>
         </article>
       </div>
 
@@ -605,13 +605,13 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
 
       {status === "loading" ? <div className="care-loading" role="status"><span /><span /><span /></div>
         : activePlans.length ? <div className="dose-list">
-        <div className="dose-list-heading"><h3>Lịch dùng hôm nay</h3><small>{activePlans.length} mục đang theo dõi</small></div>
+        <div className="dose-list-heading"><h3>Thuốc đang theo dõi</h3><small>{activePlans.length} loại</small></div>
         {activePlans.map((plan) => <article key={plan.id}>
           <div className="dose-copy">
             <span className="dose-source">{plan.category === "medicine" ? "Thuốc" : "Vi chất"} · {plan.entry_source === "self_purchased" ? "tự mua" : "bác sĩ dặn"}{plan.confirmed_by_clinician ? " · đã hỏi chuyên môn" : ""}</span>
-            <strong>{plan.name}</strong><small>{plan.dose_display}{plan.instructions ? ` · ${plan.instructions}` : ""}</small>
+            <strong>{plan.name}</strong><small>{plan.dose_display}</small>
+            {plan.instructions ? <small className="dose-instructions">{plan.instructions}</small> : null}
             <MedicationPurpose name={plan.name} />
-            <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times ?? []} />
           </div>
           {plan.confirmed_by_clinician || plan.entry_source === "self_purchased" ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
             {Array.from({ length: plan.times_per_day }, (_, index) => index + 1).map((slot) => {
@@ -623,7 +623,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
                 {dose?.status === "taken" ? <span className="dose-done">✓ Đã uống</span>
                   : <button className="dose-taken-button" type="button" disabled={status === "saving"}
                     aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`}
-                    onClick={() => void mutate({ action: "intake", planId: plan.id, slot, status: "taken", reason: "" }, "Đã đánh dấu đã uống.")}>Đã uống</button>}
+                    onClick={() => void mutate({ action: "intake", planId: plan.id, slot, status: "taken", reason: "" }, "Đã đánh dấu đã uống.")}>{status === "saving" ? "Đang lưu…" : "Đánh dấu đã dùng"}</button>}
                 <details className="dose-adjust">
                   <summary>{dose ? "Sửa trạng thái" : "Bỏ qua hoặc hoãn"}<span>⌄</span></summary>
                   <form onSubmit={(event) => void saveDose(event, plan.id, slot)}>
@@ -637,6 +637,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
               </div>;
             })}
           </div> : <p className="formula-note">Xác nhận kế hoạch với bác sĩ/dược sĩ trước khi ghi tuân thủ.</p>}
+          <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times ?? []} />
           <details className="care-medication-manage"><summary>Quản lý thuốc này</summary>
           <p className="formula-note">Tạm dừng theo dõi không phải chỉ định ngừng thuốc.</p>
           <button className="dose-pause-button" type="button" disabled={status === "saving"}

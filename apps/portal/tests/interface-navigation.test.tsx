@@ -20,7 +20,7 @@ describe("family interface organization", () => {
     expect(container.querySelectorAll("details[open]")).toHaveLength(0);
     const input = screen.getByRole("searchbox", { name: "Tìm công cụ" });
     fireEvent.change(input, { target: { value: "thuoc" } });
-    expect(screen.getByRole("link", { name: /Thuốc & vi chất/ })).toHaveAttribute("href", "/me-bau/suc-khoe-iphone#vi-chat-thuoc");
+    expect(screen.getByRole("link", { name: /Thuốc & vi chất/ })).toHaveAttribute("href", "/me-bau/thuoc");
     expect(screen.queryByRole("link", { name: /Ngân sách/ })).not.toBeInTheDocument();
     fireEvent.change(input, { target: { value: "ngan sach" } });
     expect(screen.getByRole("link", { name: /Ngân sách & chi tiêu/ })).toHaveAttribute("href", "/ngan-sach");

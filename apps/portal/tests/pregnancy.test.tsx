@@ -166,7 +166,7 @@ describe("pregnancy daily page", () => {
     expect(within(jump).getByRole("link", { name: /^Sức khỏe/i })).toHaveAttribute("href", "/me-bau/suc-khoe");
     expect(within(jump).getByRole("link", { name: /Hồ sơ & lịch khám/i })).toHaveAttribute("href", "/me-bau/ho-so");
     expect(within(jump).getByRole("link", { name: /^Thuốc & vi chất/i })).toHaveAttribute(
-      "href", "/me-bau/suc-khoe-iphone#vi-chat-thuoc"
+      "href", "/me-bau/thuoc"
     );
 
     const entry = screen.getByRole("link", { name: /Kết nối sức khỏe iPhone/i });

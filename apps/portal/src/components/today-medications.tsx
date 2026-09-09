@@ -71,7 +71,6 @@ export default function TodayMedications() {
         <strong>{plan.name}</strong>
         <MedicationPurpose name={plan.name} />
         <small>{plan.dose_display || 'Chưa có liều đã ghi'} · lần {slot}/{plan.times_per_day}</small>
-        {plan.instructions?<details className="today-medication-instructions"><summary>Cách dùng</summary><p>{plan.instructions}</p></details>:null}
         <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times??[]} />
         {!plan.confirmed_by_clinician&&plan.entry_source!=='self_purchased'?<small>Chưa xác nhận kế hoạch với bác sĩ</small>:null}
       </div>
@@ -79,9 +78,9 @@ export default function TodayMedications() {
       {status!=='taken'?<small className="today-medication-state" data-state={status}>{status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận uống'}</small>:null}
       {status==='taken'?<span className="today-medication-check" aria-label={`${plan.name} lần ${slot}: đã uống`}>✓ Đã uống</span>
         :plan.confirmed_by_clinician||plan.entry_source==='self_purchased'?<button className="today-medication-check" type="button" disabled={Boolean(saving)||error}
-          aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`} onClick={()=>void markTaken(plan,slot)}>{saving===`${plan.id}-${slot}`?'Đang lưu…':'✓ Đã uống'}</button>:null}
+          aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`} onClick={()=>void markTaken(plan,slot)}>{saving===`${plan.id}-${slot}`?'Đang lưu…':'Đánh dấu đã dùng'}</button>:null}
       </div>
     </li>)}</ol>
-    <Link className="btn btn-quiet btn-block" href={rows.length?'/me-bau/suc-khoe-iphone#vi-chat-thuoc':'/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc'}>{rows.length?'Quản lý lịch thuốc':'Xem thuốc từ hồ sơ'}</Link>
+    <Link className="btn btn-quiet btn-block" href={rows.length?'/me-bau/thuoc':'/me-bau/thuoc?quick=prescription'}>{rows.length?'Quản lý lịch thuốc':'Xem thuốc từ hồ sơ'}</Link>
   </section>;
 }

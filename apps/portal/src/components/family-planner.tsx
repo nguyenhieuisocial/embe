@@ -27,15 +27,18 @@ function newDraft(day: string): Draft {
 }
 
 function dateLabel(day: string): string {
-  return new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })
-    .format(new Date(`${day}T00:00:00Z`));
+  const value = new Date(`${day}T00:00:00Z`);
+  // ICU versions differ between Node and mobile browsers ("Thứ 4" vs "Th 4").
+  // Keep server and first client render identical instead of hiding hydration errors.
+  const weekday = value.getUTCDay() === 0 ? "Chủ nhật" : `Thứ ${value.getUTCDay() + 1}`;
+  return `${weekday}, ${value.getUTCDate()}/${value.getUTCMonth() + 1}/${value.getUTCFullYear()}`;
 }
 
 function shortDate(day: string): { day: string; date: string } {
   const value = new Date(`${day}T00:00:00Z`);
   return {
-    day: new Intl.DateTimeFormat("vi-VN", { weekday: "short", timeZone: "UTC" }).format(value),
-    date: new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(value)
+    day: value.getUTCDay() === 0 ? "CN" : `T${value.getUTCDay() + 1}`,
+    date: `${String(value.getUTCDate()).padStart(2, "0")}/${String(value.getUTCMonth() + 1).padStart(2, "0")}`
   };
 }
 
@@ -178,13 +181,13 @@ export default function FamilyPlanner({ selectedDate, startOpen = false, templat
       <nav className="planner-days" aria-label="Chọn ngày trong kế hoạch">
         {days.map((day) => {
           const label = shortDate(day);
-          return <a href={`/ke-hoach?date=${day}`} aria-current={day === selectedDate ? "date" : undefined} key={day}><small>{label.day}</small><strong>{label.date}</strong></a>;
+          return <Link href={`/ke-hoach?date=${day}`} aria-current={day === selectedDate ? "date" : undefined} key={day}><small>{label.day}</small><strong>{label.date}</strong></Link>;
         })}
       </nav>
 
       <section className="planner-panel" aria-labelledby="planner-day-title">
         <div className="planner-heading">
-          <div><p className="panel-kicker">Kế hoạch của cả nhà</p><h2 id="planner-day-title">{dateLabel(selectedDate)}</h2></div>
+          <div><h2 id="planner-day-title">{dateLabel(selectedDate)}</h2></div>
           <button className="planner-add" type="button" onClick={showCreate} aria-label="Thêm việc mới"><Icon name="plus" /> Thêm</button>
         </div>
         <div className="planner-progress" aria-label={`${completed} trên ${tasks.length} việc đã xong`}>
@@ -220,7 +223,7 @@ export default function FamilyPlanner({ selectedDate, startOpen = false, templat
         </div>
 
         <div className="planner-suggestions" aria-label="Gợi ý việc nhanh">
-          <p>GỢI Ý NHANH</p>
+          <p>Gợi ý nhanh</p>
           <a href={`/ke-hoach?date=${selectedDate}&them=1#them-viec`}>Ghi câu hỏi cho lần khám</a>
           <Link href="/do-dung">Xem đồ sắp hết</Link>
           <Link href="/ghi-lai#viet-nhat-ky">Ghi lại một điều hôm nay</Link>

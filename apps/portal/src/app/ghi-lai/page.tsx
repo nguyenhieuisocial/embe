@@ -312,9 +312,8 @@ export default function JournalPage() {
     <main className="journal-main">
       <AppHeader note="Chỉ gia đình nhìn thấy" />
       <section className="journal-shell">
-        <p className="eyebrow">Một dòng cho mai sau</p>
-        <h1>Hôm nay có gì đáng nhớ?</h1>
-        <p className="intro">Một câu ngắn cũng đủ. EmBe sẽ tự đưa vào dòng thời gian gia đình.</p>
+        <h1>Ghi nhật ký</h1>
+        <p className="intro">Viết vài dòng, thêm ảnh hoặc nơi đã đến.</p>
         <Link className="journal-browse-link" href="/nhat-ky">Xem nhật ký</Link>
         <form className="journal-form" id="viet-nhat-ky" onSubmit={submit}>
           <input ref={cameraInput} aria-hidden="true" tabIndex={-1} className="sr-only" type="file"

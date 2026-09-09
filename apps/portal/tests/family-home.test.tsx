@@ -61,7 +61,7 @@ describe("family home hub", () => {
     const search = screen.getByRole("searchbox", { name: "Tìm công cụ" });
     for (const query of ["thuốc", "thuoc"]) {
       fireEvent.change(search, { target: { value: query } });
-      expect(screen.getByRole("link", { name: /^Thuốc & vi chất/ })).toHaveAttribute("href", "/me-bau/suc-khoe-iphone#vi-chat-thuoc");
+      expect(screen.getByRole("link", { name: /^Thuốc & vi chất/ })).toHaveAttribute("href", "/me-bau/thuoc");
       expect(screen.getByRole("status")).toHaveTextContent("công cụ phù hợp");
       for (const group of document.querySelectorAll(".tool-group")) expect(group).toHaveAttribute("open");
     }

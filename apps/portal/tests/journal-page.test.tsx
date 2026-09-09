@@ -22,7 +22,7 @@ describe("one-handed family journal", () => {
   it("keeps the simple family choice and safety boundary visible", () => {
     render(<JournalPage />);
 
-    expect(screen.getByRole("heading", { name: "Hôm nay có gì đáng nhớ?" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ghi nhật ký" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Mẹ Ngân" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Ba Hiếu" })).toBeInTheDocument();
     expect(screen.getByLabelText("Điều đáng nhớ")).toHaveAttribute("maxLength", "1000");

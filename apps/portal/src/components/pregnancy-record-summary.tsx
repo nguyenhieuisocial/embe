@@ -78,7 +78,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
         </article>)}
       </details>)}
       {summary.prescription?<details><summary>Thuốc đã nhập vào hồ sơ</summary><p>{date(summary.prescription.occurredAt)} · Không đồng nghĩa đang uống.</p>{summary.prescription.medicines.map((medicine,index)=><p key={index}><strong>{medicine.name}</strong> — {[medicine.dose,medicine.frequency,medicine.instructions].filter(Boolean).join(' · ')}</p>)}</details>:null}
-      <Link href="/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc">Thuốc & lịch uống</Link>
+      <Link href="/me-bau/thuoc?quick=prescription">Thuốc & lịch uống</Link>
     </details>
     {receiptRows.length?<details><summary>Phiếu thu · dịch vụ & số lượng <small>{receiptRows.length} mục</small></summary>
       <p>Số lượng mua/cấp phát không phải liều uống.</p>

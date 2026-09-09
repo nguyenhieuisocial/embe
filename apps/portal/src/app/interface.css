@@ -1,5 +1,12 @@
 /* Shared interface hierarchy. Feature-specific forms, image viewers and print
    layouts keep their existing behavior. Smaller surfaces, not smaller text. */
+/* Figma EmBe / semantic foundation. Accents identify areas, never clinical status. */
+@media screen {
+  .app-shell { --area-accent: var(--rose); --area-soft: var(--rose-soft); }
+  .app-shell[data-area="nutrition"] { --area-accent: var(--peach); --area-soft: var(--peach-soft); }
+  .app-shell[data-area="memories"] { --area-accent: var(--lavender); --area-soft: var(--lavender-soft); }
+  .app-shell[data-area="studio"] { --area-accent: var(--lavender); --area-soft: var(--lavender-soft); }
+}
 @media screen {
   .meal-page .meal-capture-card { padding: 14px; gap: 12px; }
   .meal-page .meal-camera, .meal-page .meal-library {
@@ -210,4 +217,157 @@
   .memories-main .memory-album-detail > header > div { text-align: left; min-width: 0; }
   .memories-main .memory-album-detail h2 { overflow-wrap: anywhere; }
   .memories-main .memory-albums { margin-top: 8px; gap: 12px; }
+}
+
+/* Mobile design contract: same hierarchy in every workspace. These rules do not
+   affect bare/print/shared views, chart internals, maps or photo canvas sizing. */
+@media screen {
+  .has-nav .app-canvas > main { color: var(--ink); }
+  .has-nav .app-canvas > main h1 {
+    font-family: var(--font-display), serif;
+    font-size: clamp(1.5rem, 4.5vw, 1.875rem);
+    font-weight: 600; line-height: 1.35; letter-spacing: -.025em;
+    margin-block: 0 8px; overflow-wrap: anywhere;
+  }
+  .has-nav .app-canvas > main h1 em { font-style: normal; color: inherit; }
+  .has-nav .app-canvas > main :is(.intro, .eyebrow, .panel-kicker) {
+    font-size: .875rem; line-height: 1.55; letter-spacing: normal; text-transform: none;
+  }
+  .has-nav .app-canvas > main :is(.eyebrow, .panel-kicker) { font-weight: 500; }
+  .has-nav main :is(button, summary, select) { touch-action: manipulation; }
+  .has-nav main button:not(.sr-only), .has-nav main summary { min-height: var(--tap); }
+  .has-nav main :is(a,button,input,select,textarea,summary):focus-visible {
+    outline: 2px solid var(--rose-press); outline-offset: 3px;
+  }
+  .has-nav main :is(input,textarea,select):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="hidden"]) {
+    min-width: 0; max-width: 100%; min-height: var(--control); box-sizing: border-box;
+    font-size: 16px; line-height: 1.5; color: var(--ink);
+    border-radius: var(--radius-sm); border-color: var(--line-strong);
+    background: var(--surface);
+  }
+  .has-nav main input:is([type="date"],[type="datetime-local"],[type="time"],[type="month"]) {
+    width: 100%; inline-size: 100%; min-inline-size: 0; max-inline-size: 100%;
+  }
+  .has-nav main input::-webkit-date-and-time-value { text-align: left; min-height: 1.5em; }
+  .has-nav main :is(form,fieldset,label) { min-width: 0; }
+  .has-nav main label:has(> input:is([type="checkbox"],[type="radio"])) { min-height: var(--tap); }
+  .has-nav main :is(.btn,.health-save,.care-add-button,.medical-add,.medical-capture-action,.planner-add,.studio-create) {
+    min-height: var(--control); border-radius: var(--radius-sm);
+    font-family: var(--font-body), sans-serif; font-size: .875rem; font-weight: 600;
+    line-height: 1.45; letter-spacing: 0; padding: 11px 16px;
+    white-space: normal; text-align: center; overflow-wrap: anywhere; box-shadow: none;
+  }
+  .has-nav main :is(.btn-primary,.health-save,.care-add-button.is-primary,.medical-capture-action,.studio-create) {
+    background: var(--rose); color: var(--surface); border: 1px solid var(--rose);
+  }
+  .has-nav main :is(.btn-primary,.health-save,.care-add-button.is-primary,.medical-capture-action,.studio-create):active:not(:disabled) { background: var(--rose-press); }
+  .has-nav main :is(button,input,select,textarea):disabled { cursor: not-allowed; }
+  .has-nav main :is(.btn,.health-save,.care-add-button,.medical-add):disabled { opacity: .55; box-shadow: none; }
+  .has-nav main :is(.medical-workspace-switch,.care-area-nav,.meal-view-switch,.segment-control,.baby-growth-tabs) {
+    padding: 4px; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--surface); gap: 4px;
+  }
+  .has-nav main :is(.medical-workspace-switch,.care-area-nav,.meal-view-switch,.segment-control,.baby-growth-tabs) > :is(a,button) {
+    min-width: 0; min-height: var(--tap); padding: 8px; border: 0; border-radius: 10px;
+    font-size: .875rem; line-height: 1.45; background: transparent; color: var(--ink-soft);
+    display: flex; justify-content: center; align-items: center; text-align: center;
+  }
+  .has-nav main :is(.medical-workspace-switch,.care-area-nav,.meal-view-switch,.segment-control,.baby-growth-tabs) > :is([aria-current="page"],[aria-pressed="true"]) {
+    color: var(--area-accent); background: var(--area-soft); font-weight: 600; box-shadow: none;
+  }
+  .has-nav .app-header { min-height: 54px; padding-block: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .has-nav .app-header .privacy-note { max-width: 48%; font-size: .75rem; line-height: 1.45; }
+  .has-nav .wordmark { font-size: 1.125rem; }
+  .has-nav .app-canvas > main > :is(header,section)[class$="-hero"] { padding-block: 4px 16px; }
+  .has-nav .maternal-shortcuts > a:nth-child(1) .icon { color: var(--peach); background: var(--peach-soft); }
+  .has-nav .maternal-shortcuts > a:nth-child(2) .icon { color: var(--mint); background: var(--mint-soft); }
+  .has-nav .maternal-shortcuts > a:nth-child(3) .icon { color: var(--lavender); background: var(--lavender-soft); }
+  .has-nav :is(.maternal-shortcuts,.daily-shortcuts,.family-essentials) > a > .icon {
+    width: 36px; height: 36px; padding: 8px; border-radius: 12px; box-sizing: border-box;
+    background: var(--rose-soft);
+  }
+  .has-nav .pregnancy-profile-intro { padding: 0 0 16px; }
+  .has-nav .pregnancy-profile-intro .intro { margin: 0; }
+  .medical-workspace.medical-records { padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .medical-workspace .medical-records-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; margin-bottom: 12px; }
+  .medical-workspace .medical-workspace-nav { margin-block: 12px 16px; }
+  .medical-workspace .medical-records-heading .sr-only { position: absolute; }
+  .medical-workspace .medical-workspace-switch { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .medical-workspace .pregnancy-record-summary { padding: 0; border: 0; background: transparent; }
+  .medical-workspace .pregnancy-record-summary > header { margin: 18px 0 12px; }
+  .medical-workspace .pregnancy-record-summary > header h2 { font: 600 1.0625rem/1.5 var(--font-body), sans-serif; }
+  .medical-workspace .pregnancy-record-summary > header small { font-size: .8125rem; }
+  .medical-workspace .pregnancy-summary-lead { gap: 10px; }
+  .medical-workspace .pregnancy-summary-lead > div { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--surface); }
+  .medical-workspace .pregnancy-summary-lead > .medical-next-highlight { background: var(--lavender-soft); border-color: transparent; }
+  .medical-workspace .pregnancy-summary-lead p { margin-block: 6px; font-size: .875rem; }
+  .medical-workspace .pregnancy-summary-lead .medical-overview-date { font-size: 1.375rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
+  .medical-workspace .pregnancy-summary-lead :is(small,span) { font-size: .8125rem; line-height: 1.5; }
+  .medical-workspace .pregnancy-summary-lead a { display: inline-flex; align-items: center; min-height: 44px; font-size: .875rem; }
+  .medical-workspace .pregnancy-record-summary > details { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; padding: 0; margin: 0; }
+  .medical-workspace .pregnancy-record-summary > details > summary { padding: 14px 0; min-height: 56px; font-size: .875rem; gap: 8px; }
+  .medical-workspace .pregnancy-record-summary > details > summary small { font-size: .8125rem; color: var(--ink-soft); }
+  .medical-workspace .pregnancy-record-summary > details[open] { padding-bottom: 12px; }
+  .medical-workspace .medical-reading-context { font-size: .8125rem; margin: 12px 0; }
+  .medical-workspace .medical-form { background: var(--surface); padding: 16px; border: 1px solid var(--line); border-radius: 16px; }
+  .medical-workspace .medical-record { background: var(--surface); border-radius: 16px; box-shadow: none; }
+  .medical-workspace :is(.medical-search,.medical-saved-toolbar) { gap: 8px; }
+  .medical-workspace .medical-filters { padding-bottom: 8px; }
+  .care-tracker.care-tracker { padding: 0; border: 0; background: transparent; }
+  .care-tracker .care-today-grid { display: block; margin: 0 0 12px; }
+  .care-tracker .adherence-card { border: 0; background: var(--mint-soft); border-radius: 16px; padding: 16px; }
+  .care-tracker .adherence-card h3 { font-size: 1.0625rem; }
+  .care-tracker .dose-list { gap: 12px; }
+  .care-tracker .dose-list > article { display: grid; grid-template-columns: minmax(0,1fr); padding: 16px; gap: 8px; border: 1px solid var(--line); }
+  .care-tracker .dose-copy { gap: 4px; }
+  .medication-purpose { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .care-tracker .dose-source { color: var(--ink-soft); }
+  .care-tracker .dose-slots { width: 100%; }
+  .care-tracker .dose-slot-row { padding: 10px; background: var(--paper); }
+  .care-tracker .dose-slot-row.is-taken { background: var(--mint-soft); }
+  .care-tracker .dose-taken-button { color: var(--rose-press); background: var(--rose-soft); border: 1px solid var(--rose-mist); border-radius: 12px; padding: 10px; font-size: .8125rem; }
+  .care-tracker .formula-note { margin-block: 4px; font-size: .8125rem; line-height: 1.5; }
+  .medication-guide.care-secondary-section { background: transparent; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 0; margin: 4px 0 0; }
+  .medication-guide.care-secondary-section > summary { font-size: .8125rem; color: var(--rose-press); min-height: 44px; }
+  .medication-guide p { font-size: .875rem; line-height: 1.6; margin: 8px 0; }
+  .medication-guide a { display: inline-flex; align-items: center; min-height: 44px; font-size: .875rem; }
+  .today-medications .today-medication { padding: 14px; border-radius: 16px; }
+  .today-medications .today-medication-check { min-height: 44px; border-radius: 12px; padding: 10px 12px; font-size: .8125rem; }
+  .today-medications button.today-medication-check { background: var(--rose-soft); color: var(--rose-press); border: 1px solid var(--rose-mist); }
+  .today-medications span.today-medication-check { background: var(--mint-soft); color: var(--mint); }
+  .meal-page .meal-capture-card { background: var(--surface); padding: 16px; border: 1px solid var(--line); }
+  .meal-page .meal-camera { color: var(--peach); background: var(--peach-soft); border-color: transparent; }
+  .meal-page .meal-library { background: var(--paper); }
+  .meal-page .meal-heading { margin: 0 0 8px; }
+  .meal-page .meal-worker { padding: 6px 0; border: 0; background: transparent; font-size: .8125rem; }
+  .meal-page .meal-view-switch .icon { display: none; }
+  .planner-main .planner-hero { padding: 4px 0 16px; }
+  .planner-main .planner-panel { padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: none; }
+  .planner-main .planner-heading h2 { font: 600 1rem/1.5 var(--font-body), sans-serif; }
+  .planner-main .planner-days { gap: 4px; margin-block: 4px 16px; }
+  .planner-main .planner-days a { min-width: 0; min-height: 60px; padding: 8px 2px; border-radius: 12px; }
+  .planner-main .planner-days small { font-size: .8125rem; }
+  .planner-main .planner-days strong { font-size: .875rem; }
+  .planner-main .planner-days [aria-current="date"] { background: var(--rose); color: var(--surface); }
+  .planner-main .planner-days [aria-current="date"] small { color: inherit; }
+  .has-nav .studio-main .studio-nav { padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+  .has-nav .studio-main .studio-nav a { border-radius: 10px; min-height: 44px; font-size: .875rem; }
+  .has-nav .studio-main .studio-nav a[aria-current="page"] { color: var(--lavender); background: var(--lavender-soft); box-shadow: none; }
+  .has-nav .studio-main .studio-home-tools { background: var(--lavender-soft); }
+  .has-nav .studio-main .studio-topic-copy strong { font-size: .9375rem; }
+  .has-nav .studio-main .studio-topic-copy small { font-size: .8125rem; }
+}
+@media screen and (max-width: 767px) {
+  .today-medications .today-medication { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .today-medications .today-medication-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+  .medical-workspace .pregnancy-summary-lead { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; }
+  .medical-workspace .pregnancy-summary-lead > div { display: flex; flex-direction: column; padding: 12px; }
+  .medical-workspace .pregnancy-summary-lead .medical-overview-date { font-size: 1.25rem; }
+  .medical-workspace .pregnancy-summary-lead > div > a { margin-top: auto; }
+}
+@media screen and (max-width: 359px) {
+  .medical-workspace .pregnancy-summary-lead { grid-template-columns: minmax(0,1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .has-nav main :is(button,summary,a) { transition: none; }
 }

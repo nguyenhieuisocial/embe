@@ -43,9 +43,8 @@ export default async function CalendarPage({
     <main className="calendar-main">
       <AppHeader note="Lịch riêng của gia đình" />
       <section className="calendar-hero">
-        <p className="eyebrow">Nhịp thời gian của em bé</p>
-        <h1>Mỗi ngày đều có<br /><em>một điều để nhớ</em></h1>
-        <p className="intro">Xem ngày dương, ngày âm và mở lại đúng kỷ niệm chỉ bằng một chạm.</p>
+        <h1>Lịch gia đình</h1>
+        <p className="intro">Lịch hẹn, việc cần làm và kỷ niệm · có lịch âm.</p>
       </section>
       <MemoryTabs current="calendar" />
       <FamilyCalendar

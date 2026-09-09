@@ -14,7 +14,7 @@ export default function DailyShortcuts() {
   ] : [
     { href: "/me-bau/bua-an", title: "Ghi bữa ăn", icon: "meal" },
     { href: "/me-bau/suc-khoe", title: "Ghi sức khỏe", icon: "care" },
-    { href: "/me-bau/suc-khoe-iphone#vi-chat-thuoc", title: "Thuốc & vi chất", icon: "check" },
+    { href: "/me-bau/thuoc", title: "Thuốc & vi chất", icon: "check" },
     { href: "/me-bau/ho-so#them-giay-to", title: "Thêm giấy tờ", icon: "album" }
   ];
   return <nav className="daily-shortcuts" aria-label="Lối tắt hằng ngày">

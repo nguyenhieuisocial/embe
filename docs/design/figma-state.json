@@ -1,0 +1,14 @@
+{
+  "runId": "embe-mobile-20260909",
+  "fileKey": "TWDcsuDDn4ugRhmgaNa8JW",
+  "phase": "components-blocked-by-starter-quota",
+  "entities": {
+    "pages": { "Chuẩn chung": "0:1", "Thành phần": "4:2", "Màn hình": "4:3" },
+    "collections": { "primitives": "VariableCollectionId:2:2", "colors": "VariableCollectionId:2:3", "spacing": "VariableCollectionId:2:4" },
+    "actionVariants": { "Default": "6:2", "Pressed": "6:4", "Disabled": "6:6", "Busy": "6:8" },
+    "actionLabels": ["6:3", "6:5", "6:7", "6:9"]
+  },
+  "completedSteps": ["discovery", "42-variables-validated", "5-text-styles", "1-effect-style", "three-pages", "four-action-variants"],
+  "pendingValidations": ["action-screenshot", "component-set", "navigation-row", "disclosure", "screens", "code-connect", "live"],
+  "limitations": ["Starter allows three pages; logical sections consolidated.", "Figma MCP call quota reached before component set creation. No upgrade purchased; no screen completion claimed."]
+}

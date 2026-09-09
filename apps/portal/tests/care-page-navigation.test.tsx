@@ -8,10 +8,18 @@ vi.mock("../src/components/pregnancy-care-tracker", () => ({ default: ({ activeP
   <section id="vi-chat-thuoc" hidden={activePanel !== "medication"}><input aria-label="Tên thuốc đang nhập" defaultValue="" /></section>
 </> }));
 import IPhoneHealthPage from "../src/app/me-bau/suc-khoe-iphone/page";
+import MedicationPage from "../src/app/me-bau/thuoc/page";
 
 afterEach(() => window.history.replaceState(null, "", "/"));
 
 describe("care pages are separate without losing a draft", () => {
+  it("opens medication without a fragment and keeps it after a reload", () => {
+    window.history.replaceState(null, "", "/me-bau/thuoc");
+    render(<MedicationPage />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Thuốc & vi chất");
+    expect(document.getElementById("suc-khoe-iphone")).toHaveAttribute("hidden");
+    expect(document.getElementById("vi-chat-thuoc")).not.toHaveAttribute("hidden");
+  });
   it("opens the correct panel from an old medication link", () => {
     window.history.replaceState(null, "", "/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc");
     render(<IPhoneHealthPage />);

@@ -18,7 +18,8 @@ type PageDefinition = {
 const pages: Readonly<Record<string, PageDefinition>> = {
   "/me-bau/bua-an": { group: "maternal", title: "Bữa ăn" },
   "/me-bau/suc-khoe": { group: "maternal", title: "Sức khỏe của Mẹ" },
-  "/me-bau/suc-khoe-iphone": { group: "maternal", title: "Sức khỏe & thuốc, vi chất" },
+  "/me-bau/suc-khoe-iphone": { group: "maternal", title: "Sức khỏe từ iPhone" },
+  "/me-bau/thuoc": { group: "maternal", title: "Thuốc & vi chất" },
   "/me-bau/ho-so": { group: "maternal", title: "Hồ sơ thai kỳ" },
   "/me-bau/tuan-nay": { group: "maternal", title: "Tuần này" },
   "/me-bau/tam-trang": { group: "maternal", title: "Tâm trạng" },

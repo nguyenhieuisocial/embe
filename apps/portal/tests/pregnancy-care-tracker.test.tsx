@@ -246,6 +246,21 @@ describe("iPhone health connection state", () => {
     window.removeEventListener("embe:daily-action-completed", linked);
   });
 
+  it("does not call saved but unconfirmed medication an empty schedule", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => String(input).startsWith("/api/pregnancy/care")
+      ? Response.json({ snapshot: { profile: null, iphone_health: null, iphone_devices: [], plans: [{
+        id: "11111111-1111-4111-8111-111111111111", category: "medicine", name: "Thuốc đã lưu",
+        dose_display: "Theo đơn", instructions: "Sau ăn", times_per_day: 1, reminder_times: ["08:00:00"],
+        nutrient_amounts: {}, confirmed_by_clinician: false, entry_source: "clinician_plan", active: true,
+        taken_slots: [], dose_states: []
+      }] } }) : Response.json({ history: [] })));
+    render(<PregnancyCareTracker pregnancyWeek={8} activePanel="medication" />);
+    expect(await screen.findByText("1 thuốc đã lưu")).toBeInTheDocument();
+    expect(screen.queryByText("Chưa có lịch dùng")).not.toBeInTheDocument();
+    expect(screen.getByText("Kế hoạch chưa xác nhận nên chưa thể tích đã dùng.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Đánh dấu đã uống/ })).not.toBeInTheDocument();
+  });
+
   it("keeps the entered plan open when saving fails", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input).startsWith("/api/pregnancy/care") && init?.method === "PATCH") {

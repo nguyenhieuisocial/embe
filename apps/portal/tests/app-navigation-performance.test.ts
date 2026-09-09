@@ -41,7 +41,7 @@ describe("app-like navigation performance", () => {
       join(process.cwd(), "src", "app", "page.tsx"),
       join(process.cwd(), "src", "app", "me-bau", "page.tsx"),
       join(process.cwd(), "src", "app", "nha-minh", "page.tsx"),
-      join(process.cwd(), "src", "app", "me-bau", "suc-khoe-iphone", "page.tsx")
+      join(process.cwd(), "src", "components", "pregnancy-care-page.tsx")
     ].map((path) => readFileSync(path, "utf8"));
 
     for (const source of sources) expect(source).toContain("prefetch={false}");
@@ -64,7 +64,7 @@ describe("app-like navigation performance", () => {
     expect(source).toContain('<MaternalTools week={week} />');
     expect(tools).toContain('href="/me-bau/bua-an"');
     expect(tools).toContain('href="/me-bau/suc-khoe"');
-    expect(tools).toContain('href="/me-bau/suc-khoe-iphone#vi-chat-thuoc"');
+    expect(tools).toContain('href="/me-bau/thuoc"');
     expect(source).toContain('href="/me-bau/suc-khoe-iphone#suc-khoe-iphone"');
     expect(tools).not.toMatch(/from ["'][^"']*(?:meal-photo-tracker|pregnancy-care-tracker|pregnancy-health-tracker|pregnancy-medical-records)["']/);
   });

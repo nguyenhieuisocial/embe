@@ -23,7 +23,7 @@ export const familyToolGroups: Array<{ title: string; detail: string; tools: Too
     { href: "/me-bau", title: "Mẹ bầu hôm nay", detail: "Tuần thai và checklist mỗi ngày", icon: "care" },
     { href: "/me-bau/bua-an", title: "Bữa ăn & dinh dưỡng", detail: "Chụp món, ghi bữa ăn, xem gợi ý", icon: "meal", keywords: "calo kcal thực đơn" },
     { href: "/me-bau/suc-khoe", title: "Số đo sức khỏe", detail: "Cân nặng, huyết áp, ngủ và nước", icon: "care" },
-    { href: "/me-bau/suc-khoe-iphone#vi-chat-thuoc", title: "Thuốc & vi chất", detail: "Theo đơn, tự mua và lịch uống", icon: "check", keywords: "vitamin khoáng chất bổ sung sắt canxi DHA" },
+    { href: "/me-bau/thuoc", title: "Thuốc & vi chất", detail: "Theo đơn, tự mua và lịch uống", icon: "check", keywords: "vitamin khoáng chất bổ sung sắt canxi DHA" },
     { href: "/me-bau/tam-trang", title: "Tâm trạng", detail: "Ghi cảm xúc và điều Mẹ cần", icon: "care" },
     { href: "/me-bau/trieu-chung", title: "Triệu chứng", detail: "Ghi lại thay đổi của cơ thể", icon: "write" },
     { href: "/me-bau/tuan-nay", title: "Tuần này của Mẹ & Bé", detail: "Hành trình và mốc thai kỳ", icon: "calendar" },

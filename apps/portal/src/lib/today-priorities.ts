@@ -88,7 +88,7 @@ export function selectTodayPriorities(input: TodayPriorityInput): TodayPriority[
       kind: "medicine",
       title: plan.name,
       detail: reminderTime ? `${reminderTime}${reminderTime <= nowTime ? " · đến giờ" : ""}` : "Theo kế hoạch hôm nay",
-      href: "/me-bau/suc-khoe-iphone#vi-chat-thuoc",
+      href: "/me-bau/thuoc",
       actionLabel: "Ghi đã dùng",
       rank: 10,
       order: reminderTime || "99:99"

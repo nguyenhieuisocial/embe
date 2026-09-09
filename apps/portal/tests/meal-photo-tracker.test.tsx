@@ -109,7 +109,7 @@ describe("mobile meal journal", () => {
     });
 
     expect(screen.getByRole("link", { name: "Lưu thuốc / vi chất tự mua" })).toHaveAttribute(
-      "href", "/me-bau/suc-khoe-iphone?quick=self-purchased#vi-chat-thuoc"
+      "href", "/me-bau/thuoc?quick=self-purchased"
     );
     const recognize = screen.getByRole("button", { name: "Nhận diện từ ghi chú" });
     expect(recognize).toBeDisabled();

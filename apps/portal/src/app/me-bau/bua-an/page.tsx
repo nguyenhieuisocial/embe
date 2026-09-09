@@ -10,7 +10,7 @@ export default function PregnancyMealPage() {
       <header className="pregnancy-tool-intro">
         <Link href="/me-bau">← Mẹ bầu</Link>
         <h1>Bữa ăn của Mẹ</h1>
-        <p className="intro">Ghi lại bữa ngon, chăm Mẹ mỗi ngày.</p>
+        <p className="intro">Chụp ảnh hoặc ghi món · xem dinh dưỡng đã ăn.</p>
       </header>
       <MealPhotoTracker />
     </main>

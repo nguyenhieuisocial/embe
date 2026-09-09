@@ -28,7 +28,7 @@ describe("family portal home", () => {
     expect(within(actions).getAllByRole("link")).toHaveLength(4);
     expect(within(actions).getByRole("link", { name: "Ghi bữa ăn" })).toHaveAttribute("href", "/me-bau/bua-an");
     expect(within(actions).getByRole("link", { name: "Ghi sức khỏe" })).toHaveAttribute("href", "/me-bau/suc-khoe");
-    expect(within(actions).getByRole("link", { name: "Thuốc & vi chất" })).toHaveAttribute("href", "/me-bau/suc-khoe-iphone#vi-chat-thuoc");
+    expect(within(actions).getByRole("link", { name: "Thuốc & vi chất" })).toHaveAttribute("href", "/me-bau/thuoc");
     expect(within(actions).getByRole("link", { name: "Thêm giấy tờ" })).toHaveAttribute("href", "/me-bau/ho-so#them-giay-to");
     expect(container.querySelector(".family-hero-art")).not.toBeInTheDocument();
     expect(container.querySelector('a[href="/studio"]')).not.toBeInTheDocument();
