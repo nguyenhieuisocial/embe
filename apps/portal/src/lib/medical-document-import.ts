@@ -101,7 +101,10 @@ export function proposeDocumentImport(analysis: DocumentAnalysis, records: Medic
   for (const row of fields) {
     if (row.unclear) continue;
     if (row.context?.trim()) { warnings.push(`${row.label}: có ngữ cảnh riêng (${row.context}); giữ từng kết quả trong bản đọc, chưa gộp vào biểu đồ.`); continue; }
-    const label = labelKey(row.label);
+    // A printed unit suffix is presentation, not a different measurement.
+    // Strip it only when it agrees with the explicitly extracted unit.
+    const suffix = /^(.*?)\s*\(([^()]+)\)\s*$/.exec(row.label);
+    const label = labelKey(suffix && row.unit.trim() && unitKey(suffix[2]) === unitKey(row.unit) ? suffix[1] : row.label);
     if (['huyet ap', 'blood pressure', 'bp'].includes(label) && unitKey(row.unit) === 'mmhg') {
       const bp = /^(\d{2,3})\s*\/\s*(\d{2,3})(?:\s*mmHg)?$/i.exec(row.value.trim());
       if (bp && Number(bp[1]) <= 350 && Number(bp[2]) <= 250 && Number(bp[1]) >= Number(bp[2])) {

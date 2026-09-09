@@ -3,6 +3,13 @@ import {printedDate,proposeDocumentImport} from '../src/lib/medical-document-imp
 import {medicalDocumentName} from '../src/lib/medical-document-name';
 import type {DocumentAnalysis} from '../src/lib/medical-document-scan';
 const analysis=(label:string,value:string,unit='',unclear=false):DocumentAnalysis=>({version:1,pages:[{page:1,kind:'laboratory',title:'Phiếu xét nghiệm',warnings:[],medicines:[],charges:[],fields:[{label,value,unit,unclear,reference:'',evidence:value}]}]});
+it('maps unit-suffixed labels only when both printed units agree',()=>{
+ expect(proposeDocumentImport(analysis('CRL (mm)','12,5','mm'),[],'id').details.measurements).toEqual({crlMm:12.5});
+ expect(proposeDocumentImport(analysis('Cân nặng (kg)','52','kg'),[],'id').details.measurements).toEqual({weightKg:52});
+ expect(proposeDocumentImport(analysis('CRL (cm)','12','mm'),[],'id').details.measurements).toEqual({});
+ expect(proposeDocumentImport(analysis('CRL (mm)','12',''),[],'id').details.measurements).toEqual({});
+ expect(proposeDocumentImport(analysis('CRL (mm)','12','mm',true),[],'id').details.measurements).toEqual({});
+});
 it('reads printed Vietnamese dates with and without a city, rejects impossible days',()=>{
  expect(printedDate('TP. HCM, ngày 07 tháng 09 năm 2026')).toBe('2026-09-07');
  expect(printedDate('07 tháng 09 năm 2026')).toBe('2026-09-07');

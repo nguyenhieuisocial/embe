@@ -71,6 +71,16 @@
 .medical-workspace .medical-files { margin-top:16px; padding:12px; border:1px dashed var(--line-strong); border-radius:12px; }
 .medical-workspace .medical-files input { padding:8px 0; font-size:.8125rem; }
 .medical-workspace .medical-form .health-save { width:100%; min-height:48px; margin-top:16px; }
+.medical-workspace .medical-measurements > summary small { display:block; margin:4px 0 0; }
+.medical-workspace .medical-measurements > p { font-size:.8125rem; line-height:1.5; color:var(--ink-soft); }
+.medical-workspace .medical-measurements > details { margin:8px 0; padding:0 12px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.medical-workspace .medical-measurements > details > div { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; padding-bottom:12px; }
+.medical-workspace .medical-measurement-value { display:flex; align-items:center; gap:8px; min-width:0; }
+.medical-workspace .medical-measurement-value input { flex:1; min-width:0; }
+.medical-workspace .medical-measurement-value > span { flex:0 0 64px; font-size:.8125rem; color:var(--ink-soft); font-weight:400; }
+.medical-workspace .medical-measurement-sources a { min-height:44px; display:flex; align-items:center; overflow-wrap:anywhere; }
+.medical-workspace .medical-measurement-sources small { font-size:.8125rem; color:var(--ink-soft); }
+@media(min-width:640px){.medical-workspace .medical-measurements > details:not(.medical-measurement-sources) > div { grid-template-columns:repeat(2,minmax(0,1fr)); }}
 @media(min-width:900px){.medical-workspace{max-width:880px;margin-inline:auto}.medical-workspace .medical-timeline{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
 .medical-records-heading .medical-capture-action { display:flex; align-items:center; justify-content:center; flex:1; min-width:0; min-height:48px; padding:10px 12px; background:var(--rose); color:var(--on-rose, #fff); border-radius:14px; font-size:.9rem; font-weight:600; text-decoration:none; }
 .medical-workspace .medical-records-heading { gap:12px; margin-bottom:12px; }

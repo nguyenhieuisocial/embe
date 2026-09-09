@@ -415,11 +415,12 @@ export default function PregnancyMedicalRecords() {
           </div>
         </details>
         <details className="medical-measurements">
-          <summary>Chỉ số được ghi tại nơi khám <span>⌄</span></summary>
-          <p>Chỉ chép chỉ số có trên phiếu. Giữ đúng đơn vị; không suy ra kết quả từ ảnh khi chưa kiểm tra.</p>
+          <summary>Chỉ số tại lần khám <small>{Object.keys(editingRecord?.measurements ?? {}).length ? `${Object.keys(editingRecord!.measurements).length} chỉ số đã lưu` : 'Số đo Mẹ · siêu âm · xét nghiệm'}</small></summary>
+          <p>Chỉ nhập số có trên phiếu. Để trống nếu chưa đo; không điền 0 thay cho dữ liệu thiếu.</p>
+          {editingRecord?.documents.length ? <details className="medical-measurement-sources"><summary>Chỉ số từ giấy tờ đã lưu</summary>{editingRecord.documents.map(document=><div key={document.id}><Link href={`/me-bau/ho-so/tai-lieu/${document.id}`} target="_blank" rel="noopener noreferrer">{document.displayName || document.originalFilename} · mở tab mới</Link>{document.readingSummary?.results.length?<small>{document.readingSummary.results.length} dòng kết quả trong bản đọc · chưa đồng nghĩa đã nhập vào số đo</small>:<small>Mở bản đọc để xem tiến độ và kết quả.</small>}</div>)}</details>:<p className="medical-form-hint">Có giấy tờ? Đính kèm bên dưới để hệ thống đọc và khớp chỉ số; không cần chép lại nội dung trên ảnh.</p>}
           {["Số đo khi khám", "Siêu âm", "Xét nghiệm"].map(group => <details key={group}><summary>{group}</summary><div>
-            {MEDICAL_MEASUREMENTS.filter(metric => metric.group === group).map(metric => <label key={metric.key}>{metric.label} ({metric.unit})
-              <input name={metric.key} type="number" inputMode="decimal" min="0" max={metric.max} step="any" defaultValue={editingRecord?.measurements[metric.key]} onChange={() => setMeasurementsReviewed(false)} />
+            {MEDICAL_MEASUREMENTS.filter(metric => metric.group === group).map(metric => <label key={metric.key}>{metric.label}<span className="medical-measurement-value">
+              <input aria-label={`${metric.label} (${metric.unit})`} name={metric.key} type="number" inputMode="decimal" min="0" max={metric.max} step="any" defaultValue={editingRecord?.measurements[metric.key]} onChange={() => setMeasurementsReviewed(false)} /><span aria-hidden="true">{metric.unit}</span></span>
             </label>)}
           </div></details>)}
           <label className="check-line"><input type="checkbox" checked={measurementsReviewed} onChange={e => setMeasurementsReviewed(e.target.checked)} />Tôi đã đối chiếu chỉ số và đơn vị với bản gốc</label>
