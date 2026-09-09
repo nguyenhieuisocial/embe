@@ -4,6 +4,24 @@ import type {MedicalReadingSummary} from './medical-reading-summary';
 type FindingGroup={recordId:string;row:ReadingRow;labels:string[];sources:{documentId:string;page:number;title:string}[]};
 const literal=(text:string)=>text.normalize('NFC').trim().replace(/\s+/g,' ');
 const uniqueDetails=(details:string[])=>[...new Map(details.filter(text=>literal(text)).map(text=>[literal(text),text])).values()];
+/** Reading-navigation only: accent differences are NOT clinical equivalence.
+ * Keep each original intact; never feed these bundles into imports or treatment.
+ * Case, numbers, operators, punctuation and word order remain significant.
+ */
+export function bundleFindingReadings(variants:FindingGroup[]) {
+ const bundles:FindingGroup[][]=[];
+ const shape=(text:string)=>literal(text).normalize('NFD').replace(/\p{M}/gu,'').replace(/Đ/g,'D').replace(/đ/g,'d').replace(/(?:==|=—)>/g,'→');
+ for(const variant of variants){
+  const bundle=bundles.find(items=>items.every(item=>
+   item.recordId===variant.recordId
+   && (item.row.printedDay??item.row.sourceDay)===(variant.row.printedDay??variant.row.sourceDay)
+   && shape(item.row.value)===shape(variant.row.value) && !!literal(variant.row.value)
+   && (!item.row.sourceIdentity||!variant.row.sourceIdentity||item.row.sourceIdentity===variant.row.sourceIdentity)
+   && (!item.row.displayEncounter||!variant.row.displayEncounter||item.row.displayEncounter===variant.row.displayEncounter)));
+  if(bundle)bundle.push(variant);else bundles.push([variant]);
+ }
+ return bundles;
+}
 /** Display-only grouping. Original readings and clinical records are never changed. */
 export function medicalFindingGroups(records:MedicalRecord[],category:keyof MedicalReadingSummary='findings'):FindingGroup[]{
  const groups=new Map<string,FindingGroup>();

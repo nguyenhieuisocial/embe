@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {medicalInsights, type MedicalRecord} from '../lib/pregnancy-medical';
 import {MEDICAL_MEASUREMENTS} from '../lib/medical-measurements';
 import type {MedicalReadingSummary} from '../lib/medical-reading-summary';
-import {medicalFindingGroups,medicalFindingTopics} from '../lib/medical-finding-groups';
+import {medicalFindingGroups,medicalFindingTopics,bundleFindingReadings} from '../lib/medical-finding-groups';
 import {medicineDisplayGroups,medicineSourceGroups,uniqueMedicineReadings} from '../lib/medicine-display-groups';
 import {medicalEncounters} from '../lib/medical-encounters';
 import {Icon, type IconName} from './embe-icon';
@@ -65,11 +65,14 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       {!count('findings')?<p>Chưa lấy được kết luận từ bản đọc. Không có nghĩa kết quả khám bình thường.</p>:null}
       {findings.map((finding,index)=><article key={index}>
         <strong>{finding.label}</strong>{finding.day?<small>{finding.day.split('-').reverse().join('/')}</small>:null}
-        {finding.variants.length===1?<FindingBody finding={finding.variants[0]}/>:<details>
-          <summary>{finding.variants.length} bản đọc khác nhau</summary>
-          <small>Chưa chọn một bản làm kết luận chung.</small>
-          {finding.variants.map((variant,i)=><div key={i}><FindingBody finding={variant}/></div>)}
-        </details>}
+        {bundleFindingReadings(finding.variants).map((bundle,i)=>bundle.length===1?<FindingBody key={i} finding={bundle[0]}/>:<div className="medical-reading-bundle" key={i}>
+          <p>{bundle[0].row.value}</p>
+          <small>{bundle.length} bản đọc gần giống · chữ chưa xác minh</small>
+          <details><summary>Xem bản đọc & nguồn</summary>
+            <small>Dòng trên hiển thị nguyên văn bản đầu, không xác nhận bản đó đúng hơn.</small>
+            {bundle.map((variant,j)=><div key={j}><FindingBody finding={variant}/></div>)}
+          </details>
+        </div>)}
       </article>)}
     </details>
     <details><summary><SummaryLabel icon="room" title="Kết quả & chỉ số" meta={`${results.length} mục trên giấy · ${summary.metrics.length} chỉ số đã lưu`}/></summary>
