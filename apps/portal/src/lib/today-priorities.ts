@@ -82,7 +82,7 @@ export function selectTodayPriorities(input: TodayPriorityInput): TodayPriority[
     if (!plan.active) continue;
     const slot = plan.reminderTimes.findIndex((_, index) => !plan.takenSlots.includes(index + 1));
     if (slot < 0) continue;
-    const reminderTime = plan.reminderTimes[slot] ?? "";
+    const reminderTime = (plan.reminderTimes[slot] ?? "").replace(/^(\d{2}:\d{2}):\d{2}$/, "$1");
     candidates.push({
       id: `medicine:${plan.id}:${slot + 1}`,
       kind: "medicine",

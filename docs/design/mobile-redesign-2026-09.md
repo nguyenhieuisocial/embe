@@ -52,3 +52,15 @@ Figma generation is incomplete due to the Starter MCP call quota; no paid upgrad
 Final application version verified by `/api/health`: `5586e71b8a70a5f68d9f00ced4315002258cb762`. Follow-up screenshots and geometry: private `data/interface-audit-final` (five changed routes × four widths, zero measured overflow/small-control/page-error issues). Interaction receipt: private `data/interface-interactions/result.json` (11 scenarios, two mocked medication writes, zero page errors). All five sampled album covers loaded after scrolling; viewer zoom/reset/close restored focus. The maternal hub also fit landscape and a 125% text-size override under reduced motion. These are Cent checks, not native iPhone proof.
 
 Overall request remains **partially completed**: live shared UI and bounded workflows are implemented and verified, but Figma component library/screens/Code Connect and physical-device acceptance are still outstanding. Account quota requires a user-side change before Figma work can resume; no additional subscription or upgrade was authorized or purchased.
+
+## Home-focused follow-up — 9 September
+
+Scope: the newer request to review and remake **Hôm nay**, independently of the unfinished full-site Figma work.
+
+- Applied the local UI UX Pro Max disclosure, hierarchy, feedback and touch-target checklist to the existing EmBe foundation. No new library or external transmission of family data.
+- Current stage → four daily shortcuts → at most three diverse priorities → chronological medication list → three recent journal previews. Priorities protect upcoming visits from a household-task backlog; ordinary tasks remain accessible in the plan.
+- Dose time, name, saved dose and intake state remain visible. Long guidance is closed by default; unconfirmed-plan explanation appears once, not per dose. Save requires a server receipt, with retry on failure; no real medicine data or eligibility rule changed.
+- Async home test children are resolved as server components, eliminating the previous client-only async-component test warning.
+- Build and 63 related tests across eight suites pass. First deployed UI at `94091d6` was checked in Cent at 375/430/768/1280px, with all four real dose slots retained, no horizontal overflow, no measured sub-44px controls/links and closed details. The measured 375px page changed from 2543px to 2111px for the sampled content. A final refinement removes decorative overflow and formats reminder seconds as HH:mm.
+- `scripts/health/today-interface-audit.mjs`: four live layout samples plus keyboard disclosure, delayed successful intake, failed intake, failed-load recovery, landscape/125% text and postpartum stage switching. The intake cases intercept requests with synthetic data; two mocked writes, no real family-data writes. Screenshots and the version-pinned receipt stay private under `data/today-redesign-after`.
+- Physical iPhone/Safari and screen-reader acceptance remain unverified. This follow-up does not claim the separate whole-site/Figma project is complete.

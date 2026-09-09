@@ -70,6 +70,7 @@
   .pregnancy-main > .pregnancy-hero h1,
   .memories-hero h1 { font-size: clamp(1.5rem, 6vw, 1.9rem); letter-spacing: -.025em; line-height: 1.3; }
   .today-main .today-meta { margin-bottom: 0; }
+  .today-main .today-hero::after { display: none; }
   .today-main .today-meta time { font-size: .8125rem; color: var(--ink-soft); }
   .today-main .today-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .today-main .today-heading-row h1 { margin: 0; }

@@ -71,6 +71,15 @@ describe("smart priorities for Today", () => {
     expect(priorities.some((item) => item.kind === "medicine")).toBe(false);
   });
 
+  it("shows saved SQL times without seconds and recognizes the exact reminder minute", () => {
+    const priorities = selectTodayPriorities({
+      now: "2026-09-02T09:00:00+07:00", today, tasks: [], inventoryItems: [],
+      carePlans: [{id: "dose", name: "Thuốc theo đơn", active: true, reminderTimes: ["09:00:00"], takenSlots: []}],
+      hasHealthEntry: true, hasMealEntry: true, profileComplete: true
+    });
+    expect(priorities[0].detail).toBe("09:00 · đến giờ");
+  });
+
   it("surfaces an overdue family task before a routine check-in", () => {
     const priorities = selectTodayPriorities({
       now: "2026-09-02T07:00:00+07:00",
