@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {useEffect, useRef, useState} from 'react';
 import {dateInVietnam} from '../lib/family-task-contract';
 import {useFamilyDataRefresh} from '../lib/use-family-data-refresh';
+import {notifyFamilyDataChanged} from '../lib/family-data-refresh';
 
 type Plan = {id:string;name:string;dose_display:string;instructions:string;active:boolean;times_per_day:number;reminder_times:string[];confirmed_by_clinician:boolean;entry_source?:string;dose_states?:{slot:number;status:string}[]};
 export function medicationSlots(plans: Plan[]) {
@@ -15,7 +16,11 @@ export default function TodayMedications() {
   const [plans,setPlans]=useState<Plan[] | null>(null),[error,setError]=useState(false);
   const [day,setDay]=useState(dateInVietnam());
   const sequence=useRef(0);
+  const writing=useRef(false);
+  const [saving,setSaving]=useState<string|null>(null);
+  const [feedback,setFeedback]=useState('');
   async function load(canApply=()=>true,signal?:AbortSignal){
+    if(writing.current)return;
     const currentDay=dateInVietnam();
     const requestId=++sequence.current;
     try {
@@ -35,11 +40,28 @@ export default function TodayMedications() {
     return()=>{controller.abort();clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
   },[]);
   useFamilyDataRefresh(canApply=>load(canApply));
+  async function markTaken(plan:Plan,slot:number){
+    if(writing.current || error)return;
+    if(day!==dateInVietnam()){setFeedback('Đã sang ngày mới. Lịch đang được cập nhật; hãy chọn lại lần uống.');void load();return;}
+    writing.current=true;sequence.current++;setSaving(`${plan.id}-${slot}`);setFeedback('');
+    try{
+      const response=await fetch('/api/pregnancy/care',{method:'PATCH',headers:{'content-type':'application/json'},
+        body:JSON.stringify({action:'intake',day,planId:plan.id,slot,status:'taken',reason:''}),signal:AbortSignal.timeout(20000)});
+      if(!response.ok)throw new Error('save');
+      const body=await response.json();
+      const next=body.snapshot?.plans as Plan[]|undefined;
+      if(!Array.isArray(next)||!next.some(p=>p.id===plan.id&&p.dose_states?.some(d=>d.slot===slot&&d.status==='taken')))throw new Error('receipt');
+      setPlans(next);setFeedback(`Đã ghi ${plan.name} · lần ${slot} đã uống.`);
+      notifyFamilyDataChanged();
+    }catch{setFeedback('Chưa xác nhận được việc lưu. Hãy thử tải lại lịch trước khi tích lại.');setError(true);}
+    finally{writing.current=false;setSaving(null);}
+  }
   const rows=medicationSlots(plans??[]);
   return <section className="section today-medications" aria-labelledby="today-medicines-title">
     <div className="section-head"><h2 id="today-medicines-title">Thuốc hôm nay</h2><small>{day.split('-').reverse().join('/')}</small></div>
     {error?<p role="alert">Chưa cập nhật được lịch thuốc. Thông tin cũ, nếu có, chưa phải trạng thái mới nhất. <button className="btn btn-quiet" onClick={()=>void load()}>Thử lại</button></p>:plans===null?<p role="status">Đang tải lịch thuốc…</p>:null}
     {!error&&plans&&!rows.length?<p className="today-medications-empty">Chưa có lịch thuốc đang dùng. Thuốc đã lưu trong hồ sơ vẫn được giữ nguyên.</p>:null}
+    {feedback?<p role="status" aria-live="polite">{feedback}</p>:null}
     <ol className="today-medications-list">{rows.map(({plan,slot,time,status})=><li className="today-medication" key={`${plan.id}-${slot}`}>
       <span className="today-medication-copy">
         <strong>{time || 'Chưa có giờ uống'} · {plan.name}</strong>
@@ -48,6 +70,9 @@ export default function TodayMedications() {
         {!plan.confirmed_by_clinician&&plan.entry_source!=='self_purchased'?<small>Chưa xác nhận kế hoạch với bác sĩ</small>:null}
         <small className="today-medication-state" data-state={status}>{status==='taken'?'Đã uống':status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận uống'}</small>
       </span>
+      {status==='taken'?<span className="today-medication-check" aria-label={`${plan.name} lần ${slot}: đã uống`}>✓ Đã uống</span>
+        :plan.confirmed_by_clinician||plan.entry_source==='self_purchased'?<button className="today-medication-check" type="button" disabled={Boolean(saving)||error}
+          aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`} onClick={()=>void markTaken(plan,slot)}>{saving===`${plan.id}-${slot}`?'Đang lưu…':'✓ Đã uống'}</button>:null}
     </li>)}</ol>
     <Link className="btn btn-quiet btn-block" href={rows.length?'/me-bau/suc-khoe-iphone#vi-chat-thuoc':'/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc'}>{rows.length?'Ghi đã uống · Quản lý lịch thuốc':'Xem thuốc từ hồ sơ'}</Link>
   </section>;

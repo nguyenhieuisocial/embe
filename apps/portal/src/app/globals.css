@@ -4938,6 +4938,10 @@ input::-webkit-datetime-edit {
 .today-medication-copy .today-medication-state { justify-self:start; padding:4px 8px; border-radius:8px; background:var(--rose-soft); color:var(--rose-press); }
 .today-medication-copy .today-medication-state[data-state="taken"] { background:var(--jade-soft); color:var(--jade); }
 .today-medications-empty { font-size:.875rem; line-height:1.6; color:var(--ink-soft); }
+.today-medication-check { display:inline-flex; align-items:center; justify-content:center; min-height:44px; min-width:44px; margin-top:10px; padding:8px 12px; border:1px solid var(--rose-mist); border-radius:12px; font:inherit; font-size:.875rem; background:var(--rose-soft); color:var(--rose-press); }
+button.today-medication-check { cursor:pointer; }
+button.today-medication-check:disabled { opacity:.6; cursor:default; }
+button.today-medication-check:focus-visible { outline:2px solid var(--rose); outline-offset:3px; }
 .today-medications > a { min-height:44px; white-space:normal; overflow-wrap:anywhere; text-align:center; }
 .pregnancy-main > .section .today-priority-list > li > a { align-items: center; display: flex; min-height: 44px; }
 .today-priority {
