@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import MedicationUseGuide, {MedicationPurpose} from './medication-use-guide';
 import {useEffect, useRef, useState} from 'react';
 import {dateInVietnam} from '../lib/family-task-contract';
 import {useFamilyDataRefresh} from '../lib/use-family-data-refresh';
@@ -68,8 +69,10 @@ export default function TodayMedications() {
       <div className="today-medication-copy">
         <span className="today-medication-time">{time || 'Chưa đặt giờ'}</span>
         <strong>{plan.name}</strong>
+        <MedicationPurpose name={plan.name} />
         <small>{plan.dose_display || 'Chưa có liều đã ghi'} · lần {slot}/{plan.times_per_day}</small>
         {plan.instructions?<details className="today-medication-instructions"><summary>Cách dùng</summary><p>{plan.instructions}</p></details>:null}
+        <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times??[]} />
         {!plan.confirmed_by_clinician&&plan.entry_source!=='self_purchased'?<small>Chưa xác nhận kế hoạch với bác sĩ</small>:null}
       </div>
       <div className="today-medication-actions">
