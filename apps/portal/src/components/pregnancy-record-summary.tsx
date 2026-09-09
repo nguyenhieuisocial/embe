@@ -4,7 +4,7 @@ import {medicalInsights, type MedicalRecord} from '../lib/pregnancy-medical';
 import {MEDICAL_MEASUREMENTS} from '../lib/medical-measurements';
 import type {MedicalReadingSummary} from '../lib/medical-reading-summary';
 import {medicalFindingGroups,medicalFindingTopics} from '../lib/medical-finding-groups';
-import {medicineDisplayGroups,medicineSourceGroups} from '../lib/medicine-display-groups';
+import {medicineDisplayGroups,medicineSourceGroups,uniqueMedicineReadings} from '../lib/medicine-display-groups';
 import MedicalEncounterChain from './medical-encounter-chain';
 
 const date = (value:string) => new Date(value).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
@@ -67,7 +67,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       {!count('medicines')?<p>Chưa có thuốc trong bản đọc đã tải.</p>:null}
       {medicines.map(group=><details key={group.name}>
         <summary>{group.name}</summary>
-        {medicineSourceGroups(group.rows,entry=>JSON.stringify(entry.sources.map(s=>[s.documentId,s.page]).sort())).map(source=><article key={source.source}>
+        {medicineSourceGroups(group.rows,entry=>JSON.stringify(entry.sources.map(s=>[s.documentId,s.page]).sort())).map(raw=>({...raw,rows:uniqueMedicineReadings(raw.rows,entry=>[entry.row.value,...entry.row.details.slice().sort()],(a,b)=>({...a,row:{...a.row,unclear:a.row.unclear||b.row.unclear}}))})).map(source=><article key={source.source}>
           <ReadingSources sources={source.rows[0].sources}/>
           {source.rows.length>1?<details><summary>{source.rows.length} bản đọc cách dùng trên cùng giấy tờ</summary>
             {source.rows.map(({row},index)=><div key={index}><strong>Bản đọc {index+1}</strong><p>{row.value || 'Chưa đọc rõ liều/cách dùng'}</p>{row.details.map((detail,i)=><small key={i}>{detail}</small>)}{row.unclear?<small>Bản đọc chưa xác minh</small>:null}</div>)}

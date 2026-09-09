@@ -20,3 +20,15 @@ export function medicineSourceGroups<T>(rows:T[],source:(row:T)=>string):{source
  }
  return [...groups.values()];
 }
+
+/** Presentation equivalence only. Preserve digits, accents, units, route and missing fields. */
+export function medicineReadingKey(parts:string[]):string {
+ return JSON.stringify(parts.map(part=>part.normalize('NFC').toLocaleLowerCase('vi')
+   .replace(/(\d)\s*(mg|mcg|ml|µg)\b/gu,'$1 $2')
+   .replace(/\s*([·;\n])\s*/gu,';').split(';').map(s=>s.trim().replace(/\s+/g,' ').replace(/[.]$/u,'')).filter(Boolean).sort()));
+}
+export function uniqueMedicineReadings<T>(rows:T[],parts:(row:T)=>string[],merge:(a:T,b:T)=>T):T[]{
+ const grouped=new Map<string,T>();
+ for(const row of rows){const key=medicineReadingKey(parts(row));const prior=grouped.get(key);grouped.set(key,prior?merge(prior,row):row);}
+ return [...grouped.values()];
+}
