@@ -54,6 +54,23 @@
 .medical-workspace .medical-data{flex-basis:100%;min-width:0}
 .medical-workspace .medical-documents>div>a.medical-document-summary-link{flex-basis:100%;display:grid;gap:4px;align-items:start;font-size:.9rem;font-weight:600;text-decoration:none;padding:8px 0;overflow-wrap:anywhere}.medical-document-summary-link small{font-size:.76rem;font-weight:400;color:#725d67}
 .medical-workspace .medical-form :is(input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box;font-size:16px}
+.medical-workspace .medical-form { padding:16px; border:1px solid var(--rose-mist); border-radius:18px; background:var(--surface); scroll-margin-top:90px; min-width:0; }
+.medical-workspace .medical-form > h3 { font-size:1.125rem; line-height:1.4; margin:0; }
+.medical-workspace .medical-form-hint { margin:6px 0 16px; font-size:.8125rem; line-height:1.5; color:var(--ink-soft); }
+.medical-workspace .medical-kind-picker { display:flex; flex-wrap:wrap; overflow:visible; gap:8px; margin:0 0 16px; }
+.medical-workspace .medical-kind-picker button { min-height:44px; min-width:44px; padding:8px 12px; font-size:.8125rem; white-space:normal; }
+.medical-workspace .medical-kind-picker button[aria-pressed="true"] { background:var(--rose-soft); border-color:var(--rose); color:var(--rose-press); }
+.medical-workspace .medical-form label { font-size:.875rem; font-weight:600; gap:6px; }
+.medical-workspace .medical-form :is(input:not([type="checkbox"]),select,textarea) { width:100%; min-height:44px; border-radius:10px; }
+.medical-workspace .medical-form input[type="datetime-local"] { appearance:none; min-inline-size:0; }
+.medical-workspace .medical-form-extra { margin:16px 0; border-block:1px solid var(--line); }
+.medical-workspace .medical-form-extra > summary { font-weight:600; }
+.medical-workspace .medical-form-extra > summary small { display:block; margin:4px 0 0; }
+.medical-workspace .medical-form-extra .medical-form-grid { padding-bottom:12px; }
+.medical-workspace .medical-form-error { padding:12px; border:1px solid var(--coral); border-radius:10px; font-size:.875rem; }
+.medical-workspace .medical-files { margin-top:16px; padding:12px; border:1px dashed var(--line-strong); border-radius:12px; }
+.medical-workspace .medical-files input { padding:8px 0; font-size:.8125rem; }
+.medical-workspace .medical-form .health-save { width:100%; min-height:48px; margin-top:16px; }
 @media(min-width:900px){.medical-workspace{max-width:880px;margin-inline:auto}.medical-workspace .medical-timeline{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
 .medical-records-heading .medical-capture-action { display:flex; align-items:center; justify-content:center; flex:1; min-width:0; min-height:48px; padding:10px 12px; background:var(--rose); color:var(--on-rose, #fff); border-radius:14px; font-size:.9rem; font-weight:600; text-decoration:none; }
 .medical-workspace .medical-records-heading { gap:12px; margin-bottom:12px; }

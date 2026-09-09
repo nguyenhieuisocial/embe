@@ -396,6 +396,7 @@ export default function PregnancyMedicalRecords() {
       </details>
       {showForm ? <form className="medical-form" id="medical-record-form" key={`${formMode}-${editingRecord?.id ?? "new"}`} onSubmit={(event) => void save(event)}>
         <h3>{formMode === "prepare" ? "Chuẩn bị buổi khám" : formMode === "outcome" ? "Ghi kết quả sau khám" : editingRecord ? `Sửa ${kinds[editingRecord.kind]?.toLocaleLowerCase("vi") ?? "hồ sơ"}` : kind === "prescription" ? "Thêm đơn thuốc" : "Thêm hồ sơ khám"}</h3>
+        <p className="medical-form-hint">Tiêu đề và ngày giờ là bắt buộc. Các mục khác có thể bổ sung sau.</p>
         {formMode === "new" ? <div className="medical-kind-picker" role="group" aria-label="Phân loại hồ sơ">
           {Object.entries(kinds).map(([value, label]) => <button key={value} type="button" aria-pressed={kind === value} onClick={() => setKind(value)}>{label}</button>)}
         </div> : null}
@@ -403,11 +404,16 @@ export default function PregnancyMedicalRecords() {
           <label>Tiêu đề<input name="title" required maxLength={100} defaultValue={editingRecord?.title} placeholder={kind === "prescription" ? "Đơn thuốc ngày khám" : "Khám thai định kỳ"} /></label>
           {formMode === "new" ? <label>Trạng thái<select key={`${editingRecord?.id ?? 'new'}-${kind}`} name="status" defaultValue={editingRecord?.status ?? (kind === "appointment" ? "planned" : "completed")}><option value="planned">Sắp tới</option><option value="completed">Đã hoàn thành</option></select></label> : null}
           <label>Ngày và giờ<input name="occurredAt" type="datetime-local" required defaultValue={editingRecord ? localDateTime(new Date(editingRecord.occurredAt)) : localDateTime()} /></label>
-          <label>Tuần thai<input name="gestationalWeek" type="number" inputMode="numeric" min="1" max="42" defaultValue={editingRecord?.gestationalWeek ?? undefined} /></label>
           <label>Nơi khám<input name="provider" maxLength={120} defaultValue={editingRecord?.provider} placeholder="Bệnh viện hoặc phòng khám" /></label>
+        </div>
+        <details className="medical-form-extra">
+          <summary>Thông tin bổ sung <small>Bác sĩ, tuần thai, tái khám</small></summary>
+          <div className="medical-form-grid">
+          <label>Tuần thai<input name="gestationalWeek" type="number" inputMode="numeric" min="1" max="42" defaultValue={editingRecord?.gestationalWeek ?? undefined} /></label>
           <label>Bác sĩ<input name="clinician" maxLength={100} defaultValue={editingRecord?.clinician} placeholder="Nếu muốn ghi" /></label>
           <label className="medical-wide">Lịch hẹn tiếp theo<input name="nextAppointmentAt" type="datetime-local" defaultValue={editingRecord?.nextAppointmentAt ? localDateTime(new Date(editingRecord.nextAppointmentAt)) : undefined} /></label>
-        </div>
+          </div>
+        </details>
         <details className="medical-measurements">
           <summary>Chỉ số được ghi tại nơi khám <span>⌄</span></summary>
           <p>Chỉ chép chỉ số có trên phiếu. Giữ đúng đơn vị; không suy ra kết quả từ ảnh khi chưa kiểm tra.</p>
@@ -449,8 +455,9 @@ export default function PregnancyMedicalRecords() {
         {kind !== "appointment" ? <label className="medical-notes">Ghi chú<textarea name="notes" rows={3} maxLength={2000} defaultValue={editingRecord?.notes} placeholder="Điều bác sĩ dặn, câu hỏi cần nhớ…" /></label> : null}
         <label className="medical-files">{formMode === "outcome" ? "Hồ sơ hoặc tài liệu sau khám" : "Hồ sơ hoặc tài liệu mang theo"}
           <input name="documents" type="file" multiple accept="image/*,application/pdf" />
-          <small>Ảnh và PDF được đọc thử trên máy tại nhà, cần đối chiếu trước khi dùng. Tối đa 6 file, 15 MB/file; PDF tối đa 6 trang. Chụp thẳng trang, rõ chữ và đủ bốn góc. Chỉ Hiếu và Ngân xem được.</small>
+          <small>Tối đa 6 ảnh/PDF · 15 MB/file · PDF tối đa 6 trang. Bản gốc được lưu riêng tư.</small>
         </label>
+        {status === 'error' ? <p className="medical-form-error" role="alert">Chưa hoàn tất lưu hồ sơ hoặc tệp đính kèm. Nội dung đang nhập vẫn còn; kiểm tra kết nối rồi thử lưu lại.</p> : null}
         <button className="health-save" type="submit" disabled={status === "saving"}>{status === "saving" ? "Đang lưu…" : formMode === "prepare" ? "Lưu chuẩn bị" : formMode === "outcome" ? "Lưu kết quả" : "Lưu hồ sơ"}</button>
       </form> : null}
 
