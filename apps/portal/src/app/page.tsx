@@ -123,7 +123,7 @@ export default function Home() {
         <SmartTodayPanel />
       </Suspense>
 
-      <TodayMedications />
+      <TodayMedications compact />
 
       <Suspense fallback={<TimelineLoading />}>
         <TimelinePanel />

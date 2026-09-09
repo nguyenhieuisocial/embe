@@ -471,17 +471,15 @@
   .care-board .checklist-group > summary { padding: 6px 10px; }
   .care-board .check-item { padding: 8px 10px; }
   .care-board .today-medications.is-compact { margin: 4px 0 10px; padding-bottom: 8px; }
-  .care-board .is-compact .today-medication { padding: 8px 0; gap: 8px; grid-template-columns: 48px minmax(0,1fr); }
-  .care-board .is-compact .today-medication-time { width: 48px; }
-  .care-board .is-compact .today-medication-copy { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 8px; }
-  .care-board .is-compact .today-medication-copy > strong,
-  .care-board .is-compact .today-medication-copy > small { grid-column: 1 / -1; }
-  .care-board .is-compact .today-medication-actions { grid-column: 1; grid-row: 3; }
-  .care-board .is-compact .medication-guide { grid-column: 2; grid-row: 3; min-width: 0; }
-  .care-board .is-compact .medication-guide[open] { grid-column: 1 / -1; grid-row: 4; }
-  @media (max-width: 360px) {
-    .care-board .is-compact .medication-guide { grid-column: 1 / -1; grid-row: 4; }
-  }
+  :is(.today-main,.care-board) .is-compact .today-medication { padding: 8px 0 0; gap: 8px; grid-template-columns: 48px minmax(0,1fr); }
+  :is(.today-main,.care-board) .is-compact .today-medication-time { width: 48px; }
+  :is(.today-main,.care-board) .is-compact .today-medication-copy { display: grid; grid-template-columns: minmax(0,1fr) 44px; gap: 0 8px; }
+  :is(.today-main,.care-board) .is-compact .today-medication-copy > strong,
+  :is(.today-main,.care-board) .is-compact .today-medication-copy > small { grid-column: 1; overflow-wrap: anywhere; }
+  :is(.today-main,.care-board) .is-compact .today-medication-actions { grid-column: 2; grid-row: 1 / 3; margin: 0; justify-content: center; }
+  :is(.today-main,.care-board) .is-compact .today-medication-check { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; padding: 0; font-size: 1.25rem; }
+  :is(.today-main,.care-board) .is-compact .medication-guide { grid-column: 1 / -1; grid-row: 3; min-width: 0; }
+  :is(.today-main,.care-board) .is-compact .today-medications-notice { padding-top: 4px; }
   .today-main .thread { margin-top: 12px; }
   .today-main .thread-item { padding-bottom: 14px; }
   .today-main .thread-body { padding: 12px; border-radius: 14px; }

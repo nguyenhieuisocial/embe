@@ -10,6 +10,8 @@ it('keeps dose controls and details in compact mode without repeating pending te
  await screen.findByText('08:00');
  expect(container.querySelector('.today-medications')).toHaveClass('is-compact');
  expect(screen.getByRole('button',{name:'Đánh dấu đã dùng Thuốc theo đơn lần 2'})).toBeEnabled();
+ expect(screen.getByRole('button',{name:'Đánh dấu đã dùng Thuốc theo đơn lần 2'})).toHaveTextContent('○');
+ expect(screen.getByLabelText('Thuốc theo đơn lần 1: đã dùng')).toHaveTextContent('✓');
  expect(screen.queryByText('Chưa ghi nhận dùng')).toBeNull();
  expect(screen.getAllByText('Chi tiết thuốc')).toHaveLength(2);
  expect(container.querySelectorAll('.medication-guide[open]')).toHaveLength(0);
