@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import FoodPortionInput from './food-portion-input';
+import {foodPortionLabel} from '../lib/food-portion';
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { MealAnalysis } from "../lib/meal-analysis-contract";
@@ -579,7 +581,7 @@ export default function MealPhotoTracker() {
         {analysis.foods.length === 0 ? <p className="meal-empty">{analysis.estimateNotice}</p> : null}
         {analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
           <label>Tên món<input list="vietnamese-popular-foods" value={food.nameVi} maxLength={80} onChange={(event) => updateFood(index, "nameVi", event.target.value)} /></label>
-          <label>Khẩu phần (g)<input inputMode="decimal" type="number" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateFood(index, "estimatedGrams", event.target.value)} /></label>
+          <FoodPortionInput name={food.nameVi} grams={food.estimatedGrams ?? null} onChange={value=>updateFood(index, "estimatedGrams", value)}/>
           {food.confidence < .65 ? <small>Cần kiểm tra lại tên món.</small> : null}
           {analysis.foods.length > 1 ? <button className="meal-remove-food" type="button" aria-label={`Bỏ ${food.nameVi || `món ${index + 1}`}`} onClick={() => removeFood(index)}>Bỏ món</button> : null}
         </div>)}
@@ -676,7 +678,7 @@ export default function MealPhotoTracker() {
                     {historyEditor?.id === entry.id ? <div className="meal-history-editor">
                       {historyEditor.analysis.foods.map((food, index) => <div className="meal-food-row" key={index}>
                         <label>Sửa tên món<input list="vietnamese-popular-foods" maxLength={80} value={food.nameVi} onChange={(event) => updateSavedFood(index, "nameVi", event.target.value)} /></label>
-                        <label>Sửa khẩu phần (g)<input type="number" inputMode="decimal" min="1" max="3000" value={food.estimatedGrams ?? ""} onChange={(event) => updateSavedFood(index, "estimatedGrams", event.target.value)} /></label>
+                        <FoodPortionInput editing name={food.nameVi} grams={food.estimatedGrams ?? null} onChange={value=>updateSavedFood(index, "estimatedGrams", value)}/>
                         {historyEditor.analysis.foods.length > 1 ? <button className="meal-remove-food" type="button" aria-label={`Bỏ ${food.nameVi || `món ${index + 1}`}`} onClick={() => removeSavedFood(index)}>Bỏ món</button> : null}
                       </div>)}
                       {historyEditor.analysis.foods.length < 8 ? <button className="meal-add-food" type="button" onClick={addSavedFood}>Thêm món vào bữa đã lưu</button> : null}
@@ -687,7 +689,7 @@ export default function MealPhotoTracker() {
                       </div>
                     </div> : <>
                       {entry.note ? <p>{entry.note}</p> : null}
-                      <ul>{entry.analysis.foods.map((food, index) => <li key={`${entry.id}-${index}`}>{food.nameVi}{food.estimatedGrams ? ` · ${food.estimatedGrams} g` : ""}</li>)}</ul>
+                      <ul>{entry.analysis.foods.map((food, index) => <li key={`${entry.id}-${index}`}>{food.nameVi}{food.estimatedGrams ? ` · ${foodPortionLabel(food.nameVi,food.estimatedGrams)}` : ""}</li>)}</ul>
                       <MealNutritionFacts entry={entry} />
                       {hasMealSafetyConcern(entry.analysis.foods.flatMap((food) => [
                         ...food.safetyFlags, ...deriveMealSafetyFlags(food.nameVi)

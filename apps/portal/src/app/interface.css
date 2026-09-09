@@ -23,6 +23,11 @@
   .meal-page .meal-state { margin-block: 0; font-size: .8125rem; line-height: 1.5; }
   .meal-page .meal-food-row { border-radius: 14px; gap: 10px; }
   .meal-page .meal-food-row input { min-width: 0; font-size: 16px; min-height: 44px; }
+  .food-portion-input { min-width: 0; }
+  .food-portion-input.is-egg { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px 12px; }
+  .meal-food-row:has(.food-portion-input.is-egg) > label { grid-column: 1 / -1; }
+  .food-portion-input select { min-width: 0; width: 100%; min-height: 44px; font-size: 16px; }
+  .food-portion-input small { grid-column: 1 / -1; color: var(--ink-soft); line-height: 1.5; }
   .meal-page .meal-review > div:first-child p { font-size: .875rem; margin-top: 4px; }
   .meal-page .meal-capture-card > .care-inline { border-top: 1px solid var(--line); padding-top: 8px; }
 }
