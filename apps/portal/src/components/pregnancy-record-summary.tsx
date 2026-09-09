@@ -21,7 +21,7 @@ function ReadingSources({sources}:{sources:ReturnType<typeof medicalFindingGroup
   return <details><summary>Nguồn đối chiếu <small>{sources.length} trang</small></summary>{sources.map(source=><Link key={`${source.documentId}:${source.page}`} href={`/me-bau/ho-so/tai-lieu/${source.documentId}`}>{source.title} · trang {source.page}</Link>)}</details>;
 }
 function FindingBody({finding}:{finding:ReturnType<typeof medicalFindingGroups>[number]}) {
-  return <><p>{finding.row.value}</p>{finding.row.details.map((detail,i)=><small key={i}>{detail}</small>)}
+  return <><p>{finding.row.value}</p>{finding.row.details.length?<details><summary>Ngữ cảnh bản đọc</summary>{finding.row.details.map((detail,i)=><small key={i}>{detail}</small>)}</details>:null}
     {finding.row.unclear?<small>Bản đọc chưa xác minh</small>:null}<ReadingSources sources={finding.sources}/></>;
 }
 export default function PregnancyRecordSummary({records}:{records:MedicalRecord[]}) {

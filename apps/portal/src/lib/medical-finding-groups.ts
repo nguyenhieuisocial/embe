@@ -31,7 +31,16 @@ export function medicalFindingTopics(records:MedicalRecord[]){
   const scope=day?`${finding.recordId}:${day}`:`${finding.recordId}:${finding.sources[0].documentId}:${finding.row.page}`;
   const key=JSON.stringify([scope,label]);
   const prior=topics.get(key);
-  if(prior)prior.variants.push(finding);else topics.set(key,{label,day,variants:[finding]});
+  if(prior){
+   // Within an already scoped topic, OCR context prose must not duplicate
+   // identical printed text. Preserve all contexts and document references.
+   const same=prior.variants.find(variant=>literal(variant.row.value)===literal(finding.row.value));
+   if(same && finding.row.value.trim()){
+    same.row={...same.row,unclear:same.row.unclear||finding.row.unclear,
+     details:[...new Set([...same.row.details,...finding.row.details])]};
+    for(const source of finding.sources)if(!same.sources.some(s=>s.documentId===source.documentId&&s.page===source.page))same.sources.push(source);
+   }else prior.variants.push(finding);
+  }else topics.set(key,{label,day,variants:[finding]});
  }
  return [...topics.values()];
 }
