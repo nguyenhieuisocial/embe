@@ -61,6 +61,23 @@ function rpcInput(token: string, day: string, values: MetricValues): Record<stri
 }
 
 function shortcutMetric(type: string, amount: number, unit: string): { key: MetricName; amount: number; additive: boolean } | null {
+  const aliases: Record<string, string> = {
+    'Bước': 'Steps', 'Bước chân': 'Steps', 'Số bước': 'Steps',
+    'Năng lượng vận động': 'Active Calories', 'Năng lượng nghỉ': 'Resting Energy',
+    'Giấc ngủ': 'Sleep', 'Cân nặng': 'Weight', 'Chiều cao': 'Height',
+    'Quãng đường đi bộ + chạy': 'Walking + Running Distance', 'Nước': 'Water',
+    'Nhịp tim': 'Heart Rate', 'Nhịp tim khi nghỉ ngơi': 'Resting Heart Rate',
+    'Nhịp hô hấp': 'Respiratory Rate', 'Ôxi trong máu': 'Blood Oxygen',
+    'Nhiệt độ cơ thể': 'Body Temperature', 'Nhiệt độ cổ tay': 'Wrist Temperature',
+    'Biến thiên nhịp tim': 'Heart Rate Variability', 'Số phút thể dục': 'Exercise Time',
+    'Số phút chú tâm': 'Mindful Minutes', 'Huyết áp tâm thu': 'Blood Pressure Systolic',
+    'Huyết áp tâm trương': 'Blood Pressure Diastolic'
+  };
+  type = aliases[type.trim()] ?? type.trim();
+  unit = ({'bước':'count','lần':'count','nhịp/phút':'bpm','phút':'min','giờ':'hr','giây':'s'} as Record<string,string>)[unit.trim()] ?? unit.trim();
+  if (['Sleep', 'Exercise Time', 'Mindful Minutes', 'Mindfulness'].includes(type) && unit === 's') {
+    amount /= 60; unit = 'min';
+  }
   if (type === "Steps" && unit === "count") return { key: "steps", amount, additive: true };
   if (type === "Active Calories" && ["kcal", "kJ"].includes(unit)) return { key: "activeEnergyKcal", amount: unit === "kJ" ? amount / 4.184 : amount, additive: true };
   if (["Basal Energy Burned", "Resting Energy"].includes(type) && ["kcal", "kJ"].includes(unit)) return { key: "restingEnergyKcal", amount: unit === "kJ" ? amount / 4.184 : amount, additive: true };
@@ -97,6 +114,8 @@ async function ingestShortcutExport(request: Request, token: string): Promise<Re
   const samples = (input as { data: unknown[] }).data;
   if (samples.length < 1 || samples.length > 620) return privateReply({ error: "invalid_request" }, 400);
   const days = new Map<string, MetricValues>();
+  const latest = new Map<string, number>();
+  const heartRates = new Map<string, {sum: number; count: number}>();
   for (const sample of samples) {
     if (!sample || typeof sample !== "object") return privateReply({ error: "invalid_request" }, 400);
     const value = sample as Record<string, unknown>;
@@ -105,21 +124,46 @@ async function ingestShortcutExport(request: Request, token: string): Promise<Re
       return privateReply({ error: "invalid_request" }, 400);
     }
     const day = value.date.slice(0, 10);
-    const amount = typeof value.value === "number" ? value.value : Number(value.value);
-    if (!ISO_DAY.test(day) || !Number.isFinite(Date.parse(value.date)) || !Number.isFinite(amount) || amount < 0) {
+    // Empty, boolean and null values are missing data, never a measured zero.
+    const amount = typeof value.value === "number" ? value.value
+      : typeof value.value === 'string' && /^\d+(?:[.,]\d+)?$/.test(value.value.trim())
+        ? Number(value.value.trim().replace(',', '.')) : NaN;
+    const timestamp = Date.parse(value.date);
+    const dayTimestamp = Date.parse(`${day}T00:00:00Z`);
+    if (!ISO_DAY.test(day) || !Number.isFinite(dayTimestamp) || new Date(dayTimestamp).toISOString().slice(0,10) !== day || !Number.isFinite(timestamp) || !Number.isFinite(amount) || amount < 0) {
       return privateReply({ error: "invalid_request" }, 400);
     }
     const aggregate = days.get(day) ?? emptyMetrics();
     const normalized = shortcutMetric(value.type, amount, value.unit);
     if (!normalized) return privateReply({ error: "invalid_request" }, 400);
-    const nextAmount = normalized.additive ? (aggregate[normalized.key] ?? 0) + normalized.amount : normalized.amount;
-    const [low, high, integer] = METRIC_RULES[normalized.key];
-    const valid = metric(integer ? Math.round(nextAmount) : nextAmount, low, high, integer);
+    const [low, high] = METRIC_RULES[normalized.key];
+    const valid = metric(normalized.amount, low, high);
     if (valid === undefined || valid === null) return privateReply({ error: "invalid_request" }, 400);
-    aggregate[normalized.key] = valid;
+    const key = `${day}:${normalized.key}`;
+    if (normalized.additive) {
+      // Round only once after summing fractional minutes or millilitres.
+      aggregate[normalized.key] = (aggregate[normalized.key] ?? 0) + valid;
+    } else if (normalized.key === 'heartRateAvg') {
+      const readings = heartRates.get(day) ?? {sum: 0, count: 0};
+      readings.sum += valid; readings.count += 1;
+      heartRates.set(day, readings);
+      aggregate.heartRateAvg = readings.sum / readings.count;
+    } else if (timestamp >= (latest.get(key) ?? -Infinity)) {
+      aggregate[normalized.key] = valid;
+      latest.set(key, timestamp);
+    }
     days.set(day, aggregate);
   }
   if (days.size > 31) return privateReply({ error: "invalid_request" }, 400);
+  for (const values of days.values()) {
+    for (const [key, [low, high, integer]] of Object.entries(METRIC_RULES) as [MetricName, readonly [number,number,boolean]][]) {
+      const amount = values[key];
+      if (amount === null) continue;
+      const valid = metric(integer ? Math.round(amount) : amount, low, high, integer);
+      if (valid === undefined) return privateReply({error:'invalid_request'},400);
+      values[key] = valid;
+    }
+  }
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
   for (const [day, values] of days) {

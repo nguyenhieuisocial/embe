@@ -24,6 +24,41 @@ function request(url: string, method: string, body?: unknown, authenticated = tr
 const snapshot = { profile: null, plans: [], iphone_health: null, iphone_devices: [] };
 
 describe("private pregnancy care and iPhone health APIs", () => {
+  function shortcutRequest(data: unknown[]) {
+    return new Request('https://embe.hieu.asia/api/pregnancy/iphone-health', {
+      method: 'POST', headers: {authorization: `Bearer embe_health_${'a'.repeat(43)}`, 'content-type':'application/json'},
+      body: JSON.stringify({data})
+    });
+  }
+  it('handles Vietnamese numbers and units and keeps the newest measurement regardless of input order', async () => {
+    rpc.mockResolvedValue({data:true,error:null});
+    const response = await createDevice(shortcutRequest([
+      {type:'Cân nặng',date:'2026-09-09T20:00:00+07:00',value:'54,2',unit:'kg'},
+      {type:'Cân nặng',date:'2026-09-09T08:00:00+07:00',value:53,unit:'kg'},
+      {type:'Chiều cao',date:'2026-09-09',value:'1,6',unit:'m'},
+      {type:'Nhịp tim',date:'2026-09-09T08:00:00+07:00',value:60,unit:'nhịp/phút'},
+      {type:'Nhịp tim',date:'2026-09-09T20:00:00+07:00',value:80,unit:'nhịp/phút'},
+      ...[1,2,3].map(i=>({type:'Giấc ngủ',date:`2026-09-09T0${i}:00:00+07:00`,value:20,unit:'giây'}))
+    ]));
+    expect(response.status).toBe(202);
+    expect(rpc).toHaveBeenCalledWith('embe_ingest_iphone_health_v2',expect.objectContaining({p_weight_kg:54.2,p_height_cm:160,p_heart_rate_avg:70,p_sleep_minutes:1}));
+  });
+  it.each([null, true, '', ' ', [], '1,000.2'])('does not turn missing or ambiguous measurements into zero: %j',async(value)=>{
+    expect((await createDevice(shortcutRequest([{type:'Steps',date:'2026-09-09',value,unit:'count'}]))).status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it.each(['2026-02-30','2026-99-99'])('rejects impossible dates without writing: %s',async(date)=>{
+    expect((await createDevice(shortcutRequest([{type:'Steps',date,value:10,unit:'count'}]))).status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it('validates cumulative limits before writing any day',async()=>{
+    expect((await createDevice(shortcutRequest([
+      {type:'Steps',date:'2026-09-08',value:100,unit:'count'},
+      {type:'Steps',date:'2026-09-09T08:00:00Z',value:150000,unit:'count'},
+      {type:'Steps',date:'2026-09-09T09:00:00Z',value:150000,unit:'count'}
+    ]))).status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
     process.env.SUPABASE_URL = "https://project.supabase.co";

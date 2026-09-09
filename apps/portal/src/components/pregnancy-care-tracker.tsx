@@ -428,6 +428,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
           <summary>Xem đầy đủ và lịch sử <span>⌄</span></summary>
           {iphoneHistoryOpen ? <>
             <div className="iphone-metrics iphone-metrics-complete">
+              <span><strong>{latestIphoneHealth.heart_rate_avg ?? "—"}</strong>nhịp tim trung bình (bpm)<small>{metricSyncLabel(latestIphoneHealth, "heartRateAvg")}</small></span>
               <span><strong>{latestIphoneHealth.resting_heart_rate_bpm ?? "—"}</strong>nhịp tim nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingHeartRateBpm")}</small></span>
               <span><strong>{typeof latestIphoneHealth.distance_m === "number" ? `${(latestIphoneHealth.distance_m / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km` : "—"}</strong>quãng đường<small>{metricSyncLabel(latestIphoneHealth, "distanceM")}</small></span>
               <span><strong>{latestIphoneHealth.active_energy_kcal ?? "—"}</strong>kcal vận động<small>{metricSyncLabel(latestIphoneHealth, "activeEnergyKcal")}</small></span>
@@ -435,7 +436,8 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
               <span><strong>{latestIphoneHealth.systolic && latestIphoneHealth.diastolic ? `${latestIphoneHealth.systolic}/${latestIphoneHealth.diastolic}` : "—"}</strong>huyết áp<small>{metricSyncLabel(latestIphoneHealth, "systolic")}</small></span>
               <span><strong>{latestIphoneHealth.respiratory_rate ?? "—"}</strong>nhịp thở<small>{metricSyncLabel(latestIphoneHealth, "respiratoryRate")}</small></span>
               <span><strong>{typeof latestIphoneHealth.oxygen_saturation_percent === "number" ? `${latestIphoneHealth.oxygen_saturation_percent}%` : "—"}</strong>SpO₂<small>{metricSyncLabel(latestIphoneHealth, "oxygenSaturationPercent")}</small></span>
-              <span><strong>{latestIphoneHealth.body_temperature_c ?? latestIphoneHealth.wrist_temperature_c ?? "—"}</strong>°C<small>{metricSyncLabel(latestIphoneHealth, typeof latestIphoneHealth.body_temperature_c === "number" ? "bodyTemperatureC" : "wristTemperatureC")}</small></span>
+              <span><strong>{latestIphoneHealth.body_temperature_c ?? "—"}</strong>nhiệt độ cơ thể °C<small>{metricSyncLabel(latestIphoneHealth, "bodyTemperatureC")}</small></span>
+              <span><strong>{latestIphoneHealth.wrist_temperature_c ?? "—"}</strong>nhiệt độ cổ tay °C<small>{metricSyncLabel(latestIphoneHealth, "wristTemperatureC")}</small></span>
               <span><strong>{latestIphoneHealth.hrv_ms ?? "—"}</strong>HRV ms<small>{metricSyncLabel(latestIphoneHealth, "hrvMs")}</small></span>
               <span><strong>{latestIphoneHealth.exercise_minutes ?? "—"}</strong>phút tập<small>{metricSyncLabel(latestIphoneHealth, "exerciseMinutes")}</small></span>
               <span><strong>{latestIphoneHealth.mindfulness_minutes ?? "—"}</strong>phút thư giãn<small>{metricSyncLabel(latestIphoneHealth, "mindfulnessMinutes")}</small></span>
