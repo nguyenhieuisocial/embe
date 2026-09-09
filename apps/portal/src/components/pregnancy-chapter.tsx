@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from "./embe-icon";
 
 import { calculatePregnancyWeek } from "../lib/pregnancy";
 import { usePregnancyDueDate } from "../lib/use-pregnancy-due-date";
@@ -33,10 +34,17 @@ function chapterFor(dueDate: string) {
   };
 }
 
-export default function PregnancyChapter() {
+export default function PregnancyChapter({ compact = false }: { compact?: boolean }) {
   const dueDate = usePregnancyDueDate();
 
   const chapter = chapterFor(dueDate);
+
+  if (compact) return <section className="today-stage-card" aria-label="Giai đoạn hiện tại">
+    <Link href="/me-bau" aria-label={`${chapter.kicker}: ${chapter.title}`}>
+      <span><small>{chapter.kicker}</small><strong>{chapter.title}</strong></span>
+      <Icon name="arrow" />
+    </Link>
+  </section>;
 
   return (
     <section className="section pregnancy-chapter" aria-labelledby="pregnancy-chapter-title">

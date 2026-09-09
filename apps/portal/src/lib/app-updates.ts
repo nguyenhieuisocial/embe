@@ -1,5 +1,9 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-09-today-workspace', date: '2026-09-09', title: 'Hôm nay gọn hơn, dễ dùng hơn', items: [
+    { title: 'Giai đoạn hiện tại và ghi nhanh ở đầu trang', description: 'Mở ngay bữa ăn, sức khỏe, thuốc và giấy tờ. Việc cần nhớ ưu tiên lịch khám, không để việc nhà quá hạn chiếm hết chỗ.', href: '/', action: 'Mở Hôm nay' },
+    { title: 'Lịch thuốc dễ nhìn theo giờ', description: 'Giữ đủ các lần uống, liều và trạng thái. Cách dùng và công dụng mở khi cần; tích đã uống chỉ thành công sau khi lưu được.', href: '/', action: 'Xem lịch hôm nay' },
+  ] },
   { id: '2026-09-09-mobile-design', date: '2026-09-09', title: 'Giao diện gọn hơn, thao tác rõ hơn', items: [
     { title: 'Đồng nhất chữ, nút và ô nhập', description: 'Chữ dễ đọc, vùng chạm rộng; ăn uống và kỷ niệm có màu phân nhóm. Hồ sơ bớt khung lồng nhau, giữ thông tin và nguồn trong các mục mở rộng.', href: '/me-bau/ho-so', action: 'Xem hồ sơ' },
     { title: 'Thuốc có lối vào riêng', description: 'Mở Thuốc & vi chất trực tiếp, không cần đi qua kết nối iPhone. Phân biệt thuốc đã lưu với lịch đủ điều kiện ghi nhận; nút đánh dấu khác rõ trạng thái đã uống.', href: '/me-bau/thuoc', action: 'Mở Thuốc' },

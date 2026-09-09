@@ -11,9 +11,11 @@ describe("Today priorities panel", () => {
       { id: "c", kind: "health", title: "Ghi sức khỏe", detail: "Một check-in ngắn", href: "/me-bau#suc-khoe", actionLabel: "Ghi nhanh" }
     ]} unavailableSources={[]} />);
 
-    expect(screen.getByRole("heading", { name: "3 việc cần để ý" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Việc cần nhớ" })).toBeInTheDocument();
+    expect(screen.getByText("3 việc")).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
     expect(screen.getByRole("link", { name: "Mở lịch: Khám thai" })).toHaveAttribute("href", "/lich");
+    expect(screen.getByText("Khám thai").closest('a')).toHaveAttribute('href', '/lich');
   });
 
   it("distinguishes a source outage from a genuinely empty day", () => {

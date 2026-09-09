@@ -14,10 +14,10 @@ export function MedicationPurpose({name}: {name:string}) {
   const guide=medicationGuide(name);
   return <small className="medication-purpose">{guide ? guide.purpose : 'Công dụng: chưa khớp nguồn xác minh cho sản phẩm này.'}</small>;
 }
-export default function MedicationUseGuide({ name, dose, instructions, times, children }: { name: string; dose: string; instructions: string; times: string[]; children?: ReactNode }) {
+export default function MedicationUseGuide({ name, dose, instructions, times, children, summaryLabel = 'Cách dùng & thông tin thuốc' }: { name: string; dose: string; instructions: string; times: string[]; children?: ReactNode; summaryLabel?: string }) {
   // Exact ingredient only: never infer a combination product's formulation from a brand fragment.
   const guide = medicationGuide(name);
-  return <details className="care-secondary-section medication-guide"><summary>Cách dùng & thông tin thuốc <span aria-hidden="true">⌄</span></summary>
+  return <details className="care-secondary-section medication-guide"><summary>{summaryLabel} <span aria-hidden="true">⌄</span></summary>
     <p><strong>Liều đã lưu:</strong> {dose || 'Chưa ghi liều; xem đơn hoặc hỏi người kê đơn.'}</p>
     <p><strong>Giờ đã đặt:</strong> {times.length ? times.map(t => t.slice(0, 5)).join(' · ') : 'Chưa đặt giờ nhắc.'}</p>
     {instructions ? <p><strong>Lời dặn đã lưu:</strong> {instructions}</p> : null}

@@ -1,6 +1,12 @@
 import Link from "next/link";
+import { Icon, type IconName } from "./embe-icon";
 
 import type { TodayPriority } from "../lib/today-priorities";
+
+const priorityIcons: Record<TodayPriority["kind"], IconName> = {
+  appointment: "calendar", task: "check", medicine: "check", health: "care",
+  meal: "meal", profile: "album", inventory: "supply"
+};
 
 export default function TodayPrioritiesPanel({
   priorities,
@@ -12,21 +18,21 @@ export default function TodayPrioritiesPanel({
   return (
     <section className="section today-priorities" aria-labelledby="today-priorities-title">
       <div className="section-head">
-        <p className="panel-kicker">Nhẹ nhàng, đúng việc</p>
-        <h2 id="today-priorities-title">{priorities.length ? `${priorities.length} việc cần để ý` : "Hôm nay"}</h2>
+        <h2 id="today-priorities-title">Việc cần nhớ</h2>
+        {priorities.length ? <small>{priorities.length} việc</small> : null}
       </div>
 
       {priorities.length ? (
         <ol className="today-priority-list">
           {priorities.map((priority) => (
             <li className={`today-priority is-${priority.kind}`} key={priority.id}>
-              <span className="today-priority-thread" aria-hidden="true" />
+              <Link className="today-priority-open" href={priority.href} prefetch={false} aria-label={`${priority.actionLabel}: ${priority.title}`}>
+              <span className="today-priority-symbol"><Icon name={priorityIcons[priority.kind]} /></span>
               <span className="today-priority-copy">
                 <strong>{priority.title}</strong>
                 <small>{priority.detail}</small>
               </span>
-              <Link href={priority.href} prefetch={false} aria-label={`${priority.actionLabel}: ${priority.title}`}>
-                {priority.actionLabel}
+                <Icon name="arrow" />
               </Link>
             </li>
           ))}

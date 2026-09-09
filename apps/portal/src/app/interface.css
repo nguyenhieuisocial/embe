@@ -69,17 +69,44 @@
   .family-home-main h1,
   .pregnancy-main > .pregnancy-hero h1,
   .memories-hero h1 { font-size: clamp(1.5rem, 6vw, 1.9rem); letter-spacing: -.025em; line-height: 1.3; }
-  .today-main .today-meta { margin-bottom: 7px; }
+  .today-main .today-meta { margin-bottom: 0; }
   .today-main .today-meta time { font-size: .8125rem; color: var(--ink-soft); }
+  .today-main .today-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .today-main .today-heading-row h1 { margin: 0; }
+  .today-main .today-calendar-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--rose-press); font-size: .875rem; font-weight: 600; text-decoration: none; }
+  .today-main .today-calendar-link .icon { width: 18px; height: 18px; }
+  .today-main .today-stage-card { padding: 0; margin: 0; border-radius: 16px; background: var(--rose-soft); }
+  .today-main .today-stage-card > a { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; min-height: 72px; text-decoration: none; color: var(--ink); }
+  .today-main .today-stage-card > a > span { display: grid; gap: 4px; min-width: 0; }
+  .today-main .today-stage-card small { font-size: .8125rem; color: var(--rose-press); }
+  .today-main .today-stage-card strong { font-size: .9375rem; font-weight: 600; line-height: 1.5; }
+  .today-main .today-stage-card .icon { width: 18px; height: 18px; flex: none; color: var(--rose-press); }
+  .today-main .daily-shortcuts { margin-block: 12px 20px; }
+  .today-main .daily-shortcuts > a { min-height: 64px; padding: 10px; gap: 8px; font-size: .8125rem; }
+  .today-main .daily-shortcuts > a:nth-child(1) .icon { color: var(--peach); background: var(--peach-soft); }
+  .today-main .daily-shortcuts > a:nth-child(2) .icon { color: var(--mint); background: var(--mint-soft); }
+  .today-main .daily-shortcuts > a:nth-child(3) .icon { color: var(--rose-press); background: var(--rose-soft); }
+  .today-main .daily-shortcuts > a:nth-child(4) .icon { color: var(--lavender); background: var(--lavender-soft); }
   .today-main .intro, .family-home-main .intro { margin-top: 5px; font-size: .875rem; }
-  .today-main .section { margin-top: 18px; }
+  .today-main .section { margin-top: 20px; }
   .today-main .today-priorities { margin-top: 0; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 16px; box-shadow: none; }
   .today-main .today-priorities .panel-kicker { display: none; }
-  .today-main .today-priorities h2 { font-family: var(--font-body), sans-serif; font-size: 1rem; font-weight: 600; }
+  .today-main .section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; }
+  .today-main .section-head h2 { margin: 0; font-family: var(--font-body), sans-serif; font-size: 1rem; font-weight: 600; }
+  .today-main .section-head small { font-size: .8125rem; color: var(--ink-soft); }
   .today-main .today-priority-list { margin-top: 4px; }
-  .today-main .today-priority-copy strong { font-size: .9375rem; }
-  .today-main .today-priority-copy small { font-size: .8125rem; }
-  .today-main .today-priority-plan-link { font-size: .8125rem; }
+  .today-main .today-priority { display: block; min-height: 0; padding: 0; border-radius: 0; background: transparent; }
+  .today-main .today-priority:last-child { border-bottom: 0; }
+  .today-main .today-priority-open { display: grid; grid-template-columns: 32px minmax(0,1fr) 16px; align-items: center; gap: 10px; min-height: 66px; padding: 12px 0; color: var(--ink); text-align: left; }
+  .today-main .today-priority-symbol { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--rose-soft); color: var(--rose-press); }
+  .today-main .is-appointment .today-priority-symbol { background: var(--lavender-soft); color: var(--lavender); }
+  .today-main .is-health .today-priority-symbol { background: var(--mint-soft); color: var(--mint); }
+  .today-main .today-priority-symbol .icon { width: 18px; height: 18px; }
+  .today-main .today-priority-open > .icon { width: 16px; height: 16px; color: var(--ink-soft); }
+  .today-main .today-priority-copy { gap: 3px; }
+  .today-main .today-priority-copy strong { font-size: .875rem; font-weight: 600; line-height: 1.5; white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+  .today-main .today-priority-copy small { font-size: .8125rem; font-weight: 400; }
+  .today-main .today-priority-plan-link { justify-self: start; padding-inline: 0; font-size: .8125rem; color: var(--rose-press); }
   .today-main .pregnancy-chapter { grid-template-columns: minmax(0,1fr); padding: 14px 0; border: 0; border-block: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
   .today-main .pregnancy-chapter h2 { font-size: 1.125rem; line-height: 1.45; }
   .today-main .pregnancy-chapter p { font-size: .8125rem; }
@@ -385,4 +412,32 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .has-nav main :is(button,summary,a) { transition: none; }
+}
+@media screen {
+  /* Home is an overview, not a second medication-management form. */
+  .today-main .today-medications { padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: none; }
+  .today-main .today-section-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--rose-press); font-size: .8125rem; font-weight: 600; text-decoration: none; }
+  .today-main .today-medications-progress { margin-top: 4px; gap: 8px; font-size: .8125rem; }
+  .today-main .today-medications-notice { padding: 10px 0 0; margin: 0; color: var(--ink-soft); font-size: .8125rem; line-height: 1.6; }
+  .today-main .today-medications-notice a { display: inline-flex; align-items: center; min-height: 44px; color: var(--rose-press); text-underline-offset: 3px; }
+  .today-main .today-medications-list { gap: 0; margin: 10px 0 0; }
+  .today-main .today-medication { display: grid; grid-template-columns: 56px minmax(0,1fr); align-items: start; gap: 12px; padding: 14px 0 10px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
+  .today-main .today-medication-time { width: 56px; padding: 5px 4px; border-radius: 8px; font-size: .75rem; line-height: 1.5; text-align: center; overflow-wrap: anywhere; }
+  .today-main .today-medication-copy { gap: 4px; }
+  .today-main .today-medication-copy > strong { font-size: .9375rem; }
+  .today-main .today-medication-copy > small { font-size: .8125rem; }
+  .today-main .today-medication-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; align-items: center; justify-content: space-between; }
+  .today-main .today-medication-copy .today-medication-state { padding: 0; background: transparent; color: var(--ink-soft); font-size: .75rem; }
+  .today-main .today-medication-actions .today-medication-check { margin: 0; gap: 6px; }
+  .today-main .today-medication[data-state="taken"] .today-medication-time { background: var(--mint-soft); color: var(--mint); }
+  .today-main .medication-guide.care-secondary-section { border: 0; margin: 0; padding: 0; }
+  .today-main .medication-guide.care-secondary-section > summary { justify-content: space-between; min-height: 44px; padding: 8px 0; font-size: .8125rem; }
+  .today-main .medication-guide[open] { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
+  .today-main .thread { margin-top: 12px; }
+  .today-main .thread-item { padding-bottom: 14px; }
+  .today-main .thread-body { padding: 12px; border-radius: 14px; }
+  .today-main .thread-body p { margin-block: 4px 0; }
+  .today-main .thread-body .timeline-date { margin-block: 0 4px; font-size: .75rem; }
+  .today-main :is(.today-calendar-link,.today-stage-card a,.today-priority-open):focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; border-radius: 12px; }
+  .today-main :is(.today-calendar-link,.today-stage-card a,.today-priority-open):active { background: var(--rose-soft); }
 }

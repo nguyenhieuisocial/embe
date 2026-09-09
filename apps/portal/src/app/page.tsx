@@ -65,9 +65,9 @@ async function TimelinePanel() {
         </div>
       )}
 
-      <p className="freshness" role="status">
+      {pending.length || freshness !== "fresh" ? <p className="freshness" role="status">
         {pending.length ? "Ghi chép mới đang được đồng bộ." : freshnessNote[freshness]}
-      </p>
+      </p> : null}
     </section>
   );
 }
@@ -110,18 +110,20 @@ export default function Home() {
         <div className="today-meta">
           <time dateTime={dateInVietnam()}>{todayLabel}</time>
         </div>
-        <h1 aria-label="Hôm nay">Hôm nay</h1>
-        <p className="intro">Một ngày nhẹ nhàng cùng nhà mình.</p>
-
+        <div className="today-heading-row">
+          <h1>Hôm nay</h1>
+          <Link className="today-calendar-link" href="/lich" aria-label="Mở lịch gia đình"><Icon name="calendar" /><span>Lịch</span></Link>
+        </div>
       </section>
+
+      <StageToday />
+      <DailyShortcuts />
 
       <Suspense fallback={<section className="section today-priorities skeleton" aria-label="Đang mở những việc cần để ý"><span className="skeleton-line" /><span className="skeleton-line" /></section>}>
         <SmartTodayPanel />
       </Suspense>
 
-      <DailyShortcuts />
       <TodayMedications />
-      <StageToday />
 
       <Suspense fallback={<TimelineLoading />}>
         <TimelinePanel />

@@ -72,7 +72,7 @@ export function selectTodayPriorities(input: TodayPriorityInput): TodayPriority[
         : task.dueTime ?? "Hôm nay",
       href: taskHref(task),
       actionLabel: appointment ? "Mở lịch" : "Mở việc",
-      rank: appointment ? (upcoming ? 25 : 0) : overdue ? 5 : 30,
+      rank: appointment && !overdue ? 0 : overdue ? 5 : 30,
       order: `${task.occurrenceOn}:${task.dueTime ?? "99:99"}`
     });
   }
@@ -122,8 +122,17 @@ export function selectTodayPriorities(input: TodayPriorityInput): TodayPriority[
     detail: "Ngày dự sinh và nơi khám", href: "/me-bau/ho-so", actionLabel: "Mở hồ sơ", rank: 50, order: ""
   });
 
-  return candidates
-    .sort((left, right) => left.rank - right.rank || left.order.localeCompare(right.order))
-    .slice(0, 3)
-    .map(({ rank: _rank, order: _order, ...priority }) => priority);
+  const sorted = candidates.sort((left, right) => left.rank - right.rank || left.order.localeCompare(right.order));
+  // A backlog of household tasks must not hide the next visit or all care tasks.
+  // First show distinct needs, then fill any spare places from the same ranking.
+  const selected: RankedPriority[] = [];
+  for (const candidate of sorted) {
+    if (!selected.some(item => item.kind === candidate.kind)) selected.push(candidate);
+    if (selected.length === 3) break;
+  }
+  for (const candidate of sorted) {
+    if (selected.length === 3) break;
+    if (!selected.includes(candidate)) selected.push(candidate);
+  }
+  return selected.map(({ rank: _rank, order: _order, ...priority }) => priority);
 }

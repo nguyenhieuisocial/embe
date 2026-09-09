@@ -35,7 +35,7 @@ it('loads the current day without fetching health history and displays dose stat
  await screen.findByText('08:00');
  expect(screen.getByText('20:00')).toBeTruthy();
  expect(screen.getByRole('progressbar')).toHaveAttribute('value','1');
- expect(screen.getAllByText(/Cách dùng & thông tin thuốc/)[0].closest('details')).not.toHaveAttribute('open');
+ expect(screen.getAllByText(/Cách dùng & công dụng/)[0].closest('details')).not.toHaveAttribute('open');
  expect(screen.getByText('Chưa ghi nhận uống')).toBeTruthy();
  expect(fetcher.mock.calls[0][0]).toMatch(/days=0/);
  expect(screen.getByText('08:00').closest('li')).toHaveClass('today-medication');
@@ -53,4 +53,16 @@ it('does not present a failed load as no medication',async()=>{
  render(<TodayMedications/>);
  await screen.findByRole('alert');
  expect(screen.queryByText(/Chưa có lịch thuốc đang dùng/)).toBeNull();
+});
+it('keeps all doses while explaining unconfirmed plans only once and hiding long guidance initially',async()=>{
+ vi.stubGlobal('fetch',vi.fn(async()=>Response.json({snapshot:{plans:[{...plan,confirmed_by_clinician:false,dose_states:[]}]}})));
+ const {container}=render(<TodayMedications/>);
+ await screen.findByText('08:00');
+ expect(container.querySelectorAll('.today-medication')).toHaveLength(2);
+ expect(screen.getAllByText(/1 thuốc chưa xác nhận cách dùng/)).toHaveLength(1);
+ expect(screen.queryByRole('button',{name:/Đánh dấu đã uống/})).toBeNull();
+ expect(container.querySelectorAll('details[open]')).toHaveLength(0);
+ expect(container.querySelector('.medication-purpose')).toBeNull();
+ expect(screen.getAllByText('Sau ăn')[0]).toBeInTheDocument();
+ expect(screen.getByRole('link',{name:'Quản lý lịch thuốc'})).toHaveAttribute('href','/me-bau/thuoc');
 });

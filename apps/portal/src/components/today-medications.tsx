@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import MedicationUseGuide, {MedicationPurpose} from './medication-use-guide';
+import MedicationUseGuide from './medication-use-guide';
 import {useEffect, useRef, useState} from 'react';
 import {dateInVietnam} from '../lib/family-task-contract';
 import {useFamilyDataRefresh} from '../lib/use-family-data-refresh';
@@ -59,28 +59,28 @@ export default function TodayMedications() {
   }
   const rows=medicationSlots(plans??[]);
   const taken=rows.filter(row=>row.status==='taken').length;
+  const unconfirmed=(plans??[]).filter(plan=>plan.active&&!plan.confirmed_by_clinician&&plan.entry_source!=='self_purchased').length;
   return <section className="section today-medications" aria-labelledby="today-medicines-title">
-    <div className="section-head"><h2 id="today-medicines-title">Thuốc hôm nay</h2><small>{day.split('-').reverse().join('/')}</small></div>
+    <div className="section-head"><h2 id="today-medicines-title">Thuốc hôm nay</h2><Link className="today-section-link" href="/me-bau/thuoc" aria-label="Quản lý lịch thuốc">Lịch thuốc <span aria-hidden="true">→</span></Link></div>
     {error?<p role="alert">Chưa cập nhật được lịch thuốc. Thông tin cũ, nếu có, chưa phải trạng thái mới nhất. <button className="btn btn-quiet" onClick={()=>void load()}>Thử lại</button></p>:plans===null?<p role="status">Đang tải lịch thuốc…</p>:null}
     {!error&&plans&&!rows.length?<p className="today-medications-empty">Chưa có lịch thuốc đang dùng. Thuốc đã lưu trong hồ sơ vẫn được giữ nguyên.</p>:null}
     {rows.length>0?<div className="today-medications-progress"><span>Đã uống <strong>{taken}/{rows.length}</strong> lần{error?' · Chưa cập nhật':''}</span><progress max={rows.length} value={taken} aria-label={`Đã ghi nhận uống ${taken} trên ${rows.length} lần`} /></div>:null}
+    {unconfirmed>0?<p className="today-medications-notice">{unconfirmed} thuốc chưa xác nhận cách dùng, chưa thể tích đã uống. <Link href="/me-bau/thuoc">Xem thuốc</Link></p>:null}
     {feedback?<p role="status" aria-live="polite">{feedback}</p>:null}
     <ol className="today-medications-list">{rows.map(({plan,slot,time,status})=><li className="today-medication" data-state={status} key={`${plan.id}-${slot}`}>
+      <span className="today-medication-time">{time || 'Chưa đặt giờ'}</span>
       <div className="today-medication-copy">
-        <span className="today-medication-time">{time || 'Chưa đặt giờ'}</span>
         <strong>{plan.name}</strong>
-        <MedicationPurpose name={plan.name} />
         <small>{plan.dose_display || 'Chưa có liều đã ghi'} · lần {slot}/{plan.times_per_day}</small>
-        <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times??[]} />
-        {!plan.confirmed_by_clinician&&plan.entry_source!=='self_purchased'?<small>Chưa xác nhận kế hoạch với bác sĩ</small>:null}
-      </div>
       <div className="today-medication-actions">
       {status!=='taken'?<small className="today-medication-state" data-state={status}>{status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận uống'}</small>:null}
       {status==='taken'?<span className="today-medication-check" aria-label={`${plan.name} lần ${slot}: đã uống`}>✓ Đã uống</span>
         :plan.confirmed_by_clinician||plan.entry_source==='self_purchased'?<button className="today-medication-check" type="button" disabled={Boolean(saving)||error}
-          aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`} onClick={()=>void markTaken(plan,slot)}>{saving===`${plan.id}-${slot}`?'Đang lưu…':'Đánh dấu đã dùng'}</button>:null}
+          aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`} onClick={()=>void markTaken(plan,slot)}>{saving===`${plan.id}-${slot}`?'Đang lưu…':<><span aria-hidden="true">○</span> Tích đã uống</>}</button>:null}
+      </div>
+      <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times??[]} summaryLabel="Cách dùng & công dụng" />
       </div>
     </li>)}</ol>
-    <Link className="btn btn-quiet btn-block" href={rows.length?'/me-bau/thuoc':'/me-bau/thuoc?quick=prescription'}>{rows.length?'Quản lý lịch thuốc':'Xem thuốc từ hồ sơ'}</Link>
+    {!rows.length?<Link className="btn btn-quiet btn-block" href="/me-bau/thuoc?quick=prescription">Xem thuốc từ hồ sơ</Link>:null}
   </section>;
 }

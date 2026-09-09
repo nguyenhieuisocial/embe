@@ -5,6 +5,36 @@ import { selectTodayPriorities } from "../src/lib/today-priorities";
 const today = "2026-09-02";
 
 describe("smart priorities for Today", () => {
+  it("does not let a household backlog or an old visit hide the next appointment", () => {
+    const task = { occurrenceOn: "2026-09-01", startsOn: "2026-09-01", title: "Việc nhà", note: "", ownerRole: "family", category: "general", linkTarget: "none", dueTime: null, repeatRule: "none", completed: false } as const;
+    const priorities = selectTodayPriorities({
+      now: "2026-09-02T08:00:00+07:00", today,
+      tasks: [1,2,3].map(id => ({...task, id: String(id)})),
+      carePlans: [], inventoryItems: [], hasHealthEntry: false, hasMealEntry: true, profileComplete: true
+    });
+    expect(priorities.filter(item => item.kind === "health")).toHaveLength(1);
+    const withVisit = selectTodayPriorities({
+      now: "2026-09-02T08:00:00+07:00", today,
+      tasks: [
+        ...[1,2,3].map(id => ({...task, id: String(id)})),
+        {...task, id: "old", title: "Lần khám cũ", category: "appointment"},
+        {...task, id: "next", title: "Lần khám tới", category: "appointment", occurrenceOn: "2026-09-04", dueTime: "09:00"}
+      ], carePlans: [], inventoryItems: [], hasHealthEntry: false, hasMealEntry: true, profileComplete: true
+    });
+    expect(withVisit).toHaveLength(3);
+    expect(withVisit.map(item => item.kind)).toEqual(["appointment", "task", "health"]);
+    expect(withVisit[0]).toMatchObject({ title: "Lần khám tới", detail: "04/09 · 09:00" });
+  });
+
+  it("still fills three places when only ordinary tasks are available", () => {
+    const priorities = selectTodayPriorities({
+      now: "2026-09-02T08:00:00+07:00", today,
+      tasks: [1,2,3,4].map(id => ({ id: String(id), occurrenceOn: today, startsOn: today, title: `Việc ${id}`, note: "", ownerRole: "family", category: "general", linkTarget: "none", dueTime: null, repeatRule: "none", completed: false })),
+      carePlans: [], inventoryItems: [], hasHealthEntry: true, hasMealEntry: true, profileComplete: true
+    });
+    expect(priorities.map(item => item.id)).toEqual(["task:1", "task:2", "task:3"]);
+  });
+
   it("keeps an appointment first and limits the screen to three useful actions", () => {
     const priorities = selectTodayPriorities({
       now: "2026-09-02T08:30:00+07:00",
