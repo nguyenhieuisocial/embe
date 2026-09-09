@@ -425,7 +425,7 @@ export default function PregnancyMedicalRecords() {
           <label className="check-line"><input type="checkbox" checked={measurementsReviewed} onChange={e => setMeasurementsReviewed(e.target.checked)} />Tôi đã đối chiếu chỉ số và đơn vị với bản gốc</label>
         </details>
         {measurementError ? <p role="alert">{measurementError}</p> : null}
-        {kind === "appointment" ? <fieldset className="appointment-preparation">
+        {kind === "appointment" ? <details className="medical-form-extra" open={formMode !== 'new' || undefined}><summary>Chuẩn bị & kết quả buổi khám</summary><fieldset className="appointment-preparation">
           <legend>Câu hỏi và checklist trước khám</legend>
           <label>Câu hỏi muốn hỏi bác sĩ
             <textarea name="appointmentQuestions" rows={4} maxLength={1200} defaultValue={appointmentWorkspace.questions.join("\n")} placeholder="Mỗi câu một dòng" />
@@ -439,7 +439,7 @@ export default function PregnancyMedicalRecords() {
           <label>Kết quả và lời dặn sau khám
             <textarea name="appointmentOutcome" rows={4} maxLength={1000} defaultValue={appointmentWorkspace.outcome} placeholder="Ghi đúng điều bác sĩ đã trao đổi" />
           </label>
-        </fieldset> : null}
+        </fieldset></details> : null}
         {kind === "prescription" ? <div className="medical-medicines">
           <strong>Thuốc ghi trên đơn</strong>
           <small>Có thể nhập ngay hoặc để trống rồi chụp ảnh đơn thuốc bên dưới.</small>
