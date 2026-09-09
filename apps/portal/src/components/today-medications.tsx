@@ -36,19 +36,19 @@ export default function TodayMedications() {
   },[]);
   useFamilyDataRefresh(canApply=>load(canApply));
   const rows=medicationSlots(plans??[]);
-  return <section className="section" aria-labelledby="today-medicines-title">
+  return <section className="section today-medications" aria-labelledby="today-medicines-title">
     <div className="section-head"><h2 id="today-medicines-title">Thuốc hôm nay</h2><small>{day.split('-').reverse().join('/')}</small></div>
     {error?<p role="alert">Chưa cập nhật được lịch thuốc. Thông tin cũ, nếu có, chưa phải trạng thái mới nhất. <button className="btn btn-quiet" onClick={()=>void load()}>Thử lại</button></p>:plans===null?<p role="status">Đang tải lịch thuốc…</p>:null}
-    {plans&&!rows.length?<p>Chưa có lịch thuốc đang dùng. Thuốc trên ảnh đơn chưa tự trở thành lịch uống.</p>:null}
-    <ol className="today-priority-list">{rows.map(({plan,slot,time,status})=><li className="today-priority" key={`${plan.id}-${slot}`}>
-      <span className="today-priority-copy" style={{overflowWrap:'anywhere'}}>
+    {!error&&plans&&!rows.length?<p className="today-medications-empty">Chưa có lịch thuốc đang dùng. Thuốc đã lưu trong hồ sơ vẫn được giữ nguyên.</p>:null}
+    <ol className="today-medications-list">{rows.map(({plan,slot,time,status})=><li className="today-medication" key={`${plan.id}-${slot}`}>
+      <span className="today-medication-copy">
         <strong>{time || 'Chưa có giờ uống'} · {plan.name}</strong>
         <small>{plan.dose_display || 'Chưa có liều đã ghi'} · lần {slot}/{plan.times_per_day}</small>
         {plan.instructions?<small>{plan.instructions}</small>:null}
         {!plan.confirmed_by_clinician&&plan.entry_source!=='self_purchased'?<small>Chưa xác nhận kế hoạch với bác sĩ</small>:null}
-        <small>{status==='taken'?'Đã uống':status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận uống'}</small>
+        <small className="today-medication-state" data-state={status}>{status==='taken'?'Đã uống':status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận uống'}</small>
       </span>
     </li>)}</ol>
-    <Link className="btn btn-quiet btn-block" href="/me-bau/suc-khoe-iphone#vi-chat-thuoc">Ghi đã uống · Sửa thuốc và giờ</Link>
+    <Link className="btn btn-quiet btn-block" href={rows.length?'/me-bau/suc-khoe-iphone#vi-chat-thuoc':'/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc'}>{rows.length?'Ghi đã uống · Quản lý lịch thuốc':'Xem thuốc từ hồ sơ'}</Link>
   </section>;
 }

@@ -4927,6 +4927,18 @@ input::-webkit-datetime-edit {
 .today-priorities { display: grid; gap: 6px; }
 .today-priorities.skeleton { align-content: start; min-height: 278px; }
 .today-priority-list { display: grid; list-style: none; margin: 0; padding: 0; }
+.today-medications { min-width:0; }
+.today-medications .section-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px; }
+.today-medications .section-head h2 { margin:0; }
+.today-medications-list { display:grid; list-style:none; padding:0; margin:12px 0; gap:8px; }
+.today-medication { min-width:0; padding:12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.today-medication-copy { display:grid; min-width:0; gap:6px; overflow-wrap:anywhere; }
+.today-medication-copy strong { font-size:.9375rem; line-height:1.5; white-space:normal; }
+.today-medication-copy small { font-size:.8125rem; line-height:1.5; color:var(--ink-soft); }
+.today-medication-copy .today-medication-state { justify-self:start; padding:4px 8px; border-radius:8px; background:var(--rose-soft); color:var(--rose-press); }
+.today-medication-copy .today-medication-state[data-state="taken"] { background:var(--jade-soft); color:var(--jade); }
+.today-medications-empty { font-size:.875rem; line-height:1.6; color:var(--ink-soft); }
+.today-medications > a { min-height:44px; white-space:normal; overflow-wrap:anywhere; text-align:center; }
 .pregnancy-main > .section .today-priority-list > li > a { align-items: center; display: flex; min-height: 44px; }
 .today-priority {
   align-items: center;

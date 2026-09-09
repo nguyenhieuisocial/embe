@@ -17,6 +17,15 @@ it('loads the current day without fetching health history and displays dose stat
  expect(screen.getByText('Đã uống')).toBeTruthy();
  expect(screen.getByText('Chưa ghi nhận uống')).toBeTruthy();
  expect(fetcher.mock.calls[0][0]).toMatch(/days=0/);
+ expect(screen.getByText('08:00 · Thuốc theo đơn').closest('li')).toHaveClass('today-medication');
+ expect(screen.getByText('08:00 · Thuốc theo đơn').closest('li')).not.toHaveClass('today-priority');
+});
+it('offers saved prescriptions instead of marking a dose when no schedule exists',async()=>{
+ vi.stubGlobal('fetch',vi.fn(async()=>Response.json({snapshot:{plans:[]}})));
+ render(<TodayMedications/>);
+ await screen.findByText(/Chưa có lịch thuốc đang dùng/);
+ expect(screen.getByRole('link',{name:'Xem thuốc từ hồ sơ'})).toHaveAttribute('href','/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc');
+ expect(screen.queryByRole('link',{name:/Ghi đã uống/})).toBeNull();
 });
 it('does not present a failed load as no medication',async()=>{
  vi.stubGlobal('fetch',vi.fn(async()=>new Response('{}',{status:503})));
