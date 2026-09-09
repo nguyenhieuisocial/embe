@@ -466,7 +466,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       </> : <div className="iphone-health-empty">
         <strong>{activeIphoneDevices.length ? "Còn một bước trên iPhone" : "Kết nối một lần"}</strong>
         <p>{activeIphoneDevices.length
-          ? "Mở Phím tắt, chạy EmBe rồi quay lại. Trang sẽ tự kiểm tra dữ liệu mới."
+          ? "Đã tạo mã kết nối nhưng chưa nhận dữ liệu. Mẫu Phím tắt hiện tại vẫn cần cấu hình theo hướng dẫn bên dưới."
           : "Apple không cho Safari tự đọc Sức khỏe. Có thể nhập nhanh ngay hoặc kết nối Phím tắt để gửi những chỉ số đã chọn."}</p>
         <div className="iphone-health-actions">
           <Link href="/me-bau/suc-khoe">Nhập nhanh hôm nay</Link>
@@ -479,16 +479,23 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       </div>}
 
       {syncSecret ? <div className="sync-secret" role="status">
-        <strong>Kết nối đã sẵn sàng</strong>
-        <ol className="iphone-setup-steps">
-          <li><span>1</span><div><strong>Cài mẫu Phím tắt</strong><small>Mở liên kết và chọn Thêm phím tắt.</small></div></li>
-          <li><span>2</span><div><strong>Mở sửa Phím tắt</strong><small>Dán Điểm nhận vào ô URL và Authorization vào header của yêu cầu mạng.</small></div></li>
-          <li><span>3</span><div><strong>Chạy thử</strong><small>Cho phép chỉ số muốn chia sẻ rồi quay lại EmBe.</small></div></li>
-        </ol>
-        <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài Phím tắt</a>
-        <div className="iphone-setup-value"><small>Điểm nhận</small><code>{syncSecret.ingestUrl}</code><button type="button" onClick={() => void copySetupValue("url", syncSecret.ingestUrl)}>{copied === "url" ? "Đã chép" : "Chép"}</button></div>
-        <div className="iphone-setup-value"><small>Authorization</small><code>Bearer {syncSecret.token}</code><button type="button" onClick={() => void copySetupValue("token", `Bearer ${syncSecret.token}`)}>{copied === "token" ? "Đã chép" : "Chép"}</button></div>
+        <strong>Đã tạo mã · chưa đồng bộ</strong>
+        <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài mẫu Export Daily Health Data</a>
+        <div className="iphone-setup-value"><small>1. Dán vào tác vụ URL gần cuối Phím tắt</small><code>{syncSecret.ingestUrl}</code><button type="button" aria-label="Chép địa chỉ nhận dữ liệu" onClick={() => void copySetupValue("url", syncSecret.ingestUrl)}>{copied === "url" ? "Đã chép" : "Chép"}</button></div>
+        <div className="iphone-setup-value"><small>2. Dán vào giá trị của tiêu đề Authorization</small><code>Bearer {syncSecret.token}</code><button type="button" aria-label="Chép mã Authorization" onClick={() => void copySetupValue("token", `Bearer ${syncSecret.token}`)}>{copied === "token" ? "Đã chép" : "Chép"}</button></div>
       </div> : null}
+
+      <details className="care-inline iphone-shortcut-help">
+        <summary>Nhập địa chỉ và mã ở đâu trong Phím tắt?</summary>
+        <p>Mẫu hiện tại chưa tự cấu hình và chỉ lấy bước chân, năng lượng vận động. Chưa đồng bộ toàn bộ Sức khỏe iPhone.</p>
+        <ol className="iphone-setup-steps">
+          <li><span>1</span><div><strong>Mở trình sửa, không bấm chạy</strong><small>Trong ứng dụng Phím tắt → Tất cả phím tắt → bấm dấu … trên ô “Export Daily Health Data”.</small></div></li>
+          <li><span>2</span><div><strong>Điền địa chỉ nhận</strong><small>Cuộn gần cuối, tìm tác vụ “URL” có ô trống, ngay trước “Lấy nội dung của URL” (Get Contents of URL). Dán địa chỉ nhận vào ô trống đó.</small></div></li>
+          <li><span>3</span><div><strong>Thêm Authorization</strong><small>Mở rộng “Lấy nội dung của URL” → Tiêu đề (Headers). Giữ Content-Type: application/json. Thêm một trường mới: khóa là Authorization, giá trị là toàn bộ mã đã chép, bắt đầu bằng Bearer và một dấu cách. Giữ phương thức POST và phần nội dung yêu cầu hiện có.</small></div></li>
+          <li><span>4</span><div><strong>Lưu và chạy thử</strong><small>Bấm Xong, chạy phím tắt, cho phép đọc các chỉ số muốn chia sẻ và gửi đến embe.hieu.asia. Quay lại đây để kiểm tra lần đồng bộ; có mã kết nối chưa có nghĩa đã nhận dữ liệu.</small></div></li>
+        </ol>
+        <p>Nếu không còn hai giá trị để chép, chọn “Tạo kết nối mới” ở trên. Không gửi mã Authorization cho người khác.</p>
+      </details>
 
       <p className={`iphone-health-feedback is-${iphoneRefreshStatus}`} aria-live="polite">
         {iphoneRefreshStatus === "checking" ? "Đang kiểm tra dữ liệu mới…"

@@ -28,6 +28,8 @@
   .meal-food-row:has(.food-portion-input.is-egg) > label { grid-column: 1 / -1; }
   .food-portion-input select { min-width: 0; width: 100%; min-height: 44px; font-size: 16px; }
   .food-portion-input small { grid-column: 1 / -1; color: var(--ink-soft); line-height: 1.5; }
+  .iphone-shortcut-help .iphone-setup-steps li strong { font-size: .875rem; }
+  .iphone-shortcut-help .iphone-setup-steps li small { font-size: .8125rem; line-height: 1.6; color: var(--ink-soft); }
   .meal-page .meal-review > div:first-child p { font-size: .875rem; margin-top: 4px; }
   .meal-page .meal-capture-card > .care-inline { border-top: 1px solid var(--line); padding-top: 8px; }
 }

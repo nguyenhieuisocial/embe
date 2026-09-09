@@ -23,6 +23,11 @@ describe("iPhone health connection state", () => {
     expect(screen.queryByText("Cần cấp quyền một lần trên iPhone")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tạo kết nối mới" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mở Phím tắt" })).toHaveAttribute("href", "shortcuts://");
+    fireEvent.click(screen.getByText('Nhập địa chỉ và mã ở đâu trong Phím tắt?'));
+    expect(screen.getByText(/Tất cả phím tắt → bấm dấu/)).toBeVisible();
+    expect(screen.getByText(/chỉ lấy bước chân, năng lượng vận động/)).toBeVisible();
+    expect(screen.getByText(/Giữ Content-Type: application\/json/)).toBeVisible();
+    expect(screen.queryByText('Kết nối đã sẵn sàng')).not.toBeInTheDocument();
   });
 
   it("shows all available iPhone health groups with per-metric sync time", async () => {
