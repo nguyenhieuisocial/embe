@@ -57,23 +57,28 @@ export default function TodayMedications() {
     finally{writing.current=false;setSaving(null);}
   }
   const rows=medicationSlots(plans??[]);
+  const taken=rows.filter(row=>row.status==='taken').length;
   return <section className="section today-medications" aria-labelledby="today-medicines-title">
     <div className="section-head"><h2 id="today-medicines-title">Thuốc hôm nay</h2><small>{day.split('-').reverse().join('/')}</small></div>
     {error?<p role="alert">Chưa cập nhật được lịch thuốc. Thông tin cũ, nếu có, chưa phải trạng thái mới nhất. <button className="btn btn-quiet" onClick={()=>void load()}>Thử lại</button></p>:plans===null?<p role="status">Đang tải lịch thuốc…</p>:null}
     {!error&&plans&&!rows.length?<p className="today-medications-empty">Chưa có lịch thuốc đang dùng. Thuốc đã lưu trong hồ sơ vẫn được giữ nguyên.</p>:null}
+    {rows.length>0?<div className="today-medications-progress"><span>Đã uống <strong>{taken}/{rows.length}</strong> lần{error?' · Chưa cập nhật':''}</span><progress max={rows.length} value={taken} aria-label={`Đã ghi nhận uống ${taken} trên ${rows.length} lần`} /></div>:null}
     {feedback?<p role="status" aria-live="polite">{feedback}</p>:null}
-    <ol className="today-medications-list">{rows.map(({plan,slot,time,status})=><li className="today-medication" key={`${plan.id}-${slot}`}>
-      <span className="today-medication-copy">
-        <strong>{time || 'Chưa có giờ uống'} · {plan.name}</strong>
+    <ol className="today-medications-list">{rows.map(({plan,slot,time,status})=><li className="today-medication" data-state={status} key={`${plan.id}-${slot}`}>
+      <div className="today-medication-copy">
+        <span className="today-medication-time">{time || 'Chưa đặt giờ'}</span>
+        <strong>{plan.name}</strong>
         <small>{plan.dose_display || 'Chưa có liều đã ghi'} · lần {slot}/{plan.times_per_day}</small>
-        {plan.instructions?<small>{plan.instructions}</small>:null}
+        {plan.instructions?<details className="today-medication-instructions"><summary>Cách dùng</summary><p>{plan.instructions}</p></details>:null}
         {!plan.confirmed_by_clinician&&plan.entry_source!=='self_purchased'?<small>Chưa xác nhận kế hoạch với bác sĩ</small>:null}
-        <small className="today-medication-state" data-state={status}>{status==='taken'?'Đã uống':status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận uống'}</small>
-      </span>
+      </div>
+      <div className="today-medication-actions">
+      {status!=='taken'?<small className="today-medication-state" data-state={status}>{status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận uống'}</small>:null}
       {status==='taken'?<span className="today-medication-check" aria-label={`${plan.name} lần ${slot}: đã uống`}>✓ Đã uống</span>
         :plan.confirmed_by_clinician||plan.entry_source==='self_purchased'?<button className="today-medication-check" type="button" disabled={Boolean(saving)||error}
           aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`} onClick={()=>void markTaken(plan,slot)}>{saving===`${plan.id}-${slot}`?'Đang lưu…':'✓ Đã uống'}</button>:null}
+      </div>
     </li>)}</ol>
-    <Link className="btn btn-quiet btn-block" href={rows.length?'/me-bau/suc-khoe-iphone#vi-chat-thuoc':'/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc'}>{rows.length?'Ghi đã uống · Quản lý lịch thuốc':'Xem thuốc từ hồ sơ'}</Link>
+    <Link className="btn btn-quiet btn-block" href={rows.length?'/me-bau/suc-khoe-iphone#vi-chat-thuoc':'/me-bau/suc-khoe-iphone?quick=prescription#vi-chat-thuoc'}>{rows.length?'Quản lý lịch thuốc':'Xem thuốc từ hồ sơ'}</Link>
   </section>;
 }

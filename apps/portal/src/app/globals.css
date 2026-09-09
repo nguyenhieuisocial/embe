@@ -4928,6 +4928,23 @@ input::-webkit-datetime-edit {
 .today-priorities.skeleton { align-content: start; min-height: 278px; }
 .today-priority-list { display: grid; list-style: none; margin: 0; padding: 0; }
 .today-medications { min-width:0; }
+.today-medications-progress { display:grid; gap:6px; margin-top:12px; color:var(--ink-soft); font-size:.875rem; }
+.today-medications-progress progress { appearance:none; width:100%; height:4px; border:0; border-radius:4px; overflow:hidden; background:var(--rose-soft); accent-color:var(--rose); }
+.today-medications-progress progress::-webkit-progress-bar { background:var(--rose-soft); }
+.today-medications-progress progress::-webkit-progress-value { background:var(--rose); }
+.today-medications-progress progress::-moz-progress-bar { background:var(--rose); }
+.today-medication-time { justify-self:start; color:var(--rose-press); background:var(--rose-soft); padding:4px 8px; border-radius:8px; font-size:.8125rem; font-weight:650; font-variant-numeric:tabular-nums; }
+.today-medication-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
+.today-medication-actions .today-medication-check { margin:0 0 0 auto; }
+.today-medication-actions .today-medication-state { color:var(--ink-soft); font-size:.8125rem; }
+.today-medication[data-state="taken"] { background:var(--jade-soft); }
+.today-medication[data-state="taken"] .today-medication-check { background:transparent; color:var(--ink); border-color:transparent; }
+.today-medication-instructions summary { min-height:44px; display:flex; align-items:center; gap:8px; color:var(--rose-press); font-size:.875rem; cursor:pointer; }
+.today-medication-instructions summary::after { content:'+'; margin-left:auto; }
+.today-medication-instructions[open] summary::after { content:'−'; }
+.today-medication-instructions p { margin:0 0 8px; font-size:.875rem; line-height:1.6; white-space:pre-line; }
+.today-medication-instructions summary:focus-visible { outline:2px solid var(--rose); outline-offset:2px; }
+button.today-medication-check:active { background:var(--rose-mist); }
 .today-medications .section-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px; }
 .today-medications .section-head h2 { margin:0; }
 .today-medications-list { display:grid; list-style:none; padding:0; margin:12px 0; gap:8px; }

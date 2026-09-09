@@ -32,13 +32,14 @@ it('shows all daily slots, sorts SQL times and retains unscheduled doses',()=>{
 it('loads the current day without fetching health history and displays dose states',async()=>{
  const fetcher=vi.fn(async(_url: string)=>Response.json({snapshot:{plans:[plan]}}));vi.stubGlobal('fetch',fetcher);
  render(<TodayMedications/>);
- await screen.findByText('08:00 · Thuốc theo đơn');
- expect(screen.getByText('20:00 · Thuốc theo đơn')).toBeTruthy();
- expect(screen.getByText('Đã uống')).toBeTruthy();
+ await screen.findByText('08:00');
+ expect(screen.getByText('20:00')).toBeTruthy();
+ expect(screen.getByRole('progressbar')).toHaveAttribute('value','1');
+ expect(screen.getAllByText('Cách dùng')[0].closest('details')).not.toHaveAttribute('open');
  expect(screen.getByText('Chưa ghi nhận uống')).toBeTruthy();
  expect(fetcher.mock.calls[0][0]).toMatch(/days=0/);
- expect(screen.getByText('08:00 · Thuốc theo đơn').closest('li')).toHaveClass('today-medication');
- expect(screen.getByText('08:00 · Thuốc theo đơn').closest('li')).not.toHaveClass('today-priority');
+ expect(screen.getByText('08:00').closest('li')).toHaveClass('today-medication');
+ expect(screen.getByText('08:00').closest('li')).not.toHaveClass('today-priority');
 });
 it('offers saved prescriptions instead of marking a dose when no schedule exists',async()=>{
  vi.stubGlobal('fetch',vi.fn(async()=>Response.json({snapshot:{plans:[]}})));
