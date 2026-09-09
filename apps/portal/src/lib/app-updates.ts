@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-09-medication-intake', date: '2026-09-09', title: 'Tích thuốc đã dùng ngay trong checklist', items: [
+    { title: 'Không còn bị chặn bởi trạng thái xác nhận', description: 'Thuốc đang theo dõi đều có nút tích từng lần đã dùng. Trạng thái đồng bộ giữa Hôm nay, checklist và Thuốc; chỉ báo thành công sau khi lưu. Giữ nguyên liều, lời dặn và xác nhận chuyên môn.', href: '/me-bau#viec-hom-nay', action: 'Mở checklist' },
+  ] },
   { id: '2026-09-09-dose-checklist', date: '2026-09-09', title: 'Thuốc tự có trong checklist hôm nay', items: [
     { title: 'Không cần tạo việc uống thuốc bằng tay', description: 'Checklist Mẹ bầu lấy từng thuốc, liều và giờ từ lịch đang dùng, chung trạng thái với Hôm nay và trang Thuốc. Bỏ ô tích chung; mỗi lần uống được ghi riêng sau khi lưu thành công.', href: '/me-bau#viec-hom-nay', action: 'Mở checklist' },
   ] },

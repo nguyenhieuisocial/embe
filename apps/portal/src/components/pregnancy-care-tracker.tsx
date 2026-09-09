@@ -357,7 +357,8 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
     ? searchMedicationCatalog(planName) : [], [planName, selectedMedication]);
   const timingConflicts = supplementTimingConflicts(activePlans);
   const pausedPlans = snapshot.plans.filter((plan) => !plan.active);
-  const trackablePlans = activePlans.filter((plan) => plan.confirmed_by_clinician || plan.entry_source === "self_purchased");
+  // A reported intake is not a clinician's approval of this plan.
+  const trackablePlans = activePlans;
   const doseCount = trackablePlans.reduce((sum, plan) => sum + plan.times_per_day, 0);
   const takenCount = trackablePlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "taken").length, 0);
   const skippedCount = trackablePlans.reduce((sum, plan) => sum + (plan.dose_states ?? []).filter((dose) => dose.status === "skipped").length, 0);
@@ -511,7 +512,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
             <strong>{doseCount ? `${adherence}%` : "—"}</strong><span>đã dùng</span>
           </div>
           <div><small>Hôm nay</small><h3>{status === "loading" ? "Đang tải lịch…" : status === "error" ? "Chưa cập nhật được lịch" : doseCount ? `${Math.max(0, doseCount - takenCount - skippedCount)} lần còn lại` : activePlans.length ? `${activePlans.length} thuốc đã lưu` : "Chưa có lịch dùng"}</h3>
-            <p>{status === "loading" ? "" : status === "error" ? "Thông tin đã lưu vẫn được giữ. Thử tải lại lịch." : doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : activePlans.length ? "Kế hoạch chưa xác nhận nên chưa thể tích đã dùng." : "Thêm thuốc đang dùng hoặc lấy từ hồ sơ."}</p></div>
+            <p>{status === "loading" ? "" : status === "error" ? "Thông tin đã lưu vẫn được giữ. Thử tải lại lịch." : doseCount ? `${takenCount}/${doseCount} đã dùng · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : "Thêm thuốc đang dùng hoặc lấy từ hồ sơ."}</p></div>
         </article>
       </div>
 
@@ -613,22 +614,22 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
             {plan.instructions ? <small className="dose-instructions">{plan.instructions}</small> : null}
             <MedicationPurpose name={plan.name} />
           </div>
-          {plan.confirmed_by_clinician || plan.entry_source === "self_purchased" ? <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
+          <div className="dose-slots" aria-label={`Ghi nhận ${plan.name}`}>
             {Array.from({ length: plan.times_per_day }, (_, index) => index + 1).map((slot) => {
               const dose = (plan.dose_states ?? []).find((item) => item.slot === slot);
               const reminderTime = plan.reminder_times?.[slot - 1]?.slice(0, 5);
-              const doseLabel = dose?.status === "taken" ? "Đã uống" : dose?.status === "skipped" ? "Đã bỏ qua" : dose?.status === "deferred" ? "Đang hoãn" : "Chưa ghi";
+              const doseLabel = dose?.status === "taken" ? "Đã dùng" : dose?.status === "skipped" ? "Đã bỏ qua" : dose?.status === "deferred" ? "Đang hoãn" : "Chưa ghi";
               return <div className={`dose-slot-row is-${dose?.status ?? "pending"}`} key={`${slot}-${dose?.status ?? "pending"}-${dose?.recorded_at ?? ""}`}>
                 <div><time>{reminderTime ?? `Lần ${slot}`}</time><small>{reminderTime ? `Lần ${slot} · ${doseLabel}` : doseLabel}</small></div>
-                {dose?.status === "taken" ? <span className="dose-done">✓ Đã uống</span>
+                {dose?.status === "taken" ? <span className="dose-done">✓ Đã dùng</span>
                   : <button className="dose-taken-button" type="button" disabled={status === "saving"}
-                    aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`}
-                    onClick={() => void mutate({ action: "intake", planId: plan.id, slot, status: "taken", reason: "" }, "Đã đánh dấu đã uống.")}>{status === "saving" ? "Đang lưu…" : "Đánh dấu đã dùng"}</button>}
+                    aria-label={`Đánh dấu đã dùng ${plan.name} lần ${slot}`}
+                    onClick={() => void mutate({ action: "intake", planId: plan.id, slot, status: "taken", reason: "" }, "Đã ghi nhận lần đã dùng.")}>{status === "saving" ? "Đang lưu…" : "Đánh dấu đã dùng"}</button>}
                 <details className="dose-adjust">
                   <summary>{dose ? "Sửa trạng thái" : "Bỏ qua hoặc hoãn"}<span>⌄</span></summary>
                   <form onSubmit={(event) => void saveDose(event, plan.id, slot)}>
                     <label>Trạng thái<span className="sr-only"> {plan.name} lần {slot}</span><select name="doseStatus" required defaultValue={dose?.status ?? ""} aria-label={`Trạng thái ${plan.name} lần ${slot}`}>
-                      <option value="">Chọn</option><option value="taken">Đã uống</option><option value="skipped">Bỏ qua</option><option value="deferred">Hoãn</option>
+                      <option value="">Chọn</option><option value="taken">Đã dùng</option><option value="skipped">Bỏ qua</option><option value="deferred">Hoãn</option>
                     </select></label>
                     <label>Lý do ngắn (nếu bỏ qua/hoãn)<input name="reason" maxLength={120} defaultValue={dose?.reason ?? ""} /></label>
                     <button className="health-save" type="submit" disabled={status === "saving"}>Lưu lần {slot}</button>
@@ -636,9 +637,9 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
                 </details>
               </div>;
             })}
-          </div> : <p className="formula-note">Chưa xác nhận cách dùng với chuyên môn.</p>}
+          </div>
           <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times ?? []}>
-          {!plan.confirmed_by_clinician && plan.entry_source !== "self_purchased" ? <p>Xác nhận kế hoạch với bác sĩ/dược sĩ trước khi ghi tuân thủ.</p> : null}
+          {!plan.confirmed_by_clinician && plan.entry_source !== "self_purchased" ? <p>Chưa ghi nhận xác nhận chuyên môn. Chỉ tích lần đã dùng thực tế; không tự đổi liều hoặc cách dùng.</p> : null}
           <div className="medication-management">
           <p className="formula-note">Tạm dừng theo dõi không phải chỉ định ngừng thuốc.</p>
           <button className="dose-pause-button" type="button" disabled={status === "saving"}
@@ -661,7 +662,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
         <section className="dose-list care-history-list" aria-labelledby="adherence-history-title">
           {(snapshot.adherence_history ?? []).map((item) => <article key={`${item.plan_id}-${item.day}-${item.slot}`}>
             <div className="dose-copy"><span>{new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN")} · Lần {item.slot}</span><strong>{item.plan_name}</strong>
-              <small>{item.status === "taken" ? "Đã uống" : item.status === "skipped" ? "Bỏ qua" : "Hoãn"}{item.reason ? ` · ${item.reason}` : ""}</small></div>
+              <small>{item.status === "taken" ? "Đã dùng" : item.status === "skipped" ? "Bỏ qua" : "Hoãn"}{item.reason ? ` · ${item.reason}` : ""}</small></div>
           </article>)}
         </section>
       </details> : null}

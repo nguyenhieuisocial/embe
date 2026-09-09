@@ -217,10 +217,10 @@ describe("iPhone health connection state", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     render(<PregnancyCareTracker pregnancyWeek={8} />);
-    await waitFor(() => expect(screen.getByText(/0\/1 đã uống · 0 bỏ qua · 1 hoãn/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/0\/1 đã dùng · 0 bỏ qua · 1 hoãn/i)).toBeInTheDocument());
     expect(screen.getByRole("link", { name: "Thêm đơn mới" })).toHaveAttribute("href", "/me-bau/ho-so?quick=prescription#ho-so-kham");
     expect(screen.getByRole("button", { name: "Lấy từ hồ sơ đã lưu" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã uống Prenatal theo đơn lần 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã dùng Prenatal theo đơn lần 1" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/pregnancy/care", expect.objectContaining({
       method: "PATCH", body: expect.stringContaining('"status":"taken"')
     })));
@@ -255,10 +255,11 @@ describe("iPhone health connection state", () => {
         taken_slots: [], dose_states: []
       }] } }) : Response.json({ history: [] })));
     render(<PregnancyCareTracker pregnancyWeek={8} activePanel="medication" />);
-    expect(await screen.findByText("1 thuốc đã lưu")).toBeInTheDocument();
+    expect(await screen.findByText("1 lần còn lại")).toBeInTheDocument();
     expect(screen.queryByText("Chưa có lịch dùng")).not.toBeInTheDocument();
-    expect(screen.getByText("Kế hoạch chưa xác nhận nên chưa thể tích đã dùng.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Đánh dấu đã uống/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Kế hoạch chưa xác nhận nên chưa thể tích đã dùng.")).not.toBeInTheDocument();
+    expect(screen.getByText(/0\/1 đã dùng/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Đánh dấu đã dùng/ })).toBeEnabled();
   });
 
   it("shows a recoverable error instead of an empty schedule when loading fails", async () => {

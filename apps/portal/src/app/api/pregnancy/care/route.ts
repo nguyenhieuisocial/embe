@@ -45,11 +45,9 @@ function allTrackableDosesTaken(value: unknown): boolean {
   const active = plans.filter((plan): plan is Record<string, unknown> => Boolean(
     plan && typeof plan === "object"
       && (plan as Record<string, unknown>).active === true
-      && ((plan as Record<string, unknown>).confirmed_by_clinician === true
-        || (plan as Record<string, unknown>).entry_source === "self_purchased")
   ));
   return active.length > 0 && active.every((plan) => {
-    if (!Number.isInteger(plan.times_per_day) || Number(plan.times_per_day) < 1) return false;
+    if (!Number.isInteger(plan.times_per_day) || Number(plan.times_per_day) < 1 || Number(plan.times_per_day) > 6) return false;
     const states = Array.isArray(plan.dose_states) ? plan.dose_states : [];
     const taken = new Set(states.flatMap((state) => state && typeof state === "object"
       && (state as Record<string, unknown>).status === "taken"

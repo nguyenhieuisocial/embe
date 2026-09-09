@@ -394,7 +394,7 @@ describe("pregnancy daily page", () => {
     expect(within(board).queryByRole('checkbox', {name: /Thuốc và vi chất theo đúng đơn/})).toBeNull();
     expect(fetcher.mock.calls.filter(([,init]) => init?.method === 'PATCH')).toHaveLength(0);
     for (const slot of [1,2]) {
-      await act(async () => { fireEvent.click(within(board).getByRole('button', {name: `Đánh dấu đã uống ${plan.name} lần ${slot}`})); });
+      await act(async () => { fireEvent.click(within(board).getByRole('button', {name: `Đánh dấu đã dùng ${plan.name} lần ${slot}`})); });
     }
     expect(board.querySelectorAll('span.today-medication-check')).toHaveLength(2);
     expect(localStorage.getItem('embe:pregnancy:checklist:2026-08-30')).toContain('supplements');

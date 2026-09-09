@@ -43,11 +43,11 @@ try {
   });
   await page.goto(origin + '/me-bau/thuoc');
   await page.getByRole('heading', { level: 1, name: 'Thuốc & vi chất' }).waitFor();
-  const takenButton = page.getByRole('button', { name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 1', exact: true });
+  const takenButton = page.getByRole('button', { name: 'Đánh dấu đã dùng Thuốc mẫu kiểm tra giao diện lần 1', exact: true });
   await takenButton.waitFor();
   await takenButton.click();
   assert.match(await takenButton.innerText(), /Đang lưu/);
-  await page.getByText('✓ Đã uống', { exact: true }).waitFor();
+  await page.getByText('✓ Đã dùng', { exact: true }).waitFor();
   assert.equal(writes, 1);
   results.push('Medication pending → saved only after mocked receipt');
 
@@ -55,7 +55,7 @@ try {
   await page.reload();
   await takenButton.click();
   await page.waitForFunction(() => !document.querySelector('.dose-taken-button')?.disabled);
-  assert.equal(await page.getByText('✓ Đã uống', { exact: true }).count(), 0);
+  assert.equal(await page.getByText('✓ Đã dùng', { exact: true }).count(), 0);
   assert.equal(await takenButton.count(), 1);
   results.push('Failed medication write does not display taken');
 

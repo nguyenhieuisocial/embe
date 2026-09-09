@@ -17,7 +17,7 @@ page.on('pageerror', error => errors.push(error.message));
 let fixture = false, failSave = false, failLoad = false, writes = 0, intakeDay = '';
 const plan = {id: '11111111-1111-4111-8111-111111111111', name: 'Thuốc mẫu kiểm tra giao diện', dose_display: 'Liều mẫu',
   instructions: 'Lời dặn mẫu, không phải chỉ định cho gia đình', active: true, times_per_day: 2, reminder_times: ['08:00:00', '20:00:00'],
-  confirmed_by_clinician: true, entry_source: 'clinician_plan', dose_states: []};
+  confirmed_by_clinician: false, entry_source: 'clinician_plan', dose_states: []};
 const geometry = () => page.evaluate(() => {
   const visible = el => {
     const b = el.getBoundingClientRect();
@@ -30,7 +30,8 @@ const geometry = () => page.evaluate(() => {
   const controls = [...document.querySelectorAll('main a,main button,main summary')].filter(visible);
   return {overflow: document.documentElement.scrollWidth > innerWidth + 1, height: document.documentElement.scrollHeight,
     smallTargets: controls.filter(el => { const r = el.getBoundingClientRect(); return r.width < 43 || r.height < 43; }).map(el => ({class: el.className, width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height})),
-    doses: document.querySelectorAll('.today-medication').length, expanded: document.querySelectorAll('.today-medications details[open]').length};
+    doses: document.querySelectorAll('.today-medication').length, doseControls: document.querySelectorAll('.today-medication-check').length,
+    expanded: document.querySelectorAll('.today-medications details[open]').length};
 });
 try {
   const version = (await (await context.request.get(origin + '/api/health')).json()).version;
@@ -48,6 +49,7 @@ try {
       if (request.method() === 'PATCH') {
         const body = request.postDataJSON();
         assert.equal(body.action, 'intake'); assert.equal(body.planId, plan.id); assert.equal(body.status, 'taken');
+        assert.equal('confirmedByClinician' in body, false);
         intakeDay = body.day;
         writes++;
         await new Promise(resolve => setTimeout(resolve, 700));
@@ -67,6 +69,7 @@ try {
     await page.evaluate(() => document.fonts.ready);
     const scan = await geometry();
     assert.equal(scan.overflow, false); assert.deepEqual(scan.smallTargets, []); assert.equal(scan.expanded, 0);
+    assert.equal(scan.doseControls, scan.doses, 'Every tracked slot has a saved state or action');
     assert.equal(await page.locator('.daily-shortcuts > a').count(), 4);
     await page.screenshot({path: `${output}/home-${width}.png`, fullPage: true});
     results.push({case: 'live layout', width, ...scan});
@@ -81,12 +84,13 @@ try {
     await board.getByRole('progressbar', {name: 'Tiến độ thói quen hôm nay', exact: true}).waitFor();
     const scan = await geometry();
     assert.equal(scan.overflow, false); assert.deepEqual(scan.smallTargets, []);
+    assert.equal(scan.doseControls, scan.doses, 'Checklist must not gate existing dose actions');
     await board.screenshot({path: `${output}/checklist-${width}.png`});
     results.push({case: 'live daily checklist with scheduled doses', width, ...scan});
   }
   await page.setViewportSize({width: 375, height: 852}); fixture = true;
   await page.goto(origin + '/');
-  const first = page.getByRole('button', {name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 1', exact: true});
+  const first = page.getByRole('button', {name: 'Đánh dấu đã dùng Thuốc mẫu kiểm tra giao diện lần 1', exact: true});
   await first.waitFor();
   const summary = page.locator('.today-medications summary').first();
   await summary.focus(); await page.keyboard.press('Enter');
@@ -97,7 +101,7 @@ try {
   await first.click();
   assert.match(await first.innerText(), /Đang lưu/);
   assert.equal(await page.locator('span.today-medication-check').count(), 0);
-  await page.getByText('Đã ghi Thuốc mẫu kiểm tra giao diện · lần 1 đã uống.', {exact: true}).waitFor();
+  await page.getByText('Đã ghi Thuốc mẫu kiểm tra giao diện · lần 1 đã dùng.', {exact: true}).waitFor();
   assert.equal(await page.locator('span.today-medication-check').count(), 1);
   assert.equal(writes, 1);
   results.push({case: 'pending then saved only after mocked receipt', passed: true});
@@ -107,7 +111,7 @@ try {
   assert.equal(writes, 1);
   results.push({case: 'Home intake is reflected in daily checklist with no second write', passed: true});
   failSave = true;
-  await page.getByRole('button', {name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).click();
+  await page.getByRole('button', {name: 'Đánh dấu đã dùng Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).click();
   await page.getByText(/Chưa xác nhận được việc lưu/).waitFor();
   assert.equal(await page.locator('span.today-medication-check').count(), 1);
   results.push({case: 'failed save preserves pending dose', passed: true});
@@ -116,11 +120,11 @@ try {
   assert.equal(await page.locator('.today-medications-empty').count(), 0);
   failLoad = false; await page.locator('.today-medications').getByRole('button', {name: 'Thử lại', exact: true}).click();
   await first.waitFor({state: 'hidden'});
-  await page.getByRole('button', {name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).waitFor();
+  await page.getByRole('button', {name: 'Đánh dấu đã dùng Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).waitFor();
   results.push({case: 'load failure has retry, not a false empty schedule', passed: true});
   failSave = false;
-  await page.getByRole('button', {name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).click();
-  await page.getByText('Đã ghi Thuốc mẫu kiểm tra giao diện · lần 2 đã uống.', {exact: true}).waitFor();
+  await page.getByRole('button', {name: 'Đánh dấu đã dùng Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).click();
+  await page.getByText('Đã ghi Thuốc mẫu kiểm tra giao diện · lần 2 đã dùng.', {exact: true}).waitFor();
   assert.ok(await page.evaluate(day => JSON.parse(localStorage.getItem(`embe:pregnancy:checklist:${day}`) || '[]').includes('supplements'), intakeDay));
   await page.goto(origin + '/');
   await page.waitForFunction(() => document.querySelectorAll('span.today-medication-check').length === 2);

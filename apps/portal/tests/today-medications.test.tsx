@@ -15,18 +15,18 @@ it('records the selected slot only after a server receipt',async()=>{
   return Response.json({snapshot:{plans:[plan]}});
  });vi.stubGlobal('fetch',fetcher);
  render(<TodayMedications/>);
- fireEvent.click(await screen.findByRole('button',{name:'Đánh dấu đã uống Thuốc theo đơn lần 2'}));
- await screen.findByText('Đã ghi Thuốc theo đơn · lần 2 đã uống.');
- expect(screen.queryByRole('button',{name:'Đánh dấu đã uống Thuốc theo đơn lần 2'})).toBeNull();
+ fireEvent.click(await screen.findByRole('button',{name:'Đánh dấu đã dùng Thuốc theo đơn lần 2'}));
+ await screen.findByText('Đã ghi Thuốc theo đơn · lần 2 đã dùng.');
+ expect(screen.queryByRole('button',{name:'Đánh dấu đã dùng Thuốc theo đơn lần 2'})).toBeNull();
  expect(linked).toHaveBeenCalledTimes(1);
  expect(linked.mock.calls[0][0].detail).toEqual({taskId:'supplements',day:'2026-09-09'});
 });
 it('keeps the slot unconfirmed when saving fails',async()=>{
  vi.stubGlobal('fetch',vi.fn(async(_url:unknown,init?:RequestInit)=>init?.method==='PATCH'?new Response('{}',{status:503}):Response.json({snapshot:{plans:[plan]}})));
  render(<TodayMedications/>);
- fireEvent.click(await screen.findByRole('button',{name:'Đánh dấu đã uống Thuốc theo đơn lần 2'}));
+ fireEvent.click(await screen.findByRole('button',{name:'Đánh dấu đã dùng Thuốc theo đơn lần 2'}));
  await screen.findByText(/Chưa xác nhận được việc lưu/);
- expect(screen.getByText('Chưa ghi nhận uống')).toBeInTheDocument();
+ expect(screen.getByText('Chưa ghi nhận dùng')).toBeInTheDocument();
 });
 it('shows all daily slots, sorts SQL times and retains unscheduled doses',()=>{
  const rows=medicationSlots([plan,{...plan,id:'two',reminder_times:[],times_per_day:1},{...plan,id:'paused',active:false}]);
@@ -40,7 +40,7 @@ it('loads the current day without fetching health history and displays dose stat
  expect(screen.getByText('20:00')).toBeTruthy();
  expect(screen.getByRole('progressbar')).toHaveAttribute('value','1');
  expect(screen.getAllByText(/Cách dùng & công dụng/)[0].closest('details')).not.toHaveAttribute('open');
- expect(screen.getByText('Chưa ghi nhận uống')).toBeTruthy();
+ expect(screen.getByText('Chưa ghi nhận dùng')).toBeTruthy();
  expect(fetcher.mock.calls[0][0]).toMatch(/days=0/);
  expect(screen.getByText('08:00').closest('li')).toHaveClass('today-medication');
  expect(screen.getByText('08:00').closest('li')).not.toHaveClass('today-priority');
@@ -63,10 +63,27 @@ it('keeps all doses while explaining unconfirmed plans only once and hiding long
  const {container}=render(<TodayMedications/>);
  await screen.findByText('08:00');
  expect(container.querySelectorAll('.today-medication')).toHaveLength(2);
- expect(screen.getAllByText(/1 thuốc chưa xác nhận cách dùng/)).toHaveLength(1);
- expect(screen.queryByRole('button',{name:/Đánh dấu đã uống/})).toBeNull();
+ expect(screen.getAllByText(/Ghi nhận không thay cho xác nhận cách dùng/)).toHaveLength(1);
+ expect(screen.getAllByRole('button',{name:/Đánh dấu đã dùng/})).toHaveLength(2);
  expect(container.querySelectorAll('details[open]')).toHaveLength(0);
  expect(container.querySelector('.medication-purpose')).toBeNull();
  expect(screen.getAllByText('Sau ăn')[0]).toBeInTheDocument();
  expect(screen.getByRole('link',{name:'Quản lý lịch thuốc'})).toHaveAttribute('href','/me-bau/thuoc');
+});
+it('records an unconfirmed plan without approving or modifying its prescription',async()=>{
+ const unconfirmed={...plan,confirmed_by_clinician:false,entry_source:'clinician_plan',dose_states:[]};
+ const fetcher=vi.fn(async(_url:unknown,init?:RequestInit)=>{
+  if(init?.method==='PATCH'){
+   expect(JSON.parse(String(init.body))).toMatchObject({action:'intake',planId:'one',slot:1,status:'taken'});
+   expect(JSON.parse(String(init.body))).not.toHaveProperty('confirmedByClinician');
+   return Response.json({snapshot:{plans:[{...unconfirmed,dose_states:[{slot:1,status:'taken'}]}]}});
+  }
+  return Response.json({snapshot:{plans:[unconfirmed]}});
+ });vi.stubGlobal('fetch',fetcher);
+ render(<TodayMedications/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Đánh dấu đã dùng Thuốc theo đơn lần 1'}));
+ await screen.findByText('Đã ghi Thuốc theo đơn · lần 1 đã dùng.');
+ expect(screen.getByRole('progressbar')).toHaveAttribute('value','1');
+ expect(screen.getByRole('button',{name:'Đánh dấu đã dùng Thuốc theo đơn lần 2'})).toBeEnabled();
+ expect(screen.getByText(/Ghi nhận không thay cho xác nhận cách dùng/)).toBeInTheDocument();
 });

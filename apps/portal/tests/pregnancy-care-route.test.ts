@@ -149,6 +149,24 @@ describe("private pregnancy care and iPhone health APIs", () => {
     });
   });
 
+  it.each([false,true])("counts unconfirmed tracked doses in checklist completion: complete=%s", async (complete) => {
+    const plans=[
+      {id:planId,active:true,confirmed_by_clinician:true,times_per_day:1,dose_states:[{slot:1,status:'taken'}]},
+      {id:'22222222-2222-4222-8222-222222222222',active:true,confirmed_by_clinician:false,entry_source:'clinician_plan',times_per_day:1,
+        dose_states:complete?[{slot:1,status:'taken'}]:[]},
+      {id:'33333333-3333-4333-8333-333333333333',active:false,confirmed_by_clinician:false,times_per_day:1,dose_states:[]},
+    ];
+    rpc.mockResolvedValueOnce({data:null,error:null}).mockResolvedValueOnce({data:{...snapshot,plans},error:null});
+    const response=await PATCH(request('https://embe.hieu.asia/api/pregnancy/care','PATCH',{
+      action:'intake',day:'2026-09-01',planId,slot:1,status:'taken',reason:''
+    }));
+    const result=await response.json();
+    expect(response.status).toBe(200);
+    expect(result.snapshot.plans[1].confirmed_by_clinician).toBe(false);
+    expect(result.checklistCompletion).toEqual(complete?{taskId:'supplements',day:'2026-09-01'}:undefined);
+    expect(rpc.mock.calls.map(call=>call[0])).toEqual(['embe_record_pregnancy_care_intake','embe_get_pregnancy_care']);
+  });
+
   it("pauses and reactivates only the requested care plan", async () => {
     rpc.mockResolvedValue({ data: snapshot, error: null });
     const paused = await PATCH(request("https://embe.hieu.asia/api/pregnancy/care", "PATCH", {

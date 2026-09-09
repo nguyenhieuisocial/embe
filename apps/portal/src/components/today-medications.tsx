@@ -53,7 +53,7 @@ export default function TodayMedications() {
       const body=await response.json();
       const next=body.snapshot?.plans as Plan[]|undefined;
       if(!Array.isArray(next)||!next.some(p=>p.id===plan.id&&p.dose_states?.some(d=>d.slot===slot&&d.status==='taken')))throw new Error('receipt');
-      setPlans(next);setFeedback(`Đã ghi ${plan.name} · lần ${slot} đã uống.`);
+      setPlans(next);setFeedback(`Đã ghi ${plan.name} · lần ${slot} đã dùng.`);
       announceLinkedDailyAction(body.checklistCompletion);
       notifyFamilyDataChanged();
     }catch{setFeedback('Chưa xác nhận được việc lưu. Hãy thử tải lại lịch trước khi tích lại.');setError(true);}
@@ -66,8 +66,8 @@ export default function TodayMedications() {
     <div className="section-head"><h2 id="today-medicines-title">Thuốc hôm nay</h2><Link className="today-section-link" href="/me-bau/thuoc" aria-label="Quản lý lịch thuốc">Lịch thuốc <span aria-hidden="true">→</span></Link></div>
     {error?<p role="alert">Chưa cập nhật được lịch thuốc. Thông tin cũ, nếu có, chưa phải trạng thái mới nhất. <button className="btn btn-quiet" onClick={()=>void load()}>Thử lại</button></p>:plans===null?<p role="status">Đang tải lịch thuốc…</p>:null}
     {!error&&plans&&!rows.length?<p className="today-medications-empty">Chưa có lịch thuốc đang dùng. Thuốc đã lưu trong hồ sơ vẫn được giữ nguyên.</p>:null}
-    {rows.length>0?<div className="today-medications-progress"><span>Đã uống <strong>{taken}/{rows.length}</strong> lần{error?' · Chưa cập nhật':''}</span><progress max={rows.length} value={taken} aria-label={`Đã ghi nhận uống ${taken} trên ${rows.length} lần`} /></div>:null}
-    {unconfirmed>0?<p className="today-medications-notice">{unconfirmed} thuốc chưa xác nhận cách dùng, chưa thể tích đã uống. <Link href="/me-bau/thuoc">Xem thuốc</Link></p>:null}
+    {rows.length>0?<div className="today-medications-progress"><span>Đã dùng <strong>{taken}/{rows.length}</strong> lần{error?' · Chưa cập nhật':''}</span><progress max={rows.length} value={taken} aria-label={`Đã ghi nhận dùng ${taken} trên ${rows.length} lần`} /></div>:null}
+    {unconfirmed>0?<p className="today-medications-notice">Chỉ tích khi đã dùng thực tế. Ghi nhận không thay cho xác nhận cách dùng với bác sĩ.</p>:null}
     {feedback?<p role="status" aria-live="polite">{feedback}</p>:null}
     <ol className="today-medications-list">{rows.map(({plan,slot,time,status})=><li className="today-medication" data-state={status} key={`${plan.id}-${slot}`}>
       <span className="today-medication-time">{time || 'Chưa đặt giờ'}</span>
@@ -75,10 +75,10 @@ export default function TodayMedications() {
         <strong>{plan.name}</strong>
         <small>{plan.dose_display || 'Chưa có liều đã ghi'} · lần {slot}/{plan.times_per_day}</small>
       <div className="today-medication-actions">
-      {status!=='taken'?<small className="today-medication-state" data-state={status}>{status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận uống'}</small>:null}
-      {status==='taken'?<span className="today-medication-check" aria-label={`${plan.name} lần ${slot}: đã uống`}>✓ Đã uống</span>
-        :plan.confirmed_by_clinician||plan.entry_source==='self_purchased'?<button className="today-medication-check" type="button" disabled={Boolean(saving)||error}
-          aria-label={`Đánh dấu đã uống ${plan.name} lần ${slot}`} onClick={()=>void markTaken(plan,slot)}>{saving===`${plan.id}-${slot}`?'Đang lưu…':<><span aria-hidden="true">○</span> Tích đã uống</>}</button>:null}
+      {status!=='taken'?<small className="today-medication-state" data-state={status}>{status==='skipped'?'Đã bỏ qua':status==='deferred'?'Đã hoãn':'Chưa ghi nhận dùng'}</small>:null}
+      {status==='taken'?<span className="today-medication-check" aria-label={`${plan.name} lần ${slot}: đã dùng`}>✓ Đã dùng</span>
+        :<button className="today-medication-check" type="button" disabled={Boolean(saving)||error}
+          aria-label={`Đánh dấu đã dùng ${plan.name} lần ${slot}`} onClick={()=>void markTaken(plan,slot)}>{saving===`${plan.id}-${slot}`?'Đang lưu…':<><span aria-hidden="true">○</span> Tích đã dùng</>}</button>}
       </div>
       <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times??[]} summaryLabel="Cách dùng & công dụng" />
       </div>
