@@ -11,7 +11,7 @@ export default function MedicalEncounterChain({records}:{records:MedicalRecord[]
   {encounters.map(encounter=><details key={encounter.id}>
    <summary><span>{encounter.root.documentIntake?'Giấy tờ chưa khớp lần khám':day(encounter.root.occurredAt)}<small>{encounter.root.provider||encounter.root.title}</small></span><small>{encounter.documents.length} giấy tờ</small></summary>
    <p><strong>{encounter.root.title}</strong></p>
-   <Link href={`#record-${encounter.root.id}`}>Xem lần khám này</Link>
+   <a href={`#record-${encounter.root.id}`}>Xem lần khám này</a>
    <ul aria-label="Giấy tờ trong lần khám">
     {encounter.documents.map(document=><li key={document.id}>
      <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`}>
@@ -21,7 +21,7 @@ export default function MedicalEncounterChain({records}:{records:MedicalRecord[]
     </li>)}
    </ul>
    {encounter.followups.length?<div><strong>Tiếp theo · tái khám</strong>
-    {encounter.followups.map(event=><p key={event.at}><time dateTime={event.at}>{new Date(event.at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</time><br/><Link href="#lich-kham-ke-tiep">Xem lịch hẹn</Link></p>)}
+    {encounter.followups.map(event=><p key={event.at}><time dateTime={event.at}>{new Date(event.at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</time><br/><a href="#lich-kham-ke-tiep">Xem lịch hẹn</a></p>)}
    </div>:null}
   </details>)}
  </section>;

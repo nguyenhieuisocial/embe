@@ -131,7 +131,7 @@
 
 /* Record workspace: compact summaries, one primary action, details on demand.
    Scoped to this screen so shared forms and other medical pages stay intact. */
-.pregnancy-profile-page .pregnancy-profile-intro { margin:12px auto 16px; }
+.pregnancy-profile-page .pregnancy-profile-intro { margin:12px auto 16px; padding:0; }
 .pregnancy-profile-page .pregnancy-profile-intro h1 { margin:0; font-size:1.625rem; line-height:1.35; }
 .pregnancy-profile-page .medical-workspace--v2 { display:grid; gap:0; }
 .medical-workspace--v2 .icon { width:20px; height:20px; flex:none; }

@@ -55,7 +55,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       <div className="medical-latest-heading"><span><Icon name="care"/>Lần khám gần nhất</span>{summary.latest?<time dateTime={summary.latest.occurredAt}>{date(summary.latest.occurredAt)}</time>:null}</div>
       {summary.latest?<><h3>{summary.latest.title}</h3><p className="medical-latest-provider">{summary.latest.provider || 'Chưa ghi cơ sở khám'}{summary.latest.gestationalWeek?` · Tuần ${summary.latest.gestationalWeek} khi khám`:''}</p>
         {preview.highlights.length?<div className="medical-latest-reading"><small>Trên giấy ghi</small>{preview.highlights.map((item,index)=><div key={index}><p>{item.variants[0].row.value}</p>{item.variants[0].row.unclear?<small>Bản đọc chưa xác minh</small>:null}</div>)}<a href="#ket-luan-ho-so" onClick={()=>document.getElementById('ket-luan-ho-so')?.setAttribute('open','')}>Xem đầy đủ & nguồn</a></div>:<p className="medical-reading-context">{preview.conflicts?'Có bản đọc khác nhau; mở kết luận để xem từng nguồn.':'Mở lần khám để xem giấy tờ và thông tin đã lưu.'}</p>}
-        <Link className="medical-latest-link" href={`#record-${summary.latest.id}`}>Xem lần khám<Icon name="arrow"/></Link>
+        <a className="medical-latest-link" href={`#record-${summary.latest.id}`}>Xem lần khám<Icon name="arrow"/></a>
       </>:<><p>Chưa khớp giấy tờ với lần khám.</p><a href="#ho-so-da-luu">Xem giấy tờ đã lưu<Icon name="arrow"/></a></>}
     </div>
     <a className="medical-summary-appointment" href="#lich-kham-ke-tiep"><span className="medical-summary-icon is-calendar"><Icon name="calendar"/></span><span><small>Lịch tiếp theo</small><strong>{summary.upcoming?`${date(summary.upcoming.occurredAt)} · ${new Date(summary.upcoming.occurredAt).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit'})}`:'Chưa có lịch hẹn'}</strong>{summary.upcoming?.provider?<small>{summary.upcoming.provider}</small>:null}</span><Icon name="arrow"/></a>
@@ -82,7 +82,7 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       </article>)}
       <details><summary>Chỉ số mới nhất đã lưu <small>{summary.metrics.length} chỉ số</small></summary>
         {!summary.metrics.length?<p>Chưa có chỉ số được nhập vào hồ sơ; số trên ảnh có thể chưa đồng bộ.</p>:null}
-        <dl>{summary.metrics.map(({metric,record,value,previous})=><div key={metric.key}><dt>{metric.label}</dt><dd><strong>{value} {metric.unit}</strong> · {date(record.occurredAt)}{previous?<small>Lần trước: {previous.measurements[metric.key]} {metric.unit} · {date(previous.occurredAt)}</small>:null}<Link href={`#record-${record.id}`}>Nguồn số đo</Link></dd></div>)}</dl>
+        <dl>{summary.metrics.map(({metric,record,value,previous})=><div key={metric.key}><dt>{metric.label}</dt><dd><strong>{value} {metric.unit}</strong> · {date(record.occurredAt)}{previous?<small>Lần trước: {previous.measurements[metric.key]} {metric.unit} · {date(previous.occurredAt)}</small>:null}<a href={`#record-${record.id}`}>Nguồn số đo</a></dd></div>)}</dl>
       </details>
     </details>
     <details><summary><SummaryLabel icon="supply" title="Thuốc trong giấy tờ" meta={`${medicines.length} tên thuốc đã đọc`}/></summary>
@@ -107,10 +107,10 @@ export default function PregnancyRecordSummary({records}:{records:MedicalRecord[
       <p>Số lượng mua/cấp phát không phải liều uống.</p>
       {receiptRows.map((entry,index)=><article key={index}><strong>{entry.row.label}</strong><FindingBody finding={entry}/></article>)}
     </details>:null}
-    <details className="medical-document-progress"><summary><SummaryLabel icon="refresh" title="Trạng thái giấy tờ" meta={`${documents.filter(document=>document.imported).length}/${documents.length} đã nhập dữ liệu`}/></summary>
+    <details className="medical-document-progress"><summary><SummaryLabel icon="refresh" title="Trạng thái giấy tờ" meta={`${documents.filter(document=>document.imported||['review','confirmed'].includes(document.scanStatus??'')).length}/${documents.length} bản đọc sẵn sàng`}/></summary>
       {documents.map(document=><article key={document.id}>
         <Link href={`/me-bau/ho-so/tai-lieu/${document.id}`}>{document.displayName||document.originalFilename}</Link>
-        <small>{document.imported?'Đã nhập dữ liệu vào hồ sơ':document.scanStatus==='failed'?'Đọc tài liệu bị lỗi · mở để thử lại':document.scanStatus==='processing'?'Đang đọc tài liệu':document.scanStatus==='queued'?'Đang chờ xử lý':['review','confirmed'].includes(document.scanStatus??'')?'Có bản đọc · chưa nhập dữ liệu vào hồ sơ':'Chưa đọc · mở tài liệu để kiểm tra'}</small>
+        <small>{document.imported?'Đã nhập dữ liệu vào hồ sơ':document.scanStatus==='failed'?'Đọc tài liệu bị lỗi · mở để thử lại':document.scanStatus==='processing'?'Đang đọc tài liệu':document.scanStatus==='queued'?'Đang chờ xử lý':['review','confirmed'].includes(document.scanStatus??'')?'Có bản đọc · mở để xem dữ liệu đã trích xuất':'Chưa rõ trạng thái · mở tài liệu để kiểm tra'}</small>
       </article>)}
     </details>
   </section>;
