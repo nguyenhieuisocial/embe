@@ -40,6 +40,14 @@ function memory(index: number): MediaMemory {
 }
 
 describe("mobile memory grid", () => {
+  it("uses one full-width album cover rather than three competing requests", () => {
+    render(<MemoryGrid initial={[memory(1)]} initialView="album" albums={[
+      { key: 'da-lat', title: 'Đà Lạt', count: 5, covers: [memory(1), memory(2), memory(3)] }
+    ]} />);
+    expect(document.querySelectorAll('.memory-album-covers img')).toHaveLength(1);
+    expect(document.querySelector('.memory-album-covers img')).toHaveAttribute('src', `/api/media/${memory(1).id}`);
+    expect(screen.getByRole('link', { name: /Đà Lạt.*5 ảnh đã chọn/ })).toHaveAttribute('href', '/ky-niem?view=album&album=da-lat');
+  });
   it.each([undefined, "2026-08-30"])("leaves an album through server navigation, preserving only the date %s", date => {
     render(<MemoryGrid initial={[memory(1)]} initialView="album" album="da-lat-2025" date={date} />);
     for (const [name, view] of [["Ngày tháng", "ngay-thang"], ["Chuyến đi", "chuyen-di"], ["Bản đồ", "ban-do"]]) {

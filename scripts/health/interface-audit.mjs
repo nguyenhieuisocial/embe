@@ -23,6 +23,9 @@ try {
     await page.waitForURL(origin + '/me-bau', { timeout: 45000 });
     logged = true;
   }
+  // Some pages offer automatic synchronization on mount. This read-only audit
+  // blocks all application writes, not merely form submissions.
+  await context.route('**/api/**', route => ['GET', 'HEAD'].includes(route.request().method()) ? route.continue() : route.abort('blockedbyclient'));
   for (const route of selected) {
     for (const width of (process.env.EMBE_AUDIT_WIDTHS || '393,1280').split(',').map(Number)) {
       errors = [];
@@ -33,6 +36,7 @@ try {
       await page.waitForTimeout(1200);
       if (!await page.locator('h1').count()) throw new Error(`Missing page heading: ${route}`);
       if (previewCss) await page.addStyleTag({ content: previewCss });
+      await page.evaluate(() => document.fonts.ready);
       const scan = await page.evaluate(() => {
         const visible = el => {
           const b = el.getBoundingClientRect();
@@ -63,6 +67,7 @@ try {
     }
   }
 } finally {
+  await context.unrouteAll({ behavior: 'wait' });
   if (logged) await context.request.post(origin + '/api/auth/logout', { headers: { origin }, maxRedirects: 0 }).catch(() => {});
   await browser.close();
 }

@@ -47,6 +47,20 @@ describe("one-handed family journal", () => {
     expect(fetch).toHaveBeenCalledWith("/api/journal", expect.objectContaining({ method: "POST" }));
   });
 
+  it("keeps a known author compact and allows changing without losing the note", () => {
+    localStorage.setItem('embe:device-role', 'father');
+    render(<JournalPage />);
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Điều đáng nhớ'), { target: { value: 'Bản nháp đang viết' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Đổi người ghi' }));
+    expect(screen.getByRole('radio', { name: 'Ba Hiếu' })).toBeChecked();
+    fireEvent.click(screen.getByRole('radio', { name: 'Mẹ Ngân' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xong người ghi' }));
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Điều đáng nhớ')).toHaveValue('Bản nháp đang viết');
+    expect(localStorage.getItem('embe:device-role')).toBe('mother');
+  });
+
   it("restores a recent local draft after Safari reloads the page", async () => {
     localStorage.setItem("embe:journal:draft:v1", JSON.stringify({
       content: "Một câu đang viết dở.",

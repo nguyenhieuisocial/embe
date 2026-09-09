@@ -4,6 +4,7 @@ export const APP_UPDATES = [
     { title: 'Đồng nhất chữ, nút và ô nhập', description: 'Chữ dễ đọc, vùng chạm rộng; ăn uống và kỷ niệm có màu phân nhóm. Hồ sơ bớt khung lồng nhau, giữ thông tin và nguồn trong các mục mở rộng.', href: '/me-bau/ho-so', action: 'Xem hồ sơ' },
     { title: 'Thuốc có lối vào riêng', description: 'Mở Thuốc & vi chất trực tiếp, không cần đi qua kết nối iPhone. Phân biệt thuốc đã lưu với lịch đủ điều kiện ghi nhận; nút đánh dấu khác rõ trạng thái đã uống.', href: '/me-bau/thuoc', action: 'Mở Thuốc' },
     { title: 'Kế hoạch dễ theo dõi', description: 'Việc trong ngày ở trước kế hoạch dài hạn. Sửa lỗi hiển thị tên thứ không khớp giữa máy chủ và trình duyệt.', href: '/ke-hoach', action: 'Xem kế hoạch' },
+    { title: 'Album nhẹ hơn, nhật ký bớt thao tác', description: 'Mỗi album dùng một ảnh bìa lớn. Nhật ký nhớ người ghi trên thiết bị, vẫn đổi được khi cần. Khi tải thuốc lỗi, có nút thử lại thay vì báo lịch trống.', href: '/ky-niem', action: 'Xem kỷ niệm' },
   ] },
   { id: '2026-09-08-health-sync', date: '2026-09-08', title: 'Cập nhật hồ sơ và thuốc ngay sau khi lưu', items: [
     { title: 'Bớt chờ dữ liệu giữa các màn', description: 'Thêm giấy tờ, nhập bản đọc, lưu hoặc xóa hồ sơ và ghi thuốc sẽ báo các màn/tab đang mở cập nhật ngay, kể cả khi service worker chưa tiếp quản. Giữ bản nháp đang nhập; không tự kích hoạt thuốc hoặc xác nhận dữ liệu chưa rõ.', href: '/me-bau/ho-so', action: 'Mở hồ sơ' },

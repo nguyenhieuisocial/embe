@@ -506,12 +506,12 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       </header>
 
       <div className="care-today-grid">
-        <article className="adherence-card">
+        <article className="adherence-card" data-state={status === "error" ? "error" : doseCount > 0 && takenCount === doseCount ? "complete" : "pending"}>
           <div className="adherence-ring" style={{ "--progress": `${adherence * 3.6}deg` } as React.CSSProperties}>
             <strong>{doseCount ? `${adherence}%` : "—"}</strong><span>đã dùng</span>
           </div>
-          <div><small>Hôm nay</small><h3>{status === "loading" ? "Đang tải lịch…" : doseCount ? `${Math.max(0, doseCount - takenCount - skippedCount)} lần còn lại` : activePlans.length ? `${activePlans.length} thuốc đã lưu` : "Chưa có lịch dùng"}</h3>
-            <p>{status === "loading" ? "" : doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : activePlans.length ? "Kế hoạch chưa xác nhận nên chưa thể tích đã dùng." : "Thêm thuốc đang dùng hoặc lấy từ hồ sơ."}</p></div>
+          <div><small>Hôm nay</small><h3>{status === "loading" ? "Đang tải lịch…" : status === "error" ? "Chưa cập nhật được lịch" : doseCount ? `${Math.max(0, doseCount - takenCount - skippedCount)} lần còn lại` : activePlans.length ? `${activePlans.length} thuốc đã lưu` : "Chưa có lịch dùng"}</h3>
+            <p>{status === "loading" ? "" : status === "error" ? "Thông tin đã lưu vẫn được giữ. Thử tải lại lịch." : doseCount ? `${takenCount}/${doseCount} đã uống · ${skippedCount} bỏ qua · ${deferredCount} hoãn` : activePlans.length ? "Kế hoạch chưa xác nhận nên chưa thể tích đã dùng." : "Thêm thuốc đang dùng hoặc lấy từ hồ sơ."}</p></div>
         </article>
       </div>
 
@@ -636,15 +636,18 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
                 </details>
               </div>;
             })}
-          </div> : <p className="formula-note">Xác nhận kế hoạch với bác sĩ/dược sĩ trước khi ghi tuân thủ.</p>}
-          <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times ?? []} />
-          <details className="care-medication-manage"><summary>Quản lý thuốc này</summary>
+          </div> : <p className="formula-note">Chưa xác nhận cách dùng với chuyên môn.</p>}
+          <MedicationUseGuide name={plan.name} dose={plan.dose_display} instructions={plan.instructions} times={plan.reminder_times ?? []}>
+          {!plan.confirmed_by_clinician && plan.entry_source !== "self_purchased" ? <p>Xác nhận kế hoạch với bác sĩ/dược sĩ trước khi ghi tuân thủ.</p> : null}
+          <div className="medication-management">
           <p className="formula-note">Tạm dừng theo dõi không phải chỉ định ngừng thuốc.</p>
           <button className="dose-pause-button" type="button" disabled={status === "saving"}
             onClick={() => void mutate({ action: "planState", planId: plan.id, active: false }, `Đã tạm dừng ${plan.name}.`)}>Tạm dừng {plan.name}</button>
-          </details>
+          </div>
+          </MedicationUseGuide>
         </article>)}
-      </div> : <div className="care-empty"><span aria-hidden="true">♡</span><strong>Chưa có lịch dùng hằng ngày</strong><p>Thêm đúng tên và liều Mẹ đang dùng. EmBe sẽ xếp giờ gọn ở đây.</p></div>}
+      </div> : status === "error" ? <div className="care-empty" role="alert"><strong>Chưa tải được thuốc</strong><button className="care-add-button" type="button" onClick={() => { setStatus("loading"); void load(day); }}>Thử lại</button></div>
+        : <div className="care-empty"><span aria-hidden="true">♡</span><strong>Chưa có lịch dùng hằng ngày</strong><p>Thêm đúng tên và liều Mẹ đang dùng. EmBe sẽ xếp giờ gọn ở đây.</p></div>}
 
       {pausedPlans.length ? <details className="energy-profile">
         <summary><span><strong>Kế hoạch đang tạm dừng</strong><small>{pausedPlans.length} kế hoạch</small></span><i>⌄</i></summary>

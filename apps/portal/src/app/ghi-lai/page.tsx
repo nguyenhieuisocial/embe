@@ -47,6 +47,8 @@ function roundedCoordinate(value: number): number {
 
 export default function JournalPage() {
   const [authorRole, setAuthorRole] = useState<AuthorRole>("mother");
+  const [authorKnown, setAuthorKnown] = useState(false);
+  const [showAuthorPicker, setShowAuthorPicker] = useState(false);
   const [content, setContent] = useState("");
   const [state, setState] = useState<"idle" | "saving" | "saved" | "queued" | "error" | "media_error" | "expired" | "rejected">("idle");
   const [draftReady, setDraftReady] = useState(false);
@@ -65,7 +67,9 @@ export default function JournalPage() {
 
   useEffect(() => {
     try {
-      setAuthorRole(readDeviceRole(localStorage) ?? "mother");
+      const deviceRole = readDeviceRole(localStorage);
+      setAuthorRole(deviceRole ?? "mother");
+      setAuthorKnown(Boolean(deviceRole));
       const rawDraft = localStorage.getItem(DRAFT_KEY);
       if (rawDraft) {
         const draft = JSON.parse(rawDraft) as Record<string, unknown>;
@@ -320,7 +324,11 @@ export default function JournalPage() {
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={choosePhotos} />
           <input ref={libraryInput} aria-hidden="true" tabIndex={-1} className="sr-only" type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple onChange={choosePhotos} />
-          <fieldset>
+          {authorKnown ? <div className="journal-author-current">
+            <span>Người ghi · <strong>{authorRole === "father" ? "Ba Hiếu" : "Mẹ Ngân"}</strong></span>
+            <button type="button" aria-label={showAuthorPicker ? "Xong người ghi" : "Đổi người ghi"} aria-expanded={showAuthorPicker} aria-controls="journal-author-picker" onClick={() => setShowAuthorPicker(value => !value)}>{showAuthorPicker ? "Xong" : "Đổi"}</button>
+          </div> : null}
+          <fieldset id="journal-author-picker" hidden={authorKnown && !showAuthorPicker}>
             <legend>Người ghi</legend>
             <div className="author-choice">
               {(["father", "mother"] as const).map((role) => (

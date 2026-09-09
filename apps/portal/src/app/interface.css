@@ -315,7 +315,9 @@
   .medical-workspace .medical-filters { padding-bottom: 8px; }
   .care-tracker.care-tracker { padding: 0; border: 0; background: transparent; }
   .care-tracker .care-today-grid { display: block; margin: 0 0 12px; }
-  .care-tracker .adherence-card { border: 0; background: var(--mint-soft); border-radius: 16px; padding: 16px; }
+  .care-tracker .adherence-card { border: 0; background: var(--rose-soft); border-radius: 16px; padding: 16px; }
+  .care-tracker .adherence-card[data-state="complete"] { background: var(--mint-soft); }
+  .care-tracker .adherence-card[data-state="error"] { background: var(--surface); border: 1px solid var(--line); }
   .care-tracker .adherence-card h3 { font-size: 1.0625rem; }
   .care-tracker .dose-list { gap: 12px; }
   .care-tracker .dose-list > article { display: grid; grid-template-columns: minmax(0,1fr); padding: 16px; gap: 8px; border: 1px solid var(--line); }
@@ -331,6 +333,10 @@
   .medication-guide.care-secondary-section > summary { font-size: .8125rem; color: var(--rose-press); min-height: 44px; }
   .medication-guide p { font-size: .875rem; line-height: 1.6; margin: 8px 0; }
   .medication-guide a { display: inline-flex; align-items: center; min-height: 44px; font-size: .875rem; }
+  .medication-management { border-top: 1px solid var(--line); padding-block: 8px; }
+  .medication-management button { width: 100%; border-radius: 12px; font-size: .875rem; }
+  .medical-form input[type="file"] { display: block; width: 100%; max-width: 100%; min-width: 0; font-size: .8125rem; }
+  .medical-form input[type="file"]::file-selector-button { min-height: 44px; margin-right: 8px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--rose-press); font: inherit; font-weight: 600; }
   .today-medications .today-medication { padding: 14px; border-radius: 16px; }
   .today-medications .today-medication-check { min-height: 44px; border-radius: 12px; padding: 10px 12px; font-size: .8125rem; }
   .today-medications button.today-medication-check { background: var(--rose-soft); color: var(--rose-press); border: 1px solid var(--rose-mist); }
@@ -356,6 +362,15 @@
   .has-nav .studio-main .studio-home-tools { background: var(--lavender-soft); }
   .has-nav .studio-main .studio-topic-copy strong { font-size: .9375rem; }
   .has-nav .studio-main .studio-topic-copy small { font-size: .8125rem; }
+  .folk-guide-page .folk-filter { min-width: 0; max-width: 100%; margin-inline: 0; padding-inline: 0; }
+  .memories-main .memory-album-covers { display: block; aspect-ratio: 16 / 9; background: var(--lavender-soft); }
+  .memories-main .memory-album-covers img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .journal-main .journal-form { margin-top: 12px; }
+  .journal-main .journal-author-current { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .8125rem; color: var(--ink-soft); }
+  .journal-main .journal-author-current button { min-width: 44px; min-height: 44px; padding: 8px; color: var(--rose-press); background: transparent; border: 0; font: inherit; font-weight: 600; }
+  .journal-main .journal-form fieldset[hidden] { display: none; }
+  .journal-main .journal-prompts { gap: 8px; }
+  .journal-main .journal-prompts button { font-size: .8125rem; padding: 8px 12px; }
 }
 @media screen and (max-width: 767px) {
   .today-medications .today-medication { grid-template-columns: minmax(0,1fr); gap: 8px; }

@@ -261,6 +261,23 @@ describe("iPhone health connection state", () => {
     expect(screen.queryByRole("button", { name: /Đánh dấu đã uống/ })).not.toBeInTheDocument();
   });
 
+  it("shows a recoverable error instead of an empty schedule when loading fails", async () => {
+    let unavailable = true;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).startsWith("/api/pregnancy/care")) return unavailable
+        ? Response.json({ error: "unavailable" }, { status: 503 })
+        : Response.json({ snapshot: { profile: null, plans: [], iphone_health: null, iphone_devices: [] } });
+      return Response.json({ history: [] });
+    }));
+    render(<PregnancyCareTracker pregnancyWeek={8} activePanel="medication" />);
+    expect(await screen.findByText("Chưa tải được thuốc")).toBeInTheDocument();
+    expect(screen.queryByText("Chưa có lịch dùng hằng ngày")).not.toBeInTheDocument();
+    unavailable = false;
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(await screen.findByText("Chưa có lịch dùng hằng ngày")).toBeInTheDocument();
+    expect(screen.queryByText("Chưa tải được thuốc")).not.toBeInTheDocument();
+  });
+
   it("keeps the entered plan open when saving fails", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input).startsWith("/api/pregnancy/care") && init?.method === "PATCH") {

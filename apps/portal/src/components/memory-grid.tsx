@@ -116,8 +116,8 @@ function AlbumOverview({ albums }: { albums: MediaAlbum[] }) {
       {visible.map((album, albumIndex) => (
         <Link className="memory-album" href={`/ky-niem?view=album&album=${encodeURIComponent(album.key)}`} key={album.key}>
           <span className="memory-album-covers" aria-hidden="true">
-            {album.covers.slice(0, 3).map((cover, coverIndex) => (
-              <ViewportImage alt="" eager={albumIndex === 0 && coverIndex === 0}
+            {album.covers.slice(0, 1).map((cover) => (
+              <ViewportImage alt="" eager={albumIndex === 0}
                 height={cover.height ?? 900} key={cover.id} src={`/api/media/${cover.id}`} width={cover.width ?? 1200} />
             ))}
           </span>

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 const guides = [
   { names: ['duphaston', 'duphaston 10mg', 'duphaston 10 mg', 'dydrogesterone', 'dydrogesterone 10mg', 'dydrogesterone 10 mg'], purpose: 'Dydrogesterone là thuốc nội tiết có tác dụng tương tự progesterone, dùng theo chỉ định trong một số tình trạng liên quan đến hormone này.', caution: 'Không suy ra lý do kê riêng từ tên thuốc. Không tự thay bằng progesterone, đổi liều hoặc ngừng thuốc; hỏi nơi kê đơn nếu lời dặn chưa rõ.', source: 'https://assets.hpra.ie/products/Human/30031/4d7f0046-dc41-4d1b-97a4-f9c913fbdbce.pdf' },
   { names: ['utrogestan', 'utrogestan 200mg', 'utrogestan 200 mg', 'utrogestan vaginal 200mg', 'utrogestan vaginal 200 mg'], purpose: 'Chứa progesterone, hormone hỗ trợ niêm mạc tử cung. Một số dạng dùng được bác sĩ chỉ định hỗ trợ thai kỳ trong những tình huống cụ thể.', caution: 'Phải đối chiếu đúng dạng thuốc và đường dùng trên đơn/hộp. Nguồn dưới đây dành cho dạng đặt âm đạo tại Anh, không tự áp liều hoặc đường dùng đó cho thuốc của bạn. Không tự chuyển uống sang đặt hoặc ngược lại.', source: 'https://www.medicines.org.uk/emc/product/3244/pil' },
@@ -12,7 +14,7 @@ export function MedicationPurpose({name}: {name:string}) {
   const guide=medicationGuide(name);
   return <small className="medication-purpose">{guide ? guide.purpose : 'Công dụng: chưa khớp nguồn xác minh cho sản phẩm này.'}</small>;
 }
-export default function MedicationUseGuide({ name, dose, instructions, times }: { name: string; dose: string; instructions: string; times: string[] }) {
+export default function MedicationUseGuide({ name, dose, instructions, times, children }: { name: string; dose: string; instructions: string; times: string[]; children?: ReactNode }) {
   // Exact ingredient only: never infer a combination product's formulation from a brand fragment.
   const guide = medicationGuide(name);
   return <details className="care-secondary-section medication-guide"><summary>Cách dùng & thông tin thuốc <span aria-hidden="true">⌄</span></summary>
@@ -23,5 +25,6 @@ export default function MedicationUseGuide({ name, dose, instructions, times }: 
       : <p>Chưa có thông tin công dụng được xác minh cho đúng sản phẩm này. Cần đối chiếu hoạt chất, hàm lượng và dạng dùng trên hộp/đơn; không suy từ tên gần giống.</p>}
     <p>Thông tin chung không thay thế chỉ định riêng. Không tự tăng, giảm hoặc ngừng thuốc theo nội dung này.</p>
     <p>Giờ trong lịch chưa có nghĩa điện thoại đã nhận thông báo. Cần bật thông báo EmBe trên thiết bị.</p>
+    {children}
   </details>;
 }
