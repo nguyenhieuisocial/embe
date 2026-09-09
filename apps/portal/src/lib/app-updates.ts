@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-09-dose-checklist', date: '2026-09-09', title: 'Thuốc tự có trong checklist hôm nay', items: [
+    { title: 'Không cần tạo việc uống thuốc bằng tay', description: 'Checklist Mẹ bầu lấy từng thuốc, liều và giờ từ lịch đang dùng, chung trạng thái với Hôm nay và trang Thuốc. Bỏ ô tích chung; mỗi lần uống được ghi riêng sau khi lưu thành công.', href: '/me-bau#viec-hom-nay', action: 'Mở checklist' },
+  ] },
   { id: '2026-09-09-today-workspace', date: '2026-09-09', title: 'Hôm nay gọn hơn, dễ dùng hơn', items: [
     { title: 'Giai đoạn hiện tại và ghi nhanh ở đầu trang', description: 'Mở ngay bữa ăn, sức khỏe, thuốc và giấy tờ. Việc cần nhớ ưu tiên lịch khám, không để việc nhà quá hạn chiếm hết chỗ.', href: '/', action: 'Mở Hôm nay' },
     { title: 'Lịch thuốc dễ nhìn theo giờ', description: 'Giữ đủ các lần uống, liều và trạng thái. Cách dùng và công dụng mở khi cần; tích đã uống chỉ thành công sau khi lưu được.', href: '/', action: 'Xem lịch hôm nay' },

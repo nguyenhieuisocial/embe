@@ -5,6 +5,7 @@ import {useEffect, useRef, useState} from 'react';
 import {dateInVietnam} from '../lib/family-task-contract';
 import {useFamilyDataRefresh} from '../lib/use-family-data-refresh';
 import {notifyFamilyDataChanged} from '../lib/family-data-refresh';
+import {announceLinkedDailyAction} from '../lib/linked-daily-actions';
 
 type Plan = {id:string;name:string;dose_display:string;instructions:string;active:boolean;times_per_day:number;reminder_times:string[];confirmed_by_clinician:boolean;entry_source?:string;dose_states?:{slot:number;status:string}[]};
 export function medicationSlots(plans: Plan[]) {
@@ -53,6 +54,7 @@ export default function TodayMedications() {
       const next=body.snapshot?.plans as Plan[]|undefined;
       if(!Array.isArray(next)||!next.some(p=>p.id===plan.id&&p.dose_states?.some(d=>d.slot===slot&&d.status==='taken')))throw new Error('receipt');
       setPlans(next);setFeedback(`Đã ghi ${plan.name} · lần ${slot} đã uống.`);
+      announceLinkedDailyAction(body.checklistCompletion);
       notifyFamilyDataChanged();
     }catch{setFeedback('Chưa xác nhận được việc lưu. Hãy thử tải lại lịch trước khi tích lại.');setError(true);}
     finally{writing.current=false;setSaving(null);}

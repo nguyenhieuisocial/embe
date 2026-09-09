@@ -14,7 +14,7 @@ await context.addInitScript(() => {
 });
 const page = await context.newPage(), errors = [], results = [];
 page.on('pageerror', error => errors.push(error.message));
-let fixture = false, failSave = false, failLoad = false, writes = 0;
+let fixture = false, failSave = false, failLoad = false, writes = 0, intakeDay = '';
 const plan = {id: '11111111-1111-4111-8111-111111111111', name: 'Thuốc mẫu kiểm tra giao diện', dose_display: 'Liều mẫu',
   instructions: 'Lời dặn mẫu, không phải chỉ định cho gia đình', active: true, times_per_day: 2, reminder_times: ['08:00:00', '20:00:00'],
   confirmed_by_clinician: true, entry_source: 'clinician_plan', dose_states: []};
@@ -48,12 +48,14 @@ try {
       if (request.method() === 'PATCH') {
         const body = request.postDataJSON();
         assert.equal(body.action, 'intake'); assert.equal(body.planId, plan.id); assert.equal(body.status, 'taken');
+        intakeDay = body.day;
         writes++;
         await new Promise(resolve => setTimeout(resolve, 700));
         if (failSave) return route.fulfill({status: 503, json: {error: 'fixture failure'}});
         plan.dose_states = [...plan.dose_states, {slot: body.slot, status: 'taken'}];
       }
-      return route.fulfill({json: {snapshot: {plans: [plan]}}});
+      return route.fulfill({json: {snapshot: {plans: [plan]}, ...(plan.dose_states.length === 2
+        ? {checklistCompletion: {taskId: 'supplements', day: intakeDay}} : {})}});
     }
     return ['GET', 'HEAD'].includes(request.method()) ? route.continue() : route.abort('blockedbyclient');
   });
@@ -69,8 +71,21 @@ try {
     await page.screenshot({path: `${output}/home-${width}.png`, fullPage: true});
     results.push({case: 'live layout', width, ...scan});
   }
+  for (const width of [375,430,768,1280]) {
+    await page.setViewportSize({width, height: 852});
+    await page.goto(origin + '/me-bau#viec-hom-nay');
+    const board = page.locator('#viec-hom-nay');
+    await board.locator('.today-medication,.today-medications-empty,.today-medications [role="alert"]').first().waitFor();
+    await page.evaluate(() => document.fonts.ready);
+    assert.equal(await board.getByRole('checkbox', {name: /Thuốc và vi chất theo đúng đơn/}).count(), 0);
+    await board.getByRole('progressbar', {name: 'Tiến độ thói quen hôm nay', exact: true}).waitFor();
+    const scan = await geometry();
+    assert.equal(scan.overflow, false); assert.deepEqual(scan.smallTargets, []);
+    await board.screenshot({path: `${output}/checklist-${width}.png`});
+    results.push({case: 'live daily checklist with scheduled doses', width, ...scan});
+  }
   await page.setViewportSize({width: 375, height: 852}); fixture = true;
-  await page.reload();
+  await page.goto(origin + '/');
   const first = page.getByRole('button', {name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 1', exact: true});
   await first.waitFor();
   const summary = page.locator('.today-medications summary').first();
@@ -86,6 +101,11 @@ try {
   assert.equal(await page.locator('span.today-medication-check').count(), 1);
   assert.equal(writes, 1);
   results.push({case: 'pending then saved only after mocked receipt', passed: true});
+  await page.goto(origin + '/me-bau#viec-hom-nay');
+  await page.locator('#viec-hom-nay span.today-medication-check').waitFor();
+  assert.equal(await page.locator('#viec-hom-nay .today-medication').count(), 2);
+  assert.equal(writes, 1);
+  results.push({case: 'Home intake is reflected in daily checklist with no second write', passed: true});
   failSave = true;
   await page.getByRole('button', {name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).click();
   await page.getByText(/Chưa xác nhận được việc lưu/).waitFor();
@@ -98,6 +118,14 @@ try {
   await first.waitFor({state: 'hidden'});
   await page.getByRole('button', {name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).waitFor();
   results.push({case: 'load failure has retry, not a false empty schedule', passed: true});
+  failSave = false;
+  await page.getByRole('button', {name: 'Đánh dấu đã uống Thuốc mẫu kiểm tra giao diện lần 2', exact: true}).click();
+  await page.getByText('Đã ghi Thuốc mẫu kiểm tra giao diện · lần 2 đã uống.', {exact: true}).waitFor();
+  assert.ok(await page.evaluate(day => JSON.parse(localStorage.getItem(`embe:pregnancy:checklist:${day}`) || '[]').includes('supplements'), intakeDay));
+  await page.goto(origin + '/');
+  await page.waitForFunction(() => document.querySelectorAll('span.today-medication-check').length === 2);
+  assert.equal(writes, 3);
+  results.push({case: 'completed checklist doses appear on Home and emit the linked completion once', passed: true});
   await page.setViewportSize({width: 667, height: 375});
   await page.addStyleTag({content: 'html {font-size: 20px !important}'});
   const enlarged = await geometry();

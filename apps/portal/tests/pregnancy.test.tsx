@@ -53,6 +53,7 @@ describe("pregnancy daily page", () => {
         }
         return Response.json({ history: [] });
       }
+      if (String(input).includes("/api/pregnancy/care")) return Response.json({ snapshot: {plans: []} });
       if (init?.method === "PATCH") {
         const body = JSON.parse(String(init.body)) as Record<string, unknown>;
         return Response.json({
@@ -102,7 +103,8 @@ describe("pregnancy daily page", () => {
     expect(screen.getByText("Có nguồn đạm trong ngày")).toBeInTheDocument();
     expect(screen.getByText("Uống nước đều trong ngày")).toBeInTheDocument();
     const dailyBoard = document.querySelector<HTMLElement>("#viec-hom-nay");
-    expect(dailyBoard && within(dailyBoard).getAllByRole("checkbox")).toHaveLength(13);
+    expect(dailyBoard && within(dailyBoard).getAllByRole("checkbox")).toHaveLength(12);
+    expect(dailyBoard && within(dailyBoard).getByRole('heading', {name: 'Thuốc hôm nay'})).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Ăn uống" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Chăm cơ thể" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Thực đơn 7 ngày tham khảo" })).toBeInTheDocument();
@@ -181,7 +183,7 @@ describe("pregnancy daily page", () => {
   it("keeps the mobile day compact and opens deeper information only when requested", () => {
     render(<PregnancyPage />);
 
-    expect(screen.getByRole("progressbar", { name: "Tiến độ việc hôm nay" })).toHaveAttribute("aria-valuenow", "0");
+    expect(screen.getByRole("progressbar", { name: "Tiến độ thói quen hôm nay" })).toHaveAttribute("aria-valuenow", "0");
     const foodGroup = screen.getByRole("heading", { level: 3, name: "Ăn uống" }).closest("details")!;
     expect(foodGroup).not.toHaveAttribute("open");
     fireEvent.click(foodGroup.querySelector("summary")!);
@@ -364,7 +366,54 @@ describe("pregnancy daily page", () => {
     fireEvent.click(firstTask);
 
     expect(firstTask).toBeChecked();
-    expect(localStorage.getItem("embe:pregnancy:checklist:2026-08-30")).toContain("supplements");
+    expect(localStorage.getItem("embe:pregnancy:checklist:2026-08-30")).toContain("breakfast");
+  });
+
+  it("automatically lists scheduled doses inside the checklist and records each slot without creating generic tasks", async () => {
+    const plan = {id: '11111111-1111-4111-8111-111111111111', name: 'Thuốc từ lịch đã lưu', dose_display: 'Liều mẫu', instructions: 'Theo đơn mẫu',
+      active: true, times_per_day: 2, reminder_times: ['08:00:00','20:00:00'], confirmed_by_clinician: true, dose_states: [] as {slot: number; status: string}[]};
+    const fetcher = vi.mocked(fetch);
+    fetcher.mockImplementation(async (input, init) => {
+      if (String(input).includes('/api/pregnancy/care')) {
+        if (init?.method === 'PATCH') {
+          const body = JSON.parse(String(init.body));
+          expect(body).toMatchObject({action: 'intake', day: '2026-08-30', planId: plan.id, status: 'taken'});
+          plan.dose_states.push({slot: body.slot, status: 'taken'});
+        }
+        return Response.json({snapshot: {plans: [plan, {...plan, id: 'paused', active: false}]},
+          ...(plan.dose_states.length === 2 ? {checklistCompletion: {taskId: 'supplements', day: '2026-08-30'}} : {})});
+      }
+      return Response.json({dueDate: null, completed: [], hasProfile: true, hasDayState: true});
+    });
+    const {container} = render(<PregnancyPage/>);
+    await act(async () => { await Promise.resolve(); });
+    const board = container.querySelector<HTMLElement>('#viec-hom-nay')!;
+    expect(board.querySelectorAll('.today-medication')).toHaveLength(2);
+    expect(within(board).getByText('08:00')).toBeInTheDocument();
+    expect(within(board).getByText('20:00')).toBeInTheDocument();
+    expect(within(board).queryByRole('checkbox', {name: /Thuốc và vi chất theo đúng đơn/})).toBeNull();
+    expect(fetcher.mock.calls.filter(([,init]) => init?.method === 'PATCH')).toHaveLength(0);
+    for (const slot of [1,2]) {
+      await act(async () => { fireEvent.click(within(board).getByRole('button', {name: `Đánh dấu đã uống ${plan.name} lần ${slot}`})); });
+    }
+    expect(board.querySelectorAll('span.today-medication-check')).toHaveLength(2);
+    expect(localStorage.getItem('embe:pregnancy:checklist:2026-08-30')).toContain('supplements');
+    expect(fetcher.mock.calls.filter(([url,init]) => url === '/api/pregnancy' && init?.method === 'PATCH')).toHaveLength(0);
+  });
+
+  it("reloads the dose checklist when another view changes or pauses the schedule", async () => {
+    const plan = {id: '11111111-1111-4111-8111-111111111111', name: 'Thuốc đã lưu', dose_display: 'Liều mẫu', instructions: '',
+      active: true, times_per_day: 1, reminder_times: ['08:00'], confirmed_by_clinician: true, dose_states: []};
+    vi.mocked(fetch).mockImplementation(async input => String(input).includes('/api/pregnancy/care')
+      ? Response.json({snapshot: {plans: [plan]}})
+      : Response.json({dueDate: null, completed: [], hasProfile: true, hasDayState: true}));
+    const {container} = render(<PregnancyPage/>);
+    await act(async () => { await Promise.resolve(); });
+    expect(container.querySelectorAll('.today-medication')).toHaveLength(1);
+    plan.active = false;
+    await act(async () => { window.dispatchEvent(new Event('embe:family-data-refresh')); });
+    expect(container.querySelectorAll('.today-medication')).toHaveLength(0);
+    expect(screen.getByText(/Chưa có lịch thuốc đang dùng/)).toBeInTheDocument();
   });
 
   it("checks a linked daily action immediately without writing a stale checklist snapshot", async () => {
@@ -410,7 +459,7 @@ describe("pregnancy daily page", () => {
       ? Response.json({ history: [] })
       : Response.json({
           dueDate: "2026-10-08",
-          completed: ["supplements"],
+          completed: ["breakfast"],
           hasProfile: true,
           hasDayState: true
         }));

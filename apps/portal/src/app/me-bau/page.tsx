@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import AppHeader from "../../components/app-header";
 import MaternalTools from "../../components/maternal-tools";
+import TodayMedications from "../../components/today-medications";
 import BirthTransition from "../../components/birth-transition";
 import PregnancySafetySearch from "../../components/pregnancy-safety-search";
 import { cachedPrivateGet, clearPrivateGetCache } from "../../lib/private-get-cache";
@@ -25,6 +26,9 @@ const DUE_DATE_KEY = "embe:pregnancy:due-date";
 const DUE_DATE_DIRTY_KEY = `${DUE_DATE_KEY}:dirty`;
 const STAGE_CHANGE_EVENT = "embe:pregnancy-stage-change";
 const checklistGroups = ["Ăn uống", "Chăm cơ thể"] as const;
+// Keep the legacy aggregate ID in persisted history, but never let a manual
+// generic checkbox substitute for recording the actual scheduled doses.
+const dailyHabits = dailyChecklist.filter(task => task.id !== "supplements");
 
 function pregnancyStage(week: number | null): string {
   if (week === null) return "Mới mang thai";
@@ -180,7 +184,8 @@ export default function PregnancyPage() {
   const stage = pregnancyStage(week);
   const trimesterIndex = week !== null && week >= 28 ? 2 : week !== null && week >= 14 ? 1 : 0;
   const stageTone = week === null ? "early" : `trimester-${trimesterIndex + 1}`;
-  const progress = Math.round((completed.length / dailyChecklist.length) * 100);
+  const completedHabits = dailyHabits.filter(task => completed.includes(task.id)).length;
+  const progress = Math.round((completedHabits / dailyHabits.length) * 100);
 
   function queueSave(
     body: Record<string, unknown>,
@@ -325,16 +330,22 @@ export default function PregnancyPage() {
             <p className="panel-kicker">Checklist {todayKey || "hôm nay"}</p>
             <h2 id="daily-title">Việc của hôm nay</h2>
           </div>
-          <div className="progress-stamp" aria-label={`${progress}% hoàn thành`}>
-            <strong>{ready ? completed.length : 0}</strong>
-            <span>/ {dailyChecklist.length}</span>
+        </div>
+
+        <TodayMedications />
+
+        <div className="care-summary care-habits-summary">
+          <h3>Thói quen hằng ngày</h3>
+          <div className="progress-stamp" aria-label={`${progress}% thói quen hoàn thành`}>
+            <strong>{ready ? completedHabits : 0}</strong>
+            <span>/ {dailyHabits.length}</span>
           </div>
         </div>
 
         <div
           className="care-progress"
           role="progressbar"
-          aria-label="Tiến độ việc hôm nay"
+          aria-label="Tiến độ thói quen hôm nay"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progress}
@@ -344,7 +355,7 @@ export default function PregnancyPage() {
 
         <div className="checklist">
           {checklistGroups.map((group) => {
-            const groupTasks = dailyChecklist.filter((task) => task.group === group);
+            const groupTasks = dailyHabits.filter((task) => task.group === group);
             const completedInGroup = groupTasks.filter((task) => completed.includes(task.id)).length;
             return (
               <details className="checklist-group" key={group} >

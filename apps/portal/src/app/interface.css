@@ -415,25 +415,28 @@
   .has-nav main :is(button,summary,a) { transition: none; }
 }
 @media screen {
-  /* Home is an overview, not a second medication-management form. */
+  /* Home and the daily checklist share the same live dose list. */
   .today-main .today-medications { padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: none; }
-  .today-main .today-section-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--rose-press); font-size: .8125rem; font-weight: 600; text-decoration: none; }
-  .today-main .today-medications-progress { margin-top: 4px; gap: 8px; font-size: .8125rem; }
-  .today-main .today-medications-notice { padding: 10px 0 0; margin: 0; color: var(--ink-soft); font-size: .8125rem; line-height: 1.6; }
-  .today-main .today-medications-notice a { display: inline-flex; align-items: center; min-height: 44px; color: var(--rose-press); text-underline-offset: 3px; }
-  .today-main .today-medications-list { gap: 0; margin: 10px 0 0; }
-  .today-main .today-medication { display: grid; grid-template-columns: 56px minmax(0,1fr); align-items: start; gap: 12px; padding: 14px 0 10px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
-  .today-main .today-medication-time { width: 56px; padding: 5px 4px; border-radius: 8px; font-size: .75rem; line-height: 1.5; text-align: center; overflow-wrap: anywhere; }
-  .today-main .today-medication-copy { gap: 4px; }
-  .today-main .today-medication-copy > strong { font-size: .9375rem; }
-  .today-main .today-medication-copy > small { font-size: .8125rem; }
-  .today-main .today-medication-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; align-items: center; justify-content: space-between; }
-  .today-main .today-medication-copy .today-medication-state { padding: 0; background: transparent; color: var(--ink-soft); font-size: .75rem; }
-  .today-main .today-medication-actions .today-medication-check { margin: 0; gap: 6px; }
-  .today-main .today-medication[data-state="taken"] .today-medication-time { background: var(--mint-soft); color: var(--mint); }
-  .today-main .medication-guide.care-secondary-section { border: 0; margin: 0; padding: 0; }
-  .today-main .medication-guide.care-secondary-section > summary { justify-content: space-between; min-height: 44px; padding: 8px 0; font-size: .8125rem; }
-  .today-main .medication-guide[open] { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
+  :is(.today-main,.care-board) .today-section-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--rose-press); font-size: .8125rem; font-weight: 600; text-decoration: none; }
+  :is(.today-main,.care-board) .today-medications-progress { margin-top: 4px; gap: 8px; font-size: .8125rem; }
+  :is(.today-main,.care-board) .today-medications-notice { padding: 10px 0 0; margin: 0; color: var(--ink-soft); font-size: .8125rem; line-height: 1.6; }
+  :is(.today-main,.care-board) .today-medications-notice a { display: inline-flex; align-items: center; min-height: 44px; color: var(--rose-press); text-underline-offset: 3px; }
+  :is(.today-main,.care-board) .today-medications-list { gap: 0; margin: 10px 0 0; }
+  :is(.today-main,.care-board) .today-medication { display: grid; grid-template-columns: 56px minmax(0,1fr); align-items: start; gap: 12px; padding: 14px 0 10px; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
+  :is(.today-main,.care-board) .today-medication-time { width: 56px; padding: 5px 4px; border-radius: 8px; font-size: .75rem; line-height: 1.5; text-align: center; overflow-wrap: anywhere; }
+  :is(.today-main,.care-board) .today-medication-copy { gap: 4px; }
+  :is(.today-main,.care-board) .today-medication-copy > strong { font-size: .9375rem; }
+  :is(.today-main,.care-board) .today-medication-copy > small { font-size: .8125rem; }
+  :is(.today-main,.care-board) .today-medication-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; align-items: center; justify-content: space-between; }
+  :is(.today-main,.care-board) .today-medication-copy .today-medication-state { padding: 0; background: transparent; color: var(--ink-soft); font-size: .75rem; }
+  :is(.today-main,.care-board) .today-medication-actions .today-medication-check { margin: 0; gap: 6px; }
+  :is(.today-main,.care-board) .today-medication[data-state="taken"] .today-medication-time { background: var(--mint-soft); color: var(--mint); }
+  :is(.today-main,.care-board) .medication-guide.care-secondary-section { border: 0; margin: 0; padding: 0; }
+  :is(.today-main,.care-board) .medication-guide.care-secondary-section > summary { justify-content: space-between; min-height: 44px; padding: 8px 0; font-size: .8125rem; }
+  :is(.today-main,.care-board) .medication-guide[open] { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
+  .care-board .today-medications { padding: 0 0 12px; margin: 12px 0 16px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
+  .care-board .today-medications .section-head h2, .care-board .care-habits-summary h3 { font: 600 1rem/1.5 var(--font-body),sans-serif; }
+  .care-board .care-habits-summary { gap: 12px; margin-bottom: 8px; }
   .today-main .thread { margin-top: 12px; }
   .today-main .thread-item { padding-bottom: 14px; }
   .today-main .thread-body { padding: 12px; border-radius: 14px; }
