@@ -1,5 +1,8 @@
 /** Public product notes only. Never put family names, record values or document IDs here. */
 export const APP_UPDATES = [
+  { id: '2026-09-09-reading-duplicates', date: '2026-09-09', title: 'Bớt lặp kết luận và kết quả', items: [
+    { title: 'Nội dung trùng chỉ hiện một lần', description: 'Gộp kết luận giống nhau dù ghi chú bản đọc khác nhau. Giữ nguồn giấy tờ và ngữ cảnh; kết quả khác số, đơn vị hoặc thời điểm vẫn tách riêng.', href: '/me-bau/ho-so', action: 'Xem hồ sơ' },
+  ] },
   { id: '2026-09-09-medical-workspace', date: '2026-09-09', title: 'Hồ sơ thai kỳ gọn, dễ xem hơn', items: [
     { title: 'Thông tin trước, giấy tờ khi cần', description: 'Xem lần khám gần nhất và nội dung trên giấy ngay ở Tổng quan. Giấy tờ mở thẳng hồ sơ đã lưu; phần tải thêm chỉ mở khi chọn. Nhóm thông tin có biểu tượng riêng, giữ đầy đủ bản đọc, nguồn và ảnh gốc.', href: '/me-bau/ho-so', action: 'Xem hồ sơ' },
   ] },

@@ -74,7 +74,7 @@ it('does not mislabel headers and footer text as laboratory measurements', () =>
   const groups = groupDocumentData(a);
   expect(groups.other.map(row => row.label)).toEqual(['Thông tin chưa biết', 'Chân trang', 'Tiêu đề cột']);
 });
-it('collapses exact fields but preserves differing context, pages, uncertainty and financial lines', () => {
+it('collapses exact fields, carries uncertainty forward and preserves contexts, pages and financial lines', () => {
   const a = structuredClone(analysis);
   const glucose = structuredClone(a.pages[0].fields[4]);
   a.pages[0].fields.push(glucose, { ...glucose, context: 'Sau ăn' }, { ...glucose, unclear: false });
@@ -82,10 +82,19 @@ it('collapses exact fields but preserves differing context, pages, uncertainty a
   a.pages.push({ ...structuredClone(a.pages[0]), page: 2, fields: [glucose], medicines: [], charges: [] });
   const before = structuredClone(a);
   const groups = groupDocumentData(a);
-  expect(groups.results.find(r => r.page === 1 && r.details.includes('Thời điểm / ngữ cảnh: Lúc đói') && r.unclear)?.duplicateCount).toBe(2);
-  expect(groups.results.filter(r => r.label === 'Glucose')).toHaveLength(5);
+  expect(groups.results.find(r => r.page === 1 && r.details.includes('Thời điểm / ngữ cảnh: Lúc đói') && r.unclear)?.duplicateCount).toBe(3);
+  expect(groups.results.filter(r => r.label === 'Glucose')).toHaveLength(4);
   expect(groups.charges.filter(r => r.label === 'Đã thanh toán')).toHaveLength(2);
   expect(a).toEqual(before);
+});
+it('shows repeated conclusions once on a page while preserving all evidence and uncertainty',()=>{
+ const a=structuredClone(analysis);
+ a.pages[0].fields=[{...field('Kết luận','Nội dung nguyên văn','', 'Ngữ cảnh A'),unclear:false},
+   field('Kết luận','Nội dung nguyên văn','', 'Ngữ cảnh B')];
+ const before=structuredClone(a),rows=groupDocumentData(a).findings;
+ expect(rows).toHaveLength(1);expect(rows[0].duplicateCount).toBe(2);
+ expect(rows[0].sourceIndexes).toEqual([0,1]);expect(rows[0].unclear).toBe(true);
+ expect(rows[0].details).toHaveLength(2);expect(a).toEqual(before);
 });
 it('fetches on demand, searches without accents, preserves uncertainty and never renders source HTML', async () => {
   const fetcher = vi.fn(async () => Response.json({ documentId: id, recordId: id, importedAt: '2026-09-08T00:00:00Z', analysis }));

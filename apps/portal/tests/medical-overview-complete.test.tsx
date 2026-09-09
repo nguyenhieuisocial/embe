@@ -12,5 +12,5 @@ it('includes every extracted field beyond the highlights limit and navigates to 
   fireEvent.click(screen.getByRole('button', { name: 'Xem nguồn Chỉ số 19 · trang 1' }));
   expect(onSource).toHaveBeenCalledWith({ page: 1, group: 'fields', rowIndex: 19 });
   fireEvent.click(screen.getByText('Thuốc trên tài liệu · 0 mục'));
-  expect(screen.getAllByText(/Chưa có dữ liệu trích xuất trong nhóm này/).some(node => node.closest('details')?.open)).toBe(true);
+  expect(screen.getAllByText('Chưa đọc được dữ liệu nhóm này.').some(node => node.closest('details')?.open)).toBe(true);
 });

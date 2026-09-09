@@ -67,14 +67,18 @@ export function groupDocumentData(analysis: DocumentAnalysis) {
     const seen = new Map<string, DocumentDataRow>();
     groups[group as keyof typeof groups] = rows.filter(row => {
       if (row.sourceGroup !== 'fields' || group === 'charges' || group === 'medicines') return true;
-      // Values remain accent-, case-, unit- and context-sensitive. Never collapse
-      // medicines/charges or separate pages, even when they look identical.
+      // Values stay accent-, case- and unit-sensitive. Measurement contexts stay
+      // distinct; repeated narrative context is retained under one exact value.
+      // Medicines/charges and separate pages are never collapsed here.
       const literal = (value: string) => value.normalize('NFC').trim().replace(/\s+/g, ' ');
-      const signature = JSON.stringify([row.page, canonicalLabel(row.label), literal(row.value), row.details.map(literal), row.unclear]);
+      const narrative = group === 'findings' && !!literal(row.value);
+      const signature = JSON.stringify([row.page, canonicalLabel(row.label), literal(row.value), narrative ? null : [...new Set(row.details.map(literal))].sort()]);
       const prior = seen.get(signature);
       if (prior) {
         prior.duplicateCount = (prior.duplicateCount ?? 1) + 1;
         prior.sourceIndexes = [...(prior.sourceIndexes ?? [prior.index]), row.index];
+        prior.unclear ||= row.unclear;
+        prior.details = [...new Map([...prior.details, ...row.details].map(detail => [literal(detail), detail])).values()];
         if (row.evidence && !prior.evidence.split('\n').includes(row.evidence)) prior.evidence = [prior.evidence, row.evidence].filter(Boolean).join('\n');
         return false;
       }

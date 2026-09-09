@@ -18,7 +18,34 @@ it('does not merge unknown dates across documents or use upload day',()=>{
 });
 it('preserves context and uncertainty without changing the source',()=>{
  const input=structuredClone(record);input.documents[1].readingSummary!.findings[0].unclear=true;expect(medicalFindingGroups([input])[0].row.unclear).toBe(true);expect(input.documents[0].readingSummary!.findings[0].unclear).toBe(false);
- input.documents[1].readingSummary!.findings[0].details=['Ngữ cảnh khác'];expect(medicalFindingGroups([input])).toHaveLength(2);
+ input.documents[1].readingSummary!.findings[0].details=['Ngữ cảnh khác'];expect(medicalFindingGroups([input])).toHaveLength(1);
+});
+it('does not repeat a conclusion under another label because OCR explanations differ',()=>{
+ const input=structuredClone(record);
+ input.documents[0].readingSummary!.findings[0].details=['Ngữ cảnh A'];
+ input.documents[1].readingSummary!.findings[0]={...row,label:'Chẩn đoán',details:['Ngữ cảnh B',' Ngữ cảnh A '],unclear:true};
+ const before=JSON.stringify(input),topics=medicalFindingTopics([input]);
+ expect(topics).toHaveLength(1);expect(topics[0].variants).toHaveLength(1);
+ expect(topics[0].variants[0].sources).toHaveLength(2);
+ expect(topics[0].variants[0].row.details).toHaveLength(2);
+ expect(topics[0].variants[0].labels).toEqual(['Kết luận','Chẩn đoán']);
+ expect(JSON.stringify(input)).toBe(before);
+});
+it('deduplicates reordered result context but retains different times, units, signs and values',()=>{
+ const input=structuredClone(record);
+ input.documents.forEach((d,i)=>{d.readingSummary!.results=[{...row,label:'Glucose',value:'5 mmol/L',details:i?['Tham chiếu: 4–6','Lúc đói']:['Lúc đói','Tham chiếu: 4–6','Lúc đói']}];});
+ expect(medicalFindingGroups([input],'results')).toHaveLength(1);
+ const second=input.documents[1].readingSummary!.results[0];
+ second.details=['Sau ăn','Tham chiếu: 4–6'];expect(medicalFindingGroups([input],'results')).toHaveLength(2);
+ second.details=['Lúc đói','Tham chiếu: 4–6'];
+ for(const value of ['6 mmol/L','5 mg/dL','< 5 mmol/L']){second.value=value;expect(medicalFindingGroups([input],'results')).toHaveLength(2);}
+});
+it('never merges topic readings from different explicit patients or facilities',()=>{
+ const input=structuredClone(record);
+ input.documents[1].readingSummary!.findings[0].sourceIdentity='patient-B';
+ expect(medicalFindingTopics([input])[0].variants).toHaveLength(2);
+ input.documents.forEach((d,i)=>{d.readingSummary!.findings[0]={...row,displayEncounter:`patient-A:clinic-${i}`};});
+ expect(medicalFindingTopics([input])[0].variants).toHaveLength(2);
 });
 it('does not merge different medical records',()=>{expect(medicalFindingGroups([record,{...record,id:'other'}])).toHaveLength(2);});
 it('shows identical topic text once despite different OCR context and retains sources',()=>{
