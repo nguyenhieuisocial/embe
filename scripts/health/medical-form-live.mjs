@@ -23,7 +23,7 @@ try {
  }
  await page.setViewportSize({width:393,height:852});
  await form.screenshot({path:'data/medical-form-verification/form.png'});
- const extra=form.locator('.medical-form-extra');
+ const extra=form.locator('.medical-form-extra').first();
  if(await extra.evaluate(el=>el.open))throw new Error('extra_started_open');
  await extra.locator('summary').focus();await page.keyboard.press('Enter');
  await form.getByLabel('Bác sĩ',{exact:true}).fill('Kiểm tra giao diện — không lưu');
