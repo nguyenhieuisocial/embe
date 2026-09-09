@@ -4,6 +4,17 @@ import TodayMedications,{medicationSlots} from '../src/components/today-medicati
 import { LINKED_DAILY_ACTION_EVENT } from '../src/lib/linked-daily-actions';
 vi.mock('../src/lib/use-family-data-refresh',()=>({useFamilyDataRefresh:vi.fn()}));
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+it('keeps dose controls and details in compact mode without repeating pending text',async()=>{
+ vi.stubGlobal('fetch',vi.fn(async()=>Response.json({snapshot:{plans:[plan]}})));
+ const {container}=render(<TodayMedications compact/>);
+ await screen.findByText('08:00');
+ expect(container.querySelector('.today-medications')).toHaveClass('is-compact');
+ expect(screen.getByRole('button',{name:'Đánh dấu đã dùng Thuốc theo đơn lần 2'})).toBeEnabled();
+ expect(screen.queryByText('Chưa ghi nhận dùng')).toBeNull();
+ expect(screen.getAllByText('Chi tiết thuốc')).toHaveLength(2);
+ expect(container.querySelectorAll('.medication-guide[open]')).toHaveLength(0);
+ expect(screen.getByRole('progressbar')).toHaveAttribute('value','1');
+});
 const plan={id:'one',name:'Thuốc theo đơn',dose_display:'1 viên',instructions:'Sau ăn',active:true,times_per_day:2,reminder_times:['08:00:00','20:00:00'],confirmed_by_clinician:true,dose_states:[{slot:1,status:'taken'}]};
 it('records the selected slot only after a server receipt',async()=>{
  const linked = vi.fn(); window.addEventListener(LINKED_DAILY_ACTION_EVENT, linked, {once: true});

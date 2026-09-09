@@ -452,6 +452,29 @@
   .care-board .today-medications { padding: 0 0 12px; margin: 12px 0 16px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
   .care-board .today-medications .section-head h2, .care-board .care-habits-summary h3 { font: 600 1rem/1.5 var(--font-body),sans-serif; }
   .care-board .care-habits-summary { gap: 12px; margin-bottom: 8px; }
+  .care-board .care-today-heading { margin-bottom: 4px; gap: 8px; }
+  .care-board .care-today-heading h2 { margin: 0; font-size: 1.125rem; }
+  .care-board .care-today-heading time { flex: none; color: var(--ink-soft); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+  .care-board .progress-stamp { padding: 2px 8px; }
+  .care-board .progress-stamp strong { font-size: .875rem; }
+  .care-board .care-progress { height: 4px; margin: 0 0 8px; }
+  .care-board .checklist { gap: 4px; }
+  .care-board .checklist-group + .checklist-group { margin-top: 0; }
+  .care-board .checklist-group { border-radius: 10px; }
+  .care-board .checklist-group > summary { padding: 6px 10px; }
+  .care-board .check-item { padding: 8px 10px; }
+  .care-board .today-medications.is-compact { margin: 4px 0 10px; padding-bottom: 8px; }
+  .care-board .is-compact .today-medication { padding: 8px 0; gap: 8px; grid-template-columns: 48px minmax(0,1fr); }
+  .care-board .is-compact .today-medication-time { width: 48px; }
+  .care-board .is-compact .today-medication-copy { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 8px; }
+  .care-board .is-compact .today-medication-copy > strong,
+  .care-board .is-compact .today-medication-copy > small { grid-column: 1 / -1; }
+  .care-board .is-compact .today-medication-actions { grid-column: 1; grid-row: 3; }
+  .care-board .is-compact .medication-guide { grid-column: 2; grid-row: 3; min-width: 0; }
+  .care-board .is-compact .medication-guide[open] { grid-column: 1 / -1; grid-row: 4; }
+  @media (max-width: 360px) {
+    .care-board .is-compact .medication-guide { grid-column: 1 / -1; grid-row: 4; }
+  }
   .today-main .thread { margin-top: 12px; }
   .today-main .thread-item { padding-bottom: 14px; }
   .today-main .thread-body { padding: 12px; border-radius: 14px; }

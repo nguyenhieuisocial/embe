@@ -325,17 +325,15 @@ export default function PregnancyPage() {
       <MaternalTools week={week} />
 
       <section className="care-board" id="viec-hom-nay" aria-labelledby="daily-title">
-        <div className="care-summary">
-          <div>
-            <p className="panel-kicker">Checklist {todayKey || "hôm nay"}</p>
+        <div className="care-summary care-today-heading">
             <h2 id="daily-title">Việc của hôm nay</h2>
-          </div>
+            {todayKey ? <time dateTime={todayKey}>{todayKey.split('-').reverse().slice(0,2).join('/')}</time> : null}
         </div>
 
-        <TodayMedications />
+        <TodayMedications compact />
 
         <div className="care-summary care-habits-summary">
-          <h3>Thói quen hằng ngày</h3>
+          <h3>Thói quen</h3>
           <div className="progress-stamp" aria-label={`${progress}% thói quen hoàn thành`}>
             <strong>{ready ? completedHabits : 0}</strong>
             <span>/ {dailyHabits.length}</span>
