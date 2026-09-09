@@ -26,10 +26,10 @@ Preserve the family's working data and all existing features. Redesign navigatio
 | Medication | Direct /me-bau/thuoc route; legacy fragments retained; drafts retained between tabs; honest saved/eligible state | Implemented, regression checks pass |
 | Medical records | Flatter summary/disclosures, upcoming visit lavender, compact date cards; sources retained | Live; authenticated mobile form and keyboard focus inspected |
 | Meals | Shared capture/history/nutrition tabs, camera/manual entry surfaces and controls | Live; draft retention checked; no real meal/OCR submission in this design audit |
-| Memories/journal | Photo-focused browsing and controls; one cover per album; known journal author compact | Shared contract live; cover/author follow-up verified in unit tests, deployment pending |
+| Memories/journal | Photo-focused browsing and controls; one cover per album; known journal author compact | Live at 5586e71; cover lazy loading, viewer zoom/close/focus and author draft retention checked |
 | Studio | Creation/research/publishing hierarchy, calm lavender navigation and compact tool rows | Shared contract live; no external publishing or voice-quality claim |
-| Remaining routes | Shared standard applied across core pages; one 2px overflow on folk-guide filters | Overflow cause isolated; follow-up fix prepared |
-| Verification/deployment | 259 tests across 18 suites and production build pass; 80 live route/viewport samples | 240233a live; final follow-up awaiting deployment and verification |
+| Remaining routes | Shared standard applied across core pages; one 2px overflow on folk-guide filters | Fixed and verified at 375/430/768/1280px |
+| Verification/deployment | 259 tests across 18 suites and production build pass; 80 initial + 20 final live route/viewport samples | Application revision 5586e71 verified live; 11 bounded interaction scenarios pass |
 
 ## Figma v1 mapping
 
@@ -48,3 +48,7 @@ Figma generation is incomplete due to the Starter MCP call quota; no paid upgrad
 - Detailed screenshots inspected: home, maternal hub, health recording, medication, medical overview/form, meals, memories, journal, family hub and Studio. Remaining routes have automated geometry/runtime checks, not exhaustive visual acceptance.
 - Figma screens/components remain unfinished because of account quota. Physical iPhone, Safari/WebKit, screen-reader and OS Dynamic Type verification remain unperformed; Cent viewport/text-scale checks are not substitutes.
 - No clinical data, OCR rules, database schema, automatic intake, voice pipeline or social publishing behavior changed. Unconfirmed prescription plans remain unconfirmed.
+
+Final application version verified by `/api/health`: `5586e71b8a70a5f68d9f00ced4315002258cb762`. Follow-up screenshots and geometry: private `data/interface-audit-final` (five changed routes × four widths, zero measured overflow/small-control/page-error issues). Interaction receipt: private `data/interface-interactions/result.json` (11 scenarios, two mocked medication writes, zero page errors). All five sampled album covers loaded after scrolling; viewer zoom/reset/close restored focus. The maternal hub also fit landscape and a 125% text-size override under reduced motion. These are Cent checks, not native iPhone proof.
+
+Overall request remains **partially completed**: live shared UI and bounded workflows are implemented and verified, but Figma component library/screens/Code Connect and physical-device acceptance are still outstanding. Account quota requires a user-side change before Figma work can resume; no additional subscription or upgrade was authorized or purchased.

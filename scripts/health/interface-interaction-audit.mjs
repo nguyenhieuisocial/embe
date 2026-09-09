@@ -105,7 +105,8 @@ try {
   assert.equal(await page.getByRole('radio').count(), 0);
   await page.getByLabel('Điều đáng nhớ', { exact: true }).fill('Bản nháp đổi người ghi — không lưu');
   await page.getByRole('button', { name: 'Đổi người ghi', exact: true }).click();
-  await page.getByRole('radio', { name: 'Ba Hiếu', exact: true }).check();
+  await page.locator('.author-choice label').filter({ hasText: 'Ba Hiếu' }).click();
+  assert.equal(await page.getByRole('radio', { name: 'Ba Hiếu', exact: true }).isChecked(), true);
   await page.getByRole('button', { name: 'Xong người ghi', exact: true }).click();
   assert.equal(await page.getByRole('radio').count(), 0);
   assert.equal(await page.getByLabel('Điều đáng nhớ', { exact: true }).inputValue(), 'Bản nháp đổi người ghi — không lưu');
@@ -127,6 +128,32 @@ try {
   await page.addStyleTag({ content: 'html { font-size: 125% !important; }' });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
   results.push('Maternal hub fits landscape and 125% text scale with reduced motion');
+
+  await page.goto(origin + '/ky-niem?view=album');
+  const covers = page.locator('.memory-album-covers img');
+  const coverCount = await covers.count();
+  assert.ok(coverCount > 0);
+  for (let index = 0; index < coverCount; index++) {
+    await covers.nth(index).scrollIntoViewIfNeeded();
+    await covers.nth(index).evaluate(image => new Promise((resolve, reject) => {
+      const limit = setTimeout(() => reject(new Error('Album cover did not load')), 15000);
+      const loaded = () => { clearTimeout(limit); image.naturalWidth > 0 ? resolve(true) : reject(new Error('Album cover failed')); };
+      if (image.complete && image.currentSrc) loaded();
+      else { image.addEventListener('load', loaded, { once: true }); image.addEventListener('error', loaded, { once: true }); }
+    }));
+  }
+  results.push('Every album cover loads when scrolled into view');
+  await page.locator('.memory-album').first().click();
+  await page.locator('.memory-album-grid button').first().click();
+  await page.getByRole('dialog').waitFor();
+  await page.keyboard.press('+');
+  await page.locator('.photo-viewer-stage.is-zoomed').waitFor();
+  await page.keyboard.press('0');
+  assert.equal(await page.locator('.photo-viewer-stage.is-zoomed').count(), 0);
+  await page.getByRole('button', { name: 'Đóng ảnh', exact: true }).click();
+  assert.equal(await page.getByRole('dialog').count(), 0);
+  assert.equal(await page.locator('.memory-album-grid button').first().evaluate(button => document.activeElement === button), true);
+  results.push('Album viewer zoom/reset/close works and restores focus to the photo');
   assert.deepEqual(errors, []);
   await writeFile(output + '/result.json', JSON.stringify({ results, writesMocked: writes, pageErrors: errors, browser: 'Cent', physicalIphone: false }, null, 2));
   console.log(JSON.stringify({ passed: results.length, writesMocked: writes, errors }));

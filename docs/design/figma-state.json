@@ -10,6 +10,6 @@
   },
   "completedSteps": ["discovery", "42-variables-validated", "5-text-styles", "1-effect-style", "three-pages", "four-action-variants"],
   "pendingValidations": ["action-screenshot", "component-set", "navigation-row", "disclosure", "screens", "code-connect"],
-  "webImplementation": { "status": "shared-foundation-live", "verifiedVersion": "240233a32859582c59e5999d4e2a0dd74b82cfdd", "figmaScreensComplete": false },
+  "webImplementation": { "status": "shared-foundation-live", "verifiedVersion": "5586e71b8a70a5f68d9f00ced4315002258cb762", "figmaScreensComplete": false },
   "limitations": ["Starter allows three pages; logical sections consolidated.", "Figma MCP call quota reached before component set creation. No upgrade purchased; no screen completion claimed."]
 }
