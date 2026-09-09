@@ -128,3 +128,92 @@
 .medical-encounter-chain ul { list-style: none; margin: .5rem 0; padding-inline-start: .85rem; border-inline-start: 2px solid #e7cbd6; }
 .medical-encounter-chain li { padding-block: .25rem; }
 .medical-encounter-chain small { color: #6f6067; }
+
+/* Record workspace: compact summaries, one primary action, details on demand.
+   Scoped to this screen so shared forms and other medical pages stay intact. */
+.pregnancy-profile-page .pregnancy-profile-intro { margin:12px auto 16px; }
+.pregnancy-profile-page .pregnancy-profile-intro h1 { margin:0; font-size:1.625rem; line-height:1.35; }
+.pregnancy-profile-page .medical-workspace--v2 { display:grid; gap:0; }
+.medical-workspace--v2 .icon { width:20px; height:20px; flex:none; }
+.medical-workspace--v2 .medical-capture-action { gap:8px; }
+.pregnancy-profile-page .medical-workspace--v2 .medical-workspace-switch { margin:0 0 16px; }
+.medical-workspace--v2 :is(button,a,summary) { touch-action:manipulation; }
+.medical-workspace--v2 :is(button,a,summary):active { filter:brightness(.97); }
+.medical-workspace--v2 :is(a,button,summary):focus-visible { outline:2px solid var(--rose-press); outline-offset:3px; }
+.medical-workspace--v2 :is(#ket-luan-ho-so,#them-giay-to,[id^="record-"]) { scroll-margin-block:100px 120px; }
+.medical-workspace--v2 .pregnancy-record-summary { margin:0 0 16px; }
+.pregnancy-profile-page .medical-workspace--v2 .pregnancy-record-summary>header { margin:0 0 12px; }
+.medical-workspace--v2 .medical-latest-visit { padding:16px; border:1px solid var(--rose-mist); background:var(--surface); border-radius:18px; }
+.medical-workspace--v2 .medical-latest-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:.8125rem; color:var(--rose-press); }
+.medical-workspace--v2 .medical-latest-heading>span { display:flex; align-items:center; gap:6px; font-weight:600; }
+.medical-workspace--v2 .medical-latest-heading time { font-variant-numeric:tabular-nums; }
+.medical-workspace--v2 .medical-latest-visit h3 { margin:12px 0 4px; font:600 1.125rem/1.5 var(--font-body),sans-serif; text-wrap:balance; }
+.medical-workspace--v2 .medical-latest-provider { font-size:.875rem; color:var(--ink-soft); }
+.medical-workspace--v2 .medical-latest-reading { margin-top:12px; padding:12px; background:var(--rose-soft); border-radius:12px; }
+.medical-workspace--v2 .medical-latest-reading>small { color:var(--rose-press); font-weight:600; }
+.medical-workspace--v2 .medical-latest-reading p { font-size:1rem; line-height:1.6; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.medical-workspace--v2 .medical-latest-reading a { font-size:.8125rem; }
+.medical-workspace--v2 .medical-latest-link { display:flex; width:100%; justify-content:space-between; text-decoration:none; margin-top:8px; font-size:.875rem; font-weight:600; }
+.medical-workspace--v2 .medical-summary-appointment { display:flex; gap:12px; align-items:center; text-decoration:none; padding:12px; border-radius:14px; margin:12px 0; background:var(--lavender-soft); color:var(--ink); }
+.medical-workspace--v2 .medical-summary-appointment>span:nth-child(2) { display:grid; flex:1; min-width:0; gap:3px; }
+.medical-workspace--v2 .medical-summary-appointment strong { font-size:.9375rem; font-weight:600; font-variant-numeric:tabular-nums; }
+.medical-workspace--v2 .medical-summary-appointment small { color:var(--ink-soft); }
+.medical-workspace--v2 .medical-summary-icon { display:flex; width:36px; height:36px; flex:none; align-items:center; justify-content:center; background:var(--rose-soft); color:var(--rose-press); border-radius:11px; }
+.medical-workspace--v2 .medical-summary-icon.is-room { background:var(--mint-soft); color:var(--mint); }
+.medical-workspace--v2 .medical-summary-icon.is-supply { background:var(--peach-soft); color:var(--peach); }
+.medical-workspace--v2 .medical-summary-icon.is-calendar { background:var(--surface); color:var(--indigo); }
+.medical-workspace--v2 .medical-summary-icon:is(.is-album,.is-refresh) { background:var(--lavender-soft); color:var(--indigo); }
+.medical-workspace--v2 .medical-summary-label { display:grid; gap:4px; min-width:0; flex:1; font-weight:600; }
+.medical-workspace--v2 .medical-summary-label small { margin:0; font-weight:400; color:var(--ink-soft); }
+.pregnancy-profile-page .medical-workspace--v2 .pregnancy-record-summary>details { padding:0; margin:0; border:0; border-bottom:1px solid var(--line); background:transparent; border-radius:0; }
+.pregnancy-profile-page .medical-workspace--v2 .pregnancy-record-summary>details>summary { display:flex; align-items:center; gap:12px; list-style:none; padding:12px 0; font-size:.9375rem; }
+.medical-workspace--v2 .pregnancy-record-summary>details>summary::-webkit-details-marker { display:none; }
+.medical-workspace--v2 .medical-summary-chevron { width:18px; height:18px; color:var(--ink-soft); transition:transform .16s ease; }
+.medical-workspace--v2 .pregnancy-record-summary>details[open]>summary>.medical-summary-chevron { transform:rotate(90deg); }
+.medical-workspace--v2 .pregnancy-record-summary>details[open] { padding-bottom:12px; }
+.medical-workspace--v2 .pregnancy-record-summary>details>article { padding:12px; margin-bottom:8px; background:var(--surface); border:1px solid var(--line); border-radius:12px; font-size:.9375rem; line-height:1.6; }
+.medical-workspace--v2 .pregnancy-record-summary>details>p { font-size:.875rem; line-height:1.6; color:var(--ink-soft); }
+.medical-workspace--v2 .medical-intake-disclosure { border:1px solid var(--line); border-radius:14px; margin-bottom:16px; background:var(--surface); }
+.medical-workspace--v2 .medical-intake-disclosure>summary { display:flex; align-items:center; gap:8px; padding:12px; list-style:none; }
+.medical-workspace--v2 .medical-intake-disclosure>summary::-webkit-details-marker { display:none; }
+.medical-workspace--v2 .medical-intake-disclosure>summary>span { flex:1; min-width:0; font-weight:600; }
+.medical-workspace--v2 .medical-intake-disclosure>summary small { display:block; margin:4px 0 0; font-size:.8125rem; }
+.medical-workspace--v2 .medical-intake-disclosure[open]>summary>.icon:last-child { transform:rotate(90deg); }
+.medical-workspace--v2 .medical-intake-disclosure .medical-intake { border:0; border-top:1px solid var(--line); padding:12px; margin:0; background:transparent; }
+.medical-workspace--v2 .medical-intake-disclosure .medical-intake>h3 { display:none; }
+.medical-workspace--v2 .medical-intake-disclosure .medical-intake>p { margin:0 0 12px; font-size:.875rem; }
+.medical-workspace--v2 .medical-subsection-title { margin:0 0 8px; }
+.medical-workspace--v2 .medical-subsection-title h3 { font:600 1.0625rem/1.5 var(--font-body),sans-serif; }
+.medical-workspace--v2 .medical-library-status { display:flex; align-items:center; flex-wrap:wrap; gap:6px; font-size:.8125rem; color:var(--ink-soft); margin:0 0 12px; }
+.medical-workspace--v2 .medical-library-status>span { margin-left:auto; }
+.medical-workspace--v2 .medical-library-status>.icon { width:16px; height:16px; }
+.medical-workspace--v2 .medical-search { margin:0 0 8px; }
+.medical-workspace--v2 .medical-search label { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.medical-workspace--v2 .medical-search input { background:var(--surface); border-color:var(--line-strong); }
+.medical-workspace--v2 .medical-filters { display:flex; flex-wrap:wrap; overflow:visible; gap:6px; margin:0; padding:0; }
+.medical-workspace--v2 .medical-filters button { border-radius:10px; font-size:.8125rem; padding:8px 10px; }
+.medical-workspace--v2 .medical-saved-toolbar { font-size:.8125rem; margin:8px 0 12px; }
+.medical-workspace--v2 .medical-saved-toolbar select { background:transparent; padding:8px; font-size:16px; }
+.medical-workspace--v2 .medical-timeline>article { border-radius:16px; padding:14px; border-color:var(--line-strong); }
+.medical-workspace--v2 .medical-timeline>article>time { font-size:.8125rem; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.medical-workspace--v2 .medical-timeline>article>p { margin:0; font-size:.875rem; line-height:1.5; }
+.medical-workspace--v2 .medical-record-head { display:flex; }
+.medical-workspace--v2 .medical-record-head>span { background:var(--rose-soft); color:var(--rose-press); padding:4px 8px; border-radius:6px; line-height:1.5; }
+.medical-workspace--v2 .medical-record-head>div { display:flex; flex:none; gap:4px; margin-left:auto; }
+.medical-workspace--v2 .medical-record-head button { min-width:44px; min-height:44px; padding:8px; border-radius:10px; }
+.medical-workspace--v2 .medical-record-head button:active { background:var(--rose-soft); }
+.medical-workspace--v2 .medical-next-visit { margin:0 0 16px; border:0; }
+.medical-workspace--v2 .medical-next-visit>summary { padding:0 0 8px; font-size:1.0625rem; }
+.medical-workspace--v2 .medical-encounter-chain { margin:0 0 16px; }
+.medical-workspace--v2 .next-appointment h4 { font:600 1.125rem/1.5 var(--font-body),sans-serif; }
+.medical-workspace--v2 .medical-form-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.medical-workspace--v2 .medical-form-heading h3 { margin:0; font:600 1.125rem/1.5 var(--font-body),sans-serif; }
+.medical-workspace--v2 .medical-form-heading button { display:flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; border:1px solid var(--line-strong); background:var(--surface); border-radius:12px; color:var(--ink); }
+.medical-workspace--v2 .medical-empty-short { text-align:center; padding:24px 16px; margin:0 0 16px; border:1px solid var(--line); border-radius:16px; background:var(--surface); }
+.medical-workspace--v2 .medical-empty-short>.icon { width:32px; height:32px; color:var(--rose); }
+.medical-workspace--v2 .medical-empty-short p { font-size:.9375rem; line-height:1.6; }
+.medical-workspace--v2 .medical-empty-short :is(a,button) { min-height:44px; min-width:44px; padding:10px 14px; }
+.medical-workspace--v2 .medical-loading { min-height:180px; display:flex; align-items:center; justify-content:center; gap:12px; font-size:.9375rem; color:var(--ink-soft); }
+.pregnancy-profile-page>.pregnancy-profile-settings { margin:8px auto; max-width:880px; border-top:1px solid var(--line); }
+.pregnancy-profile-page>.pregnancy-profile-settings>summary { min-height:48px; padding:14px 0; font-size:.875rem; color:var(--ink-soft); cursor:pointer; }
+@media(prefers-reduced-motion:reduce){.medical-workspace--v2 .medical-summary-chevron{transition:none}}

@@ -49,7 +49,7 @@ it('keeps the overview collapsed and places saved medicines inside the same medi
  const {container}=render(<PregnancyRecordSummary records={[record]}/>);
  expect(container.querySelector('details[open]')).toBeNull();
  const stored=screen.getByText('Thuốc đã nhập vào hồ sơ').closest('details')!;
- expect(stored.parentElement?.closest('details')?.querySelector('summary')?.textContent).toContain('Thuốc đã đọc từ giấy tờ');
+ expect(stored.parentElement?.closest('details')?.querySelector('summary')?.textContent).toContain('Thuốc trong giấy tờ');
  expect(screen.queryByText('Thuốc trong hồ sơ gần nhất')).not.toBeInTheDocument();
  expect(JSON.stringify(record)).toBe(before);
 });

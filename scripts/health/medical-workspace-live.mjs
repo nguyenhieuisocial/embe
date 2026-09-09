@@ -37,7 +37,7 @@ try{
  await page.evaluate(()=>document.documentElement.style.fontSize='20px');
  if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw new Error('large_text_overflow');
  await page.evaluate(()=>document.documentElement.style.fontSize='');
- const capture=page.getByRole('link',{name:'+ Chụp / thêm giấy tờ',exact:true});
+ const capture=page.getByRole('link',{name:'Thêm giấy tờ',exact:true});
  const captureBox=await capture.boundingBox();
  if(!captureBox||captureBox.height<44||captureBox.width<44)throw new Error('capture_target_small');
  const overview=page.getByRole('region',{name:'Tóm tắt thai kỳ'});
@@ -46,7 +46,7 @@ try{
  await firstSummary.focus();await page.keyboard.press('Enter');
  if(!await firstSummary.evaluate(el=>el.parentElement.open))throw new Error('summary_keyboard_failed');
  await page.keyboard.press('Enter');
- const encounterChains=await page.getByRole('region',{name:'Chuỗi khám & tái khám'}).locator(':scope > details').evaluateAll(groups=>groups.map(group=>({
+ const encounterChains=await page.locator('[aria-label="Chuỗi khám & tái khám"]').locator(':scope > details').evaluateAll(groups=>groups.map(group=>({
    documents:group.querySelectorAll('a[href*="/tai-lieu/"]').length,
    followups:group.querySelectorAll('time').length,
  })));

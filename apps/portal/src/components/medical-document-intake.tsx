@@ -6,7 +6,7 @@ import { notifyFamilyDataChanged } from '../lib/family-data-refresh';
 import './medical-document-intake.css';
 
 type Entry = { id: string; documentId: string; file: File; status: 'waiting' | 'uploading' | 'saved' | 'failed' };
-export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void }) {
+export default function MedicalDocumentIntake({ onSaved, id='them-giay-to' }: { onSaved: () => void; id?:string }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [notice, setNotice] = useState('');
   const [lastSavedName, setLastSavedName] = useState('');
@@ -53,7 +53,7 @@ export default function MedicalDocumentIntake({ onSaved }: { onSaved: () => void
     const batch: Entry[] = Array.from(files).map(file => ({ id: crypto.randomUUID(), documentId: crypto.randomUUID(), file, status: 'waiting' }));
     setEntries(current => [...current, ...batch]); void run(batch);
   }
-  return <section className="medical-intake" id="them-giay-to" aria-label="Chụp và tải giấy tờ khám thai">
+  return <section className="medical-intake" id={id} aria-label="Chụp và tải giấy tờ khám thai">
     <h3>Thêm giấy tờ khám</h3>
     <p>Tự đọc phiếu thu, đơn thuốc, siêu âm, xét nghiệm và bệnh án.</p>
     <div className="medical-intake-actions">

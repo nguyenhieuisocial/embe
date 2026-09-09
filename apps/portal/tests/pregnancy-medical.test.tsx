@@ -86,7 +86,7 @@ describe("pregnancy medical record book", () => {
     expect(classifier).toBeInTheDocument();
     fireEvent.click(within(classifier).getByRole("button", { name: "Đơn thuốc" }));
     await waitFor(() => expect(screen.getByText("Thuốc ghi trên đơn")).toBeInTheDocument());
-    expect(screen.getByText(/Hồ sơ y tế được giữ riêng/)).toBeInTheDocument();
+    expect(screen.getByRole('button',{name:'Đóng biểu mẫu hồ sơ'})).toBeInTheDocument();
   });
 
   it("opens the prescription form directly from a quick link", async () => {

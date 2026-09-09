@@ -1,0 +1,63 @@
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {fireEvent,render,screen,waitFor,within} from '@testing-library/react';
+import PregnancyMedicalRecords from '../src/components/pregnancy-medical-records';
+import {latestRecordReading} from '../src/components/pregnancy-record-summary';
+import {clearPrivateGetCache} from '../src/lib/private-get-cache';
+import type {MedicalRecord} from '../src/lib/pregnancy-medical';
+import type {ReadingRow} from '../src/lib/medical-reading-summary';
+const id='11111111-1111-4111-8111-111111111111';
+const row=(value='Lời dặn từ phiếu',day='2026-09-07'):ReadingRow=>({page:1,label:'Lời dặn',value,details:[],unclear:false,printedDay:day,sourceDay:day,sourceIdentity:'Người mẫu',sourceKind:'clinical'});
+const record=(rows:ReadingRow[]=[row()]):MedicalRecord=>({id,kind:'clinical',status:'completed',occurredAt:'2026-09-07T10:00:00Z',title:'Lần khám mẫu',provider:'Phòng khám mẫu',clinician:'',notes:'',gestationalWeek:10,nextAppointmentAt:null,medicines:[],measurements:{},documents:[{id:'doc',originalFilename:'Phiếu mẫu',mimeType:'image/jpeg',byteSize:100,createdAt:'2026-09-08',scanStatus:'confirmed',imported:true,readingSummary:{findings:rows,results:[],medicines:[]}}]});
+const preventAnchorNavigation=(event:MouseEvent)=>{if((event.target as Element).closest('a'))event.preventDefault();};
+beforeEach(()=>document.addEventListener('click',preventAnchorNavigation));
+afterEach(()=>{document.removeEventListener('click',preventAnchorNavigation);clearPrivateGetCache();vi.unstubAllGlobals();window.history.replaceState({},'','/');});
+it('previews only literal same-day readings, preserving uncertainty and conflicts',()=>{
+ const data=[record([{...row(),unclear:true},row('Lời dặn cũ','2026-09-01')])];const original=JSON.stringify(data);
+ expect(latestRecordReading(data,Date.parse('2026-09-09')).highlights[0].variants[0].row.unclear).toBe(true);
+ expect(latestRecordReading(data,Date.parse('2026-09-09')).highlights).toHaveLength(1);
+ expect(JSON.stringify(data)).toBe(original);
+ expect(latestRecordReading([record([row('Bản A'),row('Bản B')])],Date.parse('2026-09-09'))).toEqual({highlights:[],conflicts:1});
+ expect(latestRecordReading([record([{...row(),printedDay:undefined,sourceDay:undefined}])],Date.parse('2026-09-09')).highlights).toEqual([]);
+});
+it('never previews invoice text, upload times, another unlinked visit, or future visits',()=>{
+ expect(latestRecordReading([record([{...row(),sourceKind:'receipt'}])],Date.parse('2026-09-09')).highlights).toEqual([]);
+ expect(latestRecordReading([{...record(),documentIntake:true}],Date.parse('2026-09-09')).highlights).toEqual([]);
+ expect(latestRecordReading([{...record(),occurredAt:'2026-10-01'}],Date.parse('2026-09-09')).highlights).toEqual([]);
+ const other={...record([row('Autre source')]),id:'other',occurredAt:'2026-09-07T08:00:00Z'};
+ expect(latestRecordReading([record(),other],Date.parse('2026-09-09')).highlights[0].variants[0].row.value).toBe('Lời dặn từ phiếu');
+});
+it('opens the saved library without opening upload, preserves the sources and makes intake explicit',async()=>{
+ window.history.replaceState({},'','/me-bau/ho-so');
+ const fetcher=vi.fn(async(_input:RequestInfo|URL,_init?:RequestInit)=>Response.json({records:[record()]}));vi.stubGlobal('fetch',fetcher);
+ render(<PregnancyMedicalRecords/>);
+ const overview=await screen.findByRole('region',{name:'Tóm tắt thai kỳ'});
+ expect(overview.querySelector('details[open]')).toBeNull();
+ expect(within(overview).getAllByText('Lời dặn từ phiếu').length).toBeGreaterThan(0);
+ fireEvent.click(screen.getByRole('link',{name:'Giấy tờ'}));
+ expect(screen.getByRole('searchbox',{name:'Tìm hồ sơ'})).toBeVisible();
+ expect(document.getElementById('them-giay-to')).not.toHaveAttribute('open');
+ fireEvent.click(screen.getByRole('link',{name:'Thêm giấy tờ'}));
+ expect(document.getElementById('them-giay-to')).toHaveAttribute('open');
+ expect(screen.getByRole('button',{name:'Chụp giấy tờ'})).toBeVisible();
+ expect(fetcher.mock.calls.every(call=>!call[1]||!('method' in call[1]))).toBe(true);
+});
+it('retries a failed overview instead of directing the user to upload again',async()=>{
+ window.history.replaceState({},'','/me-bau/ho-so');
+ vi.stubGlobal('fetch',vi.fn().mockResolvedValueOnce(Response.json({}, {status:503})).mockResolvedValue(Response.json({records:[record()]})));
+ render(<PregnancyMedicalRecords/>);
+ fireEvent.click(await screen.findByRole('button',{name:'Tải lại hồ sơ'}));
+ await screen.findByRole('region',{name:'Tóm tắt thai kỳ'});
+ expect(screen.queryByRole('button',{name:'Tải lại hồ sơ'})).not.toBeInTheDocument();
+});
+it('record deep links clear search and filters without opening the upload panel',async()=>{
+ window.history.replaceState({},'','/me-bau/ho-so#ho-so-da-luu');
+ vi.stubGlobal('fetch',vi.fn(async()=>Response.json({records:[record()]})));
+ render(<PregnancyMedicalRecords/>);
+ const search=await screen.findByRole('searchbox',{name:'Tìm hồ sơ'});
+ fireEvent.change(search,{target:{value:'Không khớp'}});
+ expect(document.getElementById('record-'+id)).toBeNull();
+ window.history.replaceState({},'','/me-bau/ho-so#record-'+id);fireEvent(window,new Event('hashchange'));
+ await waitFor(()=>expect(search).toHaveValue(''));
+ expect(document.getElementById('record-'+id)).not.toBeNull();
+ expect(document.getElementById('them-giay-to')).not.toHaveAttribute('open');
+});

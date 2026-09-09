@@ -1,6 +1,8 @@
 "use client";
 import MedicalDocumentData from './medical-document-data';
 import PregnancyRecordSummary from './pregnancy-record-summary';
+import MedicalEncounterChain from './medical-encounter-chain';
+import {Icon} from './embe-icon';
 import './pregnancy-record-workspace.css';
 
 import Link from "next/link";
@@ -73,6 +75,7 @@ function MeasurementHistory({ records }: { records: MedicalRecord[] }) {
 export default function PregnancyMedicalRecords() {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [workspaceView,setWorkspaceView]=useState<MedicalWorkspaceView>('overview');
+  const [showIntake,setShowIntake]=useState(false);
   const [showForm, setShowForm] = useState(false);
   const [kind, setKind] = useState("appointment");
   const [medicines, setMedicines] = useState<MedicalMedicine[]>([emptyMedicine()]);
@@ -92,18 +95,30 @@ export default function PregnancyMedicalRecords() {
   const recordId = useRef<string | null>(null);
   const documentAttempts = useRef(new Map<File, { id: string; result?: { documentId: string; mimeType: string } }>());
   const openedRecordHash = useRef("");
+  const workspaceHash=useRef<string|null>(null);
+  const openedFindingHash=useRef(false);
 
   useEffect(() => {
     const openLinkedRecord = () => {
       const hash = window.location.hash;
-      setWorkspaceView(medicalWorkspaceView(hash));
-      if(hash==='#lich-kham-ke-tiep')document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','');
+      if(workspaceHash.current!==hash){
+        setWorkspaceView(medicalWorkspaceView(hash));
+        setShowIntake(hash==='#them-giay-to');
+        workspaceHash.current=hash;
+        openedRecordHash.current='';openedFindingHash.current=false;
+        if(hash==='#lich-kham-ke-tiep')document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','');
+      }
+      if(hash==='#ket-luan-ho-so'&&!openedFindingHash.current)requestAnimationFrame(()=>{
+        const target=document.getElementById('ket-luan-ho-so');
+        if(target){target.setAttribute('open','');openedFindingHash.current=true;}
+      });
       if (!/^#record-[0-9a-f-]{36}$/i.test(hash) || openedRecordHash.current === hash) return;
       if (!records.some(record => `#record-${record.id}` === hash)) return;
       setFilter("all");
+      setSearch('');
       requestAnimationFrame(() => {
         const target = document.getElementById(hash.slice(1));
-        if (target) { target.scrollIntoView?.({ block: "center" }); openedRecordHash.current = hash; }
+        if (target) { target.scrollIntoView?.({ block: "center" }); target.focus?.({preventScroll:true}); openedRecordHash.current = hash; }
       });
     };
     openLinkedRecord(); window.addEventListener("hashchange", openLinkedRecord);
@@ -138,9 +153,11 @@ export default function PregnancyMedicalRecords() {
   const normalizeSearch = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase();
   const query = normalizeSearch(search.trim());
   const visibleRecords = records.filter(record => medicalRecordMatchesKind(record, filter) && (!query || medicalRecordSearchText(record).includes(query))).sort((a,b) => (recordOrder === 'newest' ? -1 : 1) * (Date.parse(a.occurredAt) - Date.parse(b.occurredAt)));
-  const savedDocuments = records.flatMap(record => record.documents);
+  const savedDocuments = [...new Map(records.flatMap(record => record.documents).map(document=>[document.id,document])).values()];
   const readDocuments = savedDocuments.filter(document => document.imported || ['review', 'confirmed'].includes(document.scanStatus ?? '')).length;
   const appointmentWorkspace = decodeAppointmentWorkspace(editingRecord?.notes ?? "");
+
+  function retryLoad(){clearPrivateGetCache('/api/pregnancy/records');setStatus('loading');void load();}
 
   function openForm(mode: "new" | "prepare" | "outcome", record: MedicalRecord | null = null) {
     if (saveLock.current) return;
@@ -318,14 +335,16 @@ export default function PregnancyMedicalRecords() {
         uploaded.push(attempt.result);
       }
       // All new documents, including prescription photos, use the dedicated document worker.
+      let queuedFailures=0;
       for (const document of uploaded) {
         try {
           const queued = await fetch(`/api/pregnancy/documents/${document.documentId}/scan`, {
             method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
           });
           if (!queued.ok) throw new Error('queue_failed');
-        } catch { setUploadNotice('Hồ sơ đã lưu. Mở “Đọc & đối chiếu” trên tài liệu để thử đọc lại.'); }
+        } catch { queuedFailures++; }
       }
+      setUploadNotice(`Đã lưu “${String(data.get('title')??'Hồ sơ')}”${uploaded.length?` và ${uploaded.length} giấy tờ`:''}.${queuedFailures?` ${queuedFailures} tài liệu chưa bắt đầu đọc; mở bản đọc để thử lại.`:''}`);
       form.reset(); setKind("appointment"); setMedicines([emptyMedicine()]);
       recordId.current = null; documentAttempts.current.clear();
       setEditingRecord(null); setFormMode("new"); setShowForm(false); await load();
@@ -349,24 +368,27 @@ export default function PregnancyMedicalRecords() {
   }
 
   return (
-    <section className="medical-records medical-workspace" id="ho-so-kham" aria-labelledby="medical-records-title">
+    <section className="medical-records medical-workspace medical-workspace--v2" id="ho-so-kham" aria-labelledby="medical-records-title">
       <div className="section-heading-row medical-records-heading">
         <h2 id="medical-records-title" className="sr-only">Sổ khám của Mẹ</h2>
-        <a className="medical-capture-action" href="#them-giay-to">+ Chụp / thêm giấy tờ</a>
+        <a className="medical-capture-action" href="#them-giay-to" onClick={()=>{setWorkspaceView('documents');setShowIntake(true);}}><Icon name="plus"/>Thêm giấy tờ</a>
         <button className="medical-add" type="button" disabled={status === "saving"} onClick={() => {
           if (showForm) { setShowForm(false); setEditingRecord(null); setFormMode("new"); }
           else openForm("new");
         }}>{showForm ? "Đóng" : "Tự nhập"}</button>
       </div>
       <nav className="medical-workspace-nav medical-workspace-switch" aria-label="Đi nhanh trong hồ sơ">
-        <a href="#ho-so-tong-quan" aria-current={workspaceView==='overview'?'page':undefined}>Tổng quan</a>
-        <a href="#them-giay-to" aria-current={workspaceView==='documents'?'page':undefined}>Giấy tờ</a>
-        <a href="#lich-kham-ke-tiep" aria-current={workspaceView==='visits'?'page':undefined}>Lịch khám</a>
+        <a href="#ho-so-tong-quan" aria-current={workspaceView==='overview'?'page':undefined} onClick={()=>setWorkspaceView('overview')}>Tổng quan</a>
+        <a href="#ho-so-da-luu" aria-current={workspaceView==='documents'?'page':undefined} onClick={()=>{setWorkspaceView('documents');setShowIntake(false);}}>Giấy tờ</a>
+        <a href="#lich-kham-ke-tiep" aria-current={workspaceView==='visits'?'page':undefined} onClick={()=>{setWorkspaceView('visits');document.getElementById('lich-kham-ke-tiep')?.setAttribute('open','');}}>Lịch khám</a>
       </nav>
       <div id="ho-so-tong-quan" hidden={workspaceView!=='overview'}>
-        {status !== 'loading' && records.length > 0 ? <PregnancyRecordSummary records={records} /> : <div className="medical-empty-short"><h3>{status==='loading'?'Đang tải hồ sơ…':status==='error'?'Chưa tải được hồ sơ':'Bắt đầu từ giấy tờ lần khám'}</h3><p>{status==='error'?'Thông tin chưa tải được, không phải hồ sơ trống.':'Chụp hoặc chọn giấy tờ để xem thông tin tổng hợp tại đây.'}</p><a className="btn btn-primary" href="#them-giay-to">Mở giấy tờ</a></div>}
+        {records.length > 0 ? <PregnancyRecordSummary records={records} /> : status==='loading'?<div className="medical-loading" role="status"><Icon name="refresh"/><span>Đang tải hồ sơ…</span></div>:<div className="medical-empty-short"><Icon name={status==='error'?'alert':'album'}/><h3>{status==='error'?'Chưa tải được hồ sơ':'Lưu lần khám đầu tiên'}</h3><p>{status==='error'?'Hồ sơ chưa tải được, không phải bị mất.':'Chụp giấy tờ hoặc chọn ảnh, PDF. Thông tin đã đọc sẽ xuất hiện ở đây.'}</p>{status==='error'?<button type="button" onClick={retryLoad}>Tải lại hồ sơ</button>:<a className="btn btn-primary" href="#them-giay-to" onClick={()=>{setWorkspaceView('documents');setShowIntake(true);}}>Thêm giấy tờ đầu tiên</a>}</div>}
       </div>
-      <div hidden={workspaceView!=='documents'}><MedicalDocumentIntake onSaved={() => void load()} /></div>
+      <div hidden={workspaceView!=='documents'}><details className="medical-intake-disclosure" id="them-giay-to" open={showIntake} onToggle={event=>setShowIntake(event.currentTarget.open)}>
+        <summary><Icon name="plus"/><span>Chụp hoặc chọn giấy tờ<small>Ảnh, PDF · tối đa 6 file mỗi lượt</small></span><Icon name="arrow"/></summary>
+        <MedicalDocumentIntake id="medical-upload" onSaved={() => void load()} />
+      </details></div>
       <details hidden={workspaceView!=='visits'} className="medical-next-visit" id="lich-kham-ke-tiep"><summary>Lịch khám tiếp theo <small>{insights.upcoming ? new Date(insights.upcoming.occurredAt).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}) : 'Chưa có lịch'}</small></summary>
       {insights.upcoming ? <article className="next-appointment next-appointment-compact" aria-label="Lịch khám tiếp theo">
         <div className="appointment-workspace">
@@ -394,8 +416,9 @@ export default function PregnancyMedicalRecords() {
       </article> : <div className="medical-empty-short"><strong>Chưa có lịch khám sắp tới</strong><p>Ghi ngày hẹn để chuẩn bị trước buổi khám.</p><button className="medical-add" type="button" disabled={status === "saving"} onClick={() => openForm("new")}>Thêm lịch khám</button></div>}
 
       </details>
+      <div hidden={workspaceView!=='visits'}><MedicalEncounterChain records={records}/></div>
       {showForm ? <form className="medical-form" id="medical-record-form" key={`${formMode}-${editingRecord?.id ?? "new"}`} onSubmit={(event) => void save(event)}>
-        <h3>{formMode === "prepare" ? "Chuẩn bị buổi khám" : formMode === "outcome" ? "Ghi kết quả sau khám" : editingRecord ? `Sửa ${kinds[editingRecord.kind]?.toLocaleLowerCase("vi") ?? "hồ sơ"}` : kind === "prescription" ? "Thêm đơn thuốc" : "Thêm hồ sơ khám"}</h3>
+        <div className="medical-form-heading"><h3>{formMode === "prepare" ? "Chuẩn bị buổi khám" : formMode === "outcome" ? "Ghi kết quả sau khám" : editingRecord ? `Sửa ${kinds[editingRecord.kind]?.toLocaleLowerCase("vi") ?? "hồ sơ"}` : kind === "prescription" ? "Thêm đơn thuốc" : "Thêm hồ sơ khám"}</h3><button type="button" aria-label="Đóng biểu mẫu hồ sơ" disabled={status==='saving'} onClick={()=>setShowForm(false)}><Icon name="close"/></button></div>
         <p className="medical-form-hint">Tiêu đề và ngày giờ là bắt buộc. Các mục khác có thể bổ sung sau.</p>
         {formMode === "new" ? <div className="medical-kind-picker" role="group" aria-label="Phân loại hồ sơ">
           {Object.entries(kinds).map(([value, label]) => <button key={value} type="button" aria-pressed={kind === value} onClick={() => setKind(value)}>{label}</button>)}
@@ -492,8 +515,7 @@ export default function PregnancyMedicalRecords() {
       </div>
       <MeasurementHistory records={records} />
       {records.length ? <>
-        {savedDocuments.length ? <p role="status">{savedDocuments.length} giấy tờ đã lưu · {readDocuments} bản đọc sẵn sàng.
-          {savedDocuments.length > readDocuments ? ` Còn ${savedDocuments.length - readDocuments} giấy tờ chưa đọc xong.` : ''}</p> : null}
+        {savedDocuments.length ? <p className="medical-library-status" role="status"><Icon name="album"/>{savedDocuments.length} giấy tờ<span>{readDocuments} đã đọc{savedDocuments.length>readDocuments?` · ${savedDocuments.length-readDocuments} chưa đọc xong`:''}</span></p> : null}
         {insights.questions.length ? <details className="medical-workspace-overview"><summary>Thông tin cần bổ sung <small>{insights.questions.length} mục</small></summary><ul>{insights.questions.map(question=><li key={question}>{question}</li>)}</ul></details> : null}
         <div className="medical-search"><label htmlFor="medical-record-search">Tìm hồ sơ</label>
           <input id="medical-record-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Thuốc, chỉ số, nơi khám, giấy tờ…" />
@@ -503,14 +525,14 @@ export default function PregnancyMedicalRecords() {
           <button type="button" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>Tất cả</button>
           {Object.entries(kinds).filter(([value])=>value===filter||records.some(record=>medicalRecordMatchesKind(record,value))).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label} <small>{records.filter(record=>medicalRecordMatchesKind(record,value)).length}</small></button>)}
         </div>
-        <div className="medical-saved-toolbar"><span>{visibleRecords.length}/{records.length} hồ sơ</span><label>Sắp xếp<select value={recordOrder} onChange={event=>setRecordOrder(event.target.value)}><option value="newest">Mới nhất trước</option><option value="oldest">Cũ nhất trước</option></select></label></div>
+        <div className="medical-saved-toolbar"><span>{visibleRecords.length}/{records.length} hồ sơ</span><label><span className="sr-only">Sắp xếp</span><select value={recordOrder} onChange={event=>setRecordOrder(event.target.value)}><option value="newest">Mới nhất trước</option><option value="oldest">Cũ nhất trước</option></select></label></div>
         <div className="medical-timeline">
           {!visibleRecords.length ? <div className="medical-empty-short"><p>Không có hồ sơ khớp với tìm kiếm hoặc bộ lọc. Giấy tờ đã lưu vẫn còn nguyên.</p><button type="button" onClick={() => { setFilter('all'); setSearch(''); }}>Xem tất cả hồ sơ</button></div> : null}
-          {visibleRecords.map((record) => <article key={record.id} id={`record-${record.id}`}>
+          {visibleRecords.map((record) => <article key={record.id} id={`record-${record.id}`} tabIndex={-1}>
             <i aria-hidden="true" />
             <div className="medical-record-head"><span>{kinds[record.kind] ?? "Hồ sơ"} · {record.documentIntake ? 'giấy tờ đã lưu' : record.status === "planned" ? "sắp tới" : "đã lưu"}</span>
-              <div><button type="button" onClick={() => openForm("new", record)}>Sửa</button><button type="button" onClick={() => void remove(record.id)}>Xóa</button></div></div>
-            <strong>{record.title}</strong><time>{record.documentIntake ? 'Tải lên · ' : ''}{record.documentDateOnly ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'long' }).format(new Date(record.occurredAt)) : displayDate(record.occurredAt)}</time>
+              <div><button type="button" disabled={status==='saving'} onClick={() => openForm("new", record)}>Sửa</button><button type="button" disabled={status==='saving'} onClick={() => void remove(record.id)}>Xóa</button></div></div>
+            <strong>{record.title}</strong><time dateTime={record.occurredAt}>{record.documentIntake ? 'Tải lên · ' : ''}{new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',...(!record.documentDateOnly?{hour:'2-digit',minute:'2-digit'}:{})}).format(new Date(record.occurredAt))}</time>
             {record.linkedRecordId && records.some(r => r.id === record.linkedRecordId) ? <p><a href={`#record-${record.linkedRecordId}`} onClick={() => setFilter('all')}>Cùng lần khám · {records.find(r => r.id === record.linkedRecordId)?.title}</a></p> : null}
             {records.some(r => r.linkedRecordId === record.id) ? <p>{records.filter(r => r.linkedRecordId === record.id).map(r => <a key={r.id} href={`#record-${r.id}`} onClick={() => setFilter('all')}>{r.title} · </a>)}</p> : null}
             {(record.provider || record.clinician) ? <p>{[record.provider, record.clinician].filter(Boolean).join(" · ")}</p> : null}
@@ -540,11 +562,11 @@ export default function PregnancyMedicalRecords() {
           </article>)}
         </div>
       </> : status === 'loading' ? <p role="status">Đang tải hồ sơ và giấy tờ đã lưu…</p>
-        : status === 'error' ? <div className="medical-empty-short" role="alert"><strong>Chưa tải được hồ sơ</strong><p>Không thể xác định hồ sơ trống khi mất kết nối. Đừng tải lại giấy tờ; hãy thử tải danh sách trước.</p><button type="button" onClick={() => { clearPrivateGetCache('/api/pregnancy/records'); setStatus('loading'); void load(); }}>Tải lại hồ sơ</button></div>
+        : status === 'error' ? <div className="medical-empty-short" role="alert"><strong>Chưa tải được hồ sơ</strong><p>Không cần tải lại giấy tờ. Hãy thử tải danh sách trước.</p><button type="button" onClick={retryLoad}>Tải lại hồ sơ</button></div>
         : <div className="medical-empty-short"><strong>Chưa có hồ sơ đã lưu</strong><p>Kết quả khám, đơn thuốc và tài liệu sẽ được xếp theo ngày tại đây.</p></div>}
       </div>
       {uploadNotice ? <p role="status">{uploadNotice}</p> : null}
-      <p className={`medical-status is-${status}`} aria-live="polite">{status === "error" ? "Chưa lưu hoặc tải hồ sơ được. Hãy kiểm tra mạng và thử lại." : "Hồ sơ y tế được giữ riêng, không xuất hiện trong album gia đình."}</p>
+      {status==='error'&&(records.length>0||showForm)?<p className="medical-status is-error" role="alert">Chưa lưu hoặc tải hồ sơ được. Hãy kiểm tra mạng và thử lại.</p>:null}
     </section>
   );
 }
