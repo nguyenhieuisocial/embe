@@ -1,6 +1,7 @@
 "use client";
 import { healthAutoExportLink } from '../lib/health-auto-export';
 import { iphoneHealthCoverage, latestIphoneReading } from '../lib/iphone-health-summary';
+import { watchIphoneConnection, type IphoneConnectionState } from '../lib/watch-iphone-connection';
 
 import Link from "next/link";
 import MedicationUseGuide, {MedicationPurpose} from './medication-use-guide';
@@ -158,6 +159,9 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
   const [planName, setPlanName] = useState("");
   const [selectedMedication, setSelectedMedication] = useState<MedicationCatalogItem | null>(null);
   const [syncSecret, setSyncSecret] = useState<{ token: string; ingestUrl: string } | null>(null);
+  const [connectionState,setConnectionState]=useState<IphoneConnectionState>('waiting');
+  const [connectionRetry,setConnectionRetry]=useState(0);
+  const [connectionFeedback,setConnectionFeedback]=useState('');
   const [copied, setCopied] = useState<"token" | "url" | null>(null);
   const [iphoneHistoryDays, setIphoneHistoryDays] = useState<IphoneHealthHistoryDays>(7);
   const [iphoneHistoryOpen, setIphoneHistoryOpen] = useState(false);
@@ -243,6 +247,17 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
     await refreshIphoneHealth(days);
   }
 
+  useEffect(()=>{
+    if(!syncSecret)return;
+    setConnectionState('waiting');
+    return watchIphoneConnection(syncSecret.token,setConnectionState,()=>{
+      setSyncSecret(null);
+      setConnectionFeedback('Đã nhận dữ liệu từ kết nối mới. Phần cài đặt đã được đóng.');
+      clearPrivateGetCache('/api/pregnancy/care?');
+      void refreshIphoneHealth(0);
+    });
+  },[syncSecret,connectionRetry]);
+
   async function mutate(body: Record<string, unknown>, successMessage = "Đã lưu thay đổi."): Promise<boolean> {
     if (!day) return false;
     setCareFeedback("");
@@ -324,6 +339,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
 
   async function createIphoneConnection() {
     if (deviceRole === "father") return;
+    setConnectionFeedback('');
     setStatus("saving");
     try {
       const response = await fetch("/api/pregnancy/iphone-health", {
@@ -332,10 +348,11 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       });
       if (!response.ok) throw new Error("connection unavailable");
       const value = await response.json() as { token: string; ingestUrl: string };
-      setSyncSecret(value);
+      if (!healthAutoExportLink(value.token,value.ingestUrl)) throw new Error('invalid connection');
       clearPrivateGetCache("/api/pregnancy/care?");
       await load(day);
-    } catch { setStatus("error"); }
+      setSyncSecret(value);
+    } catch { setStatus("error");setConnectionFeedback('Chưa tạo được kết nối. Kiểm tra mạng rồi thử lại; chưa có mã mới.'); }
   }
 
   async function revokeIphoneConnection(deviceId: string) {
@@ -501,17 +518,22 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
 
       {syncSecret ? <div className="sync-secret" role="status">
         <strong>Đã tạo mã · chưa đồng bộ</strong>
-        <p>Cài Health Auto Export trên iPhone trước, rồi mở cấu hình bên dưới. Chỉ mở khi bạn đồng ý cấp mã gửi dữ liệu riêng của EmBe cho ứng dụng này; không chia sẻ liên kết.</p>
-        <small>Gửi tối đa 19 chỉ số đã được cấp quyền, dạng tổng hợp theo ngày; chưa nhập ECG, thuốc, bệnh án hay toàn bộ kho Health. Ứng dụng có thể yêu cầu gói trả phí.</small>
+        <p>Cài Health Auto Export → mở cấu hình → cấp quyền Health và bật Enabled. Ứng dụng có thể yêu cầu gói trả phí.</p>
         <a className="care-add-button iphone-shortcut-link" href="https://www.healthyapps.dev/" target="_blank" rel="noreferrer">Xem ứng dụng Health Auto Export</a>
-        {healthAutoExportLink(syncSecret.token,syncSecret.ingestUrl) ? <a className="care-add-button iphone-shortcut-link" href={healthAutoExportLink(syncSecret.token,syncSecret.ingestUrl)} rel="noreferrer">Mở cấu hình tự điền</a> : null}
-        <p>Trong ứng dụng: cho phép các chỉ số muốn chia sẻ → kiểm tra cấu hình EmBe → bật Enabled → thử Manual Export. Lịch nền dự kiến mỗi giờ, phụ thuộc iOS và điện thoại được mở khóa.</p>
+        {connectionState!=='expired'&&healthAutoExportLink(syncSecret.token,syncSecret.ingestUrl) ? <a className="care-add-button iphone-shortcut-link" href={healthAutoExportLink(syncSecret.token,syncSecret.ingestUrl)} rel="noreferrer">Mở cấu hình tự điền</a> : null}
+        <small>Liên kết cấp mã gửi dữ liệu riêng cho ứng dụng; không chia sẻ với người khác.</small>
+        <p>{connectionState==='expired'?'Mã kết nối không còn hiệu lực. Tạo mã mới để tiếp tục.':connectionState==='network-error'?'Chưa liên lạc được với máy chủ. EmBe sẽ thử lại khi trang đang mở.':connectionState==='paused'?'Chưa nhận được dữ liệu. Trong Health Auto Export, thử Manual Export rồi kiểm tra lại.':'Đang chờ iPhone gửi dữ liệu. EmBe tự kiểm tra trong 2 phút khi trang đang mở.'}</p>
+        {connectionState==='expired'?<button type="button" className="care-add-button" onClick={()=>{setSyncSecret(null);setConnectionFeedback('Mã cũ đã hết hiệu lực. Bạn có thể tạo kết nối mới.');}}>Đóng mã hết hiệu lực</button>
+          :connectionState==='paused'||connectionState==='network-error'?<button type="button" className="care-add-button" onClick={()=>setConnectionRetry(value=>value+1)}>Kiểm tra kết nối lại</button>:null}
+        <details className="care-inline"><summary>Phạm vi dữ liệu &amp; lịch nền</summary><p>Tối đa 19 chỉ số tổng hợp theo ngày; chưa nhập ECG, thuốc, bệnh án hay toàn bộ kho Health. Lịch nền dự kiến mỗi giờ, phụ thuộc iOS và điện thoại được mở khóa. Tạo mã hoặc mở ứng dụng chưa có nghĩa đã đồng bộ.</p></details>
         <details className="care-inline"><summary>Dùng Phím tắt cũ (nhập tay)</summary>
         <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài mẫu Export Daily Health Data</a>
         <div className="iphone-setup-value"><small>1. Dán vào tác vụ URL gần cuối Phím tắt</small><code>{syncSecret.ingestUrl}</code><button type="button" aria-label="Chép địa chỉ nhận dữ liệu" onClick={() => void copySetupValue("url", syncSecret.ingestUrl)}>{copied === "url" ? "Đã chép" : "Chép"}</button></div>
         <div className="iphone-setup-value"><small>2. Dán vào giá trị của tiêu đề Authorization</small><code>Bearer {syncSecret.token}</code><button type="button" aria-label="Chép mã Authorization" onClick={() => void copySetupValue("token", `Bearer ${syncSecret.token}`)}>{copied === "token" ? "Đã chép" : "Chép"}</button></div>
         </details>
       </div> : null}
+
+      {connectionFeedback ? <p role="status" aria-live="polite">{connectionFeedback}</p> : null}
 
       <details className="care-inline iphone-shortcut-help">
         <summary>Nhập địa chỉ và mã ở đâu trong Phím tắt?</summary>

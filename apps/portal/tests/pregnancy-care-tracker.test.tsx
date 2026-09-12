@@ -24,8 +24,8 @@ describe("iPhone health connection state", () => {
   });
   it('offers a prefilled provider link but never claims the new device has synced',async()=>{
     const token=`embe_health_${'a'.repeat(43)}`;
-    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL)=>{
-      if(String(input)==='/api/pregnancy/iphone-health')return Response.json({token,ingestUrl:'https://embe.hieu.asia/api/pregnancy/iphone-health'});
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      if(String(input)==='/api/pregnancy/iphone-health')return Response.json(init?.method==='POST'?{token,ingestUrl:'https://embe.hieu.asia/api/pregnancy/iphone-health'}:{connected:true,lastSyncedAt:null});
       if(String(input).startsWith('/api/pregnancy/care'))return Response.json({snapshot:{profile:null,plans:[],iphone_health:null,iphone_devices:[]}});
       return Response.json({history:[]});
     }));
@@ -36,6 +36,26 @@ describe("iPhone health connection state", () => {
     expect(screen.getByText('Đã tạo mã · chưa đồng bộ')).toBeInTheDocument();
     expect(screen.getByText('Dùng Phím tắt cũ (nhập tay)').closest('details')).not.toHaveAttribute('open');
     expect(screen.queryByText('Kết nối đã sẵn sàng')).toBeNull();
+  });
+  it('closes setup only after this connection receives data and refreshes the summary',async()=>{
+    const token=`embe_health_${'b'.repeat(43)}`;
+    let received=false;
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      if(String(input)==='/api/pregnancy/iphone-health'){
+        if(init?.method==='POST')return Response.json({token,ingestUrl:'https://embe.hieu.asia/api/pregnancy/iphone-health'});
+        expect(new Headers(init?.headers).get('authorization')).toBe(`Bearer ${token}`);
+        received=true;
+        return Response.json({connected:true,lastSyncedAt:'2026-09-12T10:00:00Z'});
+      }
+      if(String(input).startsWith('/api/pregnancy/care'))return Response.json({snapshot:{profile:null,plans:[],iphone_devices:[],iphone_health:received?{day:'2026-09-12',steps:6789,updated_at:'2026-09-12T10:00:00Z'}:null}});
+      return Response.json({history:[]});
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    render(<PregnancyCareTracker pregnancyWeek={8}/>);
+    fireEvent.click(await screen.findByRole('button',{name:'Kết nối iPhone'}));
+    await screen.findByText('Đã nhận dữ liệu từ kết nối mới. Phần cài đặt đã được đóng.');
+    expect(screen.queryByRole('link',{name:'Mở cấu hình tự điền'})).toBeNull();
+    await screen.findByText('6.789');
   });
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.unstubAllGlobals());
