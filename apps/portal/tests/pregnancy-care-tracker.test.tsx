@@ -4,6 +4,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PregnancyCareTracker from "../src/components/pregnancy-care-tracker";
 
 describe("iPhone health connection state", () => {
+  it('shows a freshly synced count instead of the previously opened history',async()=>{
+    let updated=false;
+    const old={day:'2026-09-12',steps:1234,updated_at:'2026-09-12T08:00:00Z'};
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL)=>{
+      if(String(input).startsWith('/api/pregnancy/care'))return Response.json({snapshot:{profile:null,plans:[],iphone_devices:[],
+        iphone_health:updated?{...old,steps:6789,updated_at:'2026-09-12T10:00:00Z'}:old,
+        iphone_health_history:String(input).includes('days=7')?[old]:[]}});
+      return Response.json({history:[]});
+    }));
+    render(<PregnancyCareTracker pregnancyWeek={8}/>);
+    await screen.findByText('1.234');
+    fireEvent.click(screen.getByText('Xem đầy đủ và lịch sử'));
+    await screen.findByText('1.234 bước');
+    updated=true;fireEvent.click(screen.getByRole('button',{name:'Làm mới'}));
+    await screen.findByText('6.789');
+    expect(screen.queryByText('1.234')).toBeNull();
+    expect(screen.getByText('Đã nhận 1/19 chỉ số')).toBeInTheDocument();
+  });
   it('offers a prefilled provider link but never claims the new device has synced',async()=>{
     const token=`embe_health_${'a'.repeat(43)}`;
     vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL)=>{

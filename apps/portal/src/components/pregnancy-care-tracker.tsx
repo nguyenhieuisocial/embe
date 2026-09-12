@@ -1,5 +1,6 @@
 "use client";
 import { healthAutoExportLink } from '../lib/health-auto-export';
+import { iphoneHealthCoverage, latestIphoneReading } from '../lib/iphone-health-summary';
 
 import Link from "next/link";
 import MedicationUseGuide, {MedicationPurpose} from './medication-use-guide';
@@ -163,6 +164,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
   const [iphoneRefreshStatus, setIphoneRefreshStatus] = useState<"idle" | "checking" | "updated" | "error">("idle");
   const [deviceRole, setDeviceRole] = useState<DeviceRole | null>(null);
   const lastIphoneRefreshRef = useRef(0);
+  const iphoneRequestRef = useRef(0);
 
   async function load(currentDay: string, background = false, canApply = () => true) {
     try {
@@ -196,29 +198,34 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
 
   async function refreshIphoneHealth(historyDays: 0 | IphoneHealthHistoryDays = 0, silent = false) {
     if (!day) return;
+    const requestId = ++iphoneRequestRef.current;
+    lastIphoneRefreshRef.current = Date.now();
     if (!silent) setIphoneRefreshStatus("checking");
     try {
       const response = await fetch(`/api/pregnancy/care?day=${day}&days=${historyDays}`, { cache: "no-store" });
       if (!response.ok) throw new Error("health unavailable");
       const payload = await response.json() as { snapshot?: Snapshot };
       if (!payload.snapshot) throw new Error("malformed snapshot");
+      if (requestId !== iphoneRequestRef.current) return;
       const nextSnapshot = payload.snapshot;
       setSnapshot((current) => ({
         ...nextSnapshot,
         iphone_health_history: historyDays
           ? nextSnapshot.iphone_health_history ?? []
-          : current.iphone_health_history
+          : (current.iphone_health_history ?? []).map(item => item.day === nextSnapshot.iphone_health?.day
+            ? latestIphoneReading(nextSnapshot.iphone_health,[item])! : item)
       }));
       lastIphoneRefreshRef.current = Date.now();
       setIphoneRefreshStatus("updated");
     } catch {
-      if (!silent) setIphoneRefreshStatus("error");
+      if (requestId === iphoneRequestRef.current) setIphoneRefreshStatus("error");
     }
   }
 
   useEffect(() => {
     if (!day || !snapshot.iphone_devices.some((device) => device.active)) return;
     const refreshOnReturn = () => {
+      if (document.visibilityState !== 'visible') { lastIphoneRefreshRef.current = 0; return; }
       if (document.visibilityState !== "visible" || Date.now() - lastIphoneRefreshRef.current < 15_000) return;
       void refreshIphoneHealth(0, true);
     };
@@ -385,7 +392,8 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
     .sort()
     .at(-1) ?? null;
   const iphoneHistory = snapshot.iphone_health_history ?? [];
-  const latestIphoneHealth = iphoneHistory.at(-1) ?? snapshot.iphone_health;
+  const latestIphoneHealth = latestIphoneReading(snapshot.iphone_health, iphoneHistory);
+  const iphoneCoverage = latestIphoneHealth ? iphoneHealthCoverage(latestIphoneHealth) : null;
   const iphoneConnectionLabel = latestIphoneHealth?.day === day
     ? "Đã nhận dữ liệu hôm nay"
     : latestIphoneHealth?.day
@@ -403,7 +411,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       <header className="iphone-health-hub-heading">
         <div>
           <h2 id="iphone-health-title">Sức khỏe từ iPhone</h2>
-          <p className={latestIphoneHealth ? "is-connected" : ""}><span aria-hidden="true" />{iphoneConnectionLabel}</p>
+          <p className={latestIphoneHealth && iphoneRefreshStatus !== 'error' ? "is-connected" : ""}><span aria-hidden="true" />{iphoneConnectionLabel}</p>
         </div>
         <button type="button" disabled={iphoneRefreshStatus === "checking"} onClick={() => void refreshIphoneHealth(0)}>
           {iphoneRefreshStatus === "checking" ? "Đang kiểm tra…" : "Làm mới"}
@@ -411,6 +419,10 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       </header>
 
       {latestIphoneHealth ? <>
+        {iphoneCoverage ? <details className="care-inline iphone-health-coverage">
+          <summary>Đã nhận {iphoneCoverage.received}/{iphoneCoverage.total} chỉ số{iphoneRefreshStatus === 'error' ? ' · Chưa cập nhật' : ''}</summary>
+          {iphoneCoverage.missing.length ? <><p>Chưa nhận: {iphoneCoverage.missing.join(', ')}.</p><p>Có thể chưa ghi trong Health, chưa cấp quyền hoặc chưa gửi sang EmBe. Không có dữ liệu không có nghĩa chỉ số bằng 0.</p></> : <p>Đủ 19 chỉ số được EmBe hỗ trợ trong ngày này; không phải toàn bộ kho Health.</p>}
+        </details> : null}
         <div className="iphone-health-glance" aria-label="Chỉ số gần nhất từ iPhone">
           <span><small>Ngủ</small><strong>{typeof latestIphoneHealth.sleep_minutes === "number" ? `${(latestIphoneHealth.sleep_minutes / 60).toFixed(1)}h` : "—"}</strong></span>
           <span><small>Bước chân</small><strong>{latestIphoneHealth.steps?.toLocaleString("vi-VN") ?? "—"}</strong></span>
