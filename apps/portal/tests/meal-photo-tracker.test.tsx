@@ -528,9 +528,16 @@ describe("mobile meal journal", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Đã ăn/ }));
     fireEvent.click(await screen.findByText("Cơm và rau"));
     fireEvent.error(screen.getByRole("img", { name: "Ảnh bữa trưa" }));
-
+    expect(screen.getByRole('img',{name:'Ảnh bữa trưa'})).toHaveAttribute('src',expect.stringContaining('retry=1'));
+    expect(screen.queryByText('Chưa mở được ảnh.')).toBeNull();
+    fireEvent.error(screen.getByRole('img',{name:'Ảnh bữa trưa'}));
     expect(screen.getByText("Chưa mở được ảnh.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Thử lại ảnh" })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button',{name:'Thử lại ảnh'}));
+    expect(screen.getByRole('img',{name:'Ảnh bữa trưa'})).toHaveAttribute('src',expect.stringContaining('retry=2'));
+    fireEvent.error(screen.getByRole('img',{name:'Ảnh bữa trưa'}));
+    fireEvent(window,new Event('online'));
+    expect(screen.getByRole('img',{name:'Ảnh bữa trưa'})).toHaveAttribute('src',expect.stringContaining('retry=3'));
   });
 
   it("shows a pregnancy safety warning immediately when the corrected name needs it", async () => {

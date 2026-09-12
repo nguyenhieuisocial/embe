@@ -5,10 +5,11 @@ const rpc = vi.fn();
 const createSignedUploadUrl = vi.fn();
 const info = vi.fn();
 const download = vi.fn();
+const createSignedUrl = vi.fn();
 const revalidateFamilyViews = vi.hoisted(() => vi.fn());
 
 vi.mock("@supabase/supabase-js", () => ({
-  createClient: () => ({ rpc, storage: { from: () => ({ createSignedUploadUrl, info, download }) } })
+  createClient: () => ({ rpc, storage: { from: () => ({ createSignedUploadUrl, createSignedUrl, info, download }) } })
 }));
 vi.mock("../src/lib/family-view-revalidation", () => ({ revalidateFamilyViews }));
 
@@ -40,7 +41,7 @@ describe("private review-first meal analysis API", () => {
     process.env.EMBE_PORTAL_SESSION_SECRET = "server-secret";
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_SECRET_KEY = "server-only-key";
-    rpc.mockReset(); createSignedUploadUrl.mockReset(); info.mockReset(); download.mockReset();
+    rpc.mockReset(); createSignedUploadUrl.mockReset(); createSignedUrl.mockReset(); info.mockReset(); download.mockReset();
     revalidateFamilyViews.mockClear();
   });
   afterEach(() => { process.env = { ...originalEnvironment }; });
@@ -82,12 +83,29 @@ describe("private review-first meal analysis API", () => {
       id: entryId, status: "confirmed", storage_path: storagePath,
       mime_type: "image/jpeg", original_filename: "bua-trua.jpg"
     }, error: null });
-    download.mockResolvedValueOnce({ data: new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: "image/jpeg" }), error: null });
+    createSignedUrl.mockResolvedValueOnce({ data: {signedUrl:`https://project.supabase.co/storage/v1/object/sign/embe-meal-inbox/${storagePath}?token=temporary`}, error: null });
 
     const response = await getMealImage(request(`https://embe.hieu.asia/api/meals/${entryId}/image`, undefined, "GET"), context);
-    expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toBe("image/jpeg");
-    expect(response.headers.get("cache-control")).toContain("private");
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toContain('https://project.supabase.co/storage/v1/object/sign/embe-meal-inbox/');
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(createSignedUrl).toHaveBeenCalledWith(storagePath,300);
+    expect(download).not.toHaveBeenCalled();
+  });
+
+  it('does not expose deleted photos or mask infrastructure failures as missing photos',async()=>{
+    const context={params:Promise.resolve({id:entryId})};
+    const req=()=>request(`https://embe.hieu.asia/api/meals/${entryId}/image`,undefined,'GET');
+    rpc.mockResolvedValueOnce({data:null,error:{message:'offline'}});
+    expect((await getMealImage(req(),context)).status).toBe(503);
+    rpc.mockResolvedValueOnce({data:{status:'deleted',storage_path:storagePath,mime_type:'image/jpeg'},error:null});
+    expect((await getMealImage(req(),context)).status).toBe(404);
+    expect(createSignedUrl).not.toHaveBeenCalled();
+    rpc.mockResolvedValue({data:{status:'confirmed',storage_path:storagePath,mime_type:'image/jpeg'},error:null});
+    createSignedUrl.mockResolvedValueOnce({data:null,error:{message:'temporary error'}});
+    expect((await getMealImage(req(),context)).status).toBe(503);
+    createSignedUrl.mockResolvedValueOnce({data:{signedUrl:'https://evil.example/photo.jpg'},error:null});
+    expect((await getMealImage(req(),context)).status).toBe(503);
   });
 
   it("queues a written meal note for recognition without requiring a photo", async () => {

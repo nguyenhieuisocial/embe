@@ -11,7 +11,7 @@ const contentSecurityPolicy = [
   "frame-src 'self' blob:",
   `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com`,
   "connect-src 'self' https://tpqqzowhndbkmkckpbgv.supabase.co https://www.google-analytics.com https://*.google-analytics.com",
-  "img-src 'self' data: blob: https://www.google-analytics.com",
+  "img-src 'self' data: blob: https://tpqqzowhndbkmkckpbgv.supabase.co https://www.google-analytics.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   ...(isDevelopment ? [] : ["upgrade-insecure-requests"])

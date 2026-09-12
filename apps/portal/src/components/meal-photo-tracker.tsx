@@ -145,13 +145,22 @@ type Worker = { status: "online" | "degraded" | "offline" | "unknown"; lastSeenA
 function MealHistoryPhoto({ entryId, label }: { entryId: string; label: string }) {
   const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!failed) return;
+    const retryOnline = () => { setFailed(false); setAttempt(value => value + 1); };
+    window.addEventListener('online', retryOnline);
+    return () => window.removeEventListener('online', retryOnline);
+  }, [failed]);
   if (failed) return <div className="meal-photo-error" role="status">
     <span>Chưa mở được ảnh.</span>
     <button type="button" onClick={() => { setFailed(false); setAttempt((value) => value + 1); }}>Thử lại ảnh</button>
   </div>;
   return <img className="meal-history-photo" key={attempt}
     src={`/api/meals/${entryId}/image${attempt ? `?retry=${attempt}` : ""}`}
-    alt={label} loading="lazy" decoding="async" onError={() => setFailed(true)} />;
+    alt={label} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => {
+      if (attempt === 0 && navigator.onLine) setAttempt(1);
+      else setFailed(true);
+    }} />;
 }
 
 export default function MealPhotoTracker() {
