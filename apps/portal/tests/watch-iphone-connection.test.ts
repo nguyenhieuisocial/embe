@@ -8,6 +8,7 @@ describe('exact-device connection receipts',()=>{
   beforeEach(()=>{
     vi.useFakeTimers();vi.setSystemTime(0);state.mockReset();received.mockReset();
     vi.spyOn(document,'visibilityState','get').mockReturnValue('visible');
+    vi.spyOn(navigator,'onLine','get').mockReturnValue(true);
   });
   afterEach(()=>{stop?.();vi.restoreAllMocks();vi.unstubAllGlobals();vi.useRealTimers();});
   it('waits without claiming success, probes only the exact token, and stops after receipt',async()=>{
@@ -51,5 +52,58 @@ describe('exact-device connection receipts',()=>{
     vi.stubGlobal('fetch',fetchMock);stop=watchIphoneConnection(token,state,received);
     await vi.advanceTimersByTimeAsync(0);expect(state).toHaveBeenLastCalledWith('network-error');
     await vi.advanceTimersByTimeAsync(15_000);expect(received).not.toHaveBeenCalled();
+    expect(state).toHaveBeenLastCalledWith('network-error');
+  });
+  it('resumes after a long app switch, without polling in the background',async()=>{
+    const visible=vi.spyOn(document,'visibilityState','get');
+    const fetchMock=vi.fn().mockImplementation(async()=>Response.json({connected:true,lastSyncedAt:null}));
+    vi.stubGlobal('fetch',fetchMock);stop=watchIphoneConnection(token,state,received);
+    await vi.advanceTimersByTimeAsync(0);
+    visible.mockReturnValue('hidden');document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(300_000);expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockImplementation(async()=>Response.json({connected:true,lastSyncedAt:'2026-09-12T10:00:00Z'}));
+    visible.mockReturnValue('visible');document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchMock).toHaveBeenCalledTimes(2);expect(received).toHaveBeenCalledTimes(1);
+  });
+  it('resumes a paused check on return, not from idle timers',async()=>{
+    const fetchMock=vi.fn().mockImplementation(async()=>Response.json({connected:true,lastSyncedAt:null}));
+    vi.stubGlobal('fetch',fetchMock);stop=watchIphoneConnection(token,state,received);
+    await vi.advanceTimersByTimeAsync(120_000);expect(state).toHaveBeenLastCalledWith('paused');
+    const count=fetchMock.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(120_000);expect(fetchMock).toHaveBeenCalledTimes(count);
+    window.dispatchEvent(new Event('focus'));window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchMock).toHaveBeenCalledTimes(count+1);expect(state).toHaveBeenLastCalledWith('waiting');
+  });
+  it('waits offline and automatically checks after connectivity returns',async()=>{
+    const online=vi.spyOn(navigator,'onLine','get').mockReturnValue(false);
+    const fetchMock=vi.fn().mockResolvedValue(Response.json({connected:true,lastSyncedAt:'2026-09-12T10:00:00Z'}));
+    vi.stubGlobal('fetch',fetchMock);stop=watchIphoneConnection(token,state,received);
+    await vi.advanceTimersByTimeAsync(300_000);expect(fetchMock).not.toHaveBeenCalled();expect(state).toHaveBeenLastCalledWith('offline');
+    online.mockReturnValue(true);window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(0);expect(received).toHaveBeenCalledTimes(1);
+  });
+  it('ignores an old response after suspending and restarting',async()=>{
+    const visible=vi.spyOn(document,'visibilityState','get');
+    let resolveOld!:(response:Response)=>void;
+    const fetchMock=vi.fn().mockImplementationOnce(()=>new Promise<Response>(resolve=>{resolveOld=resolve;}))
+      .mockResolvedValue(Response.json({connected:true,lastSyncedAt:null}));
+    vi.stubGlobal('fetch',fetchMock);stop=watchIphoneConnection(token,state,received);
+    visible.mockReturnValue('hidden');document.dispatchEvent(new Event('visibilitychange'));
+    visible.mockReturnValue('visible');document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+    resolveOld(Response.json({connected:true,lastSyncedAt:'2026-09-12T10:00:00Z'}));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(received).not.toHaveBeenCalled();expect(state).toHaveBeenLastCalledWith('waiting');
+  });
+  it('aborts a hung request after ten seconds and permits a retry',async()=>{
+    const fetchMock=vi.fn().mockImplementation((_url:string,init:RequestInit)=>new Promise((_,reject)=>{
+      init.signal?.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError')),{once:true});
+    }));
+    vi.stubGlobal('fetch',fetchMock);stop=watchIphoneConnection(token,state,received);
+    await vi.advanceTimersByTimeAsync(10_000);expect(state).toHaveBeenLastCalledWith('network-error');
+    await vi.advanceTimersByTimeAsync(5_000);expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(received).not.toHaveBeenCalled();
   });
 });
