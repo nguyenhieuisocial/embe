@@ -66,7 +66,8 @@ describe("private inventory endpoint", () => {
       })
     }));
 
-    expect(response.status).toBe(202);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "saved" });
     expect(fetch).toHaveBeenCalledWith(
       "https://project.supabase.co/rest/v1/rpc/embe_submit_inventory_action",
       expect.objectContaining({

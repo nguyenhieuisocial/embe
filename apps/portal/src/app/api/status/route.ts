@@ -1,5 +1,4 @@
 import { authorizeMutation, photoStore, privateReply } from "../../../lib/photo-upload-server";
-import { getTimelineFreshness } from "../../../lib/timeline";
 
 type ServiceState = "ready" | "limited" | "paused" | "setup";
 
@@ -35,7 +34,10 @@ export async function GET(request: Request): Promise<Response> {
     store.rpc("embe_push_family_status", {}),
     store.rpc("embe_get_worker_heartbeat", { p_worker_name: "meal-analysis" }),
     store.rpc("embe_get_worker_heartbeat", { p_worker_name: "assistant" }),
-    getTimelineFreshness()
+    // Cloud journals do not wait for the legacy Memos worker. Probe the private
+    // timeline without retrieving family text or treating an empty list as down.
+    store.from("embe_timeline_event").select("id", { head: true }).limit(1)
+      .abortSignal(AbortSignal.timeout(5000))
   ]);
   const familyData = !family.error && family.data && typeof family.data === "object" && !Array.isArray(family.data)
     ? family.data as Record<string, unknown>
@@ -47,7 +49,7 @@ export async function GET(request: Request): Promise<Response> {
   return privateReply({
     services: {
       data: familyData ? "ready" : "limited",
-      journal: journal === "fresh" ? "ready" : journal === "stale" ? "limited" : "paused",
+      journal: journal.error ? "paused" : "ready",
       food: food.error ? "paused" : heartbeatState(food.data),
       assistant: assistant.error ? "paused" : heartbeatState(assistant.data),
       notifications: mother + father + generic > 0 ? "ready" : "setup",

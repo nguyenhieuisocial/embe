@@ -3,11 +3,13 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from inventory_worker import GrocyInventory, InventoryAction, build_snapshot, process_actions, read_dpapi_clixml
+from inventory_worker import run, SupabaseInventory
 
 
 class FakeQueue:
@@ -39,6 +41,22 @@ class FakeGrocy:
 
 
 class InventoryWorkerTests(unittest.TestCase):
+    def test_cloud_mode_never_connects_to_grocy_or_claims_commands(self):
+        with patch('inventory_worker._read_env', return_value={
+            'SUPABASE_URL': 'https://project.supabase.co', 'SUPABASE_SECRET_KEY': 'fixture'
+        }), patch('inventory_worker.SupabaseInventory') as queue, patch('inventory_worker.GrocyInventory') as grocy:
+            queue.return_value.status.return_value = {'mode': 'cloud', 'pending': 0}
+            result = run(Path('fixture.env'))
+            self.assertEqual(result['mode'], 'cloud')
+            grocy.assert_not_called()
+            queue.return_value.claim.assert_not_called()
+            queue.return_value.sync.assert_not_called()
+
+    def test_queue_status_retains_backend_mode(self):
+        with patch.object(SupabaseInventory, '_rpc', return_value={'mode':'cloud','pending':0}):
+            queue = SupabaseInventory('https://project.supabase.co', 'fixture')
+            self.assertEqual(queue.status()['mode'], 'cloud')
+
     def test_reads_dpapi_clixml_without_starting_powershell(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "credential.clixml"

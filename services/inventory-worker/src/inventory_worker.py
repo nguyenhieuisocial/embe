@@ -128,9 +128,10 @@ class SupabaseInventory:
             "retired": int((result or {}).get("retired", 0)),
         }
 
-    def status(self) -> dict[str, int]:
+    def status(self) -> dict[str, Any]:
         result = self._rpc("embe_inventory_queue_status", {}) or {}
-        return {key: int(result.get(key, 0)) for key in ("pending", "processing", "dead_letters")}
+        return {**{key: int(result.get(key, 0)) for key in ("pending", "processing", "dead_letters")},
+                "mode": result.get("mode", "grocy")}
 
 
 class GrocyInventory:
@@ -333,6 +334,9 @@ def read_dpapi_clixml(path: Path, *, decryptor: Callable[[bytes], bytes] | None 
 def run(env_path: Path, api_key: str | None = None) -> dict[str, Any]:
     env = _read_env(env_path)
     queue = SupabaseInventory(env["SUPABASE_URL"], env["SUPABASE_SECRET_KEY"])
+    status = queue.status()
+    if status.get("mode") == "cloud":
+        return {"status": "ok", "mode": "cloud", "queue": status}
     grocy = GrocyInventory("http://127.0.0.1:9283", api_key or os.environ.get("GROCY_API_KEY", ""))
     actions = process_actions(queue, grocy)
     snapshot = grocy.snapshot()

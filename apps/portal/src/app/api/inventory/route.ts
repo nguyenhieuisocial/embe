@@ -153,7 +153,7 @@ export async function POST(request: Request): Promise<Response> {
     });
     if (!response.ok) return reply({ error: "temporarily_unavailable" }, 503);
     revalidateFamilyViews();
-    return reply({ status: "accepted" }, 202);
+    return reply({ status: "saved" }, 200);
   } catch {
     return reply({ error: "temporarily_unavailable" }, 503);
   }

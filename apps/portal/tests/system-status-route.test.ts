@@ -2,13 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createSessionCookie } from "../src/lib/portal-auth";
 
-const { rpc, getTimelineFreshness } = vi.hoisted(() => ({
+const { rpc, from, select, limit, abortSignal } = vi.hoisted(() => ({
   rpc: vi.fn(),
-  getTimelineFreshness: vi.fn()
+  from: vi.fn(), select: vi.fn(), limit: vi.fn(), abortSignal: vi.fn()
 }));
 
-vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc }) }));
-vi.mock("../src/lib/timeline", () => ({ getTimelineFreshness }));
+vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc, from }) }));
 
 import { GET } from "../src/app/api/status/route";
 
@@ -28,7 +27,10 @@ describe("private family system status", () => {
     process.env.SUPABASE_SECRET_KEY = "server-key";
     process.env.EMBE_PHOTO_SERVER_URL = "https://embe.tail.example";
     rpc.mockReset();
-    getTimelineFreshness.mockReset();
+    from.mockReset().mockReturnValue({ select });
+    select.mockReset().mockReturnValue({ limit });
+    limit.mockReset().mockReturnValue({ abortSignal });
+    abortSignal.mockReset().mockResolvedValue({ data: null, error: null });
   });
 
   afterEach(() => { process.env = { ...originalEnvironment }; });
@@ -41,7 +43,6 @@ describe("private family system status", () => {
       };
       return { data: null, error: { message: "unexpected" } };
     });
-    getTimelineFreshness.mockResolvedValue("fresh");
 
     const response = await GET(request());
     const payload = await response.json();
@@ -53,6 +54,8 @@ describe("private family system status", () => {
       notifications: "ready", photos: "ready"
     });
     expect(payload.notificationRoles).toEqual({ mother: true, father: true });
+    expect(from).toHaveBeenCalledWith("embe_timeline_event");
+    expect(select).toHaveBeenCalledWith("id", { head: true });
     expect(JSON.stringify(payload)).not.toContain("private-path");
     expect(JSON.stringify(payload)).not.toContain("tail.example");
   });
@@ -66,16 +69,17 @@ describe("private family system status", () => {
       }
       return { data: { state: "online", last_seen_at: "2026-01-01T00:00:00Z" }, error: null };
     });
-    getTimelineFreshness.mockResolvedValue("stale");
+    abortSignal.mockResolvedValue({ data: null, error: { message: "unavailable" } });
 
     const response = await GET(request());
     await expect(response.json()).resolves.toMatchObject({
-      services: { data: "ready", journal: "limited", food: "limited", assistant: "paused", notifications: "setup", photos: "setup" }
+      services: { data: "ready", journal: "paused", food: "limited", assistant: "paused", notifications: "setup", photos: "setup" }
     });
   });
 
   it("rejects unauthenticated reads", async () => {
     expect((await GET(request(false))).status).toBe(401);
     expect(rpc).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
   });
 });
