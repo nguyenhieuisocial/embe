@@ -1,6 +1,6 @@
 "use client";
 import { healthAutoExportLink } from '../lib/health-auto-export';
-import { iphoneHealthCoverage, latestIphoneReading, iphoneMetricSyncLabel, iphoneBloodPressureLabel } from '../lib/iphone-health-summary';
+import { iphoneHealthCoverage, latestIphoneReading, iphoneMetricSyncLabel, iphoneBloodPressureLabel, previousIphoneBodyMeasurement } from '../lib/iphone-health-summary';
 import { watchIphoneConnection, type IphoneConnectionState } from '../lib/watch-iphone-connection';
 
 import Link from "next/link";
@@ -409,6 +409,11 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
   const iphoneHistory = snapshot.iphone_health_history ?? [];
   const latestIphoneHealth = latestIphoneReading(snapshot.iphone_health, iphoneHistory);
   const iphoneCoverage = latestIphoneHealth ? iphoneHealthCoverage(latestIphoneHealth) : null;
+  const previousBodyMeasurements=latestIphoneHealth ? ([['weight_kg','Cân nặng','kg'],['height_cm','Chiều cao','cm']] as const).flatMap(([field,label,unit])=>{
+    if (typeof latestIphoneHealth[field]==='number'&&Number.isFinite(latestIphoneHealth[field])) return [];
+    const reading=previousIphoneBodyMeasurement(iphoneHistory,field,latestIphoneHealth.day??day);
+    return reading?[{...reading,label,unit}]:[];
+  }):[];
   const iphoneConnectionLabel = latestIphoneHealth?.day === day
     ? "Đã nhận dữ liệu hôm nay"
     : latestIphoneHealth?.day
@@ -484,12 +489,17 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
                   <button type="button" aria-pressed={iphoneHistoryDays === 30} onClick={() => void showIphoneHistory(30)}>30 ngày</button>
                 </span>
               </div>
+              {previousBodyMeasurements.length ? <div className="iphone-history-reference" role="group" aria-label="Số gần nhất trong lịch sử đã tải">
+                <strong>Số gần nhất trong lịch sử đã tải</strong>
+                {previousBodyMeasurements.map(reading=><p key={reading.label}>{reading.label}: <strong>{reading.value.toLocaleString('vi-VN')} {reading.unit}</strong> · {new Date(`${reading.day}T00:00:00+07:00`).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric'})}</p>)}
+                <small>Tham khảo ngày trước, không tính vào dữ liệu ngày đang xem.</small>
+              </div>:null}
               {iphoneRefreshStatus === "checking" && !iphoneHistory.length ? <p>Đang lấy lịch sử…</p> : null}
               <div>{iphoneHistory.slice(-iphoneHistoryDays).reverse().map((item) => <article key={item.day}>
                 <time>{item.day ? new Date(`${item.day}T00:00:00+07:00`).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }) : "—"}</time>
                 <span>{item.steps?.toLocaleString("vi-VN") ?? "—"} bước</span>
                 <span>{typeof item.sleep_minutes === "number" ? `${(item.sleep_minutes / 60).toFixed(1)}h ngủ` : "—"}</span>
-                <span>{typeof item.weight_kg === "number" ? `${item.weight_kg} kg` : "—"}</span>
+                <span>{typeof item.weight_kg === "number" ? `${item.weight_kg} kg` : "—"}{typeof item.height_cm==='number' ? <small className="iphone-history-height">{item.height_cm} cm</small>:null}</span>
               </article>)}</div>
             </div>
           </> : null}

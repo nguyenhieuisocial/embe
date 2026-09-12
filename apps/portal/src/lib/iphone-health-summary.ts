@@ -27,6 +27,25 @@ export function iphoneHealthCoverage(health: Partial<Record<typeof IPHONE_HEALTH
   return {received:IPHONE_HEALTH_FIELDS.length-missing.length, total:IPHONE_HEALTH_FIELDS.length, missing};
 }
 
+type BodyHistoryRow = {day?:string; updated_at:string; weight_kg?:number|null; height_cm?:number|null};
+
+// Reference only: never carry these values into another day's totals/coverage.
+export function previousIphoneBodyMeasurement(rows:BodyHistoryRow[],field:'weight_kg'|'height_cm',beforeDay:string) {
+  const byDay=new Map<string,BodyHistoryRow>();
+  for (const row of rows) {
+    if (!row.day || !/^\d{4}-\d{2}-\d{2}$/.test(row.day) || row.day>=beforeDay) continue;
+    const date=new Date(`${row.day}T00:00:00Z`);
+    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0,10)!==row.day) continue;
+    const previous=byDay.get(row.day);
+    if (!previous || (Date.parse(row.updated_at)||0)>(Date.parse(previous.updated_at)||0)) byDay.set(row.day,row);
+  }
+  for (const [day,row] of [...byDay].sort(([a],[b])=>b.localeCompare(a))) {
+    const value=row[field];
+    if (typeof value==='number'&&Number.isFinite(value)&&value>0) return {day,value};
+  }
+  return null;
+}
+
 // History may have been fetched before a fresh current-day snapshot. Never let
 // its array position win over the measurement day / latest server update.
 export function latestIphoneReading<T extends {day?:string; updated_at:string}>(current:T|null, history:T[]):T|null {

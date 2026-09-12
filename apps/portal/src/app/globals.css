@@ -527,6 +527,9 @@
 .iphone-device-list small { color: #8a757d; font-size: .62rem; }
 .iphone-device-list button { min-height: 44px; padding: .35rem .65rem; border: 1px solid #ead8de; border-radius: 999px; background: #fff; color: #8e3e5b; font: inherit; font-size: .68rem; font-weight: 700; }
 .iphone-health-history time { color: #a14f6b; font-weight: 700; }
+.iphone-history-reference { padding: .6rem; border-radius: 12px; background: #fbf6f8; font-size: .78rem; overflow-wrap: anywhere; }
+.iphone-history-reference p { margin: 0; }
+.iphone-history-height { display: block; font-size: inherit; }
 .sync-secret { display: grid; gap: .35rem; margin-top: .7rem; padding: .75rem; border-radius: 14px; background: #f6f1ff; }
 .iphone-connection-warning { padding: .65rem .75rem; border-radius: 12px; background: #fff4e8; color: #7c5739 !important; }
 .iphone-setup-steps { display: grid; gap: .55rem; margin: .35rem 0; padding: 0; list-style: none; }

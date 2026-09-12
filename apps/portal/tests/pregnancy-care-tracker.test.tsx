@@ -4,6 +4,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PregnancyCareTracker from "../src/components/pregnancy-care-tracker";
 
 describe("iPhone health connection state", () => {
+  it('shows old body measurements as dated references, never as current-day values',async()=>{
+    const current={day:'2026-09-12',steps:4321,weight_kg:null,height_cm:null,updated_at:'2026-09-12T08:00:00Z'};
+    const old={day:'2026-09-10',weight_kg:54,height_cm:160,updated_at:'2026-09-10T08:00:00Z'};
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL)=>String(input).startsWith('/api/pregnancy/care')
+      ?Response.json({snapshot:{profile:null,plans:[],iphone_devices:[],iphone_health:current,iphone_health_history:String(input).includes('days=7')?[old,current]:[]}})
+      :Response.json({history:[]})));
+    const {container}=render(<PregnancyCareTracker pregnancyWeek={8}/>);
+    await screen.findByText('4.321');
+    expect(screen.queryByRole('group',{name:'Số gần nhất trong lịch sử đã tải'})).toBeNull();
+    fireEvent.click(screen.getByText('Xem đầy đủ và lịch sử'));
+    const reference=await screen.findByRole('group',{name:'Số gần nhất trong lịch sử đã tải'});
+    expect(reference).toHaveTextContent('54 kg');expect(reference).toHaveTextContent('160 cm');expect(reference).toHaveTextContent('10/09/2026');
+    expect(container.querySelector('.iphone-health-glance')).not.toHaveTextContent('54 kg');
+    expect(container.querySelector('.iphone-health-glance')).not.toHaveTextContent('160 cm');
+    expect(screen.getByText('Đã nhận 1/19 chỉ số')).toBeInTheDocument();
+    expect(container.querySelector('.iphone-health-history article')).toHaveTextContent('—');
+    expect(container.querySelector('.iphone-history-height')).toHaveTextContent('160 cm');
+  });
   it('shows individual receipt times and partial blood pressure without treating old readings as current',async()=>{
     const health={day:'2026-09-01',steps:4321,height_cm:160,systolic:112,diastolic:null,
       metric_synced_at:{steps:'2026-09-01T08:00:00Z',heightCm:'2026-08-31T02:00:00Z',systolic:'2026-09-01T09:00:00Z'},updated_at:'2026-09-02T10:00:00Z'};
