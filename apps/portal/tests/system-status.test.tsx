@@ -8,7 +8,7 @@ describe("family system status", () => {
 
   it("shows a compact, understandable status and can check again", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
-      services: { data: "ready", journal: "limited", food: "ready", assistant: "paused", notifications: "setup", photos: "ready", backup: "ready" },
+      services: { data: "ready", journal: "limited", food: "ready", assistant: "paused", notifications: "setup", photos: "ready", backup: "ready", fileArchive: "ready" },
       notificationRoles: { mother: true, father: false }
     }), { status: 200 }));
 
@@ -17,7 +17,8 @@ describe("family system status", () => {
     expect(await screen.findByText("Dữ liệu gia đình")).toBeInTheDocument();
     expect(screen.getByText("Nhật ký đang cập nhật chậm")).toBeInTheDocument();
     expect(screen.getByText("Trợ lý đang nghỉ")).toBeInTheDocument();
-    expect(screen.getByText("Đã sao lưu · chưa gồm tệp ảnh")).toBeInTheDocument();
+    expect(screen.getByText("Đã sao lưu dữ liệu")).toBeInTheDocument();
+    expect(screen.getByText("Đã mã hóa · không gồm kho Immich")).toBeInTheDocument();
     expect(screen.getByText("Thông báo cần thiết lập")).toBeInTheDocument();
     expect(screen.getByText("Mẹ Ngân đã bật · Ba Hiếu chưa bật")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Thiết lập điện thoại còn lại" })).toHaveAttribute("href", "/cai-dat#thiet-lap-dien-thoai");

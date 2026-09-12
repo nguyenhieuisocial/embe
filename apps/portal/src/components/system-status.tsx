@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type ServiceState = "ready" | "limited" | "paused" | "setup";
 type StatusPayload = {
-  services: Record<"data" | "journal" | "food" | "assistant" | "notifications" | "photos" | "backup", ServiceState>;
+  services: Record<"data" | "journal" | "food" | "assistant" | "notifications" | "photos" | "backup" | "fileArchive", ServiceState>;
   notificationRoles: { mother: boolean; father: boolean };
 };
 
@@ -16,7 +16,8 @@ const serviceNames: Array<[keyof StatusPayload["services"], string]> = [
   ["assistant", "Trợ lý"],
   ["notifications", "Thông báo"],
   ["photos", "Thư viện ảnh"],
-  ["backup", "Sao lưu dữ liệu online"]
+  ["backup", "Sao lưu dữ liệu online"],
+  ["fileArchive", "Sao lưu tệp đã tải lên"]
 ];
 
 function validPayload(value: unknown): value is StatusPayload {
@@ -31,7 +32,9 @@ function validPayload(value: unknown): value is StatusPayload {
 }
 
 function stateText(key: keyof StatusPayload["services"], state: ServiceState): string {
-  if (key === "backup") return state === "ready" ? "Đã sao lưu · chưa gồm tệp ảnh" : "Cần kiểm tra sao lưu";
+  if (key === "backup") return state === "ready" ? "Đã sao lưu dữ liệu" : "Cần kiểm tra sao lưu";
+  if (key === "fileArchive") return state === "ready" ? "Đã mã hóa · không gồm kho Immich"
+    : state === "limited" ? "Còn tệp chưa sao lưu" : "Cần kiểm tra sao lưu tệp";
   if (state === "ready") return "Sẵn sàng";
   if (state === "setup") return key === "notifications" ? "Thông báo cần thiết lập" : "Cần thiết lập";
   if (state === "limited") return key === "journal" ? "Nhật ký đang cập nhật chậm" : "Đang chậm";

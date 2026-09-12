@@ -31,11 +31,17 @@
 - Backup SQL độc lập: GitHub → tài khoản DB chỉ đọc → thử khôi phục → mã hóa →
   R2 riêng tư. Bản cloud ngày 12/09 đã được tải về, giải mã và khôi phục,
   đối chiếu số dòng 67/67 bảng. Tối đa 35 slot luân phiên, 16 MiB/bản.
-  “Nhà mình” hiển thị trạng thái backup dữ liệu, nêu rõ chưa bao gồm tệp ảnh.
+  “Nhà mình” hiển thị riêng trạng thái backup dữ liệu và backup tệp.
+- Tệp người dùng tải lên: thêm lịch Supabase Cron → Edge → R2 mã hóa, riêng với
+  backup SQL. Gồm ảnh bữa ăn, hồ sơ, photo inbox và tệp Studio; phiên bản không
+  đổi không sao chép lặp. Giới hạn 1 GiB lưu trữ, không tự xóa nguồn/lịch sử.
+  Đã giải mã/đối chiếu nguồn 111/111 tệp (39.670.113 byte), cron tự chạy HTTP 200.
+  Chi tiết phạm vi, giới hạn và phục hồi: `cloud-file-archive.md`.
 
 ## Ranh giới chưa được giải quyết
 
-Backup SQL không bao gồm byte của Supabase Storage, schema do nền tảng quản lý
+Backup SQL không bao gồm byte của Supabase Storage; đã có pipeline riêng cho
+bốn bucket người dùng tải lên. Cả hai chưa bao gồm schema do nền tảng quản lý
 (`auth`, `storage`, `vault`) hoặc 365 GB ảnh/video gốc Immich. Backup cơ sở dữ
 liệu đã chạy từ GitHub; backup ứng dụng local/restic-critical vẫn chạy ở máy nhà.
 
@@ -50,7 +56,7 @@ liệu đã chạy từ GitHub; backup ứng dụng local/restic-critical vẫn 
 | Studio | Kịch bản, hàng đợi, tệp đã dựng trên cloud | TTS/model/render local; chưa tự đăng social hoàn chỉnh |
 | Thông báo | Supabase Cron → Vercel mỗi 2 phút | Chưa thử nhận trên iPhone thật; không phải hệ thống báo động y tế |
 | PDF tháng | Pipeline có sẵn | Export Memos + Typst local; cần nguồn cloud và runner riêng |
-| Backup | DB mỗi ngày từ GitHub, mã hóa trước khi lên R2; quyền chỉ đọc | Byte tệp chưa có lịch cloud riêng; restic-critical của ứng dụng local vẫn cần máy nhà |
+| Backup | DB hằng ngày từ GitHub; tệp upload qua Supabase Cron, đều mã hóa trước khi lên R2 | Previews/Immich gốc chưa có backup cloud này; restic-critical của ứng dụng local vẫn cần máy nhà |
 | Apple Health/cảm biến | API nhận dữ liệu online | iPhone/thiết bị nhà vẫn phải thu thập và cấp quyền |
 
 ## Quy tắc chuyển tiếp
@@ -94,4 +100,5 @@ di chuyển dữ liệu cloud trước, không chỉ áp lại hàm SQL cũ.
 - [Cloudflare R2](https://developers.cloudflare.com/r2/pricing/)
 
 Các trang này cần đối chiếu lại khi chọn gói. Chưa coi AI/OCR cloud, render cloud,
-backup byte tệp độc lập hoặc thay thế toàn bộ Immich là đã triển khai.
+thay thế toàn bộ Immich là đã triển khai. Pipeline byte tệp chỉ bao gồm bốn
+bucket đã liệt kê, không phải toàn bộ thư viện ảnh gia đình.

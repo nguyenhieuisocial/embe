@@ -39,6 +39,7 @@ describe("private family system status", () => {
     rpc.mockImplementation(async (name: string) => {
       if (name === "embe_push_family_status") return { data: { mother: 1, father: 1, family: 0 }, error: null };
       if (name === "embe_cloud_reminder_status") return { data: { http_status: 200, last_success_at: new Date().toISOString() }, error: null };
+      if (name === "embe_file_archive_status") return { data: { total: 2, saved: 2, pending: 0, scanned_at: new Date().toISOString() }, error: null };
       if (name === "embe_get_worker_heartbeat") return {
         data: { state: "online", detail: "private-path", last_seen_at: new Date().toISOString() }, error: null
       };
@@ -52,7 +53,7 @@ describe("private family system status", () => {
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(payload.services).toEqual({
       data: "ready", journal: "ready", food: "ready", assistant: "ready",
-      notifications: "ready", photos: "ready", backup: "ready"
+      notifications: "ready", photos: "ready", backup: "ready", fileArchive: "ready"
     });
     expect(payload.notificationRoles).toEqual({ mother: true, father: true });
     expect(from).toHaveBeenCalledWith("embe_timeline_event");
@@ -90,6 +91,17 @@ describe("private family system status", () => {
     rpc.mockResolvedValue({ data: { state: "online", last_seen_at: new Date(Date.now() - Number(hours) * 3600_000).toISOString() }, error: null });
     const response = await GET(request());
     expect((await response.json()).services.backup).toBe(expected);
+  });
+
+  it.each([
+    [{ total: 2, saved: 1, pending: 1 }, "limited"],
+    [{ total: 2, saved: 2, pending: 0 }, "ready"],
+    [{ total: 2, saved: 0, pending: 0 }, "paused"],
+    [{ total: 2, saved: 2, pending: 0, scanned_at: "2020-01-01" }, "paused"],
+    [{ total: 2, saved: 2, pending: 0, scanned_at: "2099-01-01" }, "paused"]
+  ])("does not call partial or stale file archives complete: %j", async (data, expected) => {
+    rpc.mockResolvedValue({ data: { scanned_at: new Date().toISOString(), ...data }, error: null });
+    expect((await (await GET(request())).json()).services.fileArchive).toBe(expected);
   });
 
   it.each([

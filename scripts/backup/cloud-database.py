@@ -112,6 +112,12 @@ def restore_check(dump, counts):
         local = ['docker','exec','-i',name]
         psql(local, """DROP SCHEMA public; CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
           CREATE ROLE embe_cloud_backup; CREATE SCHEMA auth; CREATE SCHEMA extensions;
+          -- Platform metadata is not backed up here. These empty dependencies
+          -- allow app views to restore without activating Supabase Storage.
+          CREATE SCHEMA storage;
+          CREATE TABLE storage.buckets(id text PRIMARY KEY,public boolean);
+          CREATE TABLE storage.objects(id uuid PRIMARY KEY,bucket_id text,name text,metadata jsonb,user_metadata jsonb,
+            created_at timestamptz,updated_at timestamptz,version text,archived_at timestamptz,is_delete_marker boolean);
           CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT NULL::uuid';
           CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql AS 'SELECT ''{}''::jsonb';
           CREATE FUNCTION auth.role() RETURNS text LANGUAGE sql AS 'SELECT NULL::text';""")

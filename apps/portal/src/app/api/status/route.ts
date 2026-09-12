@@ -29,6 +29,16 @@ function reminderSchedulerReady(value: unknown, now = Date.now()): boolean {
     && lastSuccess <= now + 60_000 && now - lastSuccess <= 6 * 60_000;
 }
 
+function archiveState(value: unknown, now = Date.now()): ServiceState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "paused";
+  const archive = value as Record<string, unknown>;
+  const scanned = typeof archive.scanned_at === "string" ? Date.parse(archive.scanned_at) : NaN;
+  if (!Number.isFinite(scanned) || scanned > now + 60_000 || now - scanned > 30 * 60_000) return "paused";
+  if (typeof archive.total !== "number" || typeof archive.saved !== "number" || typeof archive.pending !== "number"
+    || archive.total < 0 || archive.saved < 0 || archive.pending < 0 || archive.saved + archive.pending !== archive.total) return "paused";
+  return archive.pending === 0 ? "ready" : "limited";
+}
+
 export async function GET(request: Request): Promise<Response> {
   const authorization = authorizeMutation(new Request(request.url, {
     method: "POST",
@@ -38,7 +48,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
-  const [family, food, assistant, journal, reminders, backup] = await Promise.all([
+  const [family, food, assistant, journal, reminders, backup, fileArchive] = await Promise.all([
     store.rpc("embe_push_family_status", {}),
     store.rpc("embe_get_worker_heartbeat", { p_worker_name: "meal-analysis" }),
     store.rpc("embe_get_worker_heartbeat", { p_worker_name: "assistant" }),
@@ -47,7 +57,8 @@ export async function GET(request: Request): Promise<Response> {
     store.from("embe_timeline_event").select("id", { head: true }).limit(1)
       .abortSignal(AbortSignal.timeout(5000)),
     store.rpc("embe_cloud_reminder_status", {}),
-    store.rpc("embe_get_worker_heartbeat", { p_worker_name: "cloud-db-backup" })
+    store.rpc("embe_get_worker_heartbeat", { p_worker_name: "cloud-db-backup" }),
+    store.rpc("embe_file_archive_status", {})
   ]);
   const familyData = !family.error && family.data && typeof family.data === "object" && !Array.isArray(family.data)
     ? family.data as Record<string, unknown>
@@ -66,7 +77,8 @@ export async function GET(request: Request): Promise<Response> {
         ? !reminders.error && reminderSchedulerReady(reminders.data) ? "ready" : "limited"
         : "setup",
       photos: photosState(),
-      backup: backup.error ? "paused" : heartbeatState(backup.data, Date.now(), 36 * 60 * 60_000)
+      backup: backup.error ? "paused" : heartbeatState(backup.data, Date.now(), 36 * 60 * 60_000),
+      fileArchive: fileArchive.error ? "paused" : archiveState(fileArchive.data)
     },
     notificationRoles: { mother: mother > 0, father: father > 0 },
     checkedAt: new Date().toISOString()
