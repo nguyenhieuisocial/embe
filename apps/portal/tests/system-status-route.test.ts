@@ -38,6 +38,7 @@ describe("private family system status", () => {
   it("summarizes private services without exposing locators or worker details", async () => {
     rpc.mockImplementation(async (name: string) => {
       if (name === "embe_push_family_status") return { data: { mother: 1, father: 1, family: 0 }, error: null };
+      if (name === "embe_cloud_reminder_status") return { data: { http_status: 200, last_success_at: new Date().toISOString() }, error: null };
       if (name === "embe_get_worker_heartbeat") return {
         data: { state: "online", detail: "private-path", last_seen_at: new Date().toISOString() }, error: null
       };
@@ -81,5 +82,18 @@ describe("private family system status", () => {
     expect((await GET(request(false))).status).toBe(401);
     expect(rpc).not.toHaveBeenCalled();
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { http_status: 503, last_success_at: new Date().toISOString() },
+    { http_status: 200, last_success_at: "2026-01-01T00:00:00Z" },
+    { http_status: 200, last_success_at: "2099-01-01T00:00:00Z" },
+    null
+  ])("does not equate registered phones with working scheduled delivery: %j", async data => {
+    rpc.mockImplementation(async (name: string) => name === "embe_push_family_status"
+      ? { data: { mother: 1 }, error: null }
+      : { data, error: null });
+    const response = await GET(request());
+    expect((await response.json()).services.notifications).toBe("limited");
   });
 });

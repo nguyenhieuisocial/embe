@@ -35,7 +35,7 @@ describe("private family push routes", () => {
     process.env.EMBE_PUSH_CRON_SECRET = "cron-secret";
     rpc.mockReset(); sendNotification.mockReset(); setVapidDetails.mockReset();
   });
-  afterEach(() => { process.env = { ...originalEnvironment }; });
+  afterEach(() => { process.env = { ...originalEnvironment }; vi.useRealTimers(); });
 
   it("keeps configuration private and registers only an authenticated family phone", async () => {
     expect((await configRoute.GET(request("https://embe.hieu.asia/api/notifications/config", "GET", undefined, false))).status).toBe(401);
@@ -71,6 +71,38 @@ describe("private family push routes", () => {
     expect(sendNotification.mock.calls[0][1]).not.toContain(notification.p256dh);
     expect(sendNotification.mock.calls[0][1]).not.toContain(notification.endpoint);
     expect(rpc).toHaveBeenLastCalledWith("embe_complete_push_delivery", expect.objectContaining({ p_sent: true }));
+  });
+
+  it("accepts the separate cloud credential only after server verification", async () => {
+    rpc.mockResolvedValueOnce({ data: true, error: null }).mockResolvedValueOnce({ data: [], error: null });
+    const response = await dispatchRoute.POST(new Request("https://embe.hieu.asia/api/notifications/dispatch", {
+      method: "POST", headers: { authorization: `Bearer ${"a".repeat(64)}` }
+    }));
+    expect(response.status).toBe(200);
+    expect(rpc.mock.calls[0][0]).toBe("embe_verify_cloud_reminder");
+    expect(rpc.mock.calls[0][1].p_token_hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(rpc.mock.calls[0][1].p_token_hash).not.toBe("a".repeat(64));
+    expect(rpc.mock.calls[1][0]).toBe("embe_claim_due_push_notifications");
+  });
+
+  it.each([{ data: false, error: null }, { data: true, error: { message: "offline" } }])(
+    "never claims reminders for a rejected cloud credential: %j", async verification => {
+      rpc.mockResolvedValueOnce(verification);
+      const response = await dispatchRoute.POST(new Request("https://embe.hieu.asia/api/notifications/dispatch", {
+        method: "POST", headers: { authorization: `Bearer ${"b".repeat(64)}` }
+      }));
+      expect(response.status).toBe(401);
+      expect(rpc).toHaveBeenCalledTimes(1);
+      expect(sendNotification).not.toHaveBeenCalled();
+    }
+  );
+
+  it("rejects malformed or multibyte authorization without throwing", async () => {
+    const response = await dispatchRoute.POST(new Request("https://embe.hieu.asia/api/notifications/dispatch", {
+      method: "POST", headers: { authorization: "Bearer ééééééééééé" }
+    }));
+    expect(response.status).toBe(401);
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("updates the reminder time for only the current phone", async () => {
@@ -129,6 +161,8 @@ describe("private family push routes", () => {
   });
 
   it("returns recent activity from the other phone even when push is unavailable", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-02T16:00:00Z"));
     rpc.mockResolvedValueOnce({ data: [{
       event_id: "33333333-3333-4333-8333-333333333333",
       activity_kind: "medical", title: "Mẹ Ngân đã cập nhật lịch khám", body: "Khám định kỳ · 08:30 09/09/2026 · BV Mẫu",

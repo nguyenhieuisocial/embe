@@ -21,6 +21,14 @@ function photosState(): ServiceState {
   }
 }
 
+function reminderSchedulerReady(value: unknown, now = Date.now()): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const status = value as Record<string, unknown>;
+  const lastSuccess = typeof status.last_success_at === "string" ? Date.parse(status.last_success_at) : NaN;
+  return status.http_status === 200 && Number.isFinite(lastSuccess)
+    && lastSuccess <= now + 60_000 && now - lastSuccess <= 6 * 60_000;
+}
+
 export async function GET(request: Request): Promise<Response> {
   const authorization = authorizeMutation(new Request(request.url, {
     method: "POST",
@@ -30,14 +38,15 @@ export async function GET(request: Request): Promise<Response> {
 
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
-  const [family, food, assistant, journal] = await Promise.all([
+  const [family, food, assistant, journal, reminders] = await Promise.all([
     store.rpc("embe_push_family_status", {}),
     store.rpc("embe_get_worker_heartbeat", { p_worker_name: "meal-analysis" }),
     store.rpc("embe_get_worker_heartbeat", { p_worker_name: "assistant" }),
     // Cloud journals do not wait for the legacy Memos worker. Probe the private
     // timeline without retrieving family text or treating an empty list as down.
     store.from("embe_timeline_event").select("id", { head: true }).limit(1)
-      .abortSignal(AbortSignal.timeout(5000))
+      .abortSignal(AbortSignal.timeout(5000)),
+    store.rpc("embe_cloud_reminder_status", {})
   ]);
   const familyData = !family.error && family.data && typeof family.data === "object" && !Array.isArray(family.data)
     ? family.data as Record<string, unknown>
@@ -52,7 +61,9 @@ export async function GET(request: Request): Promise<Response> {
       journal: journal.error ? "paused" : "ready",
       food: food.error ? "paused" : heartbeatState(food.data),
       assistant: assistant.error ? "paused" : heartbeatState(assistant.data),
-      notifications: mother + father + generic > 0 ? "ready" : "setup",
+      notifications: mother + father + generic > 0
+        ? !reminders.error && reminderSchedulerReady(reminders.data) ? "ready" : "limited"
+        : "setup",
       photos: photosState()
     },
     notificationRoles: { mother: mother > 0, father: father > 0 },
