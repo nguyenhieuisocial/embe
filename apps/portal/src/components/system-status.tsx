@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 type ServiceState = "ready" | "limited" | "paused" | "setup";
 type StatusPayload = {
-  services: Record<"data" | "journal" | "food" | "assistant" | "notifications" | "photos", ServiceState>;
+  services: Record<"data" | "journal" | "food" | "assistant" | "notifications" | "photos" | "backup", ServiceState>;
   notificationRoles: { mother: boolean; father: boolean };
 };
 
@@ -15,7 +15,8 @@ const serviceNames: Array<[keyof StatusPayload["services"], string]> = [
   ["food", "Nhận diện món ăn"],
   ["assistant", "Trợ lý"],
   ["notifications", "Thông báo"],
-  ["photos", "Thư viện ảnh"]
+  ["photos", "Thư viện ảnh"],
+  ["backup", "Sao lưu dữ liệu online"]
 ];
 
 function validPayload(value: unknown): value is StatusPayload {
@@ -30,6 +31,7 @@ function validPayload(value: unknown): value is StatusPayload {
 }
 
 function stateText(key: keyof StatusPayload["services"], state: ServiceState): string {
+  if (key === "backup") return state === "ready" ? "Đã sao lưu · chưa gồm tệp ảnh" : "Cần kiểm tra sao lưu";
   if (state === "ready") return "Sẵn sàng";
   if (state === "setup") return key === "notifications" ? "Thông báo cần thiết lập" : "Cần thiết lập";
   if (state === "limited") return key === "journal" ? "Nhật ký đang cập nhật chậm" : "Đang chậm";
@@ -62,7 +64,7 @@ export default function SystemStatus() {
         {state === "loading" ? "Đang xem…" : "Kiểm tra lại"}
       </button>
     </div>
-    {state === "error" && !status ? <p className="system-status-error" role="status">Chưa kiểm tra được lúc này</p> : null}
+    {state === "error" ? <p className="system-status-error" role="status">{status ? "Chưa kiểm tra lại được · dưới đây là trạng thái lần trước" : "Chưa kiểm tra được lúc này"}</p> : null}
     {status ? <>
       <ul className="system-status-list">
         {serviceNames.map(([key, name]) => <li data-state={status.services[key]} key={key}>

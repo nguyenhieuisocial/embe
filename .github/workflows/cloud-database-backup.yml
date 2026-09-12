@@ -1,0 +1,28 @@
+name: Encrypted cloud database backup
+
+on:
+  schedule:
+    - cron: '41 20 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: embe-cloud-database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: github.repository == 'nguyenhieuisocial/embe' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Read-only dump, restore check, encrypt and store off-site
+        env:
+          PGPASSWORD: ${{ secrets.EMBE_CLOUD_BACKUP_DB_PASSWORD }}
+          EMBE_CLOUD_BACKUP_TOKEN: ${{ secrets.EMBE_CLOUD_BACKUP_TOKEN }}
+        run: python3 scripts/backup/cloud-database.py

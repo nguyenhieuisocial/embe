@@ -23,6 +23,11 @@
 - Trạng thái Nhật ký kiểm tra khả năng đọc timeline riêng tư trên cloud,
   không dùng lần chạy Memos gần nhất để kết luận nhật ký đang chậm/ngừng.
   Đây là kiểm tra kết nối đọc, không phải bằng chứng một lần ghi mới thành công.
+- Lịch nhắc đã chuyển sang Supabase Cron, gọi web mỗi 2 phút bằng khóa riêng
+  trong Vault. Đã nhận HTTP 200 từ các lần chạy tự động; bỏ bước dispatch cũ
+  trên GitHub để không gọi chồng. Không cần máy Windows chạy để đánh thức hàng đợi.
+  Trạng thái web kiểm tra lần gọi thành công trong 6 phút gần nhất, không coi
+  điều này là bằng chứng iPhone đã nhận thông báo.
 
 ## Ranh giới chưa được giải quyết
 
@@ -39,7 +44,7 @@ khởi chạy từ máy nhà; lưu đích R2 không biến nó thành một tác
 | Kho đồ dùng | Tạo/đổi số lượng/xem/nhắc sắp hết trực tiếp Supabase | Grocy và dự toán mua sắm local là nguồn riêng; không tự đặt mua |
 | Chăm sóc bé | Dữ liệu web Supabase | Cầu nối BabyBuddy/Memos và analytics local |
 | Studio | Kịch bản, hàng đợi, tệp đã dựng trên cloud | TTS/model/render local; chưa tự đăng social hoàn chỉnh |
-| Thông báo | GitHub Actions → Vercel | Lịch Actions không bảo đảm nhắc chính xác từng phút; chưa thử iPhone thật |
+| Thông báo | Supabase Cron → Vercel mỗi 2 phút | Chưa thử nhận trên iPhone thật; không phải hệ thống báo động y tế |
 | PDF tháng | Pipeline có sẵn | Export Memos + Typst local; cần nguồn cloud và runner riêng |
 | Backup | R2 riêng tư, mã hóa restic | Cần tác vụ cloud riêng, credential giới hạn quyền và sao lưu byte tệp |
 | Apple Health/cảm biến | API nhận dữ liệu online | iPhone/thiết bị nhà vẫn phải thu thập và cấp quyền |

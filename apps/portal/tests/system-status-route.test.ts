@@ -52,7 +52,7 @@ describe("private family system status", () => {
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(payload.services).toEqual({
       data: "ready", journal: "ready", food: "ready", assistant: "ready",
-      notifications: "ready", photos: "ready"
+      notifications: "ready", photos: "ready", backup: "ready"
     });
     expect(payload.notificationRoles).toEqual({ mother: true, father: true });
     expect(from).toHaveBeenCalledWith("embe_timeline_event");
@@ -82,6 +82,14 @@ describe("private family system status", () => {
     expect((await GET(request(false))).status).toBe(401);
     expect(rpc).not.toHaveBeenCalled();
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [2, "ready"], [35, "ready"], [37, "paused"], [-1, "paused"]
+  ])("uses daily backup freshness rather than a five-minute worker interval: %s", async (hours, expected) => {
+    rpc.mockResolvedValue({ data: { state: "online", last_seen_at: new Date(Date.now() - Number(hours) * 3600_000).toISOString() }, error: null });
+    const response = await GET(request());
+    expect((await response.json()).services.backup).toBe(expected);
   });
 
   it.each([

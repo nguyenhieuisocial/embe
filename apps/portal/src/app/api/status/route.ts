@@ -2,12 +2,12 @@ import { authorizeMutation, photoStore, privateReply } from "../../../lib/photo-
 
 type ServiceState = "ready" | "limited" | "paused" | "setup";
 
-function heartbeatState(value: unknown, now = Date.now()): ServiceState {
+function heartbeatState(value: unknown, now = Date.now(), maxAge = 5 * 60_000): ServiceState {
   if (!value || typeof value !== "object" || Array.isArray(value)) return "paused";
   const heartbeat = value as Record<string, unknown>;
   if (typeof heartbeat.last_seen_at !== "string") return "paused";
   const lastSeenAt = new Date(heartbeat.last_seen_at).getTime();
-  if (!Number.isFinite(lastSeenAt) || lastSeenAt > now + 60_000 || now - lastSeenAt > 5 * 60_000) return "paused";
+  if (!Number.isFinite(lastSeenAt) || lastSeenAt > now + 60_000 || now - lastSeenAt > maxAge) return "paused";
   if (heartbeat.state === "degraded") return "limited";
   return heartbeat.state === "online" ? "ready" : "paused";
 }
@@ -38,7 +38,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const store = photoStore();
   if (!store) return privateReply({ error: "temporarily_unavailable" }, 503);
-  const [family, food, assistant, journal, reminders] = await Promise.all([
+  const [family, food, assistant, journal, reminders, backup] = await Promise.all([
     store.rpc("embe_push_family_status", {}),
     store.rpc("embe_get_worker_heartbeat", { p_worker_name: "meal-analysis" }),
     store.rpc("embe_get_worker_heartbeat", { p_worker_name: "assistant" }),
@@ -46,7 +46,8 @@ export async function GET(request: Request): Promise<Response> {
     // timeline without retrieving family text or treating an empty list as down.
     store.from("embe_timeline_event").select("id", { head: true }).limit(1)
       .abortSignal(AbortSignal.timeout(5000)),
-    store.rpc("embe_cloud_reminder_status", {})
+    store.rpc("embe_cloud_reminder_status", {}),
+    store.rpc("embe_get_worker_heartbeat", { p_worker_name: "cloud-db-backup" })
   ]);
   const familyData = !family.error && family.data && typeof family.data === "object" && !Array.isArray(family.data)
     ? family.data as Record<string, unknown>
@@ -64,7 +65,8 @@ export async function GET(request: Request): Promise<Response> {
       notifications: mother + father + generic > 0
         ? !reminders.error && reminderSchedulerReady(reminders.data) ? "ready" : "limited"
         : "setup",
-      photos: photosState()
+      photos: photosState(),
+      backup: backup.error ? "paused" : heartbeatState(backup.data, Date.now(), 36 * 60 * 60_000)
     },
     notificationRoles: { mother: mother > 0, father: father > 0 },
     checkedAt: new Date().toISOString()
