@@ -1,6 +1,6 @@
 "use client";
 import { healthAutoExportLink } from '../lib/health-auto-export';
-import { iphoneHealthCoverage, latestIphoneReading } from '../lib/iphone-health-summary';
+import { iphoneHealthCoverage, latestIphoneReading, iphoneMetricSyncLabel, iphoneBloodPressureLabel } from '../lib/iphone-health-summary';
 import { watchIphoneConnection, type IphoneConnectionState } from '../lib/watch-iphone-connection';
 
 import Link from "next/link";
@@ -139,9 +139,7 @@ function dailyMealTotals(entries: MealEntry[], day: string): Record<string, numb
 }
 
 function metricSyncLabel(health: IphoneHealth, key: string): string {
-  const value = health.metric_synced_at?.[key];
-  return value ? `Đồng bộ ${new Date(value).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}`
-    : "Chưa đồng bộ riêng";
+  return iphoneMetricSyncLabel(health.metric_synced_at,key);
 }
 
 export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { pregnancyWeek: number | null; activePanel?: "iphone" | "medication" }) {
@@ -428,7 +426,7 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       <header className="iphone-health-hub-heading">
         <div>
           <h2 id="iphone-health-title">Sức khỏe từ iPhone</h2>
-          <p className={latestIphoneHealth && iphoneRefreshStatus !== 'error' ? "is-connected" : ""}><span aria-hidden="true" />{iphoneConnectionLabel}</p>
+          <p className={latestIphoneHealth?.day === day && iphoneRefreshStatus !== 'error' ? "is-connected" : ""}><span aria-hidden="true" />{iphoneConnectionLabel}</p>
         </div>
         <button type="button" disabled={iphoneRefreshStatus === "checking"} onClick={() => void refreshIphoneHealth(0)}>
           {iphoneRefreshStatus === "checking" ? "Đang kiểm tra…" : "Làm mới"}
@@ -457,13 +455,17 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
         }}>
           <summary>Xem đầy đủ và lịch sử <span>⌄</span></summary>
           {iphoneHistoryOpen ? <>
+            <div className="iphone-health-receipts" role="group" aria-label="Thời điểm nhận chỉ số tóm tắt">
+              {([['sleep_minutes','sleepMinutes','Ngủ'],['steps','steps','Bước chân'],['weight_kg','weightKg','Cân nặng'],['height_cm','heightCm','Chiều cao']] as const).map(([field,key,label])=><p key={key}><strong>{label}:</strong> {typeof latestIphoneHealth[field]==='number'&&Number.isFinite(latestIphoneHealth[field])?metricSyncLabel(latestIphoneHealth,key):'Chưa nhận dữ liệu'}</p>)}
+              <p>Giờ đồng bộ là lúc EmBe nhận dữ liệu, không phải giờ đo.</p>
+            </div>
             <div className="iphone-metrics iphone-metrics-complete">
               <span><strong>{latestIphoneHealth.heart_rate_avg ?? "—"}</strong>nhịp tim trung bình (bpm)<small>{metricSyncLabel(latestIphoneHealth, "heartRateAvg")}</small></span>
               <span><strong>{latestIphoneHealth.resting_heart_rate_bpm ?? "—"}</strong>nhịp tim nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingHeartRateBpm")}</small></span>
               <span><strong>{typeof latestIphoneHealth.distance_m === "number" ? `${(latestIphoneHealth.distance_m / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km` : "—"}</strong>quãng đường<small>{metricSyncLabel(latestIphoneHealth, "distanceM")}</small></span>
               <span><strong>{latestIphoneHealth.active_energy_kcal ?? "—"}</strong>kcal vận động<small>{metricSyncLabel(latestIphoneHealth, "activeEnergyKcal")}</small></span>
               <span><strong>{latestIphoneHealth.resting_energy_kcal ?? "—"}</strong>kcal nghỉ<small>{metricSyncLabel(latestIphoneHealth, "restingEnergyKcal")}</small></span>
-              <span><strong>{latestIphoneHealth.systolic && latestIphoneHealth.diastolic ? `${latestIphoneHealth.systolic}/${latestIphoneHealth.diastolic}` : "—"}</strong>huyết áp<small>{metricSyncLabel(latestIphoneHealth, "systolic")}</small></span>
+              <span><strong>{iphoneBloodPressureLabel(latestIphoneHealth.systolic,latestIphoneHealth.diastolic)}</strong>huyết áp (mmHg)<small>Tâm thu: {latestIphoneHealth.systolic!=null?metricSyncLabel(latestIphoneHealth, "systolic"):'Chưa nhận'}</small><small>Tâm trương: {latestIphoneHealth.diastolic!=null?metricSyncLabel(latestIphoneHealth, "diastolic"):'Chưa nhận'}</small></span>
               <span><strong>{latestIphoneHealth.respiratory_rate ?? "—"}</strong>nhịp thở<small>{metricSyncLabel(latestIphoneHealth, "respiratoryRate")}</small></span>
               <span><strong>{typeof latestIphoneHealth.oxygen_saturation_percent === "number" ? `${latestIphoneHealth.oxygen_saturation_percent}%` : "—"}</strong>SpO₂<small>{metricSyncLabel(latestIphoneHealth, "oxygenSaturationPercent")}</small></span>
               <span><strong>{latestIphoneHealth.body_temperature_c ?? "—"}</strong>nhiệt độ cơ thể °C<small>{metricSyncLabel(latestIphoneHealth, "bodyTemperatureC")}</small></span>

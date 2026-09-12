@@ -7,6 +7,21 @@ export const IPHONE_HEALTH_FIELDS = [
   ['mindfulness_minutes','Phút thư giãn'], ['systolic','Huyết áp tâm thu'], ['diastolic','Huyết áp tâm trương']
 ] as const;
 
+// A daily row can contain values sent at different times. Never substitute
+// the row's updated_at for the receipt timestamp of an individual metric.
+export function iphoneMetricSyncLabel(timestamps: Record<string,string>|undefined, key:string):string {
+  const timestamp=timestamps?.[key];
+  if (!timestamp || !Number.isFinite(Date.parse(timestamp))) return 'Chưa rõ giờ đồng bộ';
+  const date=new Date(timestamp);
+  return `Đồng bộ ${date.toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}`;
+}
+
+export function iphoneBloodPressureLabel(systolic:number|null|undefined,diastolic:number|null|undefined):string {
+  const sys=typeof systolic==='number'&&Number.isFinite(systolic)?systolic:null;
+  const dia=typeof diastolic==='number'&&Number.isFinite(diastolic)?diastolic:null;
+  return sys===null&&dia===null?'—':`${sys??'—'}/${dia??'—'}`;
+}
+
 export function iphoneHealthCoverage(health: Partial<Record<typeof IPHONE_HEALTH_FIELDS[number][0], number|null>>) {
   const missing=IPHONE_HEALTH_FIELDS.filter(([key])=>typeof health[key]!=='number'||!Number.isFinite(health[key])).map(([,label])=>label);
   return {received:IPHONE_HEALTH_FIELDS.length-missing.length, total:IPHONE_HEALTH_FIELDS.length, missing};

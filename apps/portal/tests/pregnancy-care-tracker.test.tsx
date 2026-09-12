@@ -4,6 +4,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PregnancyCareTracker from "../src/components/pregnancy-care-tracker";
 
 describe("iPhone health connection state", () => {
+  it('shows individual receipt times and partial blood pressure without treating old readings as current',async()=>{
+    const health={day:'2026-09-01',steps:4321,height_cm:160,systolic:112,diastolic:null,
+      metric_synced_at:{steps:'2026-09-01T08:00:00Z',heightCm:'2026-08-31T02:00:00Z',systolic:'2026-09-01T09:00:00Z'},updated_at:'2026-09-02T10:00:00Z'};
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL)=>String(input).startsWith('/api/pregnancy/care')
+      ?Response.json({snapshot:{profile:null,plans:[],iphone_devices:[],iphone_health:health,iphone_health_history:[]}})
+      :Response.json({history:[]})));
+    render(<PregnancyCareTracker pregnancyWeek={8}/>);
+    const status=await screen.findByText(/Dữ liệu gần nhất ngày/);
+    expect(status).not.toHaveClass('is-connected');
+    expect(screen.queryByLabelText('Thời điểm nhận chỉ số tóm tắt')).toBeNull();
+    fireEvent.click(screen.getByText('Xem đầy đủ và lịch sử'));
+    const receipts=await screen.findByLabelText('Thời điểm nhận chỉ số tóm tắt');
+    expect(receipts).toHaveTextContent('31/08/2026');
+    expect(receipts).toHaveTextContent('15:00');
+    expect(receipts).toHaveTextContent('Ngủ: Chưa nhận dữ liệu');
+    expect(receipts).not.toHaveTextContent('02/09/2026');
+    expect(screen.getByText('112/—')).toBeVisible();
+    expect(screen.getByText('Tâm trương: Chưa nhận')).toBeVisible();
+  });
   it('shows a freshly synced count instead of the previously opened history',async()=>{
     let updated=false;
     const old={day:'2026-09-12',steps:1234,updated_at:'2026-09-12T08:00:00Z'};

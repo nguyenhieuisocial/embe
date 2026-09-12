@@ -369,6 +369,8 @@
 .iphone-health-glance > span { display: grid; min-width: 0; padding: .52rem .28rem; border-radius: 12px; background: #fff; text-align: center; }
 .iphone-health-glance small { overflow: hidden; color: #927a83; font-size: .58rem; text-overflow: ellipsis; white-space: nowrap; }
 .iphone-health-glance strong { overflow: hidden; color: #6f4051; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
+.iphone-health-receipts { margin: .6rem 0; font-size: .78rem; line-height: 1.5; }
+.iphone-health-receipts p { margin: .25rem 0; overflow-wrap: anywhere; }
 .iphone-health-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; }
 .iphone-health-actions a, .iphone-health-actions button {
   display: grid; min-height: 44px; place-items: center; padding: .55rem .65rem; border: 1px solid #e6ccd5;
