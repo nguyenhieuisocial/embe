@@ -9,7 +9,7 @@
 - KHÔNG gồm byte tệp Storage, `auth`, `storage`, `vault`, ảnh/video Immich gốc.
   Backup này không thay thế restic-critical và không phải restore toàn nền tảng.
 
-## Luồng đang triển khai
+## Luồng đã triển khai
 
 1. GitHub Actions trên `main`, 20:41 UTC (03:41 Việt Nam), và chạy tay khi cần.
 2. Kết nối TLS `verify-full` tới session pooler; cùng snapshot cho số dòng và dump.
@@ -32,6 +32,8 @@ chủ repo; chưa có cảnh báo Telegram cloud độc lập. Không bật runn
 
 - Chứng thư công khai: `scripts/backup/cloud-recipient.pem`.
 - Khóa giải mã: `secrets/cloud-backup-recipient.pem` (ACL riêng tư, không Git).
+  Có bản sao mã hóa trong restic-critical, tag `embe-cloud-recovery-key`;
+  cần giữ mật khẩu restic an toàn ngoài máy để khôi phục khi mất máy.
 - Credential vận hành: `secrets/cloud-backup.credential.xml`, mã hóa DPAPI.
 - GitHub chỉ giữ mật khẩu DB chỉ đọc và token API upload. Không giữ khóa quản
   trị Supabase, R2, restic hoặc khóa giải mã.
@@ -52,3 +54,17 @@ chủ repo; chưa có cảnh báo Telegram cloud độc lập. Không bật runn
 - Giữ khóa giải mã cũ khi xoay chứng thư, đến khi hết toàn bộ bản mã dùng khóa cũ.
 - Vault chứa khóa nhắc cloud riêng, nằm ngoài dump này. Disaster recovery phải
   tái cấp khóa và chỉ bật cron khi receiver mới đã xác minh thành công.
+
+## Bằng chứng ngày 12/09/2026
+
+- Bản do GitHub tạo có 67 bảng; đã tải chính ciphertext từ R2 và thử khôi phục
+  vào container không mạng. SHA-256 dump và số dòng tất cả bảng khớp.
+- Báo cáo riêng tư: `exports/restore-verification/cloud-database/latest.json`.
+  Bản rõ trong thử khôi phục đã được dọn sau khi kiểm tra; không đưa vào Git.
+- Lỗi cấp credential từ Windows và lỗi ghi trạng thái qua schema REST không
+  công khai đã được xử lý: dùng dotenv UTF-8 không BOM và RPC service-only.
+- Trạng thái giữ đúng thời điểm R2 lưu; kiểm tra lại không làm một backup cũ
+  thành backup mới. Bản cùng ngày được giữ nguyên khi workflow chạy lại.
+- Cổng riêng tư từ chối khi thiếu token (401). Security advisors không có lints.
+- Chưa kiểm chứng lần chạy tự động đầu tiên theo lịch của ngày kế tiếp;
+  đã kiểm chứng chạy workflow thật và khôi phục ngoài cloud. Chưa thử iPhone thật.

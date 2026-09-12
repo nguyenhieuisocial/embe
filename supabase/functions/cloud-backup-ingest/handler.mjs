@@ -22,11 +22,12 @@ export function createHandler({ token, head, put, report = async () => {}, now =
   return async request => {
     if (!await sameSecret(request.headers.get('Authorization')?.replace(/^Bearer /, ''), token)) return reply(401, { error: 'unauthorized' });
     if (!['HEAD', 'POST'].includes(request.method)) return reply(405, { error: 'method_not_allowed' });
+    let phase = 'storage_head';
     try {
       const { key, date } = backupSlot(now());
       const existing = await head(key);
       if (request.method === 'HEAD') {
-        if (existing?.date === date) await report(existing);
+        if (existing?.date === date) { phase = 'status_report'; await report(existing); }
         return new Response(null, { status: existing?.date === date ? 204 : 404, headers: { 'Cache-Control': 'no-store' } });
       }
       // Immutable within a day; recycling can replace only a slot from >=35 days ago.
@@ -54,13 +55,18 @@ export function createHandler({ token, head, put, report = async () => {}, now =
       // CMS authenticated enveloped-data OID. Reject accidental plaintext dumps.
       const oid = [0x06,0x0b,0x2a,0x86,0x48,0x86,0xf7,0x0d,0x01,0x09,0x10,0x01,0x17];
       if (body[0] !== 0x30 || ![2,3,4,5,6].some(i => oid.every((v,j) => body[i+j] === v))) return reply(415, { error: 'cms_auth_envelope_required' });
+      phase = 'storage_put';
       const saved = await put(key, body, { date, sha256: digest }, existing?.etag);
       if (!saved) return reply(409, { error: 'concurrent_upload' });
       // A read-after-write HEAD must confirm bytes and metadata, not just a successful PUT.
+      phase = 'storage_verify';
       const verified = await head(key);
       if (verified?.date !== date || verified?.sha256 !== digest || verified?.size !== size) return reply(502, { error: 'storage_verification_failed' });
-      await report(verified);
+      phase = 'status_report'; await report(verified);
       return reply(201, { saved: true, date, sha256: digest, bytes: size, retainedSlots: 35 });
-    } catch { return reply(503, { error: 'backup_storage_unavailable' }); }
+    } catch (error) {
+      const code = error instanceof Error && /^status_(?:config|time|http_\d{3})$/.test(error.message) ? error.message : 'unavailable';
+      return new Response(JSON.stringify({ error: 'backup_storage_unavailable', phase, code }), { status: 503, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Backup-Phase': phase, 'X-Backup-Error': code } });
+    }
   };
 }

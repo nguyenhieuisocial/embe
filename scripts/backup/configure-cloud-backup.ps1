@@ -3,17 +3,12 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $projectRef = 'tpqqzowhndbkmkckpbgv'
 function Set-GitHubSecret([string]$Name, [string]$Value) {
-    $start = [Diagnostics.ProcessStartInfo]::new()
-    $start.FileName = (Get-Command gh).Source
-    $start.Arguments = "secret set $Name --repo nguyenhieuisocial/embe"
-    $start.UseShellExecute = $false; $start.CreateNoWindow = $true
-    $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
-    $process = [Diagnostics.Process]::Start($start)
-    $process.StandardInput.Write($Value) # No PowerShell pipeline CRLF in the credential.
-    $process.StandardInput.Close()
-    $process.WaitForExit()
-    if ($process.ExitCode -ne 0) { throw 'Could not configure GitHub secret' }
-    $process.Dispose()
+    $secretFile = Join-Path $ProjectRoot ('secrets/cloud-gh-' + [guid]::NewGuid().ToString('N') + '.env')
+    try {
+        [IO.File]::WriteAllText($secretFile, "$Name=$Value`n", [Text.UTF8Encoding]::new($false))
+        gh secret set --repo nguyenhieuisocial/embe --env-file $secretFile
+        if ($LASTEXITCODE -ne 0) { throw 'Could not configure GitHub secret' }
+    } finally { if (Test-Path -LiteralPath $secretFile) { Remove-Item -LiteralPath $secretFile } }
 }
 function Read-EnvFile([string]$Path) {
     $values = @{}

@@ -14,16 +14,17 @@ Deno.serve(createHandler({
   async report(metadata: {created: string}) {
     const base = Deno.env.get('SUPABASE_URL');
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (base !== 'https://tpqqzowhndbkmkckpbgv.supabase.co' || !serviceKey) throw new Error('Status unavailable');
+    if (base !== 'https://tpqqzowhndbkmkckpbgv.supabase.co' || !serviceKey) throw new Error('status_config');
+    if (!metadata.created || !Number.isFinite(Date.parse(metadata.created))) throw new Error('status_time');
     const storedAt = new Date(metadata.created).toISOString();
-    const response = await fetch(`${base}/rest/v1/worker_heartbeat?on_conflict=worker_name`, {
+    const response = await fetch(`${base}/rest/v1/rpc/embe_report_cloud_backup`, {
       method: 'POST', headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json',
-        'Content-Profile': 'portal_read_model', Prefer: 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ worker_name: 'cloud-db-backup', state: 'online', detail: 'database-only; encrypted; 35 slots', last_seen_at: storedAt }),
+        'Content-Profile': 'public' },
+      body: JSON.stringify({ p_stored_at: storedAt }),
       signal: AbortSignal.timeout(10000),
     });
     await response.body?.cancel();
-    if (!response.ok) throw new Error('Status update failed');
+    if (!response.ok) throw new Error(`status_http_${response.status}`);
   },
   async head(key: string) {
     const res = await client.fetch(url(key), { method: 'HEAD', signal: AbortSignal.timeout(15000) });

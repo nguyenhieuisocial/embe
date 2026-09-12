@@ -28,12 +28,16 @@
   trên GitHub để không gọi chồng. Không cần máy Windows chạy để đánh thức hàng đợi.
   Trạng thái web kiểm tra lần gọi thành công trong 6 phút gần nhất, không coi
   điều này là bằng chứng iPhone đã nhận thông báo.
+- Backup SQL độc lập: GitHub → tài khoản DB chỉ đọc → thử khôi phục → mã hóa →
+  R2 riêng tư. Bản cloud ngày 12/09 đã được tải về, giải mã và khôi phục,
+  đối chiếu số dòng 67/67 bảng. Tối đa 35 slot luân phiên, 16 MiB/bản.
+  “Nhà mình” hiển thị trạng thái backup dữ liệu, nêu rõ chưa bao gồm tệp ảnh.
 
 ## Ranh giới chưa được giải quyết
 
 Backup SQL không bao gồm byte của Supabase Storage, schema do nền tảng quản lý
-(`auth`, `storage`, `vault`) hoặc 365 GB ảnh/video gốc Immich. Backup vẫn được
-khởi chạy từ máy nhà; lưu đích R2 không biến nó thành một tác vụ cloud.
+(`auth`, `storage`, `vault`) hoặc 365 GB ảnh/video gốc Immich. Backup cơ sở dữ
+liệu đã chạy từ GitHub; backup ứng dụng local/restic-critical vẫn chạy ở máy nhà.
 
 | Nhóm | Đã online | Còn phụ thuộc local / việc tiếp theo |
 |---|---|---|
@@ -46,7 +50,7 @@ khởi chạy từ máy nhà; lưu đích R2 không biến nó thành một tác
 | Studio | Kịch bản, hàng đợi, tệp đã dựng trên cloud | TTS/model/render local; chưa tự đăng social hoàn chỉnh |
 | Thông báo | Supabase Cron → Vercel mỗi 2 phút | Chưa thử nhận trên iPhone thật; không phải hệ thống báo động y tế |
 | PDF tháng | Pipeline có sẵn | Export Memos + Typst local; cần nguồn cloud và runner riêng |
-| Backup | R2 riêng tư, mã hóa restic | Cần tác vụ cloud riêng, credential giới hạn quyền và sao lưu byte tệp |
+| Backup | DB mỗi ngày từ GitHub, mã hóa trước khi lên R2; quyền chỉ đọc | Byte tệp chưa có lịch cloud riêng; restic-critical của ứng dụng local vẫn cần máy nhà |
 | Apple Health/cảm biến | API nhận dữ liệu online | iPhone/thiết bị nhà vẫn phải thu thập và cấp quyền |
 
 ## Quy tắc chuyển tiếp
@@ -90,4 +94,4 @@ di chuyển dữ liệu cloud trước, không chỉ áp lại hàm SQL cũ.
 - [Cloudflare R2](https://developers.cloudflare.com/r2/pricing/)
 
 Các trang này cần đối chiếu lại khi chọn gói. Chưa coi AI/OCR cloud, render cloud,
-backup cloud độc lập hoặc thay thế toàn bộ Immich là đã triển khai.
+backup byte tệp độc lập hoặc thay thế toàn bộ Immich là đã triển khai.
