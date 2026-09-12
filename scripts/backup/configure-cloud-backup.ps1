@@ -2,6 +2,19 @@ param([string]$ProjectRoot = 'C:\EmBe')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $projectRef = 'tpqqzowhndbkmkckpbgv'
+function Set-GitHubSecret([string]$Name, [string]$Value) {
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = (Get-Command gh).Source
+    $start.Arguments = "secret set $Name --repo nguyenhieuisocial/embe"
+    $start.UseShellExecute = $false; $start.CreateNoWindow = $true
+    $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
+    $process = [Diagnostics.Process]::Start($start)
+    $process.StandardInput.Write($Value) # No PowerShell pipeline CRLF in the credential.
+    $process.StandardInput.Close()
+    $process.WaitForExit()
+    if ($process.ExitCode -ne 0) { throw 'Could not configure GitHub secret' }
+    $process.Dispose()
+}
 function Read-EnvFile([string]$Path) {
     $values = @{}
     foreach ($line in Get-Content -LiteralPath $Path) {
@@ -28,10 +41,8 @@ try {
     $env:SUPABASE_ACCESS_TOKEN = $config.SUPABASE_ACCESS_TOKEN
     & (Join-Path $ProjectRoot 'tools/bin/supabase.exe') secrets set --project-ref $projectRef --env-file $tempPath
     if ($LASTEXITCODE -ne 0) { throw 'Could not configure Edge secrets' }
-    $password | gh secret set EMBE_CLOUD_BACKUP_DB_PASSWORD --repo nguyenhieuisocial/embe
-    if ($LASTEXITCODE -ne 0) { throw 'Could not configure database credential' }
-    $token | gh secret set EMBE_CLOUD_BACKUP_TOKEN --repo nguyenhieuisocial/embe
-    if ($LASTEXITCODE -ne 0) { throw 'Could not configure upload credential' }
+    Set-GitHubSecret 'EMBE_CLOUD_BACKUP_DB_PASSWORD' $password
+    Set-GitHubSecret 'EMBE_CLOUD_BACKUP_TOKEN' $token
     Write-Output 'Cloud credentials configured; no R2 or management key sent to GitHub.'
 } finally {
     if (Test-Path -LiteralPath $tempPath) { Remove-Item -LiteralPath $tempPath }

@@ -137,9 +137,12 @@ def upload_request(method, token, body=None):
 
 def main():
     global PHASE
+    PHASE = 'repository_identity'
     if os.environ.get('GITHUB_REPOSITORY') not in (None, 'nguyenhieuisocial/embe') or os.environ.get('GITHUB_REF') not in (None, 'refs/heads/main'):
         raise RuntimeError('Wrong repository or branch')
+    PHASE = 'database_credential_format'
     if not re.fullmatch('[a-f0-9]{64}', os.environ.get('PGPASSWORD','')): raise RuntimeError('Missing database credential')
+    PHASE = 'upload_credential_format'
     token = os.environ.get('EMBE_CLOUD_BACKUP_TOKEN','')
     if not re.fullmatch('[a-f0-9]{64}',token): raise RuntimeError('Missing upload credential')
     os.environ.update(PGHOST='aws-0-ap-southeast-1.pooler.supabase.com', PGPORT='5432', PGUSER='embe_cloud_backup.tpqqzowhndbkmkckpbgv',
