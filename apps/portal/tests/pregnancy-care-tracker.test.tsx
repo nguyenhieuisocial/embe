@@ -4,6 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PregnancyCareTracker from "../src/components/pregnancy-care-tracker";
 
 describe("iPhone health connection state", () => {
+  it('offers a prefilled provider link but never claims the new device has synced',async()=>{
+    const token=`embe_health_${'a'.repeat(43)}`;
+    vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL)=>{
+      if(String(input)==='/api/pregnancy/iphone-health')return Response.json({token,ingestUrl:'https://embe.hieu.asia/api/pregnancy/iphone-health'});
+      if(String(input).startsWith('/api/pregnancy/care'))return Response.json({snapshot:{profile:null,plans:[],iphone_health:null,iphone_devices:[]}});
+      return Response.json({history:[]});
+    }));
+    render(<PregnancyCareTracker pregnancyWeek={8}/>);
+    fireEvent.click(await screen.findByRole('button',{name:'Kết nối iPhone'}));
+    const link=await screen.findByRole('link',{name:'Mở cấu hình tự điền'});
+    expect(new URL(link.getAttribute('href')!).searchParams.get('headers')).toBe(`Authorization,Bearer ${token}`);
+    expect(screen.getByText('Đã tạo mã · chưa đồng bộ')).toBeInTheDocument();
+    expect(screen.getByText('Dùng Phím tắt cũ (nhập tay)').closest('details')).not.toHaveAttribute('open');
+    expect(screen.queryByText('Kết nối đã sẵn sàng')).toBeNull();
+  });
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.unstubAllGlobals());
 

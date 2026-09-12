@@ -1,4 +1,5 @@
 "use client";
+import { healthAutoExportLink } from '../lib/health-auto-export';
 
 import Link from "next/link";
 import MedicationUseGuide, {MedicationPurpose} from './medication-use-guide';
@@ -468,23 +469,36 @@ export default function PregnancyCareTracker({ pregnancyWeek, activePanel }: { p
       </> : <div className="iphone-health-empty">
         <strong>{activeIphoneDevices.length ? "Còn một bước trên iPhone" : "Kết nối một lần"}</strong>
         <p>{activeIphoneDevices.length
-          ? "Đã tạo mã kết nối nhưng chưa nhận dữ liệu. Mẫu Phím tắt hiện tại vẫn cần cấu hình theo hướng dẫn bên dưới."
-          : "Apple không cho Safari tự đọc Sức khỏe. Có thể nhập nhanh ngay hoặc kết nối Phím tắt để gửi những chỉ số đã chọn."}</p>
+          ? "Đã tạo mã kết nối nhưng iPhone chưa gửi dữ liệu. Kết nối bằng Health Auto Export hoặc dùng Phím tắt bên dưới."
+          : "Kết nối qua Health Auto Export để tự điền cấu hình, không cần nhập URL hay Authorization. Ứng dụng có thể yêu cầu gói trả phí."}</p>
         <div className="iphone-health-actions">
           <Link href="/me-bau/suc-khoe">Nhập nhanh hôm nay</Link>
           {activeIphoneDevices.length ? <a href="shortcuts://">Mở Phím tắt</a> : null}
-          {!syncSecret && deviceRole !== "father" ? <button type="button" onClick={() => void createIphoneConnection()}>
+          {!syncSecret && deviceRole !== "father" ? <button type="button" disabled={status === 'saving'} onClick={() => void createIphoneConnection()}>
             {activeIphoneDevices.length ? "Tạo kết nối mới" : "Kết nối iPhone"}
           </button> : null}
         </div>
         {deviceRole === "father" ? <small>Kết nối Sức khỏe được thực hiện trên iPhone của Mẹ Ngân.</small> : null}
       </div>}
 
+      {latestIphoneHealth && !syncSecret && deviceRole !== 'father' ? <details className="care-inline">
+        <summary>Đổi sang kết nối tự điền</summary>
+        <p>Health Auto Export gửi 19 chỉ số theo ngày, không cần nhập URL hay Authorization. Ứng dụng có thể yêu cầu gói trả phí; kết nối cũ vẫn được giữ.</p>
+        <button type="button" className="care-add-button" disabled={status === 'saving'} onClick={() => void createIphoneConnection()}>Tạo kết nối tự điền</button>
+      </details> : null}
+
       {syncSecret ? <div className="sync-secret" role="status">
         <strong>Đã tạo mã · chưa đồng bộ</strong>
+        <p>Cài Health Auto Export trên iPhone trước, rồi mở cấu hình bên dưới. Chỉ mở khi bạn đồng ý cấp mã gửi dữ liệu riêng của EmBe cho ứng dụng này; không chia sẻ liên kết.</p>
+        <small>Gửi tối đa 19 chỉ số đã được cấp quyền, dạng tổng hợp theo ngày; chưa nhập ECG, thuốc, bệnh án hay toàn bộ kho Health. Ứng dụng có thể yêu cầu gói trả phí.</small>
+        <a className="care-add-button iphone-shortcut-link" href="https://www.healthyapps.dev/" target="_blank" rel="noreferrer">Xem ứng dụng Health Auto Export</a>
+        {healthAutoExportLink(syncSecret.token,syncSecret.ingestUrl) ? <a className="care-add-button iphone-shortcut-link" href={healthAutoExportLink(syncSecret.token,syncSecret.ingestUrl)} rel="noreferrer">Mở cấu hình tự điền</a> : null}
+        <p>Trong ứng dụng: cho phép các chỉ số muốn chia sẻ → kiểm tra cấu hình EmBe → bật Enabled → thử Manual Export. Lịch nền dự kiến mỗi giờ, phụ thuộc iOS và điện thoại được mở khóa.</p>
+        <details className="care-inline"><summary>Dùng Phím tắt cũ (nhập tay)</summary>
         <a className="care-add-button iphone-shortcut-link" href="https://www.icloud.com/shortcuts/1617296a8c8546b49be47740be2550b3" target="_blank" rel="noreferrer">Cài mẫu Export Daily Health Data</a>
         <div className="iphone-setup-value"><small>1. Dán vào tác vụ URL gần cuối Phím tắt</small><code>{syncSecret.ingestUrl}</code><button type="button" aria-label="Chép địa chỉ nhận dữ liệu" onClick={() => void copySetupValue("url", syncSecret.ingestUrl)}>{copied === "url" ? "Đã chép" : "Chép"}</button></div>
         <div className="iphone-setup-value"><small>2. Dán vào giá trị của tiêu đề Authorization</small><code>Bearer {syncSecret.token}</code><button type="button" aria-label="Chép mã Authorization" onClick={() => void copySetupValue("token", `Bearer ${syncSecret.token}`)}>{copied === "token" ? "Đã chép" : "Chép"}</button></div>
+        </details>
       </div> : null}
 
       <details className="care-inline iphone-shortcut-help">

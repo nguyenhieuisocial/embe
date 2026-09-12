@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { authorizeMutation, isUuidV4, photoStore, privateReply } from "../../../../lib/photo-upload-server";
+import { normalizeHealthAutoExport } from '../../../../lib/health-auto-export';
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -109,6 +110,14 @@ async function ingestShortcutExport(request: Request, token: string): Promise<Re
     if (new TextEncoder().encode(raw).byteLength > 262144) return privateReply({ error: "invalid_request" }, 413);
     input = JSON.parse(raw);
   } catch { return privateReply({ error: "invalid_request" }, 400); }
+  if (input && typeof input === 'object' && !Array.isArray((input as Record<string, unknown>).data)) {
+    if (request.headers.get('automation-aggregation')?.toLowerCase() !== 'days'
+      || !['none','today','yesterday','previous7days'].includes(request.headers.get('automation-period')?.toLowerCase() ?? '')) {
+      return privateReply({error:'daily_export_required',message:'Chọn Time Grouping: Days và Date Range: Default; không dùng Since Last Sync.'},422);
+    }
+    input = normalizeHealthAutoExport(input);
+    if (!input) return privateReply({error:'unsupported_health_export',message:'Chỉ nhận 19 chỉ số đã chọn theo ngày. Kiểm tra định dạng hoặc chưa có dữ liệu.'},422);
+  }
   if (!input || typeof input !== "object" || !Array.isArray((input as Record<string, unknown>).data)
       || Object.keys(input).some((key) => key !== "data")) return privateReply({ error: "invalid_request" }, 400);
   const samples = (input as { data: unknown[] }).data;

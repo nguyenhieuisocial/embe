@@ -30,6 +30,22 @@ describe("private pregnancy care and iPhone health APIs", () => {
       body: JSON.stringify({data})
     });
   }
+  it('ingests provider daily summaries through the existing device authorization without adding sleep phases',async()=>{
+    rpc.mockResolvedValue({data:true,error:null});
+    const response=await createDevice(new Request('https://embe.hieu.asia/api/pregnancy/iphone-health',{
+      method:'POST',headers:{authorization:`Bearer embe_health_${'a'.repeat(43)}`,'automation-aggregation':'days','automation-period':'none'},
+      body:JSON.stringify({data:{metrics:[{name:'sleep_analysis',units:'hr',data:[{date:'2026-09-12',totalSleep:7,inBed:8}]}]}})
+    }));
+    expect(response.status).toBe(202);
+    expect(rpc).toHaveBeenCalledWith('embe_ingest_iphone_health_v2',expect.objectContaining({p_sleep_minutes:420,p_day:'2026-09-12'}));
+  });
+  it('rejects partial-period provider totals before writing',async()=>{
+    const response=await createDevice(new Request('https://embe.hieu.asia/api/pregnancy/iphone-health',{
+      method:'POST',headers:{authorization:`Bearer embe_health_${'a'.repeat(43)}`,'automation-aggregation':'days','automation-period':'lastsync'},
+      body:JSON.stringify({data:{metrics:[]}})
+    }));
+    expect(response.status).toBe(422); expect(rpc).not.toHaveBeenCalled();
+  });
   it('handles Vietnamese numbers and units and keeps the newest measurement regardless of input order', async () => {
     rpc.mockResolvedValue({data:true,error:null});
     const response = await createDevice(shortcutRequest([
