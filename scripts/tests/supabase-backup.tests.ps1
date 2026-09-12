@@ -18,7 +18,7 @@ try {
 
     $config = Join-Path $secretDirectory "supabase-backup.env"
     @(
-        "SUPABASE_PROJECT_REF=test-project-ref"
+        "SUPABASE_PROJECT_REF=tpqqzowhndbkmkckpbgv"
         "SUPABASE_ACCESS_TOKEN=$token"
     ) | Set-Content -LiteralPath $config -Encoding UTF8
 
@@ -51,6 +51,7 @@ exit 0
 
     $result = ($raw | Out-String).Trim() | ConvertFrom-Json
     if ($result.status -ne "ok" -or @($result.artifacts).Count -ne 2) { throw "Unexpected exporter result" }
+    if (($result.schemas -join ',') -ne 'portal_read_model,embe_studio,public') { throw 'Application schemas missing from backup receipt' }
     $exportStatusPath = Join-Path $testRoot "exports\backup-manifests\supabase-export-run-status-v2.json"
     $exportStatus = Get-Content -LiteralPath $exportStatusPath -Raw | ConvertFrom-Json
     if ($exportStatus.status -ne "ok" -or $exportStatus.phase -ne "complete") {
@@ -72,11 +73,25 @@ exit 0
         throw "Expected exactly two Supabase CLI calls, got $($calls.Count). Raw log: $rawCalls"
     }
     foreach ($call in $calls) {
-        if ($call -notcontains "portal_read_model" -or $call -notcontains "--project-ref") { throw "Dump is not bounded to portal_read_model/project ref" }
+        if ($call -notcontains "portal_read_model,embe_studio,public" -or $call -notcontains "--project-ref") { throw "Dump is not bounded to the application schemas/project ref" }
         $joined = $call -join " "
         if ($joined.Contains($token)) { throw "Secret appeared in CLI arguments" }
     }
     if (@($calls | Where-Object { $_ -contains "--data-only" }).Count -ne 1) { throw "Expected one data-only dump" }
+
+    $validConfig = Get-Content -LiteralPath $config -Raw
+    try {
+        $validConfig.Replace('tpqqzowhndbkmkckpbgv', 'another-project') | Set-Content -LiteralPath $config -Encoding UTF8
+        $ErrorActionPreference = 'Continue'
+        & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $runner `
+            -ProjectRoot $testRoot -OutputDirectory $output -ConfigFile $config -SupabaseCliPath $fakeCli 2>$null | Out-Null
+        $wrongProjectExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = 'Stop'
+        Set-Content -LiteralPath $config -Value $validConfig -Encoding UTF8
+    }
+    if ($wrongProjectExit -eq 0) { throw 'Exporter accepted another project' }
+    if (@(Get-Content -LiteralPath $logPath).Count -ne 2) { throw 'Wrong project reached the dump command' }
 
     $outside = Join-Path $testRoot "outside"
     New-Item -ItemType Directory -Path $outside | Out-Null

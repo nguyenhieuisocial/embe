@@ -121,6 +121,13 @@ foreach ($name in @("SUPABASE_PROJECT_REF", "SUPABASE_ACCESS_TOKEN")) {
 }
 
 $previousToken = [Environment]::GetEnvironmentVariable("SUPABASE_ACCESS_TOKEN", "Process")
+if ([string]$settings.SUPABASE_PROJECT_REF -ne "tpqqzowhndbkmkckpbgv") {
+    throw "Supabase backup target is not the approved EmBe project."
+}
+# Include Studio records and the public RPC/view definitions needed to restore
+# the application, not only the original portal read-model. Platform-managed
+# auth/storage/vault schemas and object bytes are intentionally not dumped here.
+$applicationSchemas = "portal_read_model,embe_studio,public"
 $schemaPath = Join-Path $OutputDirectory "supabase-portal-schema.sql"
 $dataPath = Join-Path $OutputDirectory "supabase-portal-data.sql"
 try {
@@ -129,12 +136,12 @@ try {
     $phase = "schema"
     Invoke-SupabaseDump -Arguments @(
         "db", "dump", "--project-ref", [string]$settings.SUPABASE_PROJECT_REF,
-        "--schema", "portal_read_model", "--file", $schemaPath
+        "--schema", $applicationSchemas, "--file", $schemaPath
     )
     $phase = "data"
     Invoke-SupabaseDump -Arguments @(
         "db", "dump", "--project-ref", [string]$settings.SUPABASE_PROJECT_REF,
-        "--schema", "portal_read_model", "--data-only", "--use-copy", "--file", $dataPath
+        "--schema", $applicationSchemas, "--data-only", "--use-copy", "--file", $dataPath
     )
 } finally {
     [Environment]::SetEnvironmentVariable("SUPABASE_ACCESS_TOKEN", $previousToken, "Process")
@@ -153,7 +160,7 @@ $entries = foreach ($path in @($schemaPath, $dataPath)) {
 
 $phase = "complete"
 Write-ExportStatus -Status "ok" -Phase $phase
-[ordered]@{ status = "ok"; artifacts = @($entries) } | ConvertTo-Json -Depth 6 -Compress
+[ordered]@{ status = "ok"; schemas = @($applicationSchemas -split ','); artifacts = @($entries) } | ConvertTo-Json -Depth 6 -Compress
 } catch {
     Write-ExportStatus -Status "failed" -Phase $phase -FailureType $_.Exception.GetType().Name
     throw
